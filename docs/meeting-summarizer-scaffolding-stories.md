@@ -8,12 +8,12 @@
 
 ### SC-001 Acceptance Criteria
 
-- [ ] .NET 9 Web API project structure matches architecture document
-- [ ] Dependency injection container configured for services
-- [ ] Swagger/OpenAPI documentation enabled with file upload support
-- [ ] Environment-based configuration setup (Development/Production)
-- [ ] Basic health check endpoint implemented
-- [ ] CORS configured for development with React frontend
+- [x] .NET 9 Web API project structure matches architecture document
+- [x] Dependency injection container configured for services
+- [x] Swagger/OpenAPI documentation enabled with file upload support
+- [x] Environment-based configuration setup (Development/Production)
+- [x] Basic health check endpoint implemented
+- [x] CORS configured for development with React frontend
 
 ### SC-001 Technical Notes
 
@@ -24,10 +24,10 @@
 
 ### SC-001 Definition of Done
 
-- [ ] Project runs successfully with `dotnet run`
-- [ ] Basic structure matches architecture document
-- [ ] Core dependencies installed (Microsoft.AspNetCore.OpenApi)
-- [ ] Swagger UI accessible at /swagger endpoint
+- [x] Project runs successfully with `dotnet run`
+- [x] Basic structure matches architecture document
+- [x] Core dependencies installed (Microsoft.AspNetCore.OpenApi)
+- [x] Swagger UI accessible at /swagger endpoint
 
 ---
 
