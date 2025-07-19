@@ -1,4 +1,5 @@
 using OpenAI.Audio;
+using MeetingSummarizer.Api.Models;
 
 namespace MeetingSummarizer.Api.Services;
 
@@ -8,7 +9,16 @@ namespace MeetingSummarizer.Api.Services;
 public interface IOpenAIService
 {
     /// <summary>
-    /// Transcribe audio file to text using OpenAI Whisper
+    /// Transcribe audio file to text using OpenAI Whisper with enhanced metadata
+    /// </summary>
+    /// <param name="audioStream">Audio file stream</param>
+    /// <param name="fileName">Original filename for context</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Enhanced transcription result with speaker information</returns>
+    Task<TranscriptionResult> TranscribeAudioWithMetadataAsync(Stream audioStream, string fileName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Transcribe audio file to text using OpenAI Whisper (legacy method)
     /// </summary>
     /// <param name="audioStream">Audio file stream</param>
     /// <param name="fileName">Original filename for context</param>

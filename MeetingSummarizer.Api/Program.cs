@@ -72,7 +72,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "MeetingSummarizer API v1");
-        c.RoutePrefix = string.Empty; // Serve Swagger UI at root
+        c.RoutePrefix = "swagger"; // Serve Swagger UI at /swagger
+        c.EnableDeepLinking();
+        c.EnableValidator();
+        c.EnableFilter();
+        c.EnableTryItOutByDefault();
     });
 }
 

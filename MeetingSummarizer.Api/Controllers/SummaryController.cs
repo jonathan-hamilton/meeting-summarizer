@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Helpers;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -29,59 +30,224 @@ public class SummaryController : ControllerBase
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(TranscriptionResponse), 200)]
     [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(408)]
+    [ProducesResponseType(503)]
     [ProducesResponseType(500)]
     public async Task<IActionResult> TranscribeAudio([FromForm] TranscribeRequest request)
     {
         try
         {
-            _logger.LogInformation("Received transcription request for file: {FileName}", request.AudioFile?.FileName);
+            _logger.LogInformation("Received transcription request for file: {FileName}, Size: {FileSize}",
+                request.AudioFile?.FileName, request.AudioFile?.Length);
 
-            if (request.AudioFile == null || request.AudioFile.Length == 0)
+            // Enhanced file validation
+            var validationResult = AudioFileValidator.ValidateAudioFile(request.AudioFile);
+            if (!validationResult.IsValid)
             {
-                return BadRequest(new { error = "Audio file is required" });
+                _logger.LogWarning("File validation failed for {FileName}: {ValidationMessage}",
+                    request.AudioFile?.FileName, validationResult.Message);
+                return BadRequest(new { error = validationResult.Message });
             }
 
-            // Validate file format
-            var allowedExtensions = new[] { ".mp3", ".wav", ".m4a", ".flac", ".ogg" };
-            var fileExtension = Path.GetExtension(request.AudioFile.FileName).ToLowerInvariant();
+            _logger.LogInformation("File validation passed for {FileName} ({FileSize})",
+                request.AudioFile!.FileName, AudioFileValidator.FormatFileSize(request.AudioFile.Length));
 
-            if (!allowedExtensions.Contains(fileExtension))
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            try
             {
-                return BadRequest(new { error = $"Unsupported file format. Allowed formats: {string.Join(", ", allowedExtensions)}" });
+                // Use OpenAI service for transcription with speaker diarization
+                using var audioStream = request.AudioFile.OpenReadStream();
+                var transcriptionResult = await _openAIService.TranscribeAudioWithMetadataAsync(
+                    audioStream,
+                    request.AudioFile.FileName
+                );
+
+                stopwatch.Stop();
+
+                // Convert to API response format
+                var response = TranscriptionResponse.FromResult(
+                    transcriptionResult,
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                _logger.LogInformation("Transcription completed for file: {FileName}, ID: {TranscriptionId}, Speakers: {SpeakerCount}",
+                    request.AudioFile.FileName, response.TranscriptionId, response.SpeakerCount);
+
+                return Ok(response);
             }
-
-            // Validate file size (500MB limit)
-            const int maxFileSizeBytes = 500 * 1024 * 1024; // 500MB
-            if (request.AudioFile.Length > maxFileSizeBytes)
+            catch (InvalidOperationException ex)
             {
-                return BadRequest(new { error = "File size exceeds 500MB limit" });
+                stopwatch.Stop();
+                _logger.LogError(ex, "OpenAI service error during transcription for file: {FileName}", request.AudioFile.FileName);
+
+                var errorResponse = TranscriptionResponse.FromError(
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    ex.Message,
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                return StatusCode(503, errorResponse); // Service Unavailable
             }
-
-            // Simulate async processing delay
-            await Task.Delay(100);
-
-            // TODO: Implement actual transcription using OpenAI service
-            // For now, return a mock response to test the infrastructure
-            var response = new TranscriptionResponse
+            catch (UnauthorizedAccessException ex)
             {
-                TranscriptionId = Guid.NewGuid().ToString(),
-                FileName = request.AudioFile.FileName,
-                FileSize = request.AudioFile.Length,
-                Status = "Completed",
-                TranscribedText = "This is a mock transcription response for infrastructure testing.",
-                ProcessingTimeMs = 1500,
-                CreatedAt = DateTime.UtcNow
-            };
+                stopwatch.Stop();
+                _logger.LogError(ex, "Authentication error during transcription for file: {FileName}", request.AudioFile.FileName);
 
-            _logger.LogInformation("Transcription completed for file: {FileName}, ID: {TranscriptionId}",
-                request.AudioFile.FileName, response.TranscriptionId);
+                var errorResponse = TranscriptionResponse.FromError(
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    "Authentication failed with OpenAI service",
+                    stopwatch.ElapsedMilliseconds
+                );
 
-            return Ok(response);
+                return StatusCode(401, errorResponse); // Unauthorized
+            }
+            catch (TaskCanceledException ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "Transcription timeout for file: {FileName}", request.AudioFile.FileName);
+
+                var errorResponse = TranscriptionResponse.FromError(
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    "Transcription request timed out",
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                return StatusCode(408, errorResponse); // Request Timeout
+            }
+            catch (IOException ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "File I/O error during transcription for file: {FileName}", request.AudioFile.FileName);
+
+                return BadRequest(new { error = "Unable to read the uploaded file. Please try uploading again." });
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing transcription request");
             return StatusCode(500, new { error = "An error occurred while processing the transcription" });
+        }
+    }
+
+    /// <summary>
+    /// Upload an audio file for enhanced transcription with speaker diarization
+    /// </summary>
+    /// <param name="request">The transcription request containing the audio file</param>
+    /// <returns>Enhanced transcription result with speaker segments</returns>
+    [HttpPost("transcribe-enhanced")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(TranscriptionResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(408)]
+    [ProducesResponseType(503)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> TranscribeAudioEnhanced([FromForm] TranscribeRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Received enhanced transcription request for file: {FileName}, Size: {FileSize}",
+                request.AudioFile?.FileName, request.AudioFile?.Length);
+
+            // Enhanced file validation
+            var validationResult = AudioFileValidator.ValidateAudioFile(request.AudioFile);
+            if (!validationResult.IsValid)
+            {
+                _logger.LogWarning("File validation failed for enhanced transcription {FileName}: {ValidationMessage}",
+                    request.AudioFile?.FileName, validationResult.Message);
+                return BadRequest(new { error = validationResult.Message });
+            }
+
+            _logger.LogInformation("File validation passed for enhanced transcription {FileName} ({FileSize})",
+                request.AudioFile!.FileName, AudioFileValidator.FormatFileSize(request.AudioFile.Length));
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            try
+            {
+                // Use OpenAI service for enhanced transcription with speaker diarization
+                using var audioStream = request.AudioFile.OpenReadStream();
+                var transcriptionResult = await _openAIService.TranscribeAudioWithMetadataAsync(
+                    audioStream,
+                    request.AudioFile.FileName
+                );
+
+                stopwatch.Stop();
+
+                // Convert to API response format
+                var response = TranscriptionResponse.FromResult(
+                    transcriptionResult,
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                _logger.LogInformation("Enhanced transcription completed for file: {FileName}, ID: {TranscriptionId}, Speakers: {SpeakerCount}, Segments: {SegmentCount}",
+                    request.AudioFile.FileName, response.TranscriptionId, response.SpeakerCount, response.SpeakerSegments?.Count ?? 0);
+
+                return Ok(response);
+            }
+            catch (InvalidOperationException ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "OpenAI service error during enhanced transcription for file: {FileName}", request.AudioFile.FileName);
+
+                var errorResponse = TranscriptionResponse.FromError(
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    ex.Message,
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                return StatusCode(503, errorResponse); // Service Unavailable
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "Authentication error during enhanced transcription for file: {FileName}", request.AudioFile.FileName);
+
+                var errorResponse = TranscriptionResponse.FromError(
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    "Authentication failed with OpenAI service",
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                return StatusCode(401, errorResponse); // Unauthorized
+            }
+            catch (TaskCanceledException ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "Enhanced transcription timeout for file: {FileName}", request.AudioFile.FileName);
+
+                var errorResponse = TranscriptionResponse.FromError(
+                    request.AudioFile.FileName,
+                    request.AudioFile.Length,
+                    "Enhanced transcription request timed out",
+                    stopwatch.ElapsedMilliseconds
+                );
+
+                return StatusCode(408, errorResponse); // Request Timeout
+            }
+            catch (IOException ex)
+            {
+                stopwatch.Stop();
+                _logger.LogError(ex, "File I/O error during enhanced transcription for file: {FileName}", request.AudioFile.FileName);
+
+                return BadRequest(new { error = "Unable to read the uploaded file. Please try uploading again." });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing enhanced transcription request");
+            return StatusCode(500, new { error = "An error occurred while processing the enhanced transcription" });
         }
     }
 
@@ -114,5 +280,46 @@ public class SummaryController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Test endpoint to validate audio file without processing
+    /// </summary>
+    /// <param name="request">The transcription request containing the audio file</param>
+    /// <returns>Validation result only</returns>
+    [HttpPost("validate")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(400)]
+    public IActionResult ValidateAudioFile([FromForm] TranscribeRequest request)
+    {
+        _logger.LogInformation("Testing file validation for: {FileName}, Size: {FileSize}",
+            request.AudioFile?.FileName, request.AudioFile?.Length);
+
+        // Test our validation logic
+        var validationResult = AudioFileValidator.ValidateAudioFile(request.AudioFile);
+
+        var response = new
+        {
+            IsValid = validationResult.IsValid,
+            Message = validationResult.Message,
+            FileName = request.AudioFile?.FileName,
+            FileSize = request.AudioFile?.Length,
+            FormattedSize = request.AudioFile != null ? AudioFileValidator.FormatFileSize(request.AudioFile.Length) : "N/A",
+            SupportedExtensions = AudioFileValidator.SupportedExtensions,
+            MaxFileSize = AudioFileValidator.FormatFileSize(AudioFileValidator.MaxFileSizeBytes),
+            MinFileSize = AudioFileValidator.FormatFileSize(AudioFileValidator.MinFileSizeBytes)
+        };
+
+        if (validationResult.IsValid)
+        {
+            _logger.LogInformation("File validation passed: {Message}", validationResult.Message);
+            return Ok(response);
+        }
+        else
+        {
+            _logger.LogWarning("File validation failed: {Message}", validationResult.Message);
+            return BadRequest(response);
+        }
     }
 }
