@@ -237,12 +237,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {validationErrors.length > 0 && (
         <Box sx={{ mt: 2 }}>
           {validationErrors.map((error, index) => (
-            <Alert 
-              key={index} 
-              severity="error" 
+            <Alert
+              key={index}
+              severity="error"
               sx={{ mb: 1 }}
               onClose={() => {
-                setValidationErrors(prev => prev.filter((_, i) => i !== index));
+                setValidationErrors((prev) =>
+                  prev.filter((_, i) => i !== index)
+                );
               }}
             >
               {error}
