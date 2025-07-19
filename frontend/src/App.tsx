@@ -6,7 +6,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  Paper,
   Grid,
 } from "@mui/material";
 import { Brightness4, Brightness7 } from "@mui/icons-material";
@@ -14,6 +13,7 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import { HealthCheck } from "./components/HealthCheck";
 import FileUpload from "./components/FileUpload";
+import TranscriptDisplay from "./components/TranscriptDisplay";
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
 
@@ -76,29 +76,10 @@ const AppContent: React.FC = () => {
                   Transcription Results
                 </Typography>
                 {transcriptionResults.map((result) => (
-                  <Paper key={result.transcriptionId} sx={{ p: 3, mb: 2 }}>
-                    <Typography variant="h6" gutterBottom>
-                      {result.fileName}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      gutterBottom
-                    >
-                      Status: {result.status} | Processing Time:{" "}
-                      {result.processingTimeMs}ms
-                    </Typography>
-                    {result.transcribedText && (
-                      <Typography variant="body1" sx={{ mt: 2 }}>
-                        {result.transcribedText}
-                      </Typography>
-                    )}
-                    {result.errorMessage && (
-                      <Typography variant="body1" color="error" sx={{ mt: 2 }}>
-                        Error: {result.errorMessage}
-                      </Typography>
-                    )}
-                  </Paper>
+                  <TranscriptDisplay
+                    key={result.transcriptionId}
+                    transcription={result}
+                  />
                 ))}
               </Grid>
             )}

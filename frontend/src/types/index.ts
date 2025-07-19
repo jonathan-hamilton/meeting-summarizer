@@ -30,18 +30,30 @@ export interface DetailedHealthStatus extends HealthStatus {
 }
 
 // File Upload Types
+export interface SpeakerSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker: string;
+  confidence?: number;
+}
+
 export interface TranscriptionResponse {
   transcriptionId: string;
   fileName: string;
   fileSize: number;
   status: string;
   transcribedText?: string;
+  speakerSegments?: SpeakerSegment[];
   errorMessage?: string;
   processingTimeMs: number;
   createdAt: string;
   completedAt?: string;
   confidenceScore?: number;
   detectedLanguage?: string;
+  duration?: number;
+  speakerCount?: number;
+  hasSpeakerDiarization?: boolean;
 }
 
 // Environment Types
