@@ -17,6 +17,11 @@ import TranscriptDisplay from "./components/TranscriptDisplay";
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
 
+// Lazy load demo component only when needed
+const TranscriptDisplayDemo = React.lazy(
+  () => import("./demo/TranscriptDisplayDemo")
+);
+
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
@@ -57,6 +62,18 @@ const AppContent: React.FC = () => {
           </Typography>
 
           <Grid container spacing={4} sx={{ mt: 2 }}>
+            {/* Development Demo Mode - Only show in development */}
+            {import.meta.env.DEV && (
+              <Grid size={12}>
+                <React.Suspense
+                  fallback={<Typography>Loading demo...</Typography>}
+                >
+                  <TranscriptDisplayDemo />
+                </React.Suspense>
+              </Grid>
+            )}
+
+            {/* Regular App Content - Always show */}
             <Grid size={12}>
               <HealthCheck />
             </Grid>
