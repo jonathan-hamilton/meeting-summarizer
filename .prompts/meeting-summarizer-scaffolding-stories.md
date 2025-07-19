@@ -8,12 +8,12 @@
 
 ### SC-001 Acceptance Criteria
 
-- [x] .NET 9 Web API project structure matches architecture document
-- [x] Dependency injection container configured for services
-- [x] Swagger/OpenAPI documentation enabled with file upload support
-- [x] Environment-based configuration setup (Development/Production)
-- [x] Basic health check endpoint implemented
-- [x] CORS configured for development with React frontend
+- [ ] .NET 9 Web API project structure matches architecture document
+- [ ] Dependency injection container configured for services
+- [ ] Swagger/OpenAPI documentation enabled with file upload support
+- [ ] Environment-based configuration setup (Development/Production)
+- [ ] Basic health check endpoint implemented
+- [ ] CORS configured for development with React frontend
 
 ### SC-001 Technical Notes
 
@@ -24,10 +24,10 @@
 
 ### SC-001 Definition of Done
 
-- [x] Project runs successfully with `dotnet run`
-- [x] Basic structure matches architecture document
-- [x] Core dependencies installed (Microsoft.AspNetCore.OpenApi)
-- [x] Swagger UI accessible at /swagger endpoint
+- [ ] Project runs successfully with `dotnet run`
+- [ ] Basic structure matches architecture document
+- [ ] Core dependencies installed (Microsoft.AspNetCore.OpenApi)
+- [ ] Swagger UI accessible at /swagger endpoint
 
 ---
 
@@ -39,13 +39,13 @@
 
 ### SC-002 Acceptance Criteria
 
-- [x] React + TypeScript project created with Vite
-- [x] Material-UI (MUI) configured for styling and components
-- [x] Basic project structure with components, services, types, theme folders
-- [x] Axios configured for API communication with backend
-- [x] Environment configuration for API base URL
-- [x] Development server running with hot reload
-- [x] MUI theme configuration with light/dark mode support
+- [ ] React + TypeScript project created with Vite
+- [ ] Material-UI (MUI) configured for styling and components
+- [ ] Basic project structure with components, services, types, theme folders
+- [ ] Axios configured for API communication with backend
+- [ ] Environment configuration for API base URL
+- [ ] Development server running with hot reload
+- [ ] MUI theme configuration with light/dark mode support
 
 ### SC-002 Technical Notes
 
@@ -56,11 +56,11 @@
 
 ### SC-002 Definition of Done
 
-- [x] Frontend project runs successfully with `npm run dev`
-- [x] Basic structure matches architecture document
-- [x] Core dependencies installed (React, TypeScript, Vite, MUI)
-- [x] MUI components render correctly with theme
-- [x] Can make test API calls to backend health endpoint
+- [ ] Frontend project runs successfully with `npm run dev`
+- [ ] Basic structure matches architecture document
+- [ ] Core dependencies installed (React, TypeScript, Vite, MUI)
+- [ ] MUI components render correctly with theme
+- [ ] Can make test API calls to backend health endpoint
 
 ---
 

@@ -23,6 +23,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:3000",  // Default Vite React dev server
                 "http://localhost:5173",  // Alternative Vite port
+                "http://localhost:5174",  // Current Vite port
                 "http://localhost:3001"   // Alternative React dev server port
             )
             .AllowAnyMethod()
