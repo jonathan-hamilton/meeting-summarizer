@@ -72,12 +72,12 @@
 
 ### SC-003 Acceptance Criteria
 
-- [ ] OpenAI-DotNet SDK installed and configured
-- [ ] Configuration supports appsettings.json and environment variables
-- [ ] OpenAI API key configuration with fallback hierarchy
-- [ ] Basic OpenAI client service registration in DI container
-- [ ] Error handling for missing or invalid API keys
-- [ ] Configuration validation on startup
+- [x] OpenAI-DotNet SDK installed and configured
+- [x] Configuration supports appsettings.json and environment variables
+- [x] OpenAI API key configuration with fallback hierarchy
+- [x] Basic OpenAI client service registration in DI container
+- [x] Error handling for missing or invalid API keys
+- [x] Configuration validation on startup
 
 ### SC-003 Technical Notes
 
@@ -88,10 +88,10 @@
 
 ### SC-003 Definition of Done
 
-- [ ] Project runs successfully with OpenAI SDK integrated
-- [ ] Basic structure matches architecture for OpenAI integration
-- [ ] Core OpenAI dependencies installed and configured
-- [ ] Configuration validation passes on startup
+- [x] Project runs successfully with OpenAI SDK integrated
+- [x] Basic structure matches architecture for OpenAI integration
+- [x] Core OpenAI dependencies installed and configured
+- [x] Configuration validation passes on startup
 
 ---
 

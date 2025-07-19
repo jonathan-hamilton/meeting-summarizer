@@ -7,7 +7,11 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5003';
+    // TODO: Fix environment variable loading issue
+    // See docs/technical-debt.md for details
+    // Using hardcoded URL until VITE_API_BASE_URL loading is resolved
+    this.baseURL = 'http://localhost:5029';
+    console.log('API Service initialized with baseURL:', this.baseURL);
     
     this.client = axios.create({
       baseURL: this.baseURL,

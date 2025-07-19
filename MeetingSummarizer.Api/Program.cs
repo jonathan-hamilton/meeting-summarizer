@@ -1,4 +1,6 @@
 using MeetingSummarizer.Api.Helpers;
+using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,10 +35,35 @@ builder.Services.AddCors(options =>
 });
 
 // Add dependency injection for services
-// Note: Actual service registrations will be added in future increments
+// Configure OpenAI integration
+builder.Services.Configure<OpenAIOptions>(
+    builder.Configuration.GetSection(OpenAIOptions.SectionName));
+
+// Register OpenAI service
+builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+
+// Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
 
 var app = builder.Build();
+
+// Validate OpenAI configuration on startup
+using (var scope = app.Services.CreateScope())
+{
+    var openAIOptions = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<OpenAIOptions>>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    if (!openAIOptions.Value.IsValid())
+    {
+        logger.LogWarning("OpenAI API key is not configured. The application will start but OpenAI features will not be available. " +
+                         "Configure the OpenAI:ApiKey setting in appsettings.json or set the OPENAI_API_KEY environment variable.");
+    }
+    else
+    {
+        logger.LogInformation("OpenAI configuration validated successfully. Using model: {TranscriptionModel} for transcription, {ChatModel} for chat",
+            openAIOptions.Value.DefaultTranscriptionModel, openAIOptions.Value.DefaultChatModel);
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
