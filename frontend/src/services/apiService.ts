@@ -1,6 +1,6 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import type { ApiResponse, HealthStatus, DetailedHealthStatus, RequestConfig } from '../types';
+import type { ApiResponse, HealthStatus, DetailedHealthStatus, RequestConfig, TranscriptionResponse } from '../types';
 
 class ApiService {
   private client: AxiosInstance;
@@ -101,6 +101,35 @@ class ApiService {
     return this.request<DetailedHealthStatus>({
       method: 'GET',
       url: '/api/health/detailed',
+    });
+  }
+
+  // File upload and transcription endpoints
+  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<TranscriptionResponse>> {
+    const formData = new FormData();
+    formData.append('audioFile', file);
+
+    const config: AxiosRequestConfig = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 300000, // 5 minutes for file upload
+    };
+
+    if (onProgress) {
+      config.onUploadProgress = (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      };
+    }
+
+    return this.request<TranscriptionResponse>({
+      method: 'POST',
+      url: '/api/summary/transcribe',
+      data: formData,
+      ...config,
     });
   }
 

@@ -29,6 +29,21 @@ export interface DetailedHealthStatus extends HealthStatus {
   };
 }
 
+// File Upload Types
+export interface TranscriptionResponse {
+  transcriptionId: string;
+  fileName: string;
+  fileSize: number;
+  status: string;
+  transcribedText?: string;
+  errorMessage?: string;
+  processingTimeMs: number;
+  createdAt: string;
+  completedAt?: string;
+  confidenceScore?: number;
+  detectedLanguage?: string;
+}
+
 // Environment Types
 export interface AppConfig {
   apiBaseUrl: string;
