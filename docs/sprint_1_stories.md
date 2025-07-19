@@ -70,6 +70,29 @@
 
 ### S1.3 Status: COMPLETE ✅
 
+### S1.4 Status: PENDING 🔄
+
+### S1.4 "OpenAI API Integration and Production Configuration" - PENDING
+
+**Configuration Requirements:**
+
+- 🔄 OpenAI API key configuration through environment variables
+- 🔄 Production deployment configuration documentation
+- 🔄 API key validation and error handling for invalid/missing credentials
+- 🔄 Cost monitoring and usage tracking considerations documented
+
+**Integration Testing:**
+
+- 🔄 End-to-end testing with real OpenAI API
+- 🔄 Performance benchmarking vs mock service
+- 🔄 Error scenario testing (invalid keys, rate limits, network issues)
+
+**Production Readiness:**
+
+- 🔄 Deployment documentation and checklist
+- 🔄 Monitoring and alerting setup guidelines
+- 🔄 Cost tracking and optimization recommendations
+
 ### S1.3 Implementation Summary
 
 #### S1.3 "Integrate File Upload with Transcription Workflow" - COMPLETE ✅
@@ -190,6 +213,55 @@ S1.1 - Audio Transcription Backend Service, S1.2 - Transcript Display Component
 - Implement state management for transcription workflow
 - Handle both upload and transcription loading states
 - Consider MUI Stepper to show workflow progress
+
+---
+
+## Story S1.4: OpenAI API Integration and Production Configuration
+
+As a developer, I want to configure the application to use real OpenAI API services so that the application can be deployed to production with actual AI-powered transcription capabilities.
+
+### S1.4 Acceptance Criteria
+
+- OpenAI API key configuration through environment variables or secure configuration
+- Real OpenAI Whisper API integration for audio transcription
+- Automatic service selection between OpenAI (when available) and Mock (for development)
+- Production deployment configuration documented
+- API key validation and error handling for invalid/missing credentials
+- Cost monitoring and usage tracking considerations documented
+- Performance comparison between mock and real OpenAI services
+
+### S1.4 Dependencies
+
+S1.1 - Audio Transcription Backend Service, S1.3 - File Upload Integration
+
+### S1.4 Developer Notes
+
+- Update `appsettings.Production.json` with OpenAI configuration template
+- Document environment variable setup (`OPENAI_API_KEY`, etc.)
+- Test automatic fallback when OpenAI API is unavailable
+- Implement proper error handling for API quota/rate limiting
+- Document cost implications and usage monitoring
+- Create deployment checklist for production environments
+
+### S1.4 Implementation Strategy
+
+#### Phase 1: Configuration Setup
+
+- Secure API key management (environment variables, Azure Key Vault, etc.)
+- Production configuration templates
+- Documentation for deployment teams
+
+#### Phase 2: Testing & Validation
+
+- End-to-end testing with real OpenAI API
+- Performance benchmarking vs mock service
+- Error scenario testing (invalid keys, rate limits, network issues)
+
+#### Phase 3: Production Readiness
+
+- Deployment documentation
+- Monitoring and alerting setup
+- Cost tracking and optimization guidelines
 
 ---
 
