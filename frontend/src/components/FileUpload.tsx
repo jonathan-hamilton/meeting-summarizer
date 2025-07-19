@@ -15,6 +15,10 @@ import {
   ListItemText,
   ListItemSecondaryAction,
   Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  CircularProgress,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -22,6 +26,9 @@ import {
   Delete,
   CheckCircle,
   Error as ErrorIcon,
+  Upload,
+  Psychology,
+  Done,
 } from "@mui/icons-material";
 import { apiService } from "../services/apiService";
 import type { TranscriptionResponse } from "../types";
@@ -40,6 +47,37 @@ interface UploadFile {
   result?: TranscriptionResponse;
   error?: string;
 }
+
+// Workflow steps for the transcription process
+const getWorkflowSteps = (uploadFile: UploadFile) => [
+  {
+    label: "File Selected",
+    icon: <AudioFile />,
+    completed: true,
+    active: false,
+  },
+  {
+    label: "Uploading",
+    icon: <Upload />,
+    completed: uploadFile.status === "completed",
+    active: uploadFile.status === "uploading",
+    error: uploadFile.status === "error",
+  },
+  {
+    label: "Processing & Transcription",
+    icon: <Psychology />,
+    completed: uploadFile.status === "completed",
+    active: uploadFile.status === "uploading" && uploadFile.progress > 90,
+    error: uploadFile.status === "error",
+  },
+  {
+    label: "Complete",
+    icon: <Done />,
+    completed: uploadFile.status === "completed",
+    active: false,
+    error: uploadFile.status === "error",
+  },
+];
 
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
@@ -257,9 +295,53 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {uploadFiles.length > 0 && (
         <Card sx={{ mt: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Upload Queue ({uploadFiles.length})
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h6">
+                Upload Queue ({uploadFiles.length})
+              </Typography>
+              {/* Queue Summary */}
+              <Box sx={{ display: "flex", gap: 1 }}>
+                {uploadFiles.filter((f) => f.status === "completed").length >
+                  0 && (
+                  <Chip
+                    icon={<CheckCircle />}
+                    label={`${
+                      uploadFiles.filter((f) => f.status === "completed").length
+                    } completed`}
+                    color="success"
+                    size="small"
+                  />
+                )}
+                {uploadFiles.filter((f) => f.status === "uploading").length >
+                  0 && (
+                  <Chip
+                    icon={<CircularProgress size={16} />}
+                    label={`${
+                      uploadFiles.filter((f) => f.status === "uploading").length
+                    } processing`}
+                    color="warning"
+                    size="small"
+                  />
+                )}
+                {uploadFiles.filter((f) => f.status === "error").length > 0 && (
+                  <Chip
+                    icon={<ErrorIcon />}
+                    label={`${
+                      uploadFiles.filter((f) => f.status === "error").length
+                    } failed`}
+                    color="error"
+                    size="small"
+                  />
+                )}
+              </Box>
+            </Box>
             <List>
               {uploadFiles.map((uploadFile) => (
                 <ListItem key={uploadFile.id} divider>
@@ -290,25 +372,116 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     }
                     secondary={
                       <Box>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mb: 1 }}
+                        >
                           {formatFileSize(uploadFile.file.size)}
                         </Typography>
+
+                        {/* Workflow Progress Stepper */}
+                        <Box sx={{ mt: 2 }}>
+                          <Stepper
+                            activeStep={
+                              uploadFile.status === "pending"
+                                ? 0
+                                : uploadFile.status === "uploading"
+                                ? uploadFile.progress > 90
+                                  ? 2
+                                  : 1
+                                : uploadFile.status === "completed"
+                                ? 3
+                                : uploadFile.status === "error"
+                                ? 1
+                                : 0
+                            }
+                            orientation="horizontal"
+                            sx={{
+                              "& .MuiStepConnector-root": {
+                                top: 10,
+                                left: "calc(-50% + 10px)",
+                                right: "calc(50% + 10px)",
+                              },
+                              "& .MuiStepLabel-root": {
+                                flexDirection: "column",
+                                "& .MuiStepLabel-label": {
+                                  fontSize: "0.75rem",
+                                  marginTop: "4px",
+                                },
+                              },
+                            }}
+                          >
+                            {getWorkflowSteps(uploadFile).map((step) => (
+                              <Step
+                                key={step.label}
+                                completed={step.completed}
+                                disabled={
+                                  uploadFile.status === "error" && !step.error
+                                }
+                              >
+                                <StepLabel
+                                  error={step.error}
+                                  icon={
+                                    step.active ? (
+                                      <CircularProgress size={20} />
+                                    ) : step.error ? (
+                                      <ErrorIcon color="error" />
+                                    ) : step.completed ? (
+                                      <CheckCircle color="success" />
+                                    ) : (
+                                      step.icon
+                                    )
+                                  }
+                                >
+                                  {step.label}
+                                </StepLabel>
+                              </Step>
+                            ))}
+                          </Stepper>
+                        </Box>
+
+                        {/* Upload Progress Bar */}
                         {uploadFile.status === "uploading" && (
-                          <LinearProgress
-                            variant="determinate"
-                            value={uploadFile.progress}
-                            sx={{ mt: 1 }}
-                          />
+                          <Box sx={{ mt: 2 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={uploadFile.progress}
+                              sx={{ height: 8, borderRadius: 4 }}
+                            />
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ mt: 0.5, display: "block" }}
+                            >
+                              {uploadFile.progress < 90
+                                ? `Uploading... ${uploadFile.progress}%`
+                                : "Processing transcription..."}
+                            </Typography>
+                          </Box>
                         )}
+
+                        {/* Error Display */}
                         {uploadFile.error && (
                           <Alert severity="error" sx={{ mt: 1 }}>
                             {uploadFile.error}
                           </Alert>
                         )}
+
+                        {/* Success Display */}
                         {uploadFile.result && (
                           <Alert severity="success" sx={{ mt: 1 }}>
-                            Transcription completed in{" "}
-                            {uploadFile.result.processingTimeMs}ms
+                            <Typography variant="body2">
+                              ✅ Transcription completed in{" "}
+                              {uploadFile.result.processingTimeMs}ms
+                            </Typography>
+                            {uploadFile.result.speakerCount &&
+                              uploadFile.result.speakerCount > 1 && (
+                                <Typography variant="caption" display="block">
+                                  🎙️ Detected {uploadFile.result.speakerCount}{" "}
+                                  speakers
+                                </Typography>
+                              )}
                           </Alert>
                         )}
                       </Box>

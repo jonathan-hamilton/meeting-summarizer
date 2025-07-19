@@ -1,6 +1,7 @@
 using MeetingSummarizer.Api.Helpers;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,12 +36,8 @@ builder.Services.AddCors(options =>
 });
 
 // Add dependency injection for services
-// Configure OpenAI integration
-builder.Services.Configure<OpenAIOptions>(
-    builder.Configuration.GetSection(OpenAIOptions.SectionName));
-
-// Register OpenAI service
-builder.Services.AddScoped<IOpenAIService, OpenAIService>();
+// Configure transcription service with automatic OpenAI/Mock fallback
+builder.Services.AddTranscriptionService(builder.Configuration);
 
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();

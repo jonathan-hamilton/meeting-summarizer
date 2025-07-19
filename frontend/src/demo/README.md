@@ -1,60 +1,83 @@
-# TranscriptDisplay Demo Component
+# Demo Components for Development Testing
 
-## Purpose
-This demo component provides comprehensive testing and showcasing of the S1.2 TranscriptDisplay component functionality.
+This directory contains demo components for functional testing during development. These components are only available in development mode (`import.meta.env.DEV`) and are excluded from production builds.
 
-## Features
-- **Interactive Testing**: Switch between different transcript scenarios
-- **Live Validation**: Test all S1.2 acceptance criteria in real-time
-- **Visual Examples**: Demonstrate speaker diarization, simple transcripts, error states, and loading states
-- **Copy Functionality Testing**: Validate clipboard operations work correctly
+## TranscriptDisplayDemo.tsx
 
-## Usage
+A comprehensive testing interface for Sprint 1 components, providing interactive demos for both S1.2 and S1.3 features.
 
-### Development Testing
-To use this demo component during development:
+### Features
 
-1. **Temporarily import in App.tsx**:
-```tsx
-import TranscriptDisplayDemo from "./demo/TranscriptDisplayDemo";
+#### Tab 1: S1.2 TranscriptDisplay Testing
+- Interactive testing of all S1.2 acceptance criteria
+- Mock data scenarios: Speaker Diarization, Simple Transcript, Error State, Loading State
+- Comprehensive testing checklist for manual validation
+- Copy functionality testing
+- Accessibility testing guidance
+
+#### Tab 2: S1.3 FileUpload Integration Testing  
+- **Live end-to-end workflow testing** with real backend integration
+- File upload with automatic transcription triggering
+- Workflow stepper visualization (File Selected → Uploading → Processing → Complete)
+- Queue management with status tracking
+- Live transcription results display using TranscriptDisplay component
+- Complete S1.3 acceptance criteria testing checklist
+
+### Usage
+
+The demo component is automatically included in development builds when you run:
+
+```bash
+npm run dev
 ```
 
-2. **Add to your component tree**:
-```tsx
-<TranscriptDisplayDemo />
+Navigate to `http://localhost:5173` and you'll see the demo interface at the top of the page.
+
+### S1.3 Testing Requirements
+
+**Important:** For S1.3 testing to work properly, ensure the backend API is running:
+
+```bash
+cd MeetingSummarizer.Api
+dotnet run
 ```
 
-3. **Remove when done testing**
+The backend should be available at `http://localhost:5029` for the file upload integration to function.
 
-### What You Can Test
-- ✅ Speaker diarization with colored chips and accordions
-- ✅ Simple transcript display without speaker segments  
-- ✅ Error state handling and messaging
-- ✅ Loading state with spinner
-- ✅ Copy functionality for segments and full transcripts
-- ✅ Metadata display (file size, processing time, confidence)
-- ✅ Time formatting and accessibility features
+### Testing Checklist
 
-## Test Scenarios Included
-1. **Speaker Diarization**: Multi-speaker meeting with 3 speakers, timestamps, confidence scores
-2. **Simple Transcript**: Single-speaker presentation without diarization
-3. **Error State**: Failed transcription with error message
-4. **Loading State**: Simulated processing with 3-second demo
+#### S1.2 Acceptance Criteria ✅
+- Frontend displays transcription results with clear speaker labels
+- Transcript text is formatted for readability  
+- Speaker segments are visually distinguished
+- Loading state shown during transcription processing
+- Error messages displayed for failed transcriptions
+- Transcript content is selectable for copy/paste
 
-## When to Use
-- **Feature Development**: Testing new TranscriptDisplay features
-- **Bug Fixes**: Reproducing and verifying fixes
-- **Stakeholder Demos**: Showing component capabilities
-- **Integration Testing**: Validating with other components
-- **Visual Regression**: Ensuring UI consistency
+#### S1.3 Acceptance Criteria ✅
+- File upload component triggers transcription automatically
+- Progress indicators show upload and transcription status
+- Successful transcription displays results immediately
+- Failed transcriptions show clear error messages
+- User can upload new files after completing transcription
+- Transcription results persist until new file is uploaded
 
-## Important Notes
-- **Not for Production**: This component should never be included in production builds
-- **Development Only**: Use only during active development and testing
-- **Regular Browser Required**: Copy functionality requires full browser (not VS Code Simple Browser)
-- **Comprehensive Coverage**: Tests all S1.2 acceptance criteria
+### Development Notes
 
-## File Location
-`/src/demo/TranscriptDisplayDemo.tsx`
+- Demo components use realistic mock data that matches the backend API response format
+- All Material-UI components follow the application's design system
+- Error handling demonstrates various failure scenarios
+- Accessibility features are included for screen reader testing
+- The demo provides instant feedback for rapid development iteration
 
-Keep this component for future S1.2-related development and testing needs!
+### File Structure
+
+```
+src/demo/
+├── README.md                    # This file
+└── TranscriptDisplayDemo.tsx    # Main demo component with S1.2 & S1.3 testing
+```
+
+### Removing Demo from Production
+
+Demo components are automatically excluded from production builds via the `import.meta.env.DEV` check in `App.tsx`. No additional configuration is needed.
