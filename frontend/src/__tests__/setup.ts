@@ -1,22 +1,11 @@
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+﻿import { expect, afterEach } from 'vitest'
+import { cleanup } from '@testing-library/react'
+import * as matchers from '@testing-library/jest-dom/matchers'
 
-// Mock Material-UI icons to avoid file system issues
-vi.mock('@mui/icons-material', () => ({
-  ExpandMore: () => 'ExpandMore',
-  ContentCopy: () => 'ContentCopy',
-  Person: () => 'Person',
-  Schedule: () => 'Schedule',
-  VolumeUp: () => 'VolumeUp',
-  CheckCircle: () => 'CheckCircle',
-  Error: () => 'Error',
-}));
+// Extend Vitest expect with jest-dom matchers
+expect.extend(matchers)
 
-// Mock clipboard API
-Object.defineProperty(navigator, 'clipboard', {
-  value: {
-    writeText: vi.fn().mockImplementation(() => Promise.resolve()),
-  },
-  configurable: true,
-  writable: true,
-});
+// Run cleanup after each test case
+afterEach(() => {
+  cleanup()
+})
