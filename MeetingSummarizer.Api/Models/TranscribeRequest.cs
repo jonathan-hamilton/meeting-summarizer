@@ -169,6 +169,11 @@ public class TranscriptionResponse
     public bool HasSpeakerDiarization => SpeakerSegments?.Any() == true;
 
     /// <summary>
+    /// Speaker mappings associating speaker labels with real names and roles (S2.2)
+    /// </summary>
+    public List<SpeakerMapping>? SpeakerMappings { get; set; }
+
+    /// <summary>
     /// Creates a TranscriptionResponse from a TranscriptionResult
     /// </summary>
     /// <param name="result">The transcription result from the OpenAI service</param>
