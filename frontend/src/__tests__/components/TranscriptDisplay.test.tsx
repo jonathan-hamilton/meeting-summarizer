@@ -45,6 +45,15 @@ vi.mock("@mui/icons-material", () => ({
   Error: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
     <div data-testid={dataTestId || "error-icon"} {...props} />
   ),
+  Edit: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "edit-icon"} {...props} />
+  ),
+  Close: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "close-icon"} {...props} />
+  ),
+  Save: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "save-icon"} {...props} />
+  ),
 }));
 
 describe("TranscriptDisplay Component", () => {

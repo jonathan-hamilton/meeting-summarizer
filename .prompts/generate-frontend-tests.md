@@ -16,8 +16,8 @@
 #generate-frontend-tests
 ```
 
-- Automatically detects Sprint 2 (highest numbered) and generates tests for current sprint features
-- Includes context from Sprint 1 for integration testing
+- Automatically detects Sprint (highest numbered) and generates tests for current sprint features
+- Includes context from previous sprint_*_stories.md for integration testing
 
 **Specific Sprint Mode:**
 
@@ -36,7 +36,7 @@
 #review-all-frontend-tests
 ```
 
-- Analyzes all sprints (1, 2, and future)
+- Analyzes all sprints
 - Provides complete test coverage report
 - Generates missing tests across all sprint features
 - Creates integration tests spanning multiple sprints

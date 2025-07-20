@@ -14,6 +14,7 @@ This prompt handles the complete workflow for updating sprint documentation and 
 - Add completion timestamp and summary details
 - Update implementation progress section
 - Document any technical notes or deviations from original plan
+- Update the technical-debt.md where/if appropriate
 
 ### Step 2: Git Status Check
 
