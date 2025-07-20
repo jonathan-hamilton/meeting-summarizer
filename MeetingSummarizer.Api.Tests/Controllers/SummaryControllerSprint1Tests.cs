@@ -61,7 +61,7 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var transcriptionResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -95,18 +95,18 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var transcriptionResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
         transcriptionResponse.Should().NotBeNull();
         transcriptionResponse!.SpeakerSegments.Should().NotBeNull().And.HaveCount(3);
-        
+
         var segments = transcriptionResponse.SpeakerSegments!;
         segments[0].Speaker.Should().Be("Speaker 1");
         segments[1].Speaker.Should().Be("Speaker 2");
         segments[2].Speaker.Should().Be("Speaker 1");
-        
+
         segments.All(s => s.Confidence.HasValue && s.Confidence > 0.8).Should().BeTrue();
         segments.All(s => s.End > s.Start).Should().BeTrue();
         segments.All(s => !string.IsNullOrEmpty(s.Text)).Should().BeTrue();
@@ -137,10 +137,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var transcriptionResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         transcriptionResponse.Should().NotBeNull();
         transcriptionResponse!.Status.Should().Be("Completed");
         transcriptionResponse.FileName.Should().Be(fileName);
@@ -168,10 +168,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         errorResponse.Should().NotBeNull();
         errorResponse!.Status.Should().Be("Failed");
         errorResponse.ErrorMessage.Should().Contain("OpenAI service temporarily unavailable");
@@ -196,10 +196,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         errorResponse.Should().NotBeNull();
         errorResponse!.Status.Should().Be("Failed");
         errorResponse.ErrorMessage.Should().Be("Authentication failed with OpenAI service");
@@ -223,10 +223,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.RequestTimeout);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         errorResponse.Should().NotBeNull();
         errorResponse!.Status.Should().Be("Failed");
         errorResponse.ErrorMessage.Should().Be("Transcription request timed out");
@@ -250,10 +250,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         errorData.GetProperty("error").GetString().Should().Contain("Unable to read the uploaded file");
     }
 
@@ -280,7 +280,7 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var transcriptionResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
@@ -311,10 +311,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         // Check if the response has an "error" property, if not check the message directly
         if (errorData.TryGetProperty("error", out var errorProperty))
         {
@@ -341,10 +341,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         errorData.GetProperty("error").GetString().Should().Contain("too small");
     }
 
@@ -362,10 +362,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         errorData.GetProperty("error").GetString().Should().Contain("supported");
     }
 
@@ -383,10 +383,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         errorData.GetProperty("error").GetString().Should().Contain("empty");
     }
 
@@ -424,10 +424,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var validationResult = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         validationResult.GetProperty("isValid").GetBoolean().Should().BeTrue();
         validationResult.GetProperty("fileName").GetString().Should().Be(validFile.FileName);
         validationResult.GetProperty("fileSize").GetInt64().Should().Be(validFile.Length);
@@ -447,10 +447,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var validationResult = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         validationResult.GetProperty("isValid").GetBoolean().Should().BeFalse();
         validationResult.GetProperty("message").GetString().Should().NotBeNullOrEmpty();
     }
@@ -472,10 +472,10 @@ public class SummaryControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var transcriptionResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         transcriptionResponse.Should().NotBeNull();
         transcriptionResponse!.TranscriptionId.Should().Be(transcriptionId);
         transcriptionResponse.Status.Should().Be("Completed");

@@ -14,7 +14,7 @@ public static class Sprint1TestDataFactory
     /// Creates a mock audio file for testing
     /// </summary>
     public static IFormFile CreateMockAudioFile(
-        string fileName = "test-audio.mp3", 
+        string fileName = "test-audio.mp3",
         long size = 1024 * 1024, // 1MB
         string contentType = "audio/mpeg")
     {
@@ -107,7 +107,7 @@ public static class Sprint1TestDataFactory
                     Start = 15.0,
                     End = 30.0,
                     Text = "Nice to meet you, says Speaker 2.",
-                    Speaker = "Speaker 2", 
+                    Speaker = "Speaker 2",
                     Confidence = 0.92
                 },
                 new()
@@ -190,7 +190,7 @@ public static class Sprint1TestDataFactory
     public static MultipartFormDataContent CreateMultipartContent(IFormFile file, string? language = null, double temperature = 0.0, string? prompt = null)
     {
         var content = new MultipartFormDataContent();
-        
+
         var fileContent = new StreamContent(file.OpenReadStream());
         fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
         content.Add(fileContent, "AudioFile", file.FileName);

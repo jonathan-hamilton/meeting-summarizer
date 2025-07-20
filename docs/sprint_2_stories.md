@@ -15,21 +15,21 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 
 ## Implementation Progress
 
-### S2.1 Status: PENDING 🔄
+### S2.1 Status: PENDING 🔄 (Test Coverage Improvements)
 
 ### S2.2 Status: PENDING 🔄
 
 ### S2.3 Status: PENDING 🔄
 
-### S2.4 Status: PENDING 🔄 (Test Coverage Improvements)
+### S2.4 Status: PENDING 🔄
 
 ---
 
-## Story S2.4: Critical Test Coverage Improvements
+## Story S2.1: Critical Test Coverage Improvements
 
 As a development team, we need to address critical test coverage gaps identified in Sprint 1 to ensure application reliability and maintainability before adding new features.
 
-### S2.4 Acceptance Criteria
+### S2.1 Acceptance Criteria
 
 **Frontend Test Coverage Improvements:**
 
@@ -69,11 +69,11 @@ As a development team, we need to address critical test coverage gaps identified
 - Add coverage badges to README
 - Create automated coverage regression detection
 
-### S2.4 Dependencies
+### S2.1 Dependencies
 
 Sprint 1 completion, existing test infrastructure
 
-### S2.4 Definition of Done
+### S2.1 Definition of Done
 
 - Frontend line coverage ≥ 65%, branch coverage ≥ 60%
 - Backend line coverage ≥ 65%, branch coverage ≥ 60%
@@ -82,7 +82,7 @@ Sprint 1 completion, existing test infrastructure
 - All existing tests continue to pass
 - Coverage regression prevention measures in place
 
-### S2.4 Developer Notes
+### S2.1 Developer Notes
 
 This story addresses technical debt and ensures a solid foundation for Sprint 2 feature development. Priority should be given to:
 
@@ -95,11 +95,11 @@ This story addresses technical debt and ensures a solid foundation for Sprint 2 
 
 ---
 
-## Story S2.1: Speaker Role Mapping Interface
+## Story S2.2: Speaker Role Mapping Interface
 
 As a user, I want to assign real names and roles to the generic speaker labels in my transcript so that I can create meaningful, personalized meeting summaries.
 
-### S2.1 Acceptance Criteria
+### S2.2 Acceptance Criteria
 
 **Frontend Requirements:**
 
@@ -116,11 +116,11 @@ As a user, I want to assign real names and roles to the generic speaker labels i
 - Integration with transcript display to show mapped names
 - Optional: Store mappings by meeting/file for future reference
 
-### S2.1 Dependencies
+### S2.2 Dependencies
 
 S1.2 - Transcript Display Component, S1.3 - File Upload Integration
 
-### S2.1 Developer Notes
+### S2.2 Developer Notes
 
 **Frontend Implementation:**
 
@@ -157,11 +157,11 @@ public class SpeakerMappingRequest
 
 ---
 
-## Story S2.2: AI-Powered Meeting Summarization Backend
+## Story S2.3: AI-Powered Meeting Summarization Backend
 
 As a developer, I want to implement GPT-4 integration for meeting summarization so that users can generate concise, actionable summaries from their transcripts.
 
-### S2.2 Acceptance Criteria
+### S2.3 Acceptance Criteria
 
 **Core Summarization Features:**
 
@@ -184,11 +184,11 @@ As a developer, I want to implement GPT-4 integration for meeting summarization 
 - Integration with speaker role mapping for personalized summaries
 - Fallback to basic template-based summarization when GPT-4 is unavailable
 
-### S2.2 Dependencies
+### S2.3 Dependencies
 
-S1.1 - Audio Transcription Backend Service, S2.1 - Speaker Role Mapping Interface
+S1.1 - Audio Transcription Backend Service, S2.2 - Speaker Role Mapping Interface
 
-### S2.2 Developer Notes
+### S2.3 Developer Notes
 
 **Implementation Strategy:**
 
@@ -226,11 +226,11 @@ public class SummaryOptions
 
 ---
 
-## Story S2.3: Summary Display and Export Interface
+## Story S2.4: Summary Display and Export Interface
 
 As a user, I want to view and export AI-generated meeting summaries so that I can quickly understand key takeaways and share insights with relevant stakeholders.
 
-### S2.3 Acceptance Criteria
+### S2.4 Acceptance Criteria
 
 **Summary Display Features:**
 
@@ -255,11 +255,11 @@ As a user, I want to view and export AI-generated meeting summaries so that I ca
 - Side-by-side view of transcript and summary
 - Highlight corresponding transcript sections when viewing action items
 
-### S2.3 Dependencies
+### S2.4 Dependencies
 
-S2.1 - Speaker Role Mapping Interface, S2.2 - AI-Powered Meeting Summarization Backend
+S2.2 - Speaker Role Mapping Interface, S2.3 - AI-Powered Meeting Summarization Backend
 
-### S2.3 Developer Notes
+### S2.4 Developer Notes
 
 **Frontend Implementation:**
 
@@ -306,16 +306,17 @@ interface SummaryResult {
 ### Complete User Journey
 
 1. **Upload & Transcribe** (S1.1-S1.3): User uploads audio, gets transcript with speaker diarization
-2. **Map Speakers** (S2.1): User assigns real names and roles to Speaker 1, Speaker 2, etc.
-3. **Generate Summary** (S2.2): AI creates role-aware summary highlighting relevant information
-4. **Review & Export** (S2.3): User reviews, customizes, and shares the summary
+2. **Test Coverage** (S2.1): Ensure application reliability with comprehensive test coverage
+3. **Map Speakers** (S2.2): User assigns real names and roles to Speaker 1, Speaker 2, etc.
+4. **Generate Summary** (S2.3): AI creates role-aware summary highlighting relevant information
+5. **Review & Export** (S2.4): User reviews, customizes, and shares the summary
 
 ### Technical Architecture
 
 ```text
-FileUpload → Transcription → SpeakerMapping → Summarization → Export
-    ↓            ↓              ↓              ↓           ↓
-  S1.3         S1.1           S2.1           S2.2        S2.3
+FileUpload → Transcription → TestCoverage → SpeakerMapping → Summarization → Export
+    ↓            ↓              ↓              ↓              ↓           ↓
+  S1.3         S1.1           S2.1           S2.2           S2.3        S2.4
 ```
 
 ## Sprint 2 Success Metrics

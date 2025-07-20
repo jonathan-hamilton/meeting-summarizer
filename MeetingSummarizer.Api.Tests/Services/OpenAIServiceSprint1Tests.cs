@@ -72,7 +72,7 @@ public class OpenAIServiceSprint1Tests
         result.Segments.Should().HaveCount(2);
         result.Segments[0].Speaker.Should().Be("Speaker 1");
         result.Segments[1].Speaker.Should().Be("Speaker 2");
-        
+
         _mockOpenAIService.Verify(x => x.TranscribeAudioWithMetadataAsync(audioStream, fileName, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -95,7 +95,7 @@ public class OpenAIServiceSprint1Tests
 
         // Assert
         result.Should().Be(expectedText);
-        
+
         _mockOpenAIService.Verify(x => x.TranscribeAudioAsync(audioStream, fileName, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -115,7 +115,7 @@ public class OpenAIServiceSprint1Tests
         // Act & Assert
         var exception = await Assert.ThrowsExceptionAsync<InvalidOperationException>(
             () => _mockOpenAIService.Object.TranscribeAudioWithMetadataAsync(audioStream, fileName));
-        
+
         exception.Message.Should().Contain("OpenAI service is temporarily unavailable");
     }
 
@@ -135,7 +135,7 @@ public class OpenAIServiceSprint1Tests
         // Act & Assert
         var exception = await Assert.ThrowsExceptionAsync<UnauthorizedAccessException>(
             () => _mockOpenAIService.Object.TranscribeAudioWithMetadataAsync(audioStream, fileName));
-        
+
         exception.Message.Should().Contain("Invalid OpenAI API key");
     }
 
@@ -155,7 +155,7 @@ public class OpenAIServiceSprint1Tests
         // Act & Assert
         var exception = await Assert.ThrowsExceptionAsync<TaskCanceledException>(
             () => _mockOpenAIService.Object.TranscribeAudioWithMetadataAsync(audioStream, fileName));
-        
+
         exception.Message.Should().Contain("Request timeout");
     }
 
@@ -168,7 +168,7 @@ public class OpenAIServiceSprint1Tests
         var audioStream = new MemoryStream(new byte[1024]);
         var fileName = "cancel-test.mp3";
         var cancellationTokenSource = new CancellationTokenSource();
-        
+
         _mockOpenAIService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(audioStream, fileName, It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string name, CancellationToken token) =>
@@ -205,7 +205,7 @@ public class OpenAIServiceSprint1Tests
 
         // Assert
         isAvailable.Should().BeTrue();
-        
+
         _mockOpenAIService.Verify(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -242,7 +242,7 @@ public class OpenAIServiceSprint1Tests
 
         // Assert
         status.Should().Be(expectedStatus);
-        
+
         _mockOpenAIService.Verify(x => x.GetServiceStatus(), Times.Once);
     }
 
@@ -283,7 +283,7 @@ public class OpenAIServiceSprint1Tests
 
         // Assert
         summary.Should().Be(expectedSummary);
-        
+
         _mockOpenAIService.Verify(x => x.SummarizeTextAsync(inputText, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -380,7 +380,7 @@ public class OpenAIServiceSprint1Tests
         // Act & Assert
         var exception = await Assert.ThrowsExceptionAsync<HttpRequestException>(
             () => _mockOpenAIService.Object.TranscribeAudioWithMetadataAsync(audioStream, fileName));
-        
+
         exception.Message.Should().Contain("Rate limit exceeded");
     }
 
@@ -391,16 +391,16 @@ public class OpenAIServiceSprint1Tests
     {
         // Arrange
         var tasks = new List<Task<TranscriptionResult>>();
-        
+
         for (int i = 0; i < 5; i++)
         {
             var audioStream = new MemoryStream(new byte[1024]);
             var fileName = $"concurrent-test-{i}.mp3";
-            
+
             _mockOpenAIService
                 .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), fileName, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TranscriptionResult { Text = $"Transcription {i}" });
-            
+
             tasks.Add(_mockOpenAIService.Object.TranscribeAudioWithMetadataAsync(audioStream, fileName));
         }
 

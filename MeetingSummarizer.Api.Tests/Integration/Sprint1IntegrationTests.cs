@@ -58,27 +58,27 @@ public class Sprint1IntegrationTests
         var uploadContent = Sprint1TestDataFactory.CreateMultipartContent(audioFile, "en", 0.0, "Meeting transcription");
 
         // Act - Execute the complete workflow
-        
+
         // Step 1: Validate file before upload
         var validationContent = Sprint1TestDataFactory.CreateMultipartContent(audioFile, "en", 0.0, "Meeting transcription");
         var validationResponse = await _client.PostAsync("/api/summary/validate", validationContent);
-        
+
         // Step 2: Upload and transcribe file (create fresh content)
         var transcriptionFormContent = Sprint1TestDataFactory.CreateMultipartContent(audioFile, "en", 0.0, "Meeting transcription");
         var transcriptionResponse = await _client.PostAsync("/api/summary/transcribe", transcriptionFormContent);
-        
+
         // Step 3: Get transcription result
         var transcriptionContent = await transcriptionResponse.Content.ReadAsStringAsync();
         var transcription = JsonSerializer.Deserialize<TranscriptionResponse>(transcriptionContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         // Step 4: Verify transcription status
         var statusResponse = await _client.GetAsync($"/api/summary/transcribe/{transcription!.TranscriptionId}");
 
         // Assert - Verify complete workflow success
-        
+
         // Validation step assertions
         validationResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         // Transcription step assertions
         transcriptionResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         transcription.Should().NotBeNull();
@@ -89,10 +89,10 @@ public class Sprint1IntegrationTests
         transcription.SpeakerCount.Should().Be(2);
         transcription.TranscribedText.Should().NotBeNullOrEmpty();
         transcription.ProcessingTimeMs.Should().BeGreaterThan(0);
-        
+
         // Status check assertions
         statusResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         // Verify speaker segments for frontend display
         transcription.SpeakerSegments.Should().NotBeNull().And.HaveCount(3);
         transcription.SpeakerSegments!.Should().OnlyContain(s => !string.IsNullOrEmpty(s.Text));
@@ -129,12 +129,12 @@ public class Sprint1IntegrationTests
             var content = Sprint1TestDataFactory.CreateMultipartContent(audioFile);
 
             var response = await _client.PostAsync("/api/summary/transcribe", content);
-            
+
             response.StatusCode.Should().Be(HttpStatusCode.OK, $"Format {fileName} should be supported");
-            
+
             var responseContent = await response.Content.ReadAsStringAsync();
             var transcription = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            
+
             transcription.Should().NotBeNull();
             transcription!.FileName.Should().Be(fileName);
             transcription.Status.Should().Be("Completed");
@@ -164,10 +164,10 @@ public class Sprint1IntegrationTests
 
         // Assert - Verify graceful error handling
         response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var errorResponse = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         errorResponse.Should().NotBeNull();
         errorResponse!.Status.Should().Be("Failed");
         errorResponse.ErrorMessage.Should().Contain("OpenAI service temporarily unavailable");
@@ -197,10 +197,10 @@ public class Sprint1IntegrationTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var transcription = JsonSerializer.Deserialize<TranscriptionResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         transcription.Should().NotBeNull();
         transcription!.FileSize.Should().Be(100 * 1024 * 1024);
         transcription.Status.Should().Be("Completed");
@@ -224,7 +224,7 @@ public class Sprint1IntegrationTests
 
         var audioFile = Sprint1TestDataFactory.CreateMockAudioFile();
         var validationContent = Sprint1TestDataFactory.CreateMultipartContent(audioFile);
-        
+
         // Create a new audio file for transcription to avoid stream reuse issues
         var audioFile2 = Sprint1TestDataFactory.CreateMockAudioFile();
         var transcriptionContent = Sprint1TestDataFactory.CreateMultipartContent(audioFile2);
@@ -236,13 +236,13 @@ public class Sprint1IntegrationTests
         // Assert - Both should succeed for same file
         validationResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         transcriptionResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var validationContent2 = await validationResponse.Content.ReadAsStringAsync();
         var validationResult = JsonSerializer.Deserialize<JsonElement>(validationContent2);
-        
+
         var transcriptionContentStr = await transcriptionResponse.Content.ReadAsStringAsync();
         var transcriptionResult = JsonSerializer.Deserialize<TranscriptionResponse>(transcriptionContentStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         // Verification should match transcription file info
         validationResult.GetProperty("isValid").GetBoolean().Should().BeTrue();
         validationResult.GetProperty("fileName").GetString().Should().Be(transcriptionResult!.FileName);
@@ -282,7 +282,7 @@ public class Sprint1IntegrationTests
         {
             var content = await response.Content.ReadAsStringAsync();
             var transcription = JsonSerializer.Deserialize<TranscriptionResponse>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            
+
             transcription.Should().NotBeNull();
             transcription!.TranscriptionId.Should().NotBeNullOrEmpty();
             transcriptionIds.Should().NotContain(transcription.TranscriptionId, "Each transcription should have unique ID");
@@ -307,13 +307,13 @@ public class Sprint1IntegrationTests
             .ReturnsAsync(mockResult);
 
         // Act - Test production readiness workflow
-        
+
         // Step 1: Check API health
         var healthResponse = await _client.GetAsync("/api/health");
-        
+
         // Step 2: Check detailed health with dependencies
         var detailedHealthResponse = await _client.GetAsync("/api/health/detailed");
-        
+
         // Step 3: Perform actual transcription
         var audioFile = Sprint1TestDataFactory.CreateMockAudioFile();
         var transcriptionContent = Sprint1TestDataFactory.CreateMultipartContent(audioFile);
@@ -323,12 +323,12 @@ public class Sprint1IntegrationTests
         healthResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         detailedHealthResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         transcriptionResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         // Verify health check indicates system ready for production
         var healthContent = await healthResponse.Content.ReadAsStringAsync();
         var healthData = JsonSerializer.Deserialize<JsonElement>(healthContent);
         healthData.GetProperty("status").GetString().Should().Be("Healthy");
-        
+
         // Verify transcription works after health confirmation
         var transcriptionContentStr = await transcriptionResponse.Content.ReadAsStringAsync();
         var transcription = JsonSerializer.Deserialize<TranscriptionResponse>(transcriptionContentStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -360,11 +360,11 @@ public class Sprint1IntegrationTests
         // Assert - System should remain healthy even with transcription failures
         transcriptionResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         healthResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         // Verify error response structure for monitoring
         var errorContent = await transcriptionResponse.Content.ReadAsStringAsync();
         var errorResponse = JsonSerializer.Deserialize<TranscriptionResponse>(errorContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        
+
         errorResponse.Should().NotBeNull();
         errorResponse!.Status.Should().Be("Failed");
         errorResponse.ErrorMessage.Should().Contain("Authentication failed");

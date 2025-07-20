@@ -42,15 +42,15 @@ public class HealthControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var healthData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         healthData.GetProperty("status").GetString().Should().Be("Healthy");
         healthData.GetProperty("service").GetString().Should().Be("MeetingSummarizer API");
         healthData.GetProperty("version").GetString().Should().Be("1.0.0");
         healthData.GetProperty("environment").GetString().Should().Be("Testing");
-        
+
         // Verify timestamp exists and is in valid format
         var timestampStr = healthData.GetProperty("timestamp").GetString();
         var timestamp = DateTime.Parse(timestampStr!);
@@ -67,22 +67,22 @@ public class HealthControllerSprint1Tests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var healthData = JsonSerializer.Deserialize<JsonElement>(responseContent);
-        
+
         // Verify core health properties
         healthData.GetProperty("status").GetString().Should().Be("Healthy");
         healthData.GetProperty("service").GetString().Should().Be("MeetingSummarizer API");
         healthData.GetProperty("version").GetString().Should().Be("1.0.0");
         healthData.GetProperty("environment").GetString().Should().Be("Testing");
-        
+
         // Verify system information
         healthData.GetProperty("upTime").GetInt64().Should().BeGreaterThan(0);
         healthData.GetProperty("machineName").GetString().Should().NotBeNullOrEmpty();
         healthData.GetProperty("processorCount").GetInt32().Should().BeGreaterThan(0);
         healthData.GetProperty("workingSet").GetInt64().Should().BeGreaterThan(0);
-        
+
         // Verify dependencies section exists
         healthData.TryGetProperty("dependencies", out var dependencies).Should().BeTrue();
     }
@@ -101,7 +101,7 @@ public class HealthControllerSprint1Tests
         // Assert
         responses.Should().HaveCount(10);
         responses.Should().OnlyContain(r => r.StatusCode == HttpStatusCode.OK);
-        
+
         // Verify all responses have valid health data
         foreach (var response in responses)
         {
