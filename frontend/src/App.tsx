@@ -21,6 +21,9 @@ import "./App.css";
 const TranscriptDisplayDemo = React.lazy(
   () => import("./demo/TranscriptDisplayDemo")
 );
+const SpeakerMappingDemo = React.lazy(
+  () => import("./components/SpeakerMappingDemo")
+);
 
 // Main app content component
 const AppContent: React.FC = () => {
@@ -64,13 +67,24 @@ const AppContent: React.FC = () => {
           <Grid container spacing={4} sx={{ mt: 2 }}>
             {/* Development Demo Mode - Only show in development */}
             {import.meta.env.DEV && (
-              <Grid size={12}>
-                <React.Suspense
-                  fallback={<Typography>Loading demo...</Typography>}
-                >
-                  <TranscriptDisplayDemo />
-                </React.Suspense>
-              </Grid>
+              <>
+                <Grid size={12}>
+                  <React.Suspense
+                    fallback={<Typography>Loading demo...</Typography>}
+                  >
+                    <TranscriptDisplayDemo />
+                  </React.Suspense>
+                </Grid>
+                <Grid size={12}>
+                  <React.Suspense
+                    fallback={
+                      <Typography>Loading speaker mapping demo...</Typography>
+                    }
+                  >
+                    <SpeakerMappingDemo />
+                  </React.Suspense>
+                </Grid>
+              </>
             )}
 
             {/* Regular App Content - Always show */}

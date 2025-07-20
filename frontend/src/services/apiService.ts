@@ -1,6 +1,14 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import type { ApiResponse, HealthStatus, DetailedHealthStatus, RequestConfig, TranscriptionResponse } from '../types';
+import type { 
+  ApiResponse, 
+  HealthStatus, 
+  DetailedHealthStatus, 
+  RequestConfig, 
+  TranscriptionResponse,
+  SpeakerMappingRequest,
+  SpeakerMappingResponse
+} from '../types';
 
 class ApiService {
   private client: AxiosInstance;
@@ -169,6 +177,29 @@ class ApiService {
       url,
       timeout: config?.timeout,
       headers: config?.headers,
+    });
+  }
+
+  // Speaker Mapping endpoints (S2.2)
+  async saveSpeakerMappings(request: SpeakerMappingRequest): Promise<ApiResponse<SpeakerMappingResponse>> {
+    return this.request<SpeakerMappingResponse>({
+      method: 'POST',
+      url: '/api/SpeakerMapping/map',
+      data: request,
+    });
+  }
+
+  async getSpeakerMappings(transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {
+    return this.request<SpeakerMappingResponse>({
+      method: 'GET',
+      url: `/api/SpeakerMapping/${transcriptionId}`,
+    });
+  }
+
+  async deleteSpeakerMappings(transcriptionId: string): Promise<ApiResponse<void>> {
+    return this.request<void>({
+      method: 'DELETE',
+      url: `/api/SpeakerMapping/${transcriptionId}`,
     });
   }
 

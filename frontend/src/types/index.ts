@@ -54,6 +54,27 @@ export interface TranscriptionResponse {
   duration?: number;
   speakerCount?: number;
   hasSpeakerDiarization?: boolean;
+  speakerMappings?: SpeakerMapping[]; // S2.2: Speaker mappings
+}
+
+// Speaker Mapping Types (S2.2)
+export interface SpeakerMapping {
+  speakerId: string; // "Speaker 1", "Speaker 2", etc.
+  name: string; // "John Smith"
+  role: string; // "Manager", "Developer", etc.
+  transcriptionId: string;
+}
+
+export interface SpeakerMappingRequest {
+  transcriptionId: string;
+  mappings: SpeakerMapping[];
+}
+
+export interface SpeakerMappingResponse {
+  transcriptionId: string;
+  mappings: SpeakerMapping[];
+  lastUpdated: string;
+  mappedSpeakerCount: number;
 }
 
 // Environment Types

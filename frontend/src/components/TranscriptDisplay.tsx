@@ -24,18 +24,49 @@ import {
   CheckCircle,
   Error,
 } from "@mui/icons-material";
-import type { TranscriptionResponse } from "../types";
+import type { TranscriptionResponse, SpeakerMapping } from "../types";
+import { SpeakerMappingComponent } from "./SpeakerMapping";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
   loading?: boolean;
+  speakerMappings?: SpeakerMapping[]; // Optional external speaker mappings
 }
 
 const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   transcription,
   loading = false,
+  speakerMappings,
 }) => {
   const [copiedSegment, setCopiedSegment] = useState<string | null>(null);
+  const [currentSpeakerMappings, setCurrentSpeakerMappings] = useState<
+    SpeakerMapping[]
+  >([]);
+
+  // Use provided speaker mappings or those included in the transcription
+  const effectiveSpeakerMappings =
+    speakerMappings || transcription.speakerMappings || currentSpeakerMappings;
+
+  // Extract unique speakers from transcript segments
+  const detectedSpeakers = transcription.speakerSegments
+    ? Array.from(new Set(transcription.speakerSegments.map((s) => s.speaker)))
+    : [];
+
+  // Handle speaker mappings updates
+  const handleSpeakerMappingsChanged = (mappings: SpeakerMapping[]) => {
+    setCurrentSpeakerMappings(mappings);
+  };
+
+  // Helper function to resolve speaker display name
+  const resolveSpeakerName = (speakerId: string): string => {
+    const mapping = effectiveSpeakerMappings.find(
+      (m) => m.speakerId === speakerId
+    );
+    if (mapping) {
+      return mapping.role ? `${mapping.name} (${mapping.role})` : mapping.name;
+    }
+    return speakerId; // Fallback to original speaker ID
+  };
 
   // Helper function to format time
   const formatTime = (seconds: number): string => {
@@ -203,6 +234,17 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
         <Divider sx={{ mb: 3 }} />
 
+        {/* Speaker Mapping Section */}
+        {detectedSpeakers.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <SpeakerMappingComponent
+              transcriptionId={transcription.transcriptionId}
+              detectedSpeakers={detectedSpeakers}
+              onMappingsChanged={handleSpeakerMappingsChanged}
+            />
+          </Box>
+        )}
+
         {/* Speaker segments display */}
         {transcription.speakerSegments &&
         transcription.speakerSegments.length > 0 ? (
@@ -222,7 +264,9 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   onClick={() =>
                     copyToClipboard(
                       transcription
-                        .speakerSegments!.map((s) => `${s.speaker}: ${s.text}`)
+                        .speakerSegments!.map(
+                          (s) => `${resolveSpeakerName(s.speaker)}: ${s.text}`
+                        )
                         .join("\n\n")
                     )
                   }
@@ -246,7 +290,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                         sx={{ width: "100%" }}
                       >
                         <Chip
-                          label={segment.speaker}
+                          label={resolveSpeakerName(segment.speaker)}
                           size="small"
                           sx={{
                             backgroundColor: getSpeakerColor(segment.speaker),
