@@ -147,6 +147,32 @@ Technical Rationale: These stories follow the minimal dependency chain needed to
 - If user requests changes, revise stories and show again
 - Once user approves, proceed to save option
 
+## Document Structure Requirements
+
+[STEP 4.5] When generating the sprint document, follow the EXACT structure used in `sprint_1_stories.md` and `sprint_2_stories.md`:
+
+### Required Document Sections (in order)
+
+1. **Sprint Overview** - Brief description of sprint focus and objectives
+2. **Sprint Goals** - High-level goals for the sprint
+3. **Progress Tracker** - Status table for all stories (format: Story ID | Title | Status | Dependencies)
+4. **User Stories** - Detailed stories with acceptance criteria and dependencies
+5. **Integration Notes** - Technical integration considerations
+6. **Success Metrics** - How to measure sprint success
+7. **Foundation for Next Sprint** - What this sprint enables for future work
+8. **Technical Rationale** - Why these stories were chosen and their technical justification
+
+### Section Format Standards
+
+- Use `##` for main section headers
+- Use `###` for story headers (e.g., `### Story S2.1: Story Title`)
+- Progress tracker must be a markdown table with columns: Story ID | Title | Status | Dependencies
+- All stories start with status "PENDING 🔄"
+- Include exact dependency references (e.g., "S2.1 - Local Storage")
+- Maintain consistent formatting and language throughout
+
+**CRITICAL**: The generated document MUST follow this exact structure and formatting to maintain consistency across all sprint documentation.
+
 ## Save Option
 
 [STEP 5] Offer to save the stories:
@@ -157,7 +183,7 @@ Would you like me to save these stories to 'sprint_[number]_stories.md'?
 
 Based on user response:
 
-- If yes: Save file and exit
+- If yes: Save file using the standardized structure above and exit
 - If no: Exit immediately
 
 ## Important Note

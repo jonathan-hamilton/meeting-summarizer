@@ -2,54 +2,15 @@
 
 ## Sprint Overview
 
-Sprint **API Endpoints:**
-
-- `/api/summary/generate` - Generate summa```
-
-**Prompt Engineering:**
-
-- Generic summary prompts for meetings without role mapping
-- Role-specific prompts that highlight relevant information for each role
-- Action item extraction prompts
-- Decision and key point identification prompts
-
----
-
-## Story S2.3: Summary Display and Export Interface
-
-As a user, I want to view, customize, and export my meeting summaries in multiple formats so that I can easily share insights with stakeholders.
-
-### S2.3 Acceptance Criteria
-
-**Display Features:**
-
-- Clean, readable summary presentation with Material-UI components
-- `/api/summary/{transcriptionId}/summarize` - Generate summary with stored speaker mappings
-- Support for different summary types (overview, action-items, decisions, key-points)
-
-**Backend Services:**
-
-- SummarizationService using OpenAI GPT-4 chat completions
-- Template-based prompt engineering for different summary styles
-- Integration with speaker role mapping for personalized summaries
-- Fallback to basic template-based summarization when GPT-4 is unavailable
-
-### S2.2 Dependencies
-
-S1.1 - Audio Transcription Backend Service, S2.1 - Speaker Role Mapping Interface
-
-### S2.2 Developer Notes
-
-**OpenAI Integration:**
-
-- Use OpenAI-DotNet SDK for GPT-4 chat completionsre transcription pipeline from Sprint 1 to add intelligent speaker role mapping and AI-powered meeting summarization. This sprint transforms raw transcripts into actionable insights by allowing users to assign real names and roles to speakers, then generating personalized summaries based on those roles.
+Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intelligent speaker role mapping and AI-powered meeting summarization. This sprint transforms raw transcripts into actionable insights by allowing users to assign real names and roles to speakers, then generating personalized summaries based on those roles.
 
 ## Sprint 2 Goals
 
-- Enable post-transcription speaker role mapping
+- Enable post-transcription speaker role mapping with intuitive interface
 - Implement AI-powered meeting summarization using GPT-4
-- Create role-aware summary generation
-- Establish foundation for future personalized features
+- Create role-aware summary generation for personalized insights
+- Build comprehensive export and sharing capabilities
+- Establish foundation for future personalized features and automation
 
 ## Implementation Progress
 
@@ -70,8 +31,7 @@ As a user, I want to assign real names and roles to the generic speaker labels i
 **Frontend Requirements:**
 
 - Interactive interface to map speaker labels (Speaker 1, Speaker 2) to actual names and roles
-- Role selection from predefined options (Manager, Developer, Designer, Product Owner, etc.)
-- Custom role input for flexible role assignment
+- User-defined role input for flexible role assignment
 - Real-time preview of mapped speakers in transcript display
 - Save/load speaker mappings for reuse across meetings
 - Clear visual indication of mapped vs unmapped speakers
@@ -151,11 +111,11 @@ As a developer, I want to implement GPT-4 integration for meeting summarization 
 - Integration with speaker role mapping for personalized summaries
 - Fallback to basic template-based summarization when GPT-4 is unavailable
 
-### S2.2 Dependencies - Summarization
+### S2.2 Dependencies
 
 S1.1 - Audio Transcription Backend Service, S2.1 - Speaker Role Mapping Interface
 
-### S2.2 Developer Notes - Implementation
+### S2.2 Developer Notes
 
 **Implementation Strategy:**
 
@@ -193,11 +153,11 @@ public class SummaryOptions
 
 ---
 
-## Story S2.3 Implementation: Summary Display and Export Interface
+## Story S2.3: Summary Display and Export Interface
 
 As a user, I want to view and export AI-generated meeting summaries so that I can quickly understand key takeaways and share insights with relevant stakeholders.
 
-### S2.3 Acceptance Criteria - Display & Export
+### S2.3 Acceptance Criteria
 
 **Summary Display Features:**
 
@@ -293,7 +253,7 @@ FileUpload → Transcription → SpeakerMapping → Summarization → Export
 - **Performance**: Reasonable response times for GPT-4 summarization (< 30 seconds)
 - **Reliability**: Graceful handling of API failures with fallback options
 
-## Future Sprint Considerations
+## Future Sprint Foundation
 
 Sprint 2 establishes the foundation for:
 
@@ -301,8 +261,6 @@ Sprint 2 establishes the foundation for:
 - **Sprint 4**: Meeting history and transcript management
 - **Sprint 5**: Advanced role inference and automatic speaker identification
 - **Sprint 6**: Multi-language support and international deployment
-
----
 
 ## Technical Rationale
 
