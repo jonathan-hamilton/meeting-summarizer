@@ -9,6 +9,13 @@ namespace MeetingSummarizer.Api.Controllers;
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {
+    private readonly IWebHostEnvironment _environment;
+
+    public HealthController(IWebHostEnvironment environment)
+    {
+        _environment = environment;
+    }
+
     /// <summary>
     /// Basic health check endpoint
     /// </summary>
@@ -22,7 +29,7 @@ public class HealthController : ControllerBase
             Timestamp = DateTime.UtcNow,
             Version = "1.0.0",
             Service = "MeetingSummarizer API",
-            Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
+            Environment = _environment.EnvironmentName
         };
 
         return Ok(healthStatus);
@@ -41,7 +48,7 @@ public class HealthController : ControllerBase
             Timestamp = DateTime.UtcNow,
             Version = "1.0.0",
             Service = "MeetingSummarizer API",
-            Environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production",
+            Environment = _environment.EnvironmentName,
             UpTime = Environment.TickCount64,
             MachineName = Environment.MachineName,
             ProcessorCount = Environment.ProcessorCount,

@@ -2,7 +2,44 @@
 
 **Role**: Expert QA Test Engineer specializing in React/TypeScript testing
 
-**Command**: `#write-frontend-tests`
+**Commands**:
+
+- `#generate-frontend-tests` - Generate tests for current sprint (auto-detected)
+- `#generate-frontend-tests sprint-N` - Generate tests for specific sprint (e.g., `sprint-1`, `sprint-2`)
+- `#review-all-frontend-tests` - Review and generate comprehensive tests for all sprints
+
+## Command Usage Examples
+
+**Auto-Detection Mode:**
+
+```bash
+#generate-frontend-tests
+```
+
+- Automatically detects Sprint 2 (highest numbered) and generates tests for current sprint features
+- Includes context from Sprint 1 for integration testing
+
+**Specific Sprint Mode:**
+
+```bash
+#generate-frontend-tests sprint-1
+#generate-frontend-tests sprint-2
+```
+
+- Targets specific sprint requirements
+- Useful for filling gaps in historical sprint coverage
+- Includes dependencies from previous sprints
+
+**Comprehensive Review Mode:**
+
+```bash
+#review-all-frontend-tests
+```
+
+- Analyzes all sprints (1, 2, and future)
+- Provides complete test coverage report
+- Generates missing tests across all sprint features
+- Creates integration tests spanning multiple sprints
 
 ## Project Context
 
@@ -22,12 +59,24 @@ Before generating tests, review:
 - Existing tests in `frontend/src/__tests__/` for patterns and coverage gaps
 
 **Sprint Detection Strategy:**
-1. Scan `docs/` directory for `sprint_*_stories.md` files
-2. Identify the highest numbered sprint file (e.g., `sprint_2_stories.md` = Sprint 2)
-3. Use the latest sprint file as the current active sprint
-4. Include previous sprint requirements for integration and regression testing
+
+1. **Auto-Detection Mode** (`#generate-frontend-tests`):
+   - Scan `docs/` directory for `sprint_*_stories.md` files
+   - Identify the highest numbered sprint file as current sprint
+   - Focus on current sprint requirements with previous sprint context
+2. **Specific Sprint Mode** (`#generate-frontend-tests sprint-N`):
+   - Target the specified sprint file (e.g., `docs/sprint_2_stories.md`)
+   - Include dependencies from previous sprints
+   - Focus testing on specified sprint features
+3. **Comprehensive Review Mode** (`#review-all-frontend-tests`):
+   - Analyze all available sprint files sequentially
+   - Review existing test coverage across all sprints
+   - Generate missing tests and identify coverage gaps
+   - Create integration tests spanning multiple sprints
 
 ## 2. Test Scope Selection
+
+**For Auto-Detection and Specific Sprint Modes:**
 
 Ask: "Would you like to:
 
@@ -36,6 +85,17 @@ Ask: "Would you like to:
 3. Generate tests for **new/modified frontend code**
 4. Add tests for **uncovered functionality**
 5. Generate **integration tests** for complete workflows"
+
+**For Comprehensive Review Mode (`#review-all-frontend-tests`):**
+
+Automatically performs:
+
+1. **Component Coverage Analysis**: Review all components against sprint stories
+2. **Integration Testing**: Create cross-sprint user journey tests
+3. **Service Layer Coverage**: Ensure all API integrations are tested
+4. **Accessibility Compliance**: Comprehensive a11y testing across features
+5. **Performance Testing**: Component rendering and interaction performance
+6. **Regression Coverage**: Ensure all completed features maintain test coverage
 
 ## 3. Code Analysis
 
@@ -221,6 +281,8 @@ describe('serviceName', () => {
 
 ### Step 1: Analyze Requirements
 
+**Auto-Detection Mode:**
+
 1. **Detect Current Sprint:**
    - Scan `docs/` directory for `sprint_*_stories.md` files
    - Identify the highest numbered sprint file as current sprint
@@ -229,9 +291,34 @@ describe('serviceName', () => {
    - Focus on current sprint stories for acceptance criteria
    - Include previous sprint requirements for integration testing
    - Check overall system requirements for context
+
+**Specific Sprint Mode (`sprint-N`):**
+
+1. **Target Sprint Analysis:**
+   - Load specified sprint file (e.g., `docs/sprint_2_stories.md`)
+   - Analyze sprint-specific user stories and acceptance criteria
+   - Map dependencies to previous sprints for context
+2. **Focused Requirements:**
+   - Generate tests specifically for target sprint features
+   - Include prerequisite functionality from earlier sprints
+   - Validate sprint completion criteria through tests
+
+**Comprehensive Review Mode (`#review-all-frontend-tests`):**
+
+1. **Multi-Sprint Analysis:**
+   - Load and analyze all available sprint files
+   - Create comprehensive requirements matrix
+   - Map existing tests to sprint stories
+2. **Coverage Assessment:**
+   - Identify gaps in test coverage across all sprints
+   - Analyze user journey flows spanning multiple sprints
+   - Review accessibility and performance coverage
+
+**All Modes:**
 3. **Assess Coverage:**
-   - Identify components/services needing tests
-   - Check existing test coverage gaps
+
+- Identify components/services needing tests
+- Check existing test coverage gaps
 
 ### Step 2: Generate Tests
 

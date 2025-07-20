@@ -11,6 +11,7 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 - Create role-aware summary generation for personalized insights
 - Build comprehensive export and sharing capabilities
 - Establish foundation for future personalized features and automation
+- **Address critical test coverage gaps identified in Sprint 1**
 
 ## Implementation Progress
 
@@ -19,6 +20,78 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 ### S2.2 Status: PENDING 🔄
 
 ### S2.3 Status: PENDING 🔄
+
+### S2.4 Status: PENDING 🔄 (Test Coverage Improvements)
+
+---
+
+## Story S2.4: Critical Test Coverage Improvements
+
+As a development team, we need to address critical test coverage gaps identified in Sprint 1 to ensure application reliability and maintainability before adding new features.
+
+### S2.4 Acceptance Criteria
+
+**Frontend Test Coverage Improvements:**
+
+- Add comprehensive tests for `apiService.ts` (currently 0% coverage)
+  - Mock axios requests and responses
+  - Test all API methods (health, validate, transcribe, etc.)
+  - Test error handling and timeout scenarios
+  - Test request/response transformation logic
+
+- Add integration tests for `App.tsx` (currently 0% coverage)
+  - Test component state management
+  - Test theme switching functionality
+  - Test transcription result display workflow
+  - Test error boundary behavior
+
+- Improve overall frontend line coverage from 39.26% to 65%+
+- Achieve 60%+ branch coverage for conditional logic testing
+
+**Backend Test Coverage Improvements:**
+
+- Improve API branch coverage from 24.74% to 60%+
+- Add conditional logic testing for error handling paths
+- Add comprehensive configuration testing for different environments
+- Test edge cases in file validation logic
+
+**Production Configuration Testing:**
+
+- Add environment-specific configuration tests
+- Test OpenAI API key validation and fallback behavior
+- Test logging configuration in different environments
+- Test health check behavior under various system states
+
+**Test Infrastructure Improvements:**
+
+- Set up coverage reporting in CI/CD pipeline
+- Establish minimum coverage thresholds (65% line, 60% branch)
+- Add coverage badges to README
+- Create automated coverage regression detection
+
+### S2.4 Dependencies
+
+Sprint 1 completion, existing test infrastructure
+
+### S2.4 Definition of Done
+
+- Frontend line coverage ≥ 65%, branch coverage ≥ 60%
+- Backend line coverage ≥ 65%, branch coverage ≥ 60%
+- All critical components (`apiService.ts`, `App.tsx`) have comprehensive tests
+- Coverage reporting integrated in CI/CD
+- All existing tests continue to pass
+- Coverage regression prevention measures in place
+
+### S2.4 Developer Notes
+
+This story addresses technical debt and ensures a solid foundation for Sprint 2 feature development. Priority should be given to:
+
+1. **apiService.ts tests** - Critical for frontend reliability
+2. **App.tsx integration tests** - Central application logic
+3. **Branch coverage improvements** - Error handling and edge cases
+4. **CI/CD integration** - Automated coverage monitoring
+
+**Time Estimate:** 2-3 days (can be parallelized with feature development)
 
 ---
 
