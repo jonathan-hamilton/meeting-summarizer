@@ -9,13 +9,15 @@ A comprehensive testing interface for Sprint 1 components, providing interactive
 ### Features
 
 #### Tab 1: S1.2 TranscriptDisplay Testing
+
 - Interactive testing of all S1.2 acceptance criteria
 - Mock data scenarios: Speaker Diarization, Simple Transcript, Error State, Loading State
 - Comprehensive testing checklist for manual validation
 - Copy functionality testing
 - Accessibility testing guidance
 
-#### Tab 2: S1.3 FileUpload Integration Testing  
+#### Tab 2: S1.3 FileUpload Integration Testing
+
 - **Live end-to-end workflow testing** with real backend integration
 - File upload with automatic transcription triggering
 - Workflow stepper visualization (File Selected → Uploading → Processing → Complete)
@@ -47,6 +49,7 @@ The backend should be available at `http://localhost:5029` for the file upload i
 ### Testing Checklist
 
 #### S1.2 Acceptance Criteria ✅
+
 - Frontend displays transcription results with clear speaker labels
 - Transcript text is formatted for readability  
 - Speaker segments are visually distinguished
@@ -55,6 +58,7 @@ The backend should be available at `http://localhost:5029` for the file upload i
 - Transcript content is selectable for copy/paste
 
 #### S1.3 Acceptance Criteria ✅
+
 - File upload component triggers transcription automatically
 - Progress indicators show upload and transcription status
 - Successful transcription displays results immediately
@@ -72,7 +76,7 @@ The backend should be available at `http://localhost:5029` for the file upload i
 
 ### File Structure
 
-```
+```text
 src/demo/
 ├── README.md                    # This file
 └── TranscriptDisplayDemo.tsx    # Main demo component with S1.2 & S1.3 testing

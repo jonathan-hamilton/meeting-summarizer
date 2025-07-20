@@ -2,7 +2,7 @@
 
 ## Test Organization Structure
 
-```
+```text
 frontend/src/
 ├── components/
 │   ├── TranscriptDisplay.tsx
@@ -47,6 +47,7 @@ frontend/src/
 ### **TranscriptDisplay Component Tests**
 
 #### ✅ **Functional Testing**
+
 - **Loading States**: Spinner and loading messages
 - **Error Handling**: Failed transcriptions, missing data
 - **Content Display**: Speaker segments, simple text, metadata
@@ -54,12 +55,14 @@ frontend/src/
 - **Data Formatting**: File sizes, timestamps, confidence scores
 
 #### ✅ **UI/UX Testing**
+
 - **Visual Feedback**: Copy button state changes
 - **Accessibility**: ARIA labels, keyboard navigation
 - **Responsive Design**: Layout on different screen sizes
 - **Material-UI Integration**: Theme consistency, component styling
 
 #### ✅ **Edge Cases**
+
 - **Empty Content**: No transcript data available
 - **Large Files**: File size formatting (Bytes, KB, MB, GB)
 - **Multiple Speakers**: Color coding and speaker identification
@@ -67,7 +70,7 @@ frontend/src/
 
 ### **Test Types by Layer**
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │              E2E Tests                  │ ← Future: Cypress/Playwright
 │         (Full User Workflows)          │
@@ -86,6 +89,7 @@ frontend/src/
 ## Running Tests
 
 ### **Available Commands**
+
 ```bash
 npm test                    # Run all tests in watch mode
 npm run test:run           # Run tests once (CI mode)
@@ -94,6 +98,7 @@ npm run test:coverage      # Run with coverage report
 ```
 
 ### **Test File Patterns**
+
 - `*.test.tsx` - Component tests
 - `*.test.ts` - Utility/service tests
 - `*.spec.tsx` - Integration tests (future)
@@ -101,12 +106,14 @@ npm run test:coverage      # Run with coverage report
 ## Mock Strategy
 
 ### **Mock Categories**
+
 1. **API Responses**: Simulated backend responses
 2. **Browser APIs**: Clipboard, File API, etc.
 3. **External Libraries**: Material-UI icons, complex components
 4. **System Resources**: File system, network calls
 
 ### **Mock Data Principles**
+
 - **Realistic**: Mock data should represent actual API responses
 - **Comprehensive**: Cover success, error, and edge cases
 - **Reusable**: Shared across multiple test files
@@ -115,7 +122,9 @@ npm run test:coverage      # Run with coverage report
 ## Future Testing Enhancements
 
 ### **Integration Tests (S1.3)**
+
 When implementing S1.3 (File Upload + Transcription Workflow):
+
 ```typescript
 // Example integration test
 describe('File Upload to Transcription Workflow', () => {
@@ -126,6 +135,7 @@ describe('File Upload to Transcription Workflow', () => {
 ```
 
 ### **E2E Tests (Future Sprint)**
+
 ```typescript
 // Example E2E test with Playwright
 test('complete transcription workflow', async ({ page }) => {
@@ -138,6 +148,7 @@ test('complete transcription workflow', async ({ page }) => {
 ## Best Practices
 
 ### ✅ **Do's**
+
 - Write tests for user behavior, not implementation details
 - Use realistic mock data that matches API contracts
 - Test error states and edge cases
@@ -145,6 +156,7 @@ test('complete transcription workflow', async ({ page }) => {
 - Use descriptive test names that explain the expected behavior
 
 ### ❌ **Don'ts**
+
 - Don't test Material-UI library functionality
 - Don't test implementation details (internal state, private methods)
 - Don't create overly complex test setups
@@ -154,6 +166,7 @@ test('complete transcription workflow', async ({ page }) => {
 ## S1.2 Testing Summary
 
 The TranscriptDisplay component is now fully tested with:
+
 - **15+ test scenarios** covering all major functionality
 - **Mock data** for different transcription states
 - **Accessibility testing** for screen readers and keyboard navigation
