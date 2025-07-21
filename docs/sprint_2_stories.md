@@ -12,6 +12,7 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 - Build comprehensive export and sharing capabilities
 - Establish foundation for future personalized features and automation
 - **Address critical test coverage gaps identified in Sprint 1**
+- **Enhance speaker management with manual add/remove capabilities**
 
 ## Implementation Progress
 
@@ -99,7 +100,60 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 - Integrates with S1.1 transcription pipeline for end-to-end workflow
 - Supports future automation and advanced AI features
 
-### S2.4 Status: PENDING 🔄
+### S2.4 Status: COMPLETE ✅ (Summary Display and Export Interface)
+
+**Completion Date:** July 21, 2025
+
+**Implementation Summary:**
+
+- Completed full S2.4 Summary Display and Export Interface implementation
+- Integrated SummaryDisplay component into main TranscriptDisplay workflow
+- Generated comprehensive frontend test suite with all tests passing
+- Created SummaryDisplay.test.tsx with 15 comprehensive component tests
+- Created SummaryDisplayDemo.test.tsx with 8 demo-specific integration tests  
+- Enhanced apiService.test.ts with 28 new S2.4 summary generation API tests
+- Implemented complete production-ready summary interface with 5 summary types
+- Added comprehensive export functionality (TXT, Markdown, HTML formats)
+- Validated role-aware summary generation with speaker mapping integration
+- Resolved all test failures and icon mocking issues for seamless integration
+
+**Acceptance Criteria Status:**
+
+✅ Clean, readable summary presentation with Material-UI components - Implemented with tabbed interface
+✅ Different views for different summary types - Brief, Detailed, ActionItems, KeyDecisions, ExecutiveSummary
+✅ Role-specific summary highlighting when speaker mappings available - Integrated with S2.2 speaker mappings
+✅ Expandable sections for detailed vs brief summaries - Material-UI Accordion components
+✅ Real-time summary generation with loading states - Progress indicators and error handling
+✅ Copy summary to clipboard functionality - Complete with visual feedback
+✅ Export options (plain text, markdown, formatted) - Full export functionality implemented
+✅ Seamless integration with transcript display - Integrated into TranscriptDisplay component
+✅ Option to regenerate summaries with different parameters - Configuration panel with role selection
+✅ Save summaries for future reference - Backend API integration ready
+
+**Technical Notes:**
+
+- Production-ready React component with TypeScript interfaces for complete type safety
+- Material-UI design system integration with consistent theming and accessibility
+- Comprehensive test coverage with 59 total tests passing for S2.4 functionality
+- Fixed icon mocking issues to ensure TranscriptDisplay integration tests pass
+- API service integration with robust error handling and graceful degradation
+- Export functionality supports multiple formats with proper MIME type handling
+- Role-aware summarization leverages S2.2 speaker mappings for personalized insights
+
+**Integration Points:**
+
+- Seamlessly integrates with S2.2 Speaker Role Mapping for enhanced personalization
+- Leverages S2.3 AI Summarization backend for intelligent summary generation
+- Embedded directly in TranscriptDisplay component for natural user workflow
+- Validates complete end-to-end experience from transcription to summary export
+
+**Status:** Complete S2.4 implementation with full frontend integration and comprehensive test validation. Ready for production deployment.
+
+### S2.5 Status: PENDING 🔄 (Enhanced Speaker Management Interface)
+
+**Target Completion:** TBD
+
+**Purpose:** Extend S2.2 speaker mapping with manual speaker addition and removal capabilities to handle incomplete or incorrect automatic speaker detection.
 
 ---
 
@@ -386,6 +440,69 @@ interface SummaryResult {
 
 ---
 
+## Story S2.5: Enhanced Speaker Management Interface
+
+As a user, I want to manually add and remove speakers in the mapping dialog so that I can handle cases where automatic speaker detection is incomplete or incorrect.
+
+### S2.5 Acceptance Criteria
+
+**Speaker Addition:**
+
+- [+ Add Speaker] button available in speaker mapping dialog
+- New speakers get auto-generated IDs (e.g., "Speaker 4", "Speaker 5")
+- Added speakers are visually distinguished from auto-detected speakers
+- Name and role fields are available for manually-added speakers
+- Added speakers persist when saved to backend
+
+**Speaker Removal:**
+
+- [X Remove] button available for each speaker row
+- Confirmation dialog prevents accidental speaker deletion
+- Cannot remove last remaining speaker (minimum one speaker validation)
+- Removed speakers are excluded from transcript display and summarization
+- Removal action is logged for audit purposes
+
+**User Experience:**
+
+- Clear visual indicators: 🎤 (auto-detected) vs ➕ (manually-added) speakers
+- Intuitive add/remove workflow with appropriate feedback
+- Maintains existing speaker mapping functionality
+- Save/Cancel operations work correctly with dynamic speaker list
+
+**Backend Integration:**
+
+- Speaker mappings support manually-added speakers
+- API endpoints handle dynamic speaker addition/removal
+- Audit trail maintains speaker management history
+- Backward compatibility with existing speaker mapping data
+
+### S2.5 Dependencies
+
+S2.2 - Speaker Role Mapping Interface (extends existing functionality)
+
+### S2.5 Developer Notes
+
+**Frontend Implementation:**
+
+- Enhance `SpeakerMappingDialog.tsx` with add/remove functionality
+- Add speaker source tracking (`AutoDetected` vs `ManuallyAdded`)
+- Implement confirmation dialogs using Material-UI
+- Update speaker list state management for dynamic operations
+- Add visual indicators and accessibility improvements
+
+**Backend Implementation:**
+
+- Extend `SpeakerMapping` model with `source` field
+- Update speaker mapping service to handle manual speaker operations
+- Add validation for minimum speaker requirements
+- Implement audit logging for speaker management actions
+
+**Technical Rationale:**
+
+This enhancement addresses a critical gap identified during functional testing where users need full control over the speaker list. It builds incrementally on the existing S2.2 implementation without disrupting core functionality, while providing the flexibility needed for real-world meeting scenarios.
+
+---
+
 ## Sprint 2 Integration Workflow
 
 ### Complete User Journey
@@ -393,22 +510,24 @@ interface SummaryResult {
 1. **Upload & Transcribe** (S1.1-S1.3): User uploads audio, gets transcript with speaker diarization
 2. **Test Coverage** (S2.1): Ensure application reliability with comprehensive test coverage
 3. **Map Speakers** (S2.2): User assigns real names and roles to Speaker 1, Speaker 2, etc.
-4. **Generate Summary** (S2.3): AI creates role-aware summary highlighting relevant information
-5. **Review & Export** (S2.4): User reviews, customizes, and shares the summary
+4. **Enhanced Speaker Management** (S2.5): User can add/remove speakers as needed for complete accuracy
+5. **Generate Summary** (S2.3): AI creates role-aware summary highlighting relevant information
+6. **Review & Export** (S2.4): User reviews, customizes, and shares the summary
 
 ### Technical Architecture
 
 ```text
-FileUpload → Transcription → TestCoverage → SpeakerMapping → Summarization → Export
-    ↓            ↓              ↓              ↓              ↓           ↓
-  S1.3         S1.1           S2.1           S2.2           S2.3        S2.4
+FileUpload → Transcription → TestCoverage → SpeakerMapping → EnhancedSpeakerMgmt → Summarization → Export
+    ↓            ↓              ↓              ↓                    ↓                ↓           ↓
+  S1.3         S1.1           S2.1           S2.2                S2.5             S2.3        S2.4
 ```
 
 ## Sprint 2 Success Metrics
 
 - **Functional**: Complete end-to-end workflow from audio upload to actionable summary
 - **Quality**: Meaningful, role-aware summaries that highlight relevant information
-- **Usability**: Intuitive speaker mapping and summary customization interface
+- **Usability**: Intuitive speaker mapping and enhanced speaker management interface
+- **Flexibility**: Complete speaker control with manual add/remove capabilities
 - **Performance**: Reasonable response times for GPT-4 summarization (< 30 seconds)
 - **Reliability**: Graceful handling of API failures with fallback options
 
@@ -417,9 +536,16 @@ FileUpload → Transcription → TestCoverage → SpeakerMapping → Summarizati
 Sprint 2 establishes the foundation for:
 
 - **Sprint 3**: Email automation and stakeholder distribution
-- **Sprint 4**: Meeting history and transcript management
+- **Sprint 4**: Meeting history and transcript management  
 - **Sprint 5**: Advanced role inference and automatic speaker identification
 - **Sprint 6**: Multi-language support and international deployment
+
+**S2.5 Enhancement Benefits:**
+
+- Provides complete user control over speaker management
+- Enables handling of edge cases in automatic speaker detection
+- Establishes pattern for future manual override capabilities
+- Creates foundation for advanced speaker management features
 
 ## Technical Rationale
 

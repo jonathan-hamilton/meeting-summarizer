@@ -26,6 +26,7 @@ import {
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
+import SummaryDisplay from "./SummaryDisplay";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -390,6 +391,20 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               No transcript content available.
             </Typography>
           </Alert>
+        )}
+
+        {/* AI-Powered Meeting Summary Section */}
+        {transcription.transcribedText && (
+          <Box sx={{ mt: 4 }}>
+            <Divider sx={{ mb: 3 }} />
+            <Typography variant="h5" component="h3" gutterBottom>
+              AI-Powered Meeting Summary
+            </Typography>
+            <SummaryDisplay
+              transcriptionId={transcription.transcriptionId}
+              speakerMappings={effectiveSpeakerMappings}
+            />
+          </Box>
         )}
 
         {/* Footer with timestamp */}

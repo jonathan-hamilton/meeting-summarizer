@@ -29,6 +29,11 @@
 - REQ-SPK-8: System shall handle multiple introduction formats and informal speech patterns
 - REQ-SPK-9: System shall display auto-detected speakers in the upload progress interface for immediate user feedback
 - REQ-SPK-10: System shall fall back to manual speaker mapping when auto-detection confidence is below threshold
+- REQ-SPK-11: System shall allow users to manually add speakers not detected by automatic transcription
+- REQ-SPK-12: System shall allow users to remove incorrectly detected speakers from the mapping interface
+- REQ-SPK-13: System shall provide clear visual distinction between auto-detected and manually-added speakers
+- REQ-SPK-14: System shall validate that at least one speaker exists before allowing save operation
+- REQ-SPK-15: System shall persist manually-added speakers with appropriate metadata for future reference
 
 ### Summarization
 
@@ -48,6 +53,8 @@
 - REQ-CNT-6: System shall persist auto-detected speaker information with confidence scores for future reference
 - REQ-CNT-7: System shall track manual corrections to auto-detected speaker names for machine learning improvement
 - REQ-CNT-8: System shall enable search by participant names across meeting history
+- REQ-CNT-9: System shall maintain audit trail of manual speaker additions and removals with timestamps
+- REQ-CNT-10: System shall preserve speaker management history for meeting reconstruction and analysis
 
 ### User Management
 
@@ -108,6 +115,13 @@
 - Speaker role assignment interface
 - AI-powered summarization
 
+### Phase 1.5: Enhanced Speaker Management (Sprint 2.5) 🔄
+
+- Manual speaker addition and removal capabilities
+- Visual distinction between auto-detected and user-added speakers
+- Enhanced speaker mapping interface with full CRUD operations
+- Audit trail for speaker management actions
+
 ### Phase 2: Smart Speaker Identification (Future Enhancement)
 
 - Automatic speaker name detection from self-introductions
@@ -144,3 +158,27 @@
 - User verification required for all auto-detected names
 - Fallback to manual mapping when detection fails
 - Audit trail for accuracy improvement and false positive reduction
+
+### Manual Speaker Management Technical Approach
+
+**User Interface Requirements:**
+
+- Add/Remove speaker buttons in SpeakerMappingDialog
+- Visual indicators distinguishing auto-detected (🎤) vs manually-added (➕) speakers
+- Confirmation dialogs for speaker removal to prevent accidental deletion
+- Validation ensuring minimum one speaker exists before save operation
+- Clear labeling and accessible design following Material-UI guidelines
+
+**Backend Integration:**
+
+- Extend SpeakerMapping model with `source` field (AutoDetected, ManuallyAdded)
+- Update speaker mapping API endpoints to handle dynamic speaker lists
+- Implement validation rules for speaker addition/removal operations
+- Maintain backward compatibility with existing auto-detected speaker workflows
+
+**Data Persistence:**
+
+- Store manual speaker additions with creation timestamps and user metadata
+- Track speaker removal actions for audit and potential recovery
+- Associate manually-added speakers with transcription sessions for proper scoping
+- Enable speaker list reconstruction for meeting history and analysis features

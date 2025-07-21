@@ -54,6 +54,31 @@ vi.mock("@mui/icons-material", () => ({
   Save: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
     <div data-testid={dataTestId || "save-icon"} {...props} />
   ),
+  // SummaryDisplay icons
+  Download: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "download-icon"} {...props} />
+  ),
+  Refresh: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "refresh-icon"} {...props} />
+  ),
+  Psychology: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "psychology-icon"} {...props} />
+  ),
+  ChecklistRtl: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "checklist-rtl-icon"} {...props} />
+  ),
+  Gavel: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "gavel-icon"} {...props} />
+  ),
+  Business: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "business-icon"} {...props} />
+  ),
+  Notes: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "notes-icon"} {...props} />
+  ),
+  Print: ({ "data-testid": dataTestId, ...props }: MockIconProps) => (
+    <div data-testid={dataTestId || "print-icon"} {...props} />
+  ),
 }));
 
 describe("TranscriptDisplay Component", () => {
