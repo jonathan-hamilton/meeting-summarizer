@@ -43,6 +43,14 @@
 - REQ-SPK-22: System shall clearly indicate when speaker mappings have been manually overridden vs auto-detected
 - REQ-SPK-23: System shall preserve original auto-detected mappings as fallback when user overrides are cleared
 - REQ-SPK-24: System shall validate manual override inputs to prevent duplicate speaker names within the same meeting
+- REQ-SPK-25: System shall allow users to override transcript segment speaker assignments to correct AI misidentification
+- REQ-SPK-26: System shall provide visual indicator on confidence scores when speaker has been manually reassigned to segment
+- REQ-SPK-27: System shall invalidate and mark confidence percentages when segment speaker assignment is manually overridden
+- REQ-SPK-28: System shall dynamically update speaker mapping counts to reflect actual mapped vs unmapped speakers
+- REQ-SPK-29: System shall automatically update unmapped speaker chip displays when speakers are successfully mapped
+- REQ-SPK-30: System shall replace generic speaker labels with mapped speaker names in transcript segment displays
+- REQ-SPK-31: System shall provide real-time feedback in Speaker Mappings section showing current mapping status
+- REQ-SPK-32: System shall maintain segment-level speaker override history for audit and revert capabilities
 
 ### Summarization
 
@@ -187,6 +195,11 @@
 - **Override Indicators**: Visual cues to distinguish manually-overridden mappings from auto-detected ones
 - **Validation Feedback**: Real-time validation to prevent conflicts in speaker assignments
 - **Revert Functionality**: One-click option to restore original auto-detected mappings
+- **Segment Speaker Override**: Click-to-edit functionality for reassigning individual transcript segments to different speakers
+- **Confidence Score Invalidation**: Visual indicators showing when confidence scores are no longer relevant due to manual overrides
+- **Dynamic Count Updates**: Real-time updates to "(X/Y mapped)" counters reflecting current mapping status
+- **Mapped Name Display**: Replace generic "Speaker 1" labels with actual mapped names in transcript sections
+- **Override Status Indicators**: Clear visual distinction between AI-assigned and manually-reassigned segments
 
 **Backend Integration:**
 
@@ -194,6 +207,11 @@
 - Update speaker mapping API endpoints to handle dynamic speaker lists
 - Implement validation rules for speaker addition/removal operations
 - Maintain backward compatibility with existing auto-detected speaker workflows
+- **Segment Override Support**: Extend SpeakerSegment model to track manual speaker reassignments
+- **Override Audit Trail**: Persist segment-level speaker changes with timestamps and user attribution
+- **Confidence Invalidation**: Flag confidence scores as invalid when segments are manually reassigned
+- **Mapping Counter Logic**: Implement real-time calculation of mapped vs unmapped speaker counts
+- **Speaker Resolution**: Provide API endpoints for resolving speaker IDs to mapped names in transcript display
 
 **Data Persistence:**
 

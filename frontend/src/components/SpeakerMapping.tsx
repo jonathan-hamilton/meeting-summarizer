@@ -12,6 +12,7 @@ import {
   Edit as EditIcon,
   Mic as MicIcon,
   PersonAdd as PersonAddIcon,
+  EditNote as EditNoteIcon,
 } from "@mui/icons-material";
 import { apiService } from "../services/apiService";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
@@ -143,10 +144,20 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
               const isAutoDetected =
                 !mapping.source ||
                 mapping.source === ("AutoDetected" as SpeakerSource);
-              const Icon = isAutoDetected ? MicIcon : PersonAddIcon;
-              const sourceLabel = isAutoDetected
+
+              // S2.7: Override indicator
+              const isOverridden = mapping.isOverridden;
+
+              let Icon = isAutoDetected ? MicIcon : PersonAddIcon;
+              let sourceLabel = isAutoDetected
                 ? "auto-detected"
                 : "manually-added";
+
+              // S2.7: Show override icon for overridden speakers
+              if (isOverridden) {
+                Icon = EditNoteIcon;
+                sourceLabel = "manually overridden";
+              }
 
               return (
                 <Chip
@@ -156,9 +167,15 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
                     mapping.role ? ` (${mapping.role})` : ""
                   }`}
                   variant="filled"
-                  color="primary"
+                  color={isOverridden ? "secondary" : "primary"}
                   size="small"
-                  title={`${sourceLabel} speaker`}
+                  title={`${sourceLabel} speaker${
+                    isOverridden
+                      ? ` - overridden at ${new Date(
+                          mapping.overriddenAt || ""
+                        ).toLocaleString()}`
+                      : ""
+                  }`}
                 />
               );
             })}

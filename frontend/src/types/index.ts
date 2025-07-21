@@ -71,6 +71,11 @@ export interface SpeakerMapping {
   role: string; // "Manager", "Developer", etc.
   transcriptionId: string;
   source?: SpeakerSource; // S2.5: Track speaker origin
+  // S2.7: Override tracking fields
+  originalName?: string; // Original name before override
+  originalRole?: string; // Original role before override
+  isOverridden?: boolean; // Whether this mapping has been manually overridden
+  overriddenAt?: string; // ISO timestamp when override occurred
 }
 
 export interface SpeakerMappingRequest {
@@ -83,6 +88,24 @@ export interface SpeakerMappingResponse {
   mappings: SpeakerMapping[];
   lastUpdated: string;
   mappedSpeakerCount: number;
+}
+
+// S2.7: Validation and override types
+export interface ValidationError {
+  field: 'name' | 'role';
+  message: string;
+  speakerId: string;
+}
+
+export interface SpeakerValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings?: string[];
+}
+
+export interface EditableSpeakerMapping extends SpeakerMapping {
+  isEditing?: boolean;
+  validationErrors?: ValidationError[];
 }
 
 // Environment Types
