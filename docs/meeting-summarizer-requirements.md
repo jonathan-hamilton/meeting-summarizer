@@ -17,6 +17,19 @@
 - REQ-TRN-4: System shall timestamp transcribed text segments
 - REQ-TRN-5: System shall handle poor audio quality with confidence scoring
 
+### Speaker Identification Enhancement
+
+- REQ-SPK-1: System shall detect speaker self-introductions in the first 5 minutes of recordings
+- REQ-SPK-2: System shall extract speaker names from common introduction patterns ("Hi, this is John", "My name is Sarah", etc.)
+- REQ-SPK-3: System shall identify role/title information when mentioned during introductions ("Product Manager", "Senior Developer", etc.)
+- REQ-SPK-4: System shall associate detected names with corresponding speaker voice patterns throughout the meeting
+- REQ-SPK-5: System shall provide confidence scores for auto-detected speaker names and roles
+- REQ-SPK-6: System shall pre-populate speaker mapping interface with detected names while allowing user verification/correction
+- REQ-SPK-7: System shall distinguish between speaker names and other mentioned names in the conversation
+- REQ-SPK-8: System shall handle multiple introduction formats and informal speech patterns
+- REQ-SPK-9: System shall display auto-detected speakers in the upload progress interface for immediate user feedback
+- REQ-SPK-10: System shall fall back to manual speaker mapping when auto-detection confidence is below threshold
+
 ### Summarization
 
 - REQ-SUM-1: System shall generate concise meeting summaries from transcriptions
@@ -32,6 +45,9 @@
 - REQ-CNT-3: System shall allow users to edit and annotate transcriptions
 - REQ-CNT-4: System shall support search functionality across meetings and summaries
 - REQ-CNT-5: System shall export summaries in multiple formats (PDF, Word, plain text)
+- REQ-CNT-6: System shall persist auto-detected speaker information with confidence scores for future reference
+- REQ-CNT-7: System shall track manual corrections to auto-detected speaker names for machine learning improvement
+- REQ-CNT-8: System shall enable search by participant names across meeting history
 
 ### User Management
 
@@ -83,3 +99,48 @@
 - REQ-NFR-18: System shall return detailed error messages for troubleshooting
 - REQ-NFR-19: System shall support mobile-responsive web interface
 - REQ-NFR-20: System shall provide comprehensive API documentation
+
+## Enhancement Roadmap
+
+### Phase 1: Core Functionality (Sprint 1-2) ✅
+
+- Basic transcription with manual speaker mapping
+- Speaker role assignment interface
+- AI-powered summarization
+
+### Phase 2: Smart Speaker Identification (Future Enhancement)
+
+- Automatic speaker name detection from self-introductions
+- Enhanced speaker mapping with pre-population
+- Improved user experience with reduced manual work
+
+### Phase 3: Advanced Features (Long-term)
+
+- Voice fingerprinting for speaker recognition across meetings
+- Integration with calendar systems for participant pre-identification
+- Machine learning improvements based on user corrections
+
+## Implementation Notes
+
+### Speaker Self-Identification Technical Approach
+
+**Natural Language Processing Requirements:**
+
+- Pattern recognition for common introduction phrases
+- Named entity recognition for extracting person names and job titles
+- Confidence scoring based on introduction clarity and audio quality
+- Support for multiple languages and cultural introduction patterns
+
+**Integration Points:**
+
+- Enhance existing `TranscriptionResponse` model with `autoDetectedSpeakers` field
+- Extend `SpeakerMappingDialog` to show auto-detected names with confidence indicators
+- Update upload progress display to show detected speakers in real-time
+- Modify backend transcription service to include name detection pipeline
+
+**Quality Assurance:**
+
+- Minimum confidence threshold (e.g., 70%) for auto-population
+- User verification required for all auto-detected names
+- Fallback to manual mapping when detection fails
+- Audit trail for accuracy improvement and false positive reduction
