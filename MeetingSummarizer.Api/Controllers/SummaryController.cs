@@ -14,11 +14,19 @@ public class SummaryController : ControllerBase
 {
     private readonly ILogger<SummaryController> _logger;
     private readonly IOpenAIService _openAIService;
+    private readonly ISummarizationService _summarizationService;
+    private readonly ISpeakerMappingService _speakerMappingService;
 
-    public SummaryController(ILogger<SummaryController> logger, IOpenAIService openAIService)
+    public SummaryController(
+        ILogger<SummaryController> logger,
+        IOpenAIService openAIService,
+        ISummarizationService summarizationService,
+        ISpeakerMappingService speakerMappingService)
     {
         _logger = logger;
         _openAIService = openAIService;
+        _summarizationService = summarizationService;
+        _speakerMappingService = speakerMappingService;
     }
 
     /// <summary>
@@ -320,6 +328,197 @@ public class SummaryController : ControllerBase
         {
             _logger.LogWarning("File validation failed: {Message}", validationResult.Message);
             return BadRequest(response);
+        }
+    }
+
+    /// <summary>
+    /// Generate a summary from transcript text
+    /// </summary>
+    /// <param name="request">The summary generation request</param>
+    /// <returns>Generated summary</returns>
+    [HttpPost("generate")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(SummaryResult), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(503)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GenerateSummary([FromBody] SummaryRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Received summary generation request. Style: {Style}, Length: {Length} characters, Target role: {TargetRole}",
+                request.Style, request.Transcript.Length, request.TargetRole ?? "None");
+
+            var options = new SummaryOptions
+            {
+                Style = request.Style,
+                TargetRole = request.TargetRole,
+                MaxTokens = request.MaxTokens,
+                Temperature = 0.3f
+            };
+
+            SummaryResult result;
+
+            if (request.SpeakerMappings?.Any() == true)
+            {
+                _logger.LogInformation("Generating role-aware summary with {SpeakerCount} speaker mappings", request.SpeakerMappings.Count);
+                result = await _summarizationService.GenerateRoleAwareSummaryAsync(
+                    request.Transcript,
+                    request.SpeakerMappings,
+                    options);
+            }
+            else
+            {
+                _logger.LogInformation("Generating standard summary without speaker mappings");
+                result = await _summarizationService.GenerateSummaryAsync(request.Transcript, options);
+            }
+
+            _logger.LogInformation("Summary generation completed. Style: {Style}, Output length: {Length} characters, Time: {TimeMs}ms",
+                result.SummaryType, result.Content.Length, result.ProcessingTimeMs);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid summary generation request");
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Summarization service error");
+            return StatusCode(503, new { error = "Summarization service is currently unavailable", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating summary");
+            return StatusCode(500, new { error = "An error occurred while generating the summary" });
+        }
+    }
+
+    /// <summary>
+    /// Generate a summary for a specific transcription using stored speaker mappings
+    /// </summary>
+    /// <param name="transcriptionId">The ID of the transcription to summarize</param>
+    /// <param name="request">The summary generation request</param>
+    /// <returns>Generated summary with role awareness if speaker mappings exist</returns>
+    [HttpPost("{transcriptionId}/summarize")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(SummaryResult), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(503)]
+    [ProducesResponseType(500)]
+    public IActionResult SummarizeTranscription(
+        string transcriptionId,
+        [FromBody] TranscriptionSummaryRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Received transcription summarization request for ID: {TranscriptionId}, Style: {Style}",
+                transcriptionId, request.Style);
+
+            // Validate that the transcription ID matches
+            if (request.TranscriptionId != transcriptionId)
+            {
+                return BadRequest(new { error = "Transcription ID in URL and request body must match" });
+            }
+
+            // TODO: In a real implementation, retrieve the transcript from storage
+            // For now, return a helpful error message
+            return StatusCode(501, new
+            {
+                error = "Transcription storage not yet implemented",
+                message = "This endpoint requires storing transcriptions in a database. Use the /api/summary/generate endpoint with the full transcript instead.",
+                transcriptionId = transcriptionId
+            });
+
+            /* Future implementation when transcription storage is added:
+            
+            // Retrieve the transcript (this would come from a database/storage service)
+            var transcript = await _transcriptionStorageService.GetTranscriptAsync(transcriptionId);
+            if (transcript == null)
+            {
+                return NotFound(new { error = $"Transcription with ID {transcriptionId} not found" });
+            }
+
+            // Try to get speaker mappings for this transcription
+            var speakerMappings = await _speakerMappingService.GetSpeakerMappingsAsync(transcriptionId);
+
+            var options = new SummaryOptions
+            {
+                Style = request.Style,
+                TargetRole = request.TargetRole,
+                MaxTokens = request.MaxTokens,
+                Temperature = 0.3f
+            };
+
+            SummaryResult result;
+            
+            if (speakerMappings?.Mappings?.Any() == true)
+            {
+                _logger.LogInformation("Generating role-aware summary for transcription {TranscriptionId} with {SpeakerCount} speaker mappings",
+                    transcriptionId, speakerMappings.Mappings.Count);
+                    
+                result = await _summarizationService.GenerateRoleAwareSummaryAsync(
+                    transcript, 
+                    speakerMappings.Mappings, 
+                    options);
+            }
+            else
+            {
+                _logger.LogInformation("Generating standard summary for transcription {TranscriptionId} without speaker mappings", transcriptionId);
+                result = await _summarizationService.GenerateSummaryAsync(transcript, options);
+            }
+
+            result.TranscriptionId = transcriptionId;
+
+            _logger.LogInformation("Summary generation completed for transcription {TranscriptionId}. Style: {Style}, Output length: {Length} characters",
+                transcriptionId, result.SummaryType, result.Content.Length);
+
+            return Ok(result);
+            */
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid transcription summarization request for ID: {TranscriptionId}", transcriptionId);
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Summarization service error for transcription {TranscriptionId}", transcriptionId);
+            return StatusCode(503, new { error = "Summarization service is currently unavailable", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating summary for transcription {TranscriptionId}", transcriptionId);
+            return StatusCode(500, new { error = "An error occurred while generating the summary" });
+        }
+    }
+
+    /// <summary>
+    /// Get the status of the summarization service
+    /// </summary>
+    /// <returns>Service status information</returns>
+    [HttpGet("status")]
+    [ProducesResponseType(typeof(object), 200)]
+    public IActionResult GetSummarizationStatus()
+    {
+        try
+        {
+            _logger.LogInformation("Checking summarization service status");
+
+            var status = _summarizationService.GetServiceStatus();
+            return Ok(new
+            {
+                status = "Service status retrieved successfully",
+                serviceInfo = status,
+                timestamp = DateTime.UtcNow
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving summarization service status");
+            return StatusCode(500, new { error = "Failed to retrieve service status" });
         }
     }
 }

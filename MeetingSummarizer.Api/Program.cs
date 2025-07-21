@@ -42,6 +42,9 @@ builder.Services.AddTranscriptionService(builder.Configuration);
 // Register speaker mapping service (S2.2)
 builder.Services.AddScoped<ISpeakerMappingService, InMemorySpeakerMappingService>();
 
+// Register summarization service with automatic OpenAI/Mock fallback (S2.3)
+builder.Services.AddSummarizationService(builder.Configuration);
+
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
 
