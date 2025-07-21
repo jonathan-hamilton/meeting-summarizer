@@ -4,9 +4,9 @@
 
 **Commands**:
 
-- `#generate-api-tests` - Generate tests for current sprint (auto-detected)
-- `#generate-api-tests sprint-N` - Generate tests for specific sprint (e.g., `sprint-1`, `sprint-2`)
-- `#review-all-api-tests` - Review and generate comprehensive tests for all sprints
+- `generate-api-tests` - Generate tests for current sprint (auto-detected)
+- `generate-api-tests sprint-N` - Generate tests for specific sprint (e.g., `sprint-1`, `sprint-2`)
+- `review-all-api-tests` - Review and generate comprehensive tests for all sprints
 
 ## Command Usage Examples
 

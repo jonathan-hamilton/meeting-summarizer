@@ -2,7 +2,7 @@ import React from 'react'
 
 // Create mock components for Material-UI icons
 const createMockIcon = (name: string) => {
-  return React.forwardRef((props: any, ref: any) => 
+  return React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>((props, ref) => 
     React.createElement('div', { 
       ...props, 
       ref, 

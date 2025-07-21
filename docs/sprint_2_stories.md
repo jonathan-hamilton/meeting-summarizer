@@ -6,16 +6,16 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 
 ## Sprint 2 Goals
 
-- Enable post-transcription speaker role mapping with intuitive interface
-- Implement AI-powered meeting summarization using GPT-4
-- Create role-aware summary generation for personalized insights
-- Build comprehensive export and sharing capabilities
-- Establish foundation for future personalized features and automation
-- **Address critical test coverage gaps identified in Sprint 1**
-- **Enhance speaker management with manual add/remove capabilities**
-- **Implement speaker override functionality for API correction scenarios**
-- **Establish comprehensive audit trail for speaker management actions**
-- **Enable segment-level speaker reassignment for transcript accuracy**
+- Enable post-transcription speaker role mapping with intuitive interface ✅
+- Implement AI-powered meeting summarization using GPT-4 ✅
+- Create role-aware summary generation for personalized insights ✅
+- Build comprehensive export and sharing capabilities ✅
+- Establish foundation for future personalized features and automation ✅
+- **Address critical test coverage gaps identified in Sprint 1** ✅
+- **Enhance speaker management with manual add/remove capabilities** ✅
+- **Implement speaker override functionality for API correction scenarios** ✅
+- ~~**Establish comprehensive audit trail for speaker management actions**~~ → **MOVED TO SPRINT 3**
+- ~~**Enable segment-level speaker reassignment for transcript accuracy**~~ → **MOVED TO SPRINT 3**
 
 ## Implementation Progress
 
@@ -394,164 +394,39 @@ As a user, I want to manually override speaker name and role assignments when th
 
 ---
 
-## Story S2.8: Speaker Override Persistence & Audit Trail
+## Story S2.8: Speaker Override Persistence & Audit Trail → MOVED TO SPRINT 3 ➡️
+
+**Status:** MOVED TO S3.1 - Speaker Override Persistence & Audit Trail
 
 As a system administrator, I want all speaker override actions to be properly tracked and auditable so that we can maintain data integrity and provide users with the ability to revert changes when needed.
 
-### S2.8 Acceptance Criteria
+**Rationale for Move:** S2.8 represents backend-heavy persistence work that builds upon S2.7's frontend override interface. Moving this to Sprint 3 allows for proper focus on backend audit trail implementation while keeping Sprint 2 focused on the complete frontend speaker management workflow.
 
-**Persistence Requirements:**
+**Sprint 3 Benefits:**
 
-- Manual speaker overrides are saved with the speaker mapping data
-- Original auto-detected values are preserved as fallback when overrides are cleared
-- Override metadata includes timestamp and user attribution information
-- Speaker override data persists across application sessions
-- Override information is included in all API requests and responses
+- Dedicated time for comprehensive backend persistence architecture
+- Integration with planned meeting history management (S3.3)
+- Alignment with advanced export capabilities requiring audit data (S3.4)
 
-**Audit Trail Requirements:**
-
-- All manual speaker mapping override actions are logged with timestamps
-- Audit log includes original values, new values, and change metadata
-- System tracks when overrides are created, modified, and cleared
-- Audit trail is accessible for reporting and troubleshooting purposes
-- Override history enables reconstruction of speaker mapping changes over time
-
-**Revert Functionality:**
-
-- [Revert to Original] option available for each overridden speaker
-- Bulk revert option to restore all speakers to auto-detected values
-- Revert confirmation dialog prevents accidental data loss
-- Revert actions are also logged in the audit trail
-- Clear visual feedback when revert operations complete successfully
-
-### S2.8 Dependencies
-
-S2.7 - Manual Speaker Override Interface (prerequisite for override functionality)
-
-### S2.8 Definition of Done
-
-- Override data persists correctly in backend storage
-- Original auto-detected values are preserved as fallback
-- Comprehensive audit trail captures all override actions
-- Revert functionality works for individual and bulk operations
-- All audit events are properly logged with required metadata
-- Backend API supports override persistence and retrieval
-
-### S2.8 Developer Notes
-
-**Backend Implementation:**
-
-- Extend SpeakerMapping model to include override tracking fields
-- Create SpeakerOverrideAudit model for audit trail
-- Update speaker mapping service to handle override persistence
-- Implement audit logging service for tracking changes
-
-**Data Models:**
-
-```csharp
-public class SpeakerMappingWithOverride : SpeakerMapping
-{
-    public string? OriginalName { get; set; }
-    public string? OriginalRole { get; set; }
-    public bool IsOverridden { get; set; }
-    public DateTime? OverriddenAt { get; set; }
-    public string? OverriddenBy { get; set; }
-}
-
-public class SpeakerOverrideAudit
-{
-    public string Id { get; set; }
-    public string TranscriptionId { get; set; }
-    public string SpeakerId { get; set; }
-    public string Action { get; set; } // Override, Revert, Clear
-    public string? OriginalValue { get; set; }
-    public string? NewValue { get; set; }
-    public DateTime Timestamp { get; set; }
-    public string UserId { get; set; }
-}
-```
-
-**Frontend Integration:**
-
-- Update API service to handle override persistence
-- Implement revert functionality in speaker mapping dialog
-- Add audit trail display (future enhancement preparation)
-
-**Time Estimate:** 6-8 hours (backend-heavy implementation)
+**Dependencies:** S2.7 - Manual Speaker Override Interface (completed in Sprint 2)
 
 ---
 
-## Story S2.9: Segment-Level Speaker Override Interface
+## Story S2.9: Segment-Level Speaker Override Interface → MOVED TO SPRINT 3 ➡️
+
+**Status:** MOVED TO S3.2 - Segment-Level Speaker Override Interface
 
 As a user, I want to click on individual transcript segments and reassign them to different speakers so that I can correct AI misidentification where the wrong speaker was detected for specific portions of the conversation.
 
-### S2.9 Acceptance Criteria
+**Rationale for Move:** S2.9 provides segment-level granularity that complements but extends beyond Sprint 2's core speaker management scope. Moving this to Sprint 3 ensures proper integration with persistence layer (S3.1) and allows for comprehensive audit trail implementation.
 
-**Segment Override Interface:**
+**Sprint 3 Benefits:**
 
-- Click-to-edit functionality available on each transcript segment speaker chip
-- Dropdown menu shows all available mapped speakers for reassignment
-- Visual indicator on confidence scores when speaker has been manually reassigned to segment
-- Confidence percentages marked as invalid when segment speaker assignment is manually overridden
-- Real-time updates to speaker mapping counts reflecting segment-level reassignments
+- Complete integration with backend persistence and audit trail (S3.1)
+- Enhanced user experience with full segment override history
+- Foundation for advanced meeting history features (S3.3)
 
-**Visual Feedback Requirements:**
-
-- Generic "Speaker 1" labels replaced with actual mapped names in transcript segment displays
-- Clear visual distinction between AI-assigned and manually-reassigned segments
-- Dynamic count updates in "(X/Y mapped)" counters reflecting current mapping status
-- Override status indicators show when segments have been manually corrected
-
-**Integration Requirements:**
-
-- Segment overrides integrate with existing speaker mapping workflow
-- Override changes immediately reflected in main Speaker Mappings section
-- Segment-level changes preserved across dialog open/close cycles
-- Manual overrides maintain audit trail for revert capabilities
-
-### S2.9 Dependencies
-
-S2.7 - Manual Speaker Override Interface (prerequisite for override functionality)
-
-### S2.9 Definition of Done
-
-- Click-to-edit functionality works on all transcript segments
-- Speaker reassignment dropdown shows all available speakers
-- Confidence scores properly invalidated for manually-assigned segments
-- Real-time count updates reflect segment-level speaker changes
-- Visual indicators clearly distinguish manual vs AI assignments
-- Override history maintained for audit and revert functionality
-
-### S2.9 Developer Notes
-
-**Frontend Implementation:**
-
-- Enhance TranscriptDisplay component with clickable speaker chips
-- Add speaker selection dropdown with all mapped speakers
-- Implement segment-level override state management
-- Create visual indicators for confidence score invalidation
-- Add real-time count updates for mapping status
-
-**Backend Implementation:**
-
-- Extend SpeakerSegment model to track manual speaker overrides
-- Add segment-level override endpoints for persistence
-- Implement confidence score invalidation flags
-- Create audit trail for segment-level speaker changes
-
-**Technical Implementation:**
-
-```tsx
-interface SpeakerSegmentWithOverride extends SpeakerSegment {
-  originalSpeaker?: string;
-  isManuallyAssigned?: boolean;
-  overriddenAt?: string;
-  overriddenBy?: string;
-  confidenceInvalidated?: boolean;
-}
-```
-
-**Time Estimate:** 6-8 hours (moderate complexity UI enhancement)
+**Dependencies:** S2.7 - Manual Speaker Override Interface (completed in Sprint 2)
 
 ---
 
@@ -903,25 +778,33 @@ This enhancement addresses a critical gap identified during functional testing w
 
 ## Sprint 2 Integration Workflow
 
-### Complete User Journey
+### Complete User Journey (Sprint 2 Scope)
 
-1. **Upload & Transcribe** (S1.1-S1.3): User uploads audio, gets transcript with speaker diarization
-2. **Test Coverage** (S2.1): Ensure application reliability with comprehensive test coverage
-3. **Map Speakers** (S2.2): User assigns real names and roles to Speaker 1, Speaker 2, etc.
-4. **Enhanced Speaker Management** (S2.5): User can add/remove speakers as needed for complete accuracy
-5. **Display Integration** (S2.6): All speakers appear correctly in unified interface
-6. **Override Corrections** (S2.7): User can manually override incorrect API speaker assignments
-7. **Audit & Persistence** (S2.8): Override actions are tracked and can be reverted if needed
-8. **Segment-Level Overrides** (S2.9): User can reassign individual transcript segments to correct speakers
-9. **Generate Summary** (S2.3): AI creates role-aware summary highlighting relevant information
-10. **Review & Export** (S2.4): User reviews, customizes, and shares the summary
+1. **Upload & Transcribe** (S1.1-S1.3): User uploads audio, gets transcript with speaker diarization ✅
+2. **Test Coverage** (S2.1): Ensure application reliability with comprehensive test coverage ✅
+3. **Map Speakers** (S2.2): User assigns real names and roles to Speaker 1, Speaker 2, etc. ✅
+4. **Enhanced Speaker Management** (S2.5): User can add/remove speakers as needed for complete accuracy ✅
+5. **Display Integration** (S2.6): All speakers appear correctly in unified interface ✅
+6. **Override Corrections** (S2.7): User can manually override incorrect API speaker assignments ✅
+7. **Generate Summary** (S2.3): AI creates role-aware summary highlighting relevant information ✅
+8. **Review & Export** (S2.4): User reviews, customizes, and shares the summary ✅
 
-### Technical Architecture
+**Moved to Sprint 3:**
+
+- Audit & Persistence (S3.1): Override actions tracked and can be reverted
+- Segment-Level Overrides (S3.2): User can reassign individual transcript segments to correct speakers
+
+### Technical Architecture (Sprint 2 Complete)
 
 ```text
-FileUpload → Transcription → TestCoverage → SpeakerMapping → EnhancedSpeakerMgmt → DisplayIntegration → OverrideInterface → AuditTrail → SegmentOverride → Summarization → Export
-    ↓            ↓              ↓              ↓                    ↓                     ↓                   ↓                  ↓              ↓              ↓           ↓
-  S1.3         S1.1           S2.1           S2.2                S2.5                 S2.6                S2.7              S2.8           S2.9          S2.3        S2.4
+FileUpload → Transcription → TestCoverage → SpeakerMapping → EnhancedSpeakerMgmt → DisplayIntegration → OverrideInterface → Summarization → Export
+    ↓            ↓              ↓              ↓                    ↓                     ↓                   ↓                  ↓           ↓
+  S1.3         S1.1           S2.1           S2.2                S2.5                 S2.6                S2.7              S2.3        S2.4
+                                                                                                              ↓
+                                                                                                      AuditTrail → SegmentOverride
+                                                                                                         ↓              ↓
+                                                                                                       S3.1           S3.2
+                                                                                                    (Sprint 3)     (Sprint 3)
 ```
 
 ## Sprint 2 Success Metrics
@@ -935,12 +818,12 @@ FileUpload → Transcription → TestCoverage → SpeakerMapping → EnhancedSpe
 
 ## Future Sprint Foundation
 
-Sprint 2 establishes the foundation for:
+**Sprint 2 Complete** establishes the foundation for:
 
-- **Sprint 3**: Email automation and stakeholder distribution
-- **Sprint 4**: Meeting history and transcript management  
-- **Sprint 5**: Advanced role inference and automatic speaker identification
-- **Sprint 6**: Multi-language support and international deployment
+- **Sprint 3**: Speaker override persistence, segment-level controls, meeting history, and advanced export
+- **Sprint 4**: Advanced AI features (auto-speaker detection, meeting insights, predictive text)
+- **Sprint 5**: Enterprise features (user management, team collaboration, administrative controls)
+- **Sprint 6**: Automation and integrations (calendar sync, automated summaries, workflow automation)
 
 **S2.5 Enhancement Benefits:**
 

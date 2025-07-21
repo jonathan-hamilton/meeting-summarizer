@@ -4,9 +4,9 @@
 
 **Commands**:
 
-- `#generate-frontend-tests` - Generate tests for current sprint (auto-detected)
-- `#generate-frontend-tests sprint-N` - Generate tests for specific sprint (e.g., `sprint-1`, `sprint-2`)
-- `#review-all-frontend-tests` - Review and generate comprehensive tests for all sprints
+- `generate-frontend-tests` - Generate tests for current sprint (auto-detected)
+- `generate-frontend-tests sprint-N` - Generate tests for specific sprint (e.g., `sprint-1`, `sprint-2`)
+- `review-all-frontend-tests` - Review and generate comprehensive tests for all sprints
 
 ## Command Usage Examples
 
