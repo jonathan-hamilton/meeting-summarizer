@@ -57,12 +57,20 @@ export interface TranscriptionResponse {
   speakerMappings?: SpeakerMapping[]; // S2.2: Speaker mappings
 }
 
-// Speaker Mapping Types (S2.2)
+// Speaker Mapping Types (S2.2, enhanced in S2.5)
+export const SpeakerSource = {
+  AutoDetected: 'AutoDetected',
+  ManuallyAdded: 'ManuallyAdded'
+} as const;
+
+export type SpeakerSource = typeof SpeakerSource[keyof typeof SpeakerSource];
+
 export interface SpeakerMapping {
   speakerId: string; // "Speaker 1", "Speaker 2", etc.
   name: string; // "John Smith"
   role: string; // "Manager", "Developer", etc.
   transcriptionId: string;
+  source?: SpeakerSource; // S2.5: Track speaker origin
 }
 
 export interface SpeakerMappingRequest {

@@ -3,7 +3,24 @@ using System.ComponentModel.DataAnnotations;
 namespace MeetingSummarizer.Api.Models;
 
 /// <summary>
+/// Enumeration for speaker source tracking (S2.5)
+/// </summary>
+public enum SpeakerSource
+{
+    /// <summary>
+    /// Speaker was automatically detected during transcription
+    /// </summary>
+    AutoDetected,
+
+    /// <summary>
+    /// Speaker was manually added by user
+    /// </summary>
+    ManuallyAdded
+}
+
+/// <summary>
 /// Model for mapping speaker labels to real names and roles
+/// Enhanced with source tracking for S2.5
 /// </summary>
 public class SpeakerMapping
 {
@@ -32,6 +49,11 @@ public class SpeakerMapping
     /// </summary>
     [Required(ErrorMessage = "Transcription ID is required")]
     public string TranscriptionId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Source of the speaker (AutoDetected or ManuallyAdded) - S2.5
+    /// </summary>
+    public SpeakerSource Source { get; set; } = SpeakerSource.AutoDetected;
 }
 
 /// <summary>

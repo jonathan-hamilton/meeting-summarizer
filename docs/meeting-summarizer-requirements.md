@@ -34,6 +34,15 @@
 - REQ-SPK-13: System shall provide clear visual distinction between auto-detected and manually-added speakers
 - REQ-SPK-14: System shall validate that at least one speaker exists before allowing save operation
 - REQ-SPK-15: System shall persist manually-added speakers with appropriate metadata for future reference
+- REQ-SPK-16: System shall display all speakers (auto-detected and manually-added) in the main Speaker Mappings interface
+- REQ-SPK-17: System shall show manually-added speakers in "Mapped Speakers" section when they have name/role assigned
+- REQ-SPK-18: System shall show manually-added speakers in "Unmapped Speakers" section when they lack complete mapping information
+- REQ-SPK-19: System shall update speaker mapping display in real-time when speakers are added/removed in the dialog
+- REQ-SPK-20: System shall allow users to manually override any speaker mapping assignment when API detection is incorrect
+- REQ-SPK-21: System shall provide an "Edit Mapping" option for each speaker that allows modification of name and role assignments
+- REQ-SPK-22: System shall clearly indicate when speaker mappings have been manually overridden vs auto-detected
+- REQ-SPK-23: System shall preserve original auto-detected mappings as fallback when user overrides are cleared
+- REQ-SPK-24: System shall validate manual override inputs to prevent duplicate speaker names within the same meeting
 
 ### Summarization
 
@@ -55,6 +64,8 @@
 - REQ-CNT-8: System shall enable search by participant names across meeting history
 - REQ-CNT-9: System shall maintain audit trail of manual speaker additions and removals with timestamps
 - REQ-CNT-10: System shall preserve speaker management history for meeting reconstruction and analysis
+- REQ-CNT-11: System shall track all manual speaker mapping overrides with user attribution and timestamps
+- REQ-CNT-12: System shall provide option to revert manual overrides back to original auto-detected mappings
 
 ### User Management
 
@@ -168,6 +179,14 @@
 - Confirmation dialogs for speaker removal to prevent accidental deletion
 - Validation ensuring minimum one speaker exists before save operation
 - Clear labeling and accessible design following Material-UI guidelines
+- **Display Integration**: All speakers (auto-detected + manually-added) appear in main Speaker Mappings interface
+- **Mapped Speaker Display**: Manually-added speakers with name/role show in "Mapped Speakers" section
+- **Unmapped Speaker Display**: Manually-added speakers without complete mapping show in "Unmapped Speakers" section
+- **Real-time Updates**: Speaker mapping display updates immediately when speakers are added/removed in dialog
+- **Manual Override Interface**: Provide intuitive editing capabilities for correcting speaker assignments
+- **Override Indicators**: Visual cues to distinguish manually-overridden mappings from auto-detected ones
+- **Validation Feedback**: Real-time validation to prevent conflicts in speaker assignments
+- **Revert Functionality**: One-click option to restore original auto-detected mappings
 
 **Backend Integration:**
 
