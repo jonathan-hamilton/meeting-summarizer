@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
@@ -22,4 +23,9 @@ export default defineConfig({
       'src/__tests__/setup.ts'
     ],
   },
+  resolve: {
+    alias: {
+      '@mui/icons-material': path.resolve(__dirname, 'src/__tests__/mocks/@mui/icons-material.ts')
+    }
+  }
 })

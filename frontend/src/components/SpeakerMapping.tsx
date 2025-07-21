@@ -7,10 +7,15 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { Person as PersonIcon, Edit as EditIcon } from "@mui/icons-material";
+import {
+  Person as PersonIcon,
+  Edit as EditIcon,
+  Mic as MicIcon,
+  PersonAdd as PersonAddIcon,
+} from "@mui/icons-material";
 import { apiService } from "../services/apiService";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
-import type { SpeakerMapping } from "../types";
+import type { SpeakerMapping, SpeakerSource } from "../types";
 
 interface SpeakerMappingProps {
   transcriptionId: string;
@@ -59,9 +64,21 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     }
   };
 
-  const unmappedSpeakers = detectedSpeakers.filter(
-    (speaker) => !mappings.some((m) => m.speakerId === speaker)
-  );
+  // S2.6: Enhanced speaker list calculation to include both auto-detected and manually-added speakers
+  const allSpeakers = [
+    ...detectedSpeakers,
+    ...mappings.map((m) => m.speakerId),
+  ];
+  const uniqueSpeakers = Array.from(new Set(allSpeakers));
+
+  // Speakers are unmapped if they have no mapping or no name assigned
+  const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
+    const mapping = mappings.find((m) => m.speakerId === speakerId);
+    return !mapping || !mapping.name; // Unmapped if no mapping or no name
+  });
+
+  // Mapped speakers are those with both name assigned (role is optional)
+  const mappedSpeakers = mappings.filter((mapping) => mapping.name);
 
   if (loading) {
     return (
@@ -92,6 +109,11 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <PersonIcon color="primary" />
           <Typography variant="h6">Speaker Mappings</Typography>
+          {uniqueSpeakers.length > 0 && (
+            <Typography variant="body2" color="text.secondary">
+              ({mappedSpeakers.length}/{uniqueSpeakers.length} mapped)
+            </Typography>
+          )}
         </Box>
 
         <Button
@@ -110,23 +132,36 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         </Alert>
       )}
 
-      {mappings.length > 0 && (
+      {mappedSpeakers.length > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Mapped Speakers:
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {mappings.map((mapping) => (
-              <Chip
-                key={mapping.speakerId}
-                label={`${mapping.speakerId} → ${mapping.name}${
-                  mapping.role ? ` (${mapping.role})` : ""
-                }`}
-                variant="filled"
-                color="primary"
-                size="small"
-              />
-            ))}
+            {mappedSpeakers.map((mapping) => {
+              // S2.6: Source-aware display with appropriate icons
+              const isAutoDetected =
+                !mapping.source ||
+                mapping.source === ("AutoDetected" as SpeakerSource);
+              const Icon = isAutoDetected ? MicIcon : PersonAddIcon;
+              const sourceLabel = isAutoDetected
+                ? "auto-detected"
+                : "manually-added";
+
+              return (
+                <Chip
+                  key={mapping.speakerId}
+                  icon={<Icon />}
+                  label={`${mapping.speakerId} → ${mapping.name}${
+                    mapping.role ? ` (${mapping.role})` : ""
+                  }`}
+                  variant="filled"
+                  color="primary"
+                  size="small"
+                  title={`${sourceLabel} speaker`}
+                />
+              );
+            })}
           </Box>
         </Box>
       )}
@@ -137,19 +172,36 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
             Unmapped Speakers:
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {unmappedSpeakers.map((speaker) => (
-              <Chip
-                key={speaker}
-                label={speaker}
-                variant="outlined"
-                size="small"
-              />
-            ))}
+            {unmappedSpeakers.map((speakerId) => {
+              // S2.6: Determine speaker source for unmapped speakers
+              const isDetectedSpeaker = detectedSpeakers.includes(speakerId);
+              const mapping = mappings.find((m) => m.speakerId === speakerId);
+              const isAutoDetected =
+                isDetectedSpeaker &&
+                (!mapping ||
+                  !mapping.source ||
+                  mapping.source === ("AutoDetected" as SpeakerSource));
+              const Icon = isAutoDetected ? MicIcon : PersonAddIcon;
+              const sourceLabel = isAutoDetected
+                ? "auto-detected"
+                : "manually-added";
+
+              return (
+                <Chip
+                  key={speakerId}
+                  icon={<Icon />}
+                  label={speakerId}
+                  variant="outlined"
+                  size="small"
+                  title={`${sourceLabel} speaker`}
+                />
+              );
+            })}
           </Box>
         </Box>
       )}
 
-      {detectedSpeakers.length === 0 && (
+      {detectedSpeakers.length === 0 && mappings.length === 0 && (
         <Typography variant="body2" color="text.secondary">
           No speakers detected in this transcription.
         </Typography>

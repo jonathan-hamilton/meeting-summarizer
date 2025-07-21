@@ -224,6 +224,42 @@ Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intell
 
 As a user, I want manually-added speakers to appear in the main Speaker Mappings section alongside auto-detected speakers so that I can see all speakers in one unified view and understand their mapping status.
 
+### S2.6 Status: COMPLETE ✅ (Speaker Mapping Display Integration Fix)
+
+**Completion Date:** July 21, 2025
+
+**Implementation Summary:**
+
+- Enhanced SpeakerMappingComponent with comprehensive speaker list calculation logic
+- Implemented source-aware display with distinct icons for auto-detected vs manually-added speakers
+- Created unified speaker display showing both detected and manually-added speakers
+- Fixed unmapped speaker calculation to include all speaker types
+- Added real-time synchronization between dialog changes and main display
+- Comprehensive test coverage with 18 passing tests covering all S2.6 functionality
+
+**Acceptance Criteria Status:**
+✅ Manually-added speakers appear in "Mapped Speakers" section - Implemented with enhanced logic
+✅ Manually-added speakers appear in "Unmapped Speakers" section - Complete calculation fix
+✅ All speakers included in main Speaker Mappings display - Unified speaker list created
+✅ Clear visual distinction between speaker sources - MicIcon vs PersonAddIcon indicators
+✅ Accurate speaker count and status - Enhanced calculation includes all speakers
+✅ SpeakerMappingComponent logic enhanced - Comprehensive speaker array processing
+✅ Real-time updates for speaker changes - State synchronization implemented
+
+**Technical Notes:**
+
+- Fixed root cause: SpeakerMappingComponent now considers both detectedSpeakers and mappings arrays
+- Enhanced speaker list calculation creates comprehensive unique speaker set
+- Source-aware display logic provides clear visual indicators for speaker origins
+- Comprehensive test suite validates all enhanced display functionality
+- No breaking changes to existing auto-detected speaker functionality
+
+**Integration Points:**
+
+- Builds on S2.5 Enhanced Speaker Management Interface
+- Provides unified display foundation for S2.7 Manual Speaker Override Interface
+- Maintains backward compatibility with existing speaker mapping workflows
+
 ### S2.6 Acceptance Criteria
 
 **Visual Display Requirements:**
