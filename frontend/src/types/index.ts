@@ -92,6 +92,56 @@ export interface RequestConfig {
   headers?: Record<string, string>;
 }
 
+// Summary Types (S2.4)
+export const SummaryStyle = {
+  Brief: 'Brief',
+  Detailed: 'Detailed',
+  ActionItems: 'ActionItems',
+  KeyDecisions: 'KeyDecisions',
+  ExecutiveSummary: 'ExecutiveSummary'
+} as const;
+
+export type SummaryStyle = typeof SummaryStyle[keyof typeof SummaryStyle];
+
+export interface SummaryRequest {
+  transcript: string;
+  style: SummaryStyle;
+  targetRole?: string;
+  maxTokens?: number;
+  speakerMappings?: SpeakerMapping[];
+}
+
+export interface TranscriptionSummaryRequest {
+  transcriptionId: string;
+  style: SummaryStyle;
+  targetRole?: string;
+  maxTokens?: number;
+}
+
+export interface SummaryResult {
+  summaryId: string;
+  transcriptionId: string;
+  summaryType: SummaryStyle;
+  content: string;
+  actionItems?: string[];
+  keyDecisions?: string[];
+  nextSteps?: string[];
+  generatedAt: string;
+  generatedFor?: string;
+  processingTimeMs: number;
+  tokenCount: number;
+  usedSpeakerMappings: boolean;
+}
+
+export interface SummaryOptions {
+  style: SummaryStyle;
+  targetRole?: string;
+  maxTokens: number;
+  temperature: number;
+}
+
+export type ExportFormat = 'text' | 'markdown' | 'html';
+
 // Common UI Types
 export interface LoadingState {
   isLoading: boolean;

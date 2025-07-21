@@ -22,7 +22,10 @@ const TranscriptDisplayDemo = React.lazy(
   () => import("./demo/TranscriptDisplayDemo")
 );
 const SpeakerMappingDemo = React.lazy(
-  () => import("./components/SpeakerMappingDemo")
+  () => import("./demo/SpeakerMappingDemo")
+);
+const SummaryDisplayDemo = React.lazy(
+  () => import("./demo/SummaryDisplayDemo")
 );
 
 // Main app content component
@@ -82,6 +85,15 @@ const AppContent: React.FC = () => {
                     }
                   >
                     <SpeakerMappingDemo />
+                  </React.Suspense>
+                </Grid>
+                <Grid size={12}>
+                  <React.Suspense
+                    fallback={
+                      <Typography>Loading summary display demo...</Typography>
+                    }
+                  >
+                    <SummaryDisplayDemo />
                   </React.Suspense>
                 </Grid>
               </>

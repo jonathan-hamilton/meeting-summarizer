@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, Paper } from "@mui/material";
-import { SpeakerMappingComponent } from "./SpeakerMapping";
+import { SpeakerMappingComponent } from "../components/SpeakerMapping";
 import type { SpeakerMapping } from "../types";
 
 export const SpeakerMappingDemo: React.FC = () => {

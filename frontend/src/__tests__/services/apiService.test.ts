@@ -298,6 +298,255 @@ describe('ApiService - Critical Test Coverage - S2.1', () => {
     });
   });
 
+  describe('S2.4 Summary Generation Operations', () => {
+    it('should generate summary from transcript', async () => {
+      const mockRequest = {
+        transcript: 'Meeting transcript content...',
+        style: 'Brief' as const,
+        targetRole: 'Product Manager',
+        maxTokens: 500,
+      };
+      
+      const mockSummaryResult = {
+        summaryId: 'summary-001',
+        transcriptionId: 'test-transcription-001',
+        summaryType: 'Brief',
+        content: 'Brief summary of the meeting...',
+        generatedAt: '2024-01-01T10:00:00Z',
+        processingTimeMs: 1500,
+        tokenCount: 85,
+        generatedFor: 'Product Manager',
+        usedSpeakerMappings: false,
+      };
+      
+      const mockResponse = {
+        data: mockSummaryResult,
+        success: true,
+      };
+      
+      mockAxiosInstance.request.mockResolvedValue({ data: mockSummaryResult });
+
+      const result = await apiService.generateSummary(mockRequest);
+      
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+        method: 'POST',
+        url: '/api/summary/generate',
+        data: mockRequest,
+        timeout: 60000,
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('should generate summary from transcription ID', async () => {
+      const transcriptionId = 'test-transcription-001';
+      const mockRequest = {
+        transcriptionId,
+        style: 'Detailed' as const,
+        targetRole: 'Engineering Manager',
+        maxTokens: 1000,
+      };
+      
+      const mockSummaryResult = {
+        summaryId: 'summary-002',
+        transcriptionId,
+        summaryType: 'Detailed',
+        content: 'Detailed analysis of the meeting...',
+        generatedAt: '2024-01-01T10:05:00Z',
+        processingTimeMs: 2500,
+        tokenCount: 250,
+        generatedFor: 'Engineering Manager',
+        usedSpeakerMappings: true,
+        actionItems: ['Review code changes', 'Schedule team meeting'],
+        keyDecisions: ['Approved new architecture'],
+        nextSteps: ['Begin implementation phase'],
+      };
+      
+      mockAxiosInstance.request.mockResolvedValue({ data: mockSummaryResult });
+
+      const result = await apiService.generateTranscriptionSummary(transcriptionId, mockRequest);
+      
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+        method: 'POST',
+        url: `/api/summary/${transcriptionId}/summarize`,
+        data: mockRequest,
+        timeout: 60000,
+      });
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockSummaryResult);
+    });
+
+    it('should get summarization service status', async () => {
+      const mockStatus = {
+        status: 'healthy',
+        service: 'OpenAI GPT-4',
+        isAvailable: true,
+      };
+      
+      mockAxiosInstance.request.mockResolvedValue({ data: mockStatus });
+
+      const result = await apiService.getSummarizationStatus();
+      
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith({
+        method: 'GET',
+        url: '/api/summary/status',
+      });
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(mockStatus);
+    });
+
+    it('should handle summary generation with minimal request', async () => {
+      const mockRequest = {
+        transcript: 'Short meeting content',
+        style: 'Brief' as const,
+      };
+      
+      const mockSummaryResult = {
+        summaryId: 'summary-003',
+        transcriptionId: '',
+        summaryType: 'Brief',
+        content: 'Brief summary...',
+        generatedAt: '2024-01-01T10:10:00Z',
+        processingTimeMs: 800,
+        tokenCount: 45,
+        usedSpeakerMappings: false,
+      };
+      
+      mockAxiosInstance.request.mockResolvedValue({ data: mockSummaryResult });
+
+      const result = await apiService.generateSummary(mockRequest);
+      
+      expect(result.success).toBe(true);
+      expect(result.data?.summaryType).toBe('Brief');
+    });
+
+    it('should handle summary generation errors', async () => {
+      const mockRequest = {
+        transcript: 'Meeting content',
+        style: 'Brief' as const,
+      };
+      
+      const error = {
+        response: {
+          status: 400,
+          data: { 
+            message: 'Invalid request: transcript too short',
+            errors: ['Transcript must be at least 10 words']
+          }
+        }
+      };
+      
+      mockAxiosInstance.request.mockRejectedValue(error);
+
+      const result = await apiService.generateSummary(mockRequest);
+      
+      expect(result.success).toBe(false);
+      expect(result.message).toBe('Invalid request: transcript too short');
+      expect(result.errors).toEqual(['Transcript must be at least 10 words']);
+    });
+
+    it('should handle transcription summary with role-aware features', async () => {
+      const transcriptionId = 'test-transcription-002';
+      const mockRequest = {
+        transcriptionId,
+        style: 'ActionItems' as const,
+        targetRole: 'Project Manager',
+        maxTokens: 750,
+      };
+      
+      const mockSummaryResult = {
+        summaryId: 'summary-004',
+        transcriptionId,
+        summaryType: 'ActionItems',
+        content: 'Meeting action items and next steps...',
+        generatedAt: '2024-01-01T10:15:00Z',
+        processingTimeMs: 1800,
+        tokenCount: 120,
+        generatedFor: 'Project Manager',
+        usedSpeakerMappings: true,
+        actionItems: [
+          'Update project timeline',
+          'Schedule stakeholder review',
+          'Prepare budget proposal'
+        ],
+        nextSteps: [
+          'Begin requirements gathering',
+          'Set up development environment'
+        ],
+      };
+      
+      mockAxiosInstance.request.mockResolvedValue({ data: mockSummaryResult });
+
+      const result = await apiService.generateTranscriptionSummary(transcriptionId, mockRequest);
+      
+      expect(result.success).toBe(true);
+      expect(result.data?.generatedFor).toBe('Project Manager');
+      expect(result.data?.actionItems).toHaveLength(3);
+      expect(result.data?.usedSpeakerMappings).toBe(true);
+    });
+
+    it('should handle summarization service availability check', async () => {
+      const mockStatus = {
+        status: 'healthy',
+        service: 'OpenAI GPT-4',
+        isAvailable: true,
+      };
+      
+      mockAxiosInstance.request.mockResolvedValue({ data: mockStatus });
+
+      const result = await apiService.getSummarizationStatus();
+      
+      expect(result.success).toBe(true);
+      expect(result.data?.status).toBe('healthy');
+      expect(result.data?.service).toBe('OpenAI GPT-4');
+      expect(result.data?.isAvailable).toBe(true);
+    });
+
+    it('should handle summary generation timeout', async () => {
+      const mockRequest = {
+        transcript: 'Very long meeting transcript content...',
+        style: 'Detailed' as const,
+        maxTokens: 2000,
+      };
+      
+      const timeoutError = new Error('Request timeout - summary generation taking too long');
+      mockAxiosInstance.request.mockRejectedValue(timeoutError);
+
+      const result = await apiService.generateSummary(mockRequest);
+      
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('timeout');
+    });
+
+    it('should handle different summary styles', async () => {
+      const styles = ['Brief', 'Detailed', 'ActionItems', 'KeyDecisions', 'ExecutiveSummary'] as const;
+      
+      for (const style of styles) {
+        const mockRequest = {
+          transcript: 'Meeting content for testing',
+          style,
+        };
+        
+        const mockSummaryResult = {
+          summaryId: `summary-${style.toLowerCase()}`,
+          transcriptionId: '',
+          summaryType: style,
+          content: `${style} summary content...`,
+          generatedAt: '2024-01-01T10:25:00Z',
+          processingTimeMs: 1200,
+          tokenCount: 80,
+          usedSpeakerMappings: false,
+        };
+        
+        mockAxiosInstance.request.mockResolvedValue({ data: mockSummaryResult });
+
+        const result = await apiService.generateSummary(mockRequest);
+        
+        expect(result.success).toBe(true);
+        expect(result.data?.summaryType).toBe(style);
+      }
+    });
+  });
+
   describe('Configuration Management', () => {
     it('should get base URL', () => {
       const result = apiService.getBaseURL();

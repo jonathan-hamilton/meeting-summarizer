@@ -7,7 +7,10 @@ import type {
   RequestConfig, 
   TranscriptionResponse,
   SpeakerMappingRequest,
-  SpeakerMappingResponse
+  SpeakerMappingResponse,
+  SummaryRequest,
+  SummaryResult,
+  TranscriptionSummaryRequest
 } from '../types';
 
 class ApiService {
@@ -200,6 +203,35 @@ class ApiService {
     return this.request<void>({
       method: 'DELETE',
       url: `/api/SpeakerMapping/${transcriptionId}`,
+    });
+  }
+
+  // Summary endpoints (S2.4)
+  async generateSummary(request: SummaryRequest): Promise<ApiResponse<SummaryResult>> {
+    return this.request<SummaryResult>({
+      method: 'POST',
+      url: '/api/summary/generate',
+      data: request,
+      timeout: 60000, // 1 minute for AI generation
+    });
+  }
+
+  async generateTranscriptionSummary(
+    transcriptionId: string, 
+    request: TranscriptionSummaryRequest
+  ): Promise<ApiResponse<SummaryResult>> {
+    return this.request<SummaryResult>({
+      method: 'POST',
+      url: `/api/summary/${transcriptionId}/summarize`,
+      data: request,
+      timeout: 60000, // 1 minute for AI generation
+    });
+  }
+
+  async getSummarizationStatus(): Promise<ApiResponse<{ status: string; service: string; isAvailable: boolean }>> {
+    return this.request<{ status: string; service: string; isAvailable: boolean }>({
+      method: 'GET',
+      url: '/api/summary/status',
     });
   }
 
