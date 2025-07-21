@@ -36,12 +36,22 @@ public class SpeakerMappingController : ControllerBase
     {
         try
         {
+            if (request == null)
+            {
+                return BadRequest("Request cannot be null");
+            }
+
             _logger.LogInformation("Saving speaker mappings for transcription {TranscriptionId}",
                 request.TranscriptionId);
 
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            if (request.Mappings == null || !request.Mappings.Any())
+            {
+                return BadRequest("Mappings cannot be null or empty");
             }
 
             // Validate that speaker IDs are unique within the request
@@ -68,7 +78,7 @@ public class SpeakerMappingController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving speaker mappings for transcription {TranscriptionId}",
-                request.TranscriptionId);
+                request?.TranscriptionId ?? "unknown");
             return StatusCode(500, "An error occurred while saving speaker mappings");
         }
     }
@@ -100,7 +110,7 @@ public class SpeakerMappingController : ControllerBase
             {
                 _logger.LogInformation("No speaker mappings found for transcription {TranscriptionId}",
                     transcriptionId);
-                return NotFound($"No speaker mappings found for transcription {transcriptionId}");
+                return NotFound();
             }
 
             _logger.LogInformation("Found {Count} speaker mappings for transcription {TranscriptionId}",
@@ -122,7 +132,7 @@ public class SpeakerMappingController : ControllerBase
     /// <param name="transcriptionId">ID of the transcription</param>
     /// <returns>Success status</returns>
     [HttpDelete("{transcriptionId}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteSpeakerMappings(string transcriptionId)
@@ -143,13 +153,13 @@ public class SpeakerMappingController : ControllerBase
             {
                 _logger.LogInformation("No speaker mappings found to delete for transcription {TranscriptionId}",
                     transcriptionId);
-                return NotFound($"No speaker mappings found for transcription {transcriptionId}");
+                return NotFound();
             }
 
             _logger.LogInformation("Successfully deleted speaker mappings for transcription {TranscriptionId}",
                 transcriptionId);
 
-            return Ok(new { message = "Speaker mappings deleted successfully" });
+            return NoContent();
         }
         catch (Exception ex)
         {

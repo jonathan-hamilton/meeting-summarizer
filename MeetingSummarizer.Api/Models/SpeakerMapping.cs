@@ -69,6 +69,16 @@ public class SpeakerMappingResponse
     public List<SpeakerMapping> Mappings { get; set; } = new();
 
     /// <summary>
+    /// Indicates whether the operation was successful
+    /// </summary>
+    public bool Success { get; set; } = true;
+
+    /// <summary>
+    /// Message describing the result of the operation
+    /// </summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>
     /// Timestamp when mappings were last updated
     /// </summary>
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;

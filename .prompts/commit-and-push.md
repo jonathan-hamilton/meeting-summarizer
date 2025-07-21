@@ -15,9 +15,11 @@ This prompt handles the complete workflow for updating sprint documentation and 
 - Update implementation progress section
 - Document any technical notes or deviations from original plan
 - Update the technical-debt.md where/if appropriate
+- Before making updates to documentation, present propsed changes to the User for confirmation
 
 ### Step 2: Git Status Check
 
+- Before executing any git operations, Step 1 needs to be complete
 - Run `git status` to show current changes
 - Present changes to user for confirmation
 - Wait for user approval before proceeding
