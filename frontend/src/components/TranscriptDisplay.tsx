@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -27,26 +27,56 @@ import {
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
 import SummaryDisplay from "./SummaryDisplay";
+import { EnhancedSpeakerSegment } from "./EnhancedSpeakerSegment";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
   loading?: boolean;
   speakerMappings?: SpeakerMapping[]; // Optional external speaker mappings
+  enableSpeakerReassignment?: boolean; // S3.1: Enable speaker reassignment controls
 }
 
 const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   transcription,
   loading = false,
   speakerMappings,
+  enableSpeakerReassignment = false, // Default to false for backward compatibility
 }) => {
   const [copiedSegment, setCopiedSegment] = useState<string | null>(null);
   const [currentSpeakerMappings, setCurrentSpeakerMappings] = useState<
     SpeakerMapping[]
   >([]);
+  const [forceUpdateKey, setForceUpdateKey] = useState(0);
 
   // Use provided speaker mappings or those included in the transcription
   const effectiveSpeakerMappings =
     speakerMappings || transcription.speakerMappings || currentSpeakerMappings;
+
+  // Debug effect to track speaker mapping changes
+  useEffect(() => {
+    const debugInfo = {
+      effectiveMappingsCount: effectiveSpeakerMappings.length,
+      currentMappingsCount: currentSpeakerMappings.length,
+      providedMappingsCount: speakerMappings?.length || 0,
+      transcriptionMappingsCount: transcription.speakerMappings?.length || 0,
+      forceUpdateKey,
+    };
+    console.log("🔄 TranscriptDisplay: Speaker mappings changed", debugInfo);
+
+    // Also log to Vite terminal via import.meta.hot
+    if (import.meta.hot) {
+      import.meta.hot.send("custom:debug", {
+        type: "speaker-mappings-changed",
+        data: debugInfo,
+      });
+    }
+  }, [
+    effectiveSpeakerMappings,
+    currentSpeakerMappings,
+    speakerMappings,
+    transcription.speakerMappings,
+    forceUpdateKey,
+  ]);
 
   // Extract unique speakers from transcript segments
   const detectedSpeakers = transcription.speakerSegments
@@ -55,7 +85,13 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Handle speaker mappings updates
   const handleSpeakerMappingsChanged = (mappings: SpeakerMapping[]) => {
+    console.log("📝 TranscriptDisplay: Speaker mappings callback triggered", {
+      newMappingsCount: mappings.length,
+      mappings,
+    });
     setCurrentSpeakerMappings(mappings);
+    // Force a re-render to ensure UI updates
+    setForceUpdateKey((prev) => prev + 1);
   };
 
   // Helper function to resolve speaker display name
@@ -235,6 +271,15 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
         <Divider sx={{ mb: 3 }} />
 
+        {/* Temporary Debug Info */}
+        <Box sx={{ mb: 2, p: 2, bgcolor: "info.light", borderRadius: 1 }}>
+          <Typography variant="body2" color="text.secondary">
+            🐛 Debug: Effective Mappings: {effectiveSpeakerMappings.length} |
+            Current: {currentSpeakerMappings.length} | Update Key:{" "}
+            {forceUpdateKey}
+          </Typography>
+        </Box>
+
         {/* Speaker Mapping Section */}
         {detectedSpeakers.length > 0 && (
           <Box sx={{ mb: 3 }}>
@@ -282,64 +327,76 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>
               {transcription.speakerSegments.map((segment, index) => (
                 <Box key={index} sx={{ mb: 2 }}>
-                  <Accordion defaultExpanded>
-                    <AccordionSummary expandIcon={<ExpandMore />}>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={2}
-                        sx={{ width: "100%" }}
-                      >
-                        <Chip
-                          label={resolveSpeakerName(segment.speaker)}
-                          size="small"
-                          sx={{
-                            backgroundColor: getSpeakerColor(segment.speaker),
-                            color: "white",
-                            fontWeight: "bold",
-                          }}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          {formatTime(segment.start)} -{" "}
-                          {formatTime(segment.end)}
-                        </Typography>
-                        {segment.confidence && (
-                          <Typography variant="body2" color="text.secondary">
-                            {Math.round(segment.confidence * 100)}%
-                          </Typography>
-                        )}
-                        <Box sx={{ flexGrow: 1 }} />
-                        <Tooltip title="Copy segment">
-                          <IconButton
+                  {enableSpeakerReassignment ? (
+                    <EnhancedSpeakerSegment
+                      segment={segment}
+                      index={index}
+                      speakerMappings={effectiveSpeakerMappings}
+                      showReassignControls={true}
+                    />
+                  ) : (
+                    <Accordion defaultExpanded>
+                      <AccordionSummary expandIcon={<ExpandMore />}>
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={2}
+                          sx={{ width: "100%" }}
+                        >
+                          <Chip
+                            label={resolveSpeakerName(segment.speaker)}
                             size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              copyToClipboard(segment.text, `segment-${index}`);
+                            sx={{
+                              backgroundColor: getSpeakerColor(segment.speaker),
+                              color: "white",
+                              fontWeight: "bold",
                             }}
-                            color={
-                              copiedSegment === `segment-${index}`
-                                ? "success"
-                                : "default"
-                            }
-                          >
-                            <ContentCopy fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          lineHeight: 1.6,
-                          userSelect: "text",
-                          cursor: "text",
-                        }}
-                      >
-                        {segment.text}
-                      </Typography>
-                    </AccordionDetails>
-                  </Accordion>
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            {formatTime(segment.start)} -{" "}
+                            {formatTime(segment.end)}
+                          </Typography>
+                          {segment.confidence && (
+                            <Typography variant="body2" color="text.secondary">
+                              {Math.round(segment.confidence * 100)}%
+                            </Typography>
+                          )}
+                          <Box sx={{ flexGrow: 1 }} />
+                          <Tooltip title="Copy segment">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyToClipboard(
+                                  segment.text,
+                                  `segment-${index}`
+                                );
+                              }}
+                              color={
+                                copiedSegment === `segment-${index}`
+                                  ? "success"
+                                  : "default"
+                              }
+                            >
+                              <ContentCopy fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            lineHeight: 1.6,
+                            userSelect: "text",
+                            cursor: "text",
+                          }}
+                        >
+                          {segment.text}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  )}
                 </Box>
               ))}
             </Box>

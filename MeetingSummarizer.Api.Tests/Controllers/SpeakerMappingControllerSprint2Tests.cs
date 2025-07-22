@@ -14,16 +14,21 @@ namespace MeetingSummarizer.Api.Tests.Controllers
     [TestCategory("Sprint2")]
     public class SpeakerMappingControllerSprint2Tests
     {
-        private Mock<ISpeakerMappingService> _mockSpeakerMappingService;
-        private Mock<ILogger<SpeakerMappingController>> _mockLogger;
-        private SpeakerMappingController _controller;
+        private Mock<ISpeakerMappingService> _mockSpeakerMappingService = null!;
+        private Mock<ISessionSpeakerMappingService> _mockSessionSpeakerMappingService = null!;
+        private Mock<ILogger<SpeakerMappingController>> _mockLogger = null!;
+        private SpeakerMappingController _controller = null!;
 
         [TestInitialize]
         public void Setup()
         {
             _mockSpeakerMappingService = new Mock<ISpeakerMappingService>();
+            _mockSessionSpeakerMappingService = new Mock<ISessionSpeakerMappingService>();
             _mockLogger = new Mock<ILogger<SpeakerMappingController>>();
-            _controller = new SpeakerMappingController(_mockSpeakerMappingService.Object, _mockLogger.Object);
+            _controller = new SpeakerMappingController(
+                _mockSpeakerMappingService.Object,
+                _mockSessionSpeakerMappingService.Object,
+                _mockLogger.Object);
         }
 
         #region SaveSpeakerMappings Tests - S2.2

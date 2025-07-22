@@ -12,6 +12,22 @@ import type {
   SummaryResult,
   TranscriptionSummaryRequest
 } from '../types';
+import { sessionManager, type SessionOverrideAction } from './sessionManager';
+
+// Session-based override types for S3.1
+export interface SessionOverrideRequest {
+  speakerId: string;
+  newName: string;
+  sessionId?: string;
+}
+
+export interface SessionOverrideResponse {
+  success: boolean;
+  sessionId: string;
+  originalName?: string;
+  newName: string;
+  speakerId: string;
+}
 
 class ApiService {
   private client: AxiosInstance;
@@ -185,11 +201,21 @@ class ApiService {
 
   // Speaker Mapping endpoints (S2.2)
   async saveSpeakerMappings(request: SpeakerMappingRequest): Promise<ApiResponse<SpeakerMappingResponse>> {
-    return this.request<SpeakerMappingResponse>({
-      method: 'POST',
-      url: '/api/SpeakerMapping/map',
-      data: request,
-    });
+    console.log('🔍 ApiService.saveSpeakerMappings - Raw request received:', JSON.stringify(request, null, 2));
+    
+    try {
+      const response = await this.request<SpeakerMappingResponse>({
+        method: 'POST',
+        url: '/api/SpeakerMapping/map',
+        data: request,
+      });
+      
+      console.log('🔍 ApiService.saveSpeakerMappings - Response received:', JSON.stringify(response, null, 2));
+      return response;
+    } catch (error) {
+      console.error('🔍 ApiService.saveSpeakerMappings - Error details:', error);
+      throw error;
+    }
   }
 
   async getSpeakerMappings(transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {
@@ -203,6 +229,98 @@ class ApiService {
     return this.request<void>({
       method: 'DELETE',
       url: `/api/SpeakerMapping/${transcriptionId}`,
+    });
+  }
+
+  // Session-based override methods (S3.1)
+  async applySessionOverride(request: SessionOverrideRequest): Promise<ApiResponse<SessionOverrideResponse>> {
+    // Update session activity when making API calls
+    sessionManager.updateActivity();
+    
+    // Include session ID in request
+    const sessionRequest = {
+      ...request,
+      sessionId: sessionManager.getSessionId()
+    };
+
+    const response = await this.request<SessionOverrideResponse>({
+      method: 'POST',
+      url: '/api/SpeakerMapping/session/override',
+      data: sessionRequest,
+    });
+
+    // Store override action in session manager if successful
+    if (response.success && response.data) {
+      const overrideAction: SessionOverrideAction = {
+        action: 'Override',
+        originalValue: response.data.originalName,
+        newValue: response.data.newName,
+        timestamp: new Date(),
+        fieldModified: 'speakerName'
+      };
+      
+      sessionManager.storeOverride(request.speakerId, overrideAction);
+    }
+
+    return response;
+  }
+
+  async revertSessionOverride(speakerId: string): Promise<ApiResponse<SessionOverrideResponse>> {
+    // Update session activity
+    sessionManager.updateActivity();
+    
+    const response = await this.request<SessionOverrideResponse>({
+      method: 'POST',
+      url: '/api/SpeakerMapping/session/revert',
+      data: {
+        speakerId,
+        sessionId: sessionManager.getSessionId()
+      },
+    });
+
+    // Store revert action in session manager if successful
+    if (response.success && response.data) {
+      const revertAction: SessionOverrideAction = {
+        action: 'Revert',
+        originalValue: response.data.newName, // The override that was reverted
+        newValue: response.data.originalName, // Back to original
+        timestamp: new Date(),
+        fieldModified: 'speakerName'
+      };
+      
+      sessionManager.storeOverride(speakerId, revertAction);
+    }
+
+    return response;
+  }
+
+  async clearSessionData(): Promise<ApiResponse<void>> {
+    // Update session activity
+    sessionManager.updateActivity();
+    
+    const response = await this.request<void>({
+      method: 'POST',
+      url: '/api/SpeakerMapping/session/clear',
+      data: {
+        sessionId: sessionManager.getSessionId()
+      },
+    });
+
+    // Clear local session data if server clear was successful
+    if (response.success) {
+      await sessionManager.clearSessionData();
+    }
+
+    return response;
+  }
+
+  async getSessionStatus(): Promise<ApiResponse<{ sessionId: string; isActive: boolean; overrideCount: number }>> {
+    // Update session activity
+    sessionManager.updateActivity();
+    
+    return this.request<{ sessionId: string; isActive: boolean; overrideCount: number }>({
+      method: 'GET',
+      url: `/api/SpeakerMapping/session/status/${sessionManager.getSessionId()}`,
     });
   }
 

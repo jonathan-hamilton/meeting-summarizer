@@ -113,6 +113,7 @@ public class SpeakerMappingResponse
 
 /// <summary>
 /// Service interface for speaker mapping operations
+/// Enhanced with session-based override capabilities (S3.1)
 /// </summary>
 public interface ISpeakerMappingService
 {
@@ -131,3 +132,180 @@ public interface ISpeakerMappingService
     /// </summary>
     Task<bool> DeleteSpeakerMappingsAsync(string transcriptionId);
 }
+
+/// <summary>
+/// Extended service interface for session-based speaker mapping operations (S3.1)
+/// </summary>
+public interface ISessionSpeakerMappingService : ISpeakerMappingService
+{
+    /// <summary>
+    /// Apply session-based override to a speaker mapping
+    /// </summary>
+    Task<SpeakerMappingResponse> ApplySessionOverrideAsync(string transcriptionId, string sessionId, string speakerId, string newName, string newRole);
+
+    /// <summary>
+    /// Revert a speaker override back to original values
+    /// </summary>
+    Task<SpeakerMappingResponse> RevertSessionOverrideAsync(string transcriptionId, string sessionId, string speakerId);
+
+    /// <summary>
+    /// Clear all session data for a specific session
+    /// </summary>
+    Task<bool> ClearSessionDataAsync(string sessionId);
+
+    /// <summary>
+    /// Get session override information for a transcription
+    /// </summary>
+    Task<SessionOverrideTracker?> GetSessionOverrideInfoAsync(string sessionId);
+
+    /// <summary>
+    /// Get session data for status checking
+    /// </summary>
+    Task<SessionOverrideTracker?> GetSessionDataAsync(string sessionId);
+}
+
+/// <summary>
+/// Extended speaker mapping model with session-based override tracking (S3.1)
+/// </summary>
+public class SessionSpeakerMappingWithOverride : SpeakerMapping
+{
+    /// <summary>
+    /// Original auto-detected name before any user overrides
+    /// </summary>
+    public string? OriginalName { get; set; }
+
+    /// <summary>
+    /// Original auto-detected role before any user overrides
+    /// </summary>
+    public string? OriginalRole { get; set; }
+
+    /// <summary>
+    /// Indicates whether this speaker mapping has been manually overridden by the user
+    /// </summary>
+    public bool IsOverridden { get; set; } = false;
+
+    /// <summary>
+    /// Timestamp when the override was applied during the session
+    /// </summary>
+    public DateTime? SessionTimestamp { get; set; }
+
+    /// <summary>
+    /// Session identifier for tracking session-scoped overrides
+    /// </summary>
+    public string SessionId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Session-based override tracking for speaker mapping actions (S3.1)
+/// </summary>
+public class SessionOverrideTracker
+{
+    /// <summary>
+    /// Unique identifier for the current session
+    /// </summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Dictionary of override actions keyed by speaker ID
+    /// </summary>
+    public Dictionary<string, SessionOverrideAction> Actions { get; set; } = new();
+
+    /// <summary>
+    /// Timestamp when the session was started
+    /// </summary>
+    public DateTime SessionStarted { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Timestamp of the last activity in this session
+    /// </summary>
+    public DateTime LastActivity { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Transcription ID associated with this session
+    /// </summary>
+    public string TranscriptionId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Individual session override action for audit tracking (S3.1)
+/// </summary>
+public class SessionOverrideAction
+{
+    /// <summary>
+    /// Type of action performed (Override, Revert, Clear)
+    /// </summary>
+    public string Action { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Original value before the override
+    /// </summary>
+    public string? OriginalValue { get; set; }
+
+    /// <summary>
+    /// New value after the override
+    /// </summary>
+    public string? NewValue { get; set; }
+
+    /// <summary>
+    /// Timestamp when this action was performed
+    /// </summary>
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Field that was modified (Name, Role)
+    /// </summary>
+    public string FieldModified { get; set; } = string.Empty;
+}
+
+#region Session API Models (S3.1)
+
+/// <summary>
+/// Request model for applying session-based speaker overrides
+/// </summary>
+public class SessionOverrideRequest
+{
+    public string SpeakerId { get; set; } = string.Empty;
+    public string NewName { get; set; } = string.Empty;
+    public string? SessionId { get; set; }
+}
+
+/// <summary>
+/// Request model for reverting session-based speaker overrides
+/// </summary>
+public class SessionRevertRequest
+{
+    public string SpeakerId { get; set; } = string.Empty;
+    public string SessionId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request model for clearing session data
+/// </summary>
+public class SessionClearRequest
+{
+    public string SessionId { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Response model for session-based override operations
+/// </summary>
+public class SessionOverrideResponse
+{
+    public bool Success { get; set; }
+    public string SessionId { get; set; } = string.Empty;
+    public string SpeakerId { get; set; } = string.Empty;
+    public string? OriginalName { get; set; }
+    public string NewName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Response model for session status queries
+/// </summary>
+public class SessionStatusResponse
+{
+    public string SessionId { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public int OverrideCount { get; set; }
+}
+
+#endregion

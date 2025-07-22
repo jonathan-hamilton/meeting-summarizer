@@ -59,9 +59,20 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   }, [transcriptionId]);
 
   const handleMappingsSaved = (newMappings: SpeakerMapping[]) => {
+    console.log("🔗 SpeakerMappingComponent: handleMappingsSaved called", {
+      newMappingsCount: newMappings.length,
+      hasOnMappingsChanged: !!onMappingsChanged,
+      newMappings,
+    });
+
     setMappings(newMappings);
+
     if (onMappingsChanged) {
+      console.log("🔗 SpeakerMappingComponent: Calling onMappingsChanged");
       onMappingsChanged(newMappings);
+      console.log("🔗 SpeakerMappingComponent: onMappingsChanged completed");
+    } else {
+      console.log("❌ SpeakerMappingComponent: No onMappingsChanged callback");
     }
   };
 

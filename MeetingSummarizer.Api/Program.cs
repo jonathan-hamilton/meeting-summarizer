@@ -39,8 +39,9 @@ builder.Services.AddCors(options =>
 // Configure transcription service with automatic OpenAI/Mock fallback
 builder.Services.AddTranscriptionService(builder.Configuration);
 
-// Register speaker mapping service (S2.2)
-builder.Services.AddScoped<ISpeakerMappingService, InMemorySpeakerMappingService>();
+// Register session-based speaker mapping service (S3.1)
+builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
+builder.Services.AddScoped<ISessionSpeakerMappingService, SessionSpeakerMappingService>();
 
 // Register summarization service with automatic OpenAI/Mock fallback (S2.3)
 builder.Services.AddSummarizationService(builder.Configuration);

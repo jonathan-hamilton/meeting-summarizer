@@ -26,12 +26,7 @@ import {
   Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { apiService } from "../services/apiService";
-import type {
-  SpeakerMapping,
-  SpeakerMappingRequest,
-  SpeakerSource,
-  ValidationError,
-} from "../types";
+import type { SpeakerMapping, SpeakerSource, ValidationError } from "../types";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -416,20 +411,30 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   };
 
   const handleSave = async () => {
+    alert("🚀 handleSave called!"); // Temporary debug alert
+    console.log("🚀 SpeakerMappingDialog: handleSave function called");
+
     try {
       setLoading(true);
       setError(null);
 
       // S2.7: Validate all mappings before saving
-      if (!validateAllMappings()) {
+      console.log("🔍 Validating mappings...", { mappings });
+      const validationResult = validateAllMappings();
+      console.log("🔍 Validation result:", validationResult);
+
+      if (!validationResult) {
+        console.log("❌ Validation failed");
         setError("Please fix validation errors before saving.");
         return;
       }
 
       // Filter out mappings with empty names (optional mappings)
       const validMappings = mappings.filter((m) => m.name.trim() !== "");
+      console.log("🔍 Valid mappings after filtering:", validMappings);
 
       if (validMappings.length === 0) {
+        console.log("❌ No valid mappings found");
         setError("Please provide at least one speaker name mapping.");
         return;
       }
@@ -474,13 +479,42 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         };
       });
 
-      const request: SpeakerMappingRequest = {
-        transcriptionId,
-        mappings: speakerMappings,
+      // Transform to PascalCase for C# backend - only send fields the backend expects
+      const backendMappings = speakerMappings.map((mapping) => ({
+        SpeakerId: mapping.speakerId,
+        Name: mapping.name,
+        Role: mapping.role,
+        TranscriptionId: mapping.transcriptionId,
+        Source: 0, // Always send as integer 0 (AutoDetected enum value)
+      }));
+
+      const request = {
+        TranscriptionId: transcriptionId,
+        Mappings: backendMappings,
       };
 
+      console.log(
+        "🚀 Backend-compatible request being sent:",
+        JSON.stringify(request, null, 2)
+      );
+
       // Save via API
+      console.log("🚀 SpeakerMappingDialog: About to save mappings", {
+        transcriptionId,
+        mappingsToSave: mappings.length,
+        request: request,
+        speakerMappings: speakerMappings,
+      });
+
+      // Send backend-compatible PascalCase format
+      // @ts-expect-error - Using backend format that doesn't match frontend types
       const response = await apiService.saveSpeakerMappings(request);
+
+      console.log("✅ SpeakerMappingDialog: API response received", {
+        success: response.success,
+        hasData: !!response.data,
+        mappingsCount: response.data?.mappings?.length || 0,
+      });
 
       setSuccess(true);
 
@@ -491,7 +525,22 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
       // Notify parent component
       if (onMappingsSaved && response.data) {
+        console.log(
+          "✅ SpeakerMappingDialog: Calling onMappingsSaved callback",
+          {
+            mappingsCount: response.data.mappings.length,
+            mappings: response.data.mappings,
+            hasCallback: !!onMappingsSaved,
+          }
+        );
         onMappingsSaved(response.data.mappings);
+        console.log("✅ SpeakerMappingDialog: Callback completed");
+      } else {
+        console.log("❌ SpeakerMappingDialog: Callback NOT called", {
+          hasCallback: !!onMappingsSaved,
+          hasResponseData: !!response.data,
+          responseSuccess: response.success,
+        });
       }
 
       // Close dialog after short delay to show success message

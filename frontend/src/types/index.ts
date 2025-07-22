@@ -173,6 +173,36 @@ export interface SummaryOptions {
 
 export type ExportFormat = 'text' | 'markdown' | 'html';
 
+// Session-Based Override Types (S3.1)
+export interface SessionOverrideRequest {
+  speakerId: string;
+  newName: string;
+  sessionId?: string;
+}
+
+export interface SessionRevertRequest {
+  speakerId: string;
+  sessionId: string;
+}
+
+export interface SessionClearRequest {
+  sessionId: string;
+}
+
+export interface SessionOverrideResponse {
+  success: boolean;
+  sessionId: string;
+  speakerId: string;
+  originalName?: string;
+  newName: string;
+}
+
+export interface SessionStatusResponse {
+  sessionId: string;
+  isActive: boolean;
+  overrideCount: number;
+}
+
 // Common UI Types
 export interface LoadingState {
   isLoading: boolean;
