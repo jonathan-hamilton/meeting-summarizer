@@ -1,5 +1,50 @@
 # Technical Debt & Known Issues
 
+## Recently Resolved Issues
+
+### Layout Centering and Responsive Design ✅ RESOLVED
+**Date Resolved**: 2025-01-22  
+**Component**: Frontend (React/Material-UI)  
+
+**Problem**: Application layout was not properly centered in wide viewports, causing poor UX on ultrawide monitors and inconsistent component widths.
+
+**Solution**: Implemented comprehensive responsive layout system with:
+- Viewport-based positioning using `position: fixed` and flexbox centering
+- Responsive margin system using Material-UI breakpoints (xs: 16px → xl: 64px)
+- Nested container architecture for reliable centering across all screen sizes
+
+**Files Modified**: `frontend/src/App.tsx`, `frontend/src/components/FileUpload.tsx`
+
+### Development Workflow Optimization ✅ RESOLVED
+**Date Resolved**: 2025-01-22  
+**Component**: Backend/Frontend Integration  
+
+**Problem**: Developers lacked ability to toggle between real OpenAI API calls and mock services during development.
+
+**Solution**: Implemented OpenAI service toggle system with:
+- Backend `OpenAIController.cs` with toggle endpoints
+- Frontend toggle switch (development mode only)
+- Real-time service status monitoring
+- Enhanced service configuration architecture
+
+**Files Modified**: `MeetingSummarizer.Api/Controllers/OpenAIController.cs`, `frontend/src/App.tsx`, service configuration files
+
+### Speaker Assignment Session Management ✅ RESOLVED  
+**Date Resolved**: 2025-01-22  
+**Component**: Frontend (Speaker Management)  
+
+**Problem**: Speaker assignment workflow had session persistence issues and inconsistent override behavior.
+
+**Solution**: Enhanced session-based speaker override system with:
+- Improved session override resolution logic
+- Better integration between dialog and segment components
+- Enhanced error handling and user feedback
+- Consistent speaker name resolution throughout workflow
+
+**Files Modified**: Speaker management components, session service files
+
+---
+
 ## Environment Variable Loading Issue
 
 **Status**: Open  

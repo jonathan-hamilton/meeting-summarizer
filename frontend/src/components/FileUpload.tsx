@@ -229,12 +229,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   return (
-    <Box sx={{ width: "100%", maxWidth: 800, mx: "auto" }}>
+    <Box sx={{ width: "100%" }}>
       {/* Drop Zone */}
       <Paper
         {...getRootProps()}
         sx={{
           p: 4,
+          width: "100%",
           border: "2px dashed",
           borderColor: isDragActive ? "primary.main" : "grey.300",
           backgroundColor: isDragActive ? "primary.50" : "background.paper",
@@ -293,7 +294,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Upload Queue */}
       {uploadFiles.length > 0 && (
-        <Card sx={{ mt: 3 }}>
+        <Card sx={{ mt: 3, width: "100%" }}>
           <CardContent>
             <Box
               sx={{

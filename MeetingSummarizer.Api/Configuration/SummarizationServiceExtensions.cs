@@ -1,5 +1,6 @@
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Controllers;
 
 namespace MeetingSummarizer.Api.Configuration;
 
@@ -17,12 +18,19 @@ public static class SummarizationServiceExtensions
         services.AddScoped<SummarizationService>();
         services.AddScoped<MockSummarizationService>();
 
-        // Register the appropriate service based on OpenAI configuration
+        // Register the appropriate service based on OpenAI configuration and toggle
         services.AddScoped<ISummarizationService>(serviceProvider =>
         {
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger("SummarizationServiceConfiguration");
             var openAIOptions = configuration.GetSection("OpenAI").Get<OpenAIOptions>();
+
+            // Check if OpenAI is manually disabled via toggle
+            if (!OpenAIController.IsOpenAIEnabled)
+            {
+                logger.LogInformation("OpenAI is manually disabled, using mock summarization service");
+                return serviceProvider.GetRequiredService<MockSummarizationService>();
+            }
 
             if (openAIOptions?.IsValid() == true)
             {

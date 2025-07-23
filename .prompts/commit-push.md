@@ -10,6 +10,8 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 - Identify the current story being worked on from context
 - Update the appropriate `docs/sprint_*_stories.md` file
+- Update technical-debt.md if applicable
+- Update technical-improvement.md if applicable
 - Mark story status as COMPLETE with ✅
 - Add completion timestamp and summary details
 - Update implementation progress section

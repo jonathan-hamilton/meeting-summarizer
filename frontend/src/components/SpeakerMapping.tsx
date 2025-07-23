@@ -17,6 +17,7 @@ import {
 import { apiService } from "../services/apiService";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import type { SpeakerMapping, SpeakerSource } from "../types";
+import { sessionManager } from "../services/sessionManager";
 
 interface SpeakerMappingProps {
   transcriptionId: string;
@@ -73,14 +74,29 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   ];
   const uniqueSpeakers = Array.from(new Set(allSpeakers));
 
-  // Speakers are unmapped if they have no mapping or no name assigned
-  const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
-    const mapping = mappings.find((m) => m.speakerId === speakerId);
-    return !mapping || !mapping.name; // Unmapped if no mapping or no name
-  });
+  // Get session-based overrides
+  const sessionOverrides = sessionManager.getOverrides();
 
-  // Mapped speakers are those with both name assigned (role is optional)
-  const mappedSpeakers = mappings.filter((mapping) => mapping.name);
+  // Function to check if a speaker is mapped (either through mappings or session overrides)
+  const isSpeakerMapped = (speakerId: string): boolean => {
+    // Check traditional mappings first
+    const mapping = mappings.find((m) => m.speakerId === speakerId);
+    if (mapping && mapping.name) {
+      return true;
+    }
+
+    // Check session-based overrides
+    const override = sessionOverrides[speakerId];
+    return !!(override && override.action === "Override" && override.newValue);
+  };
+
+  // Speakers are unmapped if they have no mapping or override assigned
+  const unmappedSpeakers = uniqueSpeakers.filter(
+    (speakerId) => !isSpeakerMapped(speakerId)
+  );
+
+  // Count mapped speakers (includes both traditional mappings and session overrides)
+  const mappedCount = uniqueSpeakers.filter(isSpeakerMapped).length;
 
   if (loading) {
     return (
@@ -113,7 +129,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           <Typography variant="h6">Speaker Mappings</Typography>
           {uniqueSpeakers.length > 0 && (
             <Typography variant="body2" color="text.secondary">
-              ({mappedSpeakers.length}/{uniqueSpeakers.length} mapped)
+              ({mappedCount}/{uniqueSpeakers.length} mapped)
             </Typography>
           )}
         </Box>
@@ -134,52 +150,83 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         </Alert>
       )}
 
-      {mappedSpeakers.length > 0 && (
+      {mappedCount > 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Mapped Speakers:
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {mappedSpeakers.map((mapping) => {
-              // S2.6: Source-aware display with appropriate icons
-              const isAutoDetected =
-                !mapping.source ||
-                mapping.source === ("AutoDetected" as SpeakerSource);
+            {/* Show traditional mappings */}
+            {mappings
+              .filter((mapping) => mapping.name)
+              .map((mapping) => {
+                // S2.6: Source-aware display with appropriate icons
+                const isAutoDetected =
+                  !mapping.source ||
+                  mapping.source === ("AutoDetected" as SpeakerSource);
 
-              // S2.7: Override indicator
-              const isOverridden = mapping.isOverridden;
+                // S2.7: Override indicator
+                const isOverridden = mapping.isOverridden;
 
-              let Icon = isAutoDetected ? MicIcon : PersonAddIcon;
-              let sourceLabel = isAutoDetected
-                ? "auto-detected"
-                : "manually-added";
+                let Icon = isAutoDetected ? MicIcon : PersonAddIcon;
+                let sourceLabel = isAutoDetected
+                  ? "auto-detected"
+                  : "manually-added";
 
-              // S2.7: Show override icon for overridden speakers
-              if (isOverridden) {
-                Icon = EditNoteIcon;
-                sourceLabel = "manually overridden";
-              }
+                // S2.7: Show override icon for overridden speakers
+                if (isOverridden) {
+                  Icon = EditNoteIcon;
+                  sourceLabel = "manually overridden";
+                }
 
-              return (
-                <Chip
-                  key={mapping.speakerId}
-                  icon={<Icon />}
-                  label={`${mapping.speakerId} → ${mapping.name}${
-                    mapping.role ? ` (${mapping.role})` : ""
-                  }`}
-                  variant="filled"
-                  color={isOverridden ? "secondary" : "primary"}
-                  size="small"
-                  title={`${sourceLabel} speaker${
-                    isOverridden
-                      ? ` - overridden at ${new Date(
-                          mapping.overriddenAt || ""
-                        ).toLocaleString()}`
-                      : ""
-                  }`}
-                />
-              );
-            })}
+                return (
+                  <Chip
+                    key={mapping.speakerId}
+                    icon={<Icon />}
+                    label={`${mapping.speakerId} → ${mapping.name}${
+                      mapping.role ? ` (${mapping.role})` : ""
+                    }`}
+                    variant="filled"
+                    color={isOverridden ? "secondary" : "primary"}
+                    size="small"
+                    title={`${sourceLabel} speaker${
+                      isOverridden
+                        ? ` - overridden at ${new Date(
+                            mapping.overriddenAt || ""
+                          ).toLocaleString()}`
+                        : ""
+                    }`}
+                  />
+                );
+              })}
+
+            {/* Show session-based overrides */}
+            {Object.entries(sessionOverrides)
+              .map(([speakerId, override]) => {
+                // Only show overrides that aren't already covered by traditional mappings
+                const hasMapping = mappings.find(
+                  (m) => m.speakerId === speakerId && m.name
+                );
+                if (
+                  !hasMapping &&
+                  override.action === "Override" &&
+                  override.newValue
+                ) {
+                  return (
+                    <Chip
+                      key={`override-${speakerId}`}
+                      icon={<EditNoteIcon />}
+                      label={`${speakerId} → ${override.newValue}`}
+                      variant="filled"
+                      color="info"
+                      size="small"
+                      title={`session override - ${override.newValue}`}
+                    />
+                  );
+                }
+                return null;
+              })
+              .filter(Boolean)}
           </Box>
         </Box>
       )}

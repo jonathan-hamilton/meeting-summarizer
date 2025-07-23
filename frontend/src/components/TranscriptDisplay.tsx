@@ -24,6 +24,7 @@ import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
 import SummaryDisplay from "./SummaryDisplay";
 import { EnhancedSpeakerSegment } from "./EnhancedSpeakerSegment";
+import { sessionManager } from "../services/sessionManager";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -40,26 +41,51 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const [currentSpeakerMappings, setCurrentSpeakerMappings] = useState<
     SpeakerMapping[]
   >([]);
-  const [forceUpdateKey, setForceUpdateKey] = useState(0);
+  const [speakerSegments, setSpeakerSegments] = useState(
+    transcription.speakerSegments || []
+  );
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   // Use provided speaker mappings or those included in the transcription
   const effectiveSpeakerMappings =
     speakerMappings || transcription.speakerMappings || currentSpeakerMappings;
 
   // Extract unique speakers from transcript segments
-  const detectedSpeakers = transcription.speakerSegments
-    ? Array.from(new Set(transcription.speakerSegments.map((s) => s.speaker)))
+  const detectedSpeakers = speakerSegments
+    ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
     : [];
 
   // Handle speaker mappings updates
   const handleSpeakerMappingsChanged = (mappings: SpeakerMapping[]) => {
     setCurrentSpeakerMappings(mappings);
-    // Force a re-render to ensure UI updates
-    setForceUpdateKey((prev) => prev + 1);
+    // UI will update because state changes
   };
 
+  // Handle individual speaker segment reassignment
+  const handleSpeakerSegmentChange = (
+    segmentIndex: number,
+    newSpeaker: string
+  ) => {
+    setSpeakerSegments((prevSegments) =>
+      prevSegments.map((segment, index) =>
+        index === segmentIndex ? { ...segment, speaker: newSpeaker } : segment
+      )
+    );
+
+    // Force a re-render by updating a timestamp or counter
+    // This ensures that session-based overrides are reflected in the UI
+    setForceUpdate((prev) => prev + 1);
+  };
   // Helper function to resolve speaker display name
   const resolveSpeakerName = (speakerId: string): string => {
+    // First check for session-based overrides
+    const overrides = sessionManager.getOverrides();
+    const override = overrides[speakerId];
+    if (override && override.action === "Override" && override.newValue) {
+      return override.newValue;
+    }
+
+    // Then check speaker mappings
     const mapping = effectiveSpeakerMappings.find(
       (m) => m.speakerId === speakerId
     );
@@ -224,8 +250,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         )}
 
         {/* Speaker segments display */}
-        {transcription.speakerSegments &&
-        transcription.speakerSegments.length > 0 ? (
+        {speakerSegments && speakerSegments.length > 0 ? (
           <Box>
             <Stack
               direction="row"
@@ -241,8 +266,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   size="small"
                   onClick={() =>
                     copyToClipboard(
-                      transcription
-                        .speakerSegments!.map(
+                      speakerSegments
+                        .map(
                           (s) => `${resolveSpeakerName(s.speaker)}: ${s.text}`
                         )
                         .join("\n\n")
@@ -257,13 +282,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
             {/* Speaker segments */}
             <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>
-              {transcription.speakerSegments.map((segment, index) => (
-                <Box key={index} sx={{ mb: 2 }}>
+              {speakerSegments.map((segment, index) => (
+                <Box key={`${index}-${forceUpdate}`} sx={{ mb: 2 }}>
                   <EnhancedSpeakerSegment
                     segment={segment}
                     index={index}
                     speakerMappings={effectiveSpeakerMappings}
                     showReassignControls={true}
+                    onSpeakerChange={handleSpeakerSegmentChange}
                   />
                 </Box>
               ))}

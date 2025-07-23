@@ -343,6 +343,22 @@ class ApiService {
     });
   }
 
+  // OpenAI Toggle Methods
+  async getOpenAIStatus(): Promise<ApiResponse<{ isEnabled: boolean; mode: string }>> {
+    return this.request<{ isEnabled: boolean; mode: string }>({
+      method: 'GET',
+      url: '/api/openai/status',
+    });
+  }
+
+  async toggleOpenAI(enabled: boolean): Promise<ApiResponse<{ isEnabled: boolean; mode: string; message: string }>> {
+    return this.request<{ isEnabled: boolean; mode: string; message: string }>({
+      method: 'POST',
+      url: '/api/openai/toggle',
+      data: enabled,
+    });
+  }
+
   // Utility methods
   getBaseURL(): string {
     return this.baseURL;

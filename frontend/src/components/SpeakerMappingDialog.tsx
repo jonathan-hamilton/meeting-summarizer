@@ -27,6 +27,7 @@ import {
 } from "@mui/icons-material";
 import { apiService } from "../services/apiService";
 import type { SpeakerMapping, SpeakerSource, ValidationError } from "../types";
+import { sessionManager } from "../services/sessionManager";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -110,14 +111,27 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // Initialize mappings when dialog opens or existing mappings change
   useEffect(() => {
     const initializeMappings = () => {
+      // Get session-based overrides
+      const sessionOverrides = sessionManager.getOverrides();
+
       const initialMappings: MappingFormData[] = detectedSpeakers.map(
         (speakerId) => {
           const existing = existingMappings.find(
             (m) => m.speakerId === speakerId
           );
+
+          // Check for session override first
+          const override = sessionOverrides[speakerId];
+          let name = existing?.name || "";
+
+          // If there's a session override, use that name
+          if (override && override.action === "Override" && override.newValue) {
+            name = override.newValue;
+          }
+
           return {
             speakerId,
-            name: existing?.name || "",
+            name: name,
             role: existing?.role || "",
             source: existing?.source || "AutoDetected", // S2.5: Default to auto-detected
           };
@@ -411,9 +425,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   };
 
   const handleSave = async () => {
-    alert("🚀 handleSave called!"); // Temporary debug alert
-    console.log("🚀 SpeakerMappingDialog: handleSave function called");
-
     try {
       setLoading(true);
       setError(null);

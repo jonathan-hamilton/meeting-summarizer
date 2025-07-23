@@ -36,6 +36,7 @@ import {
 } from "@mui/icons-material";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
+import { sessionManager } from "../services/sessionManager";
 
 interface EnhancedSpeakerSegmentProps {
   segment: SpeakerSegment;
@@ -108,6 +109,14 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
    * Get the display name for the current speaker
    */
   const getCurrentSpeakerName = (): string => {
+    // First check for session-based overrides
+    const overrides = sessionManager.getOverrides();
+    const override = overrides[segment.speaker];
+    if (override && override.action === "Override" && override.newValue) {
+      return override.newValue;
+    }
+
+    // Then check speaker mappings
     const mapping = speakerMappings.find(
       (m) => m.speakerId === segment.speaker
     );
@@ -157,16 +166,42 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
     try {
       setAnchorEl(null);
 
+      console.log("DEBUG: handleReassignSpeaker called", {
+        newSpeakerId,
+        newSpeakerName,
+        originalSpeaker: segment.speaker,
+      });
+
       if (newSpeakerName) {
-        // Creating a new speaker mapping
+        // Creating a new speaker mapping - keep the original speaker ID
+        console.log(
+          "DEBUG: Calling applyOverride with",
+          segment.speaker,
+          newSpeakerName
+        );
         const success = await applyOverride(segment.speaker, newSpeakerName);
+        console.log("DEBUG: applyOverride result:", success);
+
         if (success) {
           setFeedback({
             open: true,
             message: `Segment reassigned to ${newSpeakerName}`,
             severity: "success",
           });
-          onSpeakerChange?.(index, newSpeakerId);
+          // Trigger a parent re-render by calling onSpeakerChange with the same speaker ID
+          // This will force the parent to refresh and show the new override
+          console.log(
+            "DEBUG: Calling onSpeakerChange with",
+            index,
+            segment.speaker
+          );
+          onSpeakerChange?.(index, segment.speaker);
+        } else {
+          setFeedback({
+            open: true,
+            message: `Failed to reassign speaker to ${newSpeakerName}`,
+            severity: "error",
+          });
         }
       } else {
         // Reassigning to existing speaker

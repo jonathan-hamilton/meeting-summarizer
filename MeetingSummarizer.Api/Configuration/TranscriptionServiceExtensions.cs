@@ -1,5 +1,6 @@
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Controllers;
 
 namespace MeetingSummarizer.Api.Configuration;
 
@@ -20,12 +21,19 @@ public static class TranscriptionServiceExtensions
         services.AddScoped<OpenAIService>();
         services.AddScoped<MockTranscriptionService>();
 
-        // Register the appropriate service based on configuration
+        // Register the appropriate service based on configuration and toggle
         services.AddScoped<IOpenAIService>(serviceProvider =>
         {
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger("TranscriptionServiceConfiguration");
             var openAIOptions = configuration.GetSection("OpenAI").Get<OpenAIOptions>();
+
+            // Check if OpenAI is manually disabled via toggle
+            if (!OpenAIController.IsOpenAIEnabled)
+            {
+                logger.LogInformation("OpenAI is manually disabled, using mock transcription service");
+                return serviceProvider.GetRequiredService<MockTranscriptionService>();
+            }
 
             if (openAIOptions?.IsValid() == true)
             {
