@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Typography,
@@ -7,18 +7,14 @@ import {
   Toolbar,
   IconButton,
   Grid,
-  Button,
-  Alert,
-  FormControlLabel,
-  Checkbox,
 } from "@mui/material";
-import { Brightness4, Brightness7, Science } from "@mui/icons-material";
+import { Brightness4, Brightness7, HealthAndSafety } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
-import { HealthCheck } from "./components/HealthCheck";
+import { HealthDialog } from "./components/HealthDialog";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
-import { SpeakerReassignmentDemo } from "./components/SpeakerReassignmentDemo";
+import apiService from "./services/apiService";
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
 
@@ -41,12 +37,45 @@ const AppContent: React.FC = () => {
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
-  const [showDemo, setShowDemo] = useState(false);
-  const [enableSpeakerReassignment, setEnableSpeakerReassignment] =
-    useState(false);
+  const [healthDialogOpen, setHealthDialogOpen] = useState(false);
+  const [isServerHealthy, setIsServerHealthy] = useState<boolean | null>(null);
 
   const handleTranscriptionComplete = (result: TranscriptionResponse) => {
     setTranscriptionResults((prev) => [result, ...prev]);
+  };
+
+  const checkServerHealth = async () => {
+    try {
+      const response = await apiService.getHealth();
+      setIsServerHealthy(
+        response.success && response.data?.status === "Healthy"
+      );
+    } catch {
+      setIsServerHealthy(false);
+    }
+  };
+
+  const openHealthDialog = () => {
+    setHealthDialogOpen(true);
+  };
+
+  const closeHealthDialog = () => {
+    setHealthDialogOpen(false);
+  };
+
+  // Check server health on component mount and periodically
+  useEffect(() => {
+    // Only check health in development mode
+    if (import.meta.env.DEV) {
+      checkServerHealth();
+      const interval = setInterval(checkServerHealth, 30000); // Check every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  const getHealthButtonColor = () => {
+    if (isServerHealthy === null) return "inherit"; // Unknown state
+    return isServerHealthy ? "success" : "error";
   };
 
   return (
@@ -56,30 +85,30 @@ const AppContent: React.FC = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Meeting Summarizer
           </Typography>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={enableSpeakerReassignment}
-                onChange={(e) => setEnableSpeakerReassignment(e.target.checked)}
-                sx={{ color: "white" }}
-              />
-            }
-            label="Enable Speaker Reassignment"
-            sx={{ color: "white", mr: 2 }}
-          />
-          <Button
-            color="inherit"
-            startIcon={<Science />}
-            onClick={() => setShowDemo(!showDemo)}
-            sx={{ mr: 1 }}
-          >
-            {showDemo ? "Hide Demo" : "Speaker Demo"}
-          </Button>
+          {/* Only show health status button in development mode */}
+          {import.meta.env.DEV && (
+            <IconButton
+              color={getHealthButtonColor()}
+              onClick={openHealthDialog}
+              sx={{ mr: 1 }}
+              title={
+                isServerHealthy === null
+                  ? "Checking server status..."
+                  : isServerHealthy
+                  ? "Server is healthy"
+                  : "Server is unhealthy"
+              }
+            >
+              <HealthAndSafety />
+            </IconButton>
+          )}
           <IconButton color="inherit" onClick={toggleTheme} sx={{ ml: 1 }}>
             {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
           </IconButton>
         </Toolbar>
       </AppBar>
+
+      <HealthDialog open={healthDialogOpen} onClose={closeHealthDialog} />
 
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
@@ -97,49 +126,27 @@ const AppContent: React.FC = () => {
           </Typography>
 
           <Grid container spacing={4} sx={{ mt: 2 }}>
-            {/* Demo Content */}
-            {showDemo && (
+            <Grid size={12}>
+              <Typography variant="h4" component="h2" gutterBottom>
+                Upload Audio File
+              </Typography>
+              <FileUpload
+                onTranscriptionComplete={handleTranscriptionComplete}
+              />
+            </Grid>
+
+            {transcriptionResults.length > 0 && (
               <Grid size={12}>
-                <Alert severity="info" sx={{ mb: 3 }}>
-                  <strong>Demo Mode:</strong> This demonstrates speaker
-                  reassignment functionality. The demo works with the
-                  session-based backend API running on localhost:5029.
-                </Alert>
-                <SpeakerReassignmentDemo />
-              </Grid>
-            )}
-
-            {/* Regular App Content */}
-            {!showDemo && (
-              <>
-                <Grid size={12}>
-                  <HealthCheck />
-                </Grid>
-
-                <Grid size={12}>
-                  <Typography variant="h4" component="h2" gutterBottom>
-                    Upload Audio File
-                  </Typography>
-                  <FileUpload
-                    onTranscriptionComplete={handleTranscriptionComplete}
+                <Typography variant="h4" component="h2" gutterBottom>
+                  Transcription Results
+                </Typography>
+                {transcriptionResults.map((result) => (
+                  <TranscriptDisplay
+                    key={result.transcriptionId}
+                    transcription={result}
                   />
-                </Grid>
-
-                {transcriptionResults.length > 0 && (
-                  <Grid size={12}>
-                    <Typography variant="h4" component="h2" gutterBottom>
-                      Transcription Results
-                    </Typography>
-                    {transcriptionResults.map((result) => (
-                      <TranscriptDisplay
-                        key={result.transcriptionId}
-                        transcription={result}
-                        enableSpeakerReassignment={enableSpeakerReassignment}
-                      />
-                    ))}
-                  </Grid>
-                )}
-              </>
+                ))}
+              </Grid>
             )}
           </Grid>
         </Box>

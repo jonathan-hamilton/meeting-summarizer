@@ -201,21 +201,11 @@ class ApiService {
 
   // Speaker Mapping endpoints (S2.2)
   async saveSpeakerMappings(request: SpeakerMappingRequest): Promise<ApiResponse<SpeakerMappingResponse>> {
-    console.log('🔍 ApiService.saveSpeakerMappings - Raw request received:', JSON.stringify(request, null, 2));
-    
-    try {
-      const response = await this.request<SpeakerMappingResponse>({
-        method: 'POST',
-        url: '/api/SpeakerMapping/map',
-        data: request,
-      });
-      
-      console.log('🔍 ApiService.saveSpeakerMappings - Response received:', JSON.stringify(response, null, 2));
-      return response;
-    } catch (error) {
-      console.error('🔍 ApiService.saveSpeakerMappings - Error details:', error);
-      throw error;
-    }
+    return this.request<SpeakerMappingResponse>({
+      method: 'POST',
+      url: '/api/SpeakerMapping/map',
+      data: request,
+    });
   }
 
   async getSpeakerMappings(transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {

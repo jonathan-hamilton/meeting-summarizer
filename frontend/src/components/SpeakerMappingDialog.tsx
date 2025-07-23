@@ -493,28 +493,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         Mappings: backendMappings,
       };
 
-      console.log(
-        "🚀 Backend-compatible request being sent:",
-        JSON.stringify(request, null, 2)
-      );
-
-      // Save via API
-      console.log("🚀 SpeakerMappingDialog: About to save mappings", {
-        transcriptionId,
-        mappingsToSave: mappings.length,
-        request: request,
-        speakerMappings: speakerMappings,
-      });
-
       // Send backend-compatible PascalCase format
       // @ts-expect-error - Using backend format that doesn't match frontend types
       const response = await apiService.saveSpeakerMappings(request);
-
-      console.log("✅ SpeakerMappingDialog: API response received", {
-        success: response.success,
-        hasData: !!response.data,
-        mappingsCount: response.data?.mappings?.length || 0,
-      });
 
       setSuccess(true);
 
