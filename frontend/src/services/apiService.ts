@@ -38,7 +38,6 @@ class ApiService {
     // See docs/technical-debt.md for details
     // Using hardcoded URL until VITE_API_BASE_URL loading is resolved
     this.baseURL = 'http://localhost:5029';
-    console.log('API Service initialized with baseURL:', this.baseURL);
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -56,15 +55,6 @@ class ApiService {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        // Add auth headers here if needed
-        const isDebug = import.meta.env.VITE_DEBUG === 'true';
-        if (isDebug) {
-          console.log('🚀 API Request:', {
-            method: config.method?.toUpperCase(),
-            url: config.url,
-            data: config.data,
-          });
-        }
         return config;
       },
       (error) => {
@@ -76,14 +66,6 @@ class ApiService {
     // Response interceptor
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        const isDebug = import.meta.env.VITE_DEBUG === 'true';
-        if (isDebug) {
-          console.log('✅ API Response:', {
-            status: response.status,
-            url: response.config.url,
-            data: response.data,
-          });
-        }
         return response;
       },
       (error) => {

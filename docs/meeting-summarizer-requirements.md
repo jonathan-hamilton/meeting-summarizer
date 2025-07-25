@@ -52,6 +52,21 @@
 - REQ-SPK-31: System shall provide real-time feedback in Speaker Mappings section showing current mapping status
 - REQ-SPK-32: System shall maintain segment-level speaker override history for audit and revert capabilities
 
+### Speaker Deletion Operations
+
+- REQ-SPK-DEL-1: System shall allow users to delete speaker mappings from the mapping interface
+- REQ-SPK-DEL-2: When a speaker mapping is deleted, the system shall remove the speaker from the total speaker count
+- REQ-SPK-DEL-3: Transcript segments previously assigned to deleted speakers shall display "Unassigned" as the speaker label
+- REQ-SPK-DEL-4: Speaker count display shall update to reflect only remaining speakers (e.g., "0/2" becomes "0/1" when one speaker is deleted)
+- REQ-SPK-DEL-5: Auto-detected speaker chips at the top of transcript component shall be removed when corresponding speaker is deleted
+- REQ-SPK-DEL-6: System shall provide confirmation dialog before permanently deleting speaker mappings
+- REQ-SPK-DEL-7: Dialog state shall remain consistent after successful speaker deletion operations
+- REQ-SPK-DEL-8: Parent component speaker counts and displays shall update immediately after deletion is saved
+- REQ-SPK-DEL-9: Backend DELETE endpoint shall return success response when speaker mappings are deleted
+- REQ-SPK-DEL-10: System shall preserve transcript content and timestamps when speaker mappings are deleted
+- REQ-SPK-DEL-11: Deleted speaker mappings shall not be recoverable within the same session
+- REQ-SPK-DEL-12: System shall handle deletion of all speakers, resulting in all segments showing "Unassigned"
+
 ### Summarization
 
 - REQ-SUM-1: System shall generate concise meeting summaries from transcriptions

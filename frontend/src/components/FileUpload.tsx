@@ -230,6 +230,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <Box sx={{ width: "100%" }}>
+      {/* Debug logging for FileUpload component */}
+      {(() => {
+        console.log("🔍 FileUpload Component Render Debug:", {
+          component: "FileUpload",
+          containerWidth: "100%",
+          uploadFilesCount: uploadFiles.length,
+          validationErrorsCount: validationErrors.length,
+          timestamp: new Date().toISOString(),
+        });
+        return null;
+      })()}
+
       {/* Drop Zone */}
       <Paper
         {...getRootProps()}
@@ -246,6 +258,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
             borderColor: "primary.main",
             backgroundColor: "primary.50",
           },
+        }}
+        ref={(el) => {
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            console.log("📏 FileUpload Paper Dimensions:", {
+              component: "FileUpload",
+              element: "Paper (Drop Zone)",
+              width: rect.width,
+              height: rect.height,
+              offsetWidth: el.offsetWidth,
+              clientWidth: el.clientWidth,
+              scrollWidth: el.scrollWidth,
+              computedStyle: window.getComputedStyle(el).width,
+              marginLeft: window.getComputedStyle(el).marginLeft,
+              marginRight: window.getComputedStyle(el).marginRight,
+              paddingLeft: window.getComputedStyle(el).paddingLeft,
+              paddingRight: window.getComputedStyle(el).paddingRight,
+              borderLeft: window.getComputedStyle(el).borderLeftWidth,
+              borderRight: window.getComputedStyle(el).borderRightWidth,
+              boxSizing: window.getComputedStyle(el).boxSizing,
+              timestamp: new Date().toISOString(),
+            });
+          }
         }}
       >
         <input {...getInputProps()} />
@@ -294,7 +329,27 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Upload Queue */}
       {uploadFiles.length > 0 && (
-        <Card sx={{ mt: 3, width: "100%" }}>
+        <Card
+          sx={{ mt: 3, width: "100%" }}
+          ref={(el) => {
+            if (el) {
+              const rect = el.getBoundingClientRect();
+              console.log("📏 FileUpload Upload Queue Card Dimensions:", {
+                component: "FileUpload",
+                element: "Upload Queue Card",
+                width: rect.width,
+                height: rect.height,
+                offsetWidth: el.offsetWidth,
+                clientWidth: el.clientWidth,
+                scrollWidth: el.scrollWidth,
+                computedStyle: window.getComputedStyle(el).width,
+                marginLeft: window.getComputedStyle(el).marginLeft,
+                marginRight: window.getComputedStyle(el).marginRight,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          }}
+        >
           <CardContent>
             <Box
               sx={{

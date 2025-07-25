@@ -109,36 +109,59 @@ const AppContent: React.FC = () => {
     return isServerHealthy ? "success" : "error";
   };
 
+  const getAppBarColor = () => {
+    if (isOpenAIEnabled === null) return "primary"; // Default while checking
+    return isOpenAIEnabled ? "primary" : "warning"; // Blue for real API, Orange for mock
+  };
+
   return (
     <>
       <Box
         sx={{
-          width: "100vw !important",
+          width: "100%",
           minHeight: "100vh",
-          margin: "0 !important",
-          padding: "0 !important",
-          boxSizing: "border-box",
-          display: "flex !important",
-          flexDirection: "column !important",
-          alignItems: "center !important",
-          justifyContent: "center !important",
-          overflow: "hidden",
-          position: "fixed",
-          top: 0,
-          left: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
         }}
       >
         <Box
           sx={{
-            width: "100%",
+            width: "1200px",
             maxWidth: "1200px",
+            minWidth: "1200px",
             display: "flex",
             flexDirection: "column",
             margin: "0 auto",
-            px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
+            px: { xs: 2, sm: 2, md: 2 }, // Reduced padding for consistency
+          }}
+          ref={(el: HTMLDivElement | null) => {
+            if (el) {
+              const rect = el.getBoundingClientRect();
+              console.log("📏 App Main Layout Container Dimensions:", {
+                component: "App",
+                element: "Main Layout Container",
+                width: rect.width,
+                height: rect.height,
+                offsetWidth: el.offsetWidth,
+                clientWidth: el.clientWidth,
+                scrollWidth: el.scrollWidth,
+                computedStyle: window.getComputedStyle(el).width,
+                maxWidth: window.getComputedStyle(el).maxWidth,
+                paddingLeft: window.getComputedStyle(el).paddingLeft,
+                paddingRight: window.getComputedStyle(el).paddingRight,
+                marginLeft: window.getComputedStyle(el).marginLeft,
+                marginRight: window.getComputedStyle(el).marginRight,
+                timestamp: new Date().toISOString(),
+              });
+            }
           }}
         >
-          <AppBar position="static" sx={{ width: "100%" }}>
+          <AppBar
+            position="static"
+            sx={{ width: "100%" }}
+            color={getAppBarColor()}
+          >
             <Toolbar sx={{ width: "100%" }}>
               <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
                 Meeting Summarizer
@@ -190,7 +213,7 @@ const AppContent: React.FC = () => {
 
           <HealthDialog open={healthDialogOpen} onClose={closeHealthDialog} />
 
-          <Box sx={{ px: 2, py: 4, width: "100%" }}>
+          <Box sx={{ py: 4, width: "100%" }}>
             <Typography variant="h2" component="h1" gutterBottom align="center">
               Meeting Summarizer
             </Typography>
@@ -204,27 +227,78 @@ const AppContent: React.FC = () => {
               AI-Powered Meeting Transcription and Summarization
             </Typography>
 
-            <Grid container spacing={4} sx={{ mt: 2, width: "100%" }}>
-              <Grid size={12}>
-                <Typography variant="h4" component="h2" gutterBottom>
-                  Upload Audio File
-                </Typography>
-                <FileUpload
-                  onTranscriptionComplete={handleTranscriptionComplete}
-                />
+            <Grid
+              container
+              spacing={4}
+              sx={{ mt: 2, width: "100%", minHeight: "200px" }}
+            >
+              <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
+                <Box
+                  sx={{ width: "100%" }}
+                  ref={(el: HTMLDivElement | null) => {
+                    if (el) {
+                      const rect = el.getBoundingClientRect();
+                      console.log("📏 App FileUpload Container Dimensions:", {
+                        component: "App",
+                        element: "FileUpload Container Box",
+                        width: rect.width,
+                        height: rect.height,
+                        offsetWidth: el.offsetWidth,
+                        clientWidth: el.clientWidth,
+                        scrollWidth: el.scrollWidth,
+                        computedStyle: window.getComputedStyle(el).width,
+                        marginLeft: window.getComputedStyle(el).marginLeft,
+                        marginRight: window.getComputedStyle(el).marginRight,
+                        timestamp: new Date().toISOString(),
+                      });
+                    }
+                  }}
+                >
+                  <Typography variant="h4" component="h2" gutterBottom>
+                    Upload Audio File
+                  </Typography>
+                  <FileUpload
+                    onTranscriptionComplete={handleTranscriptionComplete}
+                  />
+                </Box>
               </Grid>
 
               {transcriptionResults.length > 0 && (
-                <Grid size={12}>
-                  <Typography variant="h4" component="h2" gutterBottom>
-                    Transcription Results
-                  </Typography>
-                  {transcriptionResults.map((result) => (
-                    <TranscriptDisplay
-                      key={result.transcriptionId}
-                      transcription={result}
-                    />
-                  ))}
+                <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
+                  <Box
+                    sx={{ width: "100%" }}
+                    ref={(el: HTMLDivElement | null) => {
+                      if (el) {
+                        const rect = el.getBoundingClientRect();
+                        console.log(
+                          "📏 App TranscriptDisplay Container Dimensions:",
+                          {
+                            component: "App",
+                            element: "TranscriptDisplay Container Box",
+                            width: rect.width,
+                            height: rect.height,
+                            offsetWidth: el.offsetWidth,
+                            clientWidth: el.clientWidth,
+                            scrollWidth: el.scrollWidth,
+                            computedStyle: window.getComputedStyle(el).width,
+                            transcriptionResultsCount:
+                              transcriptionResults.length,
+                            timestamp: new Date().toISOString(),
+                          }
+                        );
+                      }
+                    }}
+                  >
+                    <Typography variant="h4" component="h2" gutterBottom>
+                      Transcription Results
+                    </Typography>
+                    {transcriptionResults.map((result) => (
+                      <TranscriptDisplay
+                        key={result.transcriptionId}
+                        transcription={result}
+                      />
+                    ))}
+                  </Box>
                 </Grid>
               )}
             </Grid>
