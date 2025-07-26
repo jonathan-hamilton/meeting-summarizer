@@ -117,24 +117,11 @@ export const TranscriptSpeakerSegment: React.FC<
 
   /**
    * Get the display name for the current speaker
+   * Always returns the original speaker ID (e.g., "Speaker 1") regardless of mappings
    */
   const getCurrentSpeakerName = (): string => {
-    // First check for session-based overrides
-    const overrides = sessionManager.getOverrides();
-    const override = overrides[segment.speaker];
-    if (override && override.action === "Override" && override.newValue) {
-      return override.newValue;
-    }
-
-    // Use store mappings, fallback to props
-    const effectiveMappings =
-      storeMappings.length > 0 ? storeMappings : speakerMappings;
-
-    // Then check speaker mappings
-    const mapping = effectiveMappings.find(
-      (m) => m.speakerId === segment.speaker
-    );
-    return mapping ? mapping.name : segment.speaker;
+    // Always return the original speaker ID for transcript segments
+    return segment.speaker;
   };
 
   /**
@@ -268,9 +255,36 @@ export const TranscriptSpeakerSegment: React.FC<
 
   const speakerOptions = getSpeakerOptions();
   const currentSpeakerName = getCurrentSpeakerName();
-  const isOverridden = speakerOptions.find(
+  
+  // Check for overrides from both speaker mappings and session manager
+  const mappingOverridden = speakerOptions.find(
     (opt) => opt.id === segment.speaker
   )?.isOverridden;
+  
+  // Check for session-based overrides for this specific speaker
+  const sessionOverrides = sessionManager.getOverrides();
+  const sessionOverridden = sessionOverrides[segment.speaker]?.action === "Override";
+  
+  // This segment is specifically overridden (for reassignment message)
+  const isSegmentOverridden = mappingOverridden || sessionOverridden;
+  
+  // Check if ANY speakers have been modified (affects all confidence scores)
+  const hasAnyModifiedSpeakers = () => {
+    // Check for any session overrides
+    const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
+    
+    // Check for any manually added or overridden speakers in mappings
+    const effectiveMappings = storeMappings.length > 0 ? storeMappings : speakerMappings;
+    const hasEditedSpeakers = effectiveMappings.some(
+      (mapping) => mapping.source === "ManuallyAdded" || mapping.isOverridden
+    );
+    
+    return hasSessionOverrides || hasEditedSpeakers;
+  };
+  
+  // Use segment-specific override for reassignment message, broader check for confidence strikethrough
+  const isOverridden = isSegmentOverridden;
+  const shouldStrikethroughConfidence = isSegmentOverridden || hasAnyModifiedSpeakers();
 
   return (
     <>
@@ -306,7 +320,13 @@ export const TranscriptSpeakerSegment: React.FC<
           </Typography>
 
           {segment.confidence && (
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                textDecoration: shouldStrikethroughConfidence ? "line-through" : "none",
+              }}
+            >
               {Math.round(segment.confidence * 100)}% confidence
             </Typography>
           )}

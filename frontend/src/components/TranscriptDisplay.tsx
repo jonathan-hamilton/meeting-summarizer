@@ -365,45 +365,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               detectedSpeakers={detectedSpeakers}
               onMappingsChanged={handleSpeakerMappingsChanged}
             />
-
-            {/* Show unmapped speakers indicator */}
-            {(() => {
-              // Calculate all unmapped speakers (detected + manually added without names)
-              const allSpeakers = [
-                ...detectedSpeakers,
-                ...effectiveSpeakerMappings.map((m) => m.speakerId),
-              ];
-              const uniqueSpeakers = Array.from(new Set(allSpeakers));
-              const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
-                if (detectedSpeakers.includes(speakerId)) {
-                  // For detected speakers, check if they have names
-                  const mapping = effectiveSpeakerMappings.find(
-                    (m) => m.speakerId === speakerId
-                  );
-                  return (
-                    !mapping || !mapping.name || mapping.name.trim() === ""
-                  );
-                } else {
-                  // For manually added speakers, check if they have names
-                  const mapping = effectiveSpeakerMappings.find(
-                    (m) => m.speakerId === speakerId
-                  );
-                  return (
-                    !mapping || !mapping.name || mapping.name.trim() === ""
-                  );
-                }
-              });
-
-              return (
-                unmappedSpeakers.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {unmappedSpeakers.join(", ")}
-                    </Typography>
-                  </Box>
-                )
-              );
-            })()}
           </Box>
         )}
 

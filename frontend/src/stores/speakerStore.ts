@@ -7,14 +7,14 @@ interface SpeakerState {
   speakerMappings: SpeakerMapping[];
   detectedSpeakers: string[];
   transcriptionId: string | null;
-  
+
   // Actions
   initializeSpeakers: (transcriptionId: string, detectedSpeakers: string[], existingMappings?: SpeakerMapping[]) => void;
   addSpeaker: (speakerId: string, name: string, role?: string) => void;
   updateSpeaker: (speakerId: string, updates: Partial<Pick<SpeakerMapping, 'name' | 'role'>>) => void;
   deleteSpeaker: (speakerId: string) => void;
   clearSpeakers: () => void;
-  
+
   // Selectors (computed values)
   getMappedCount: () => number;
   getUnmappedSpeakers: () => string[];
@@ -32,28 +32,17 @@ export const useSpeakerStore = create<SpeakerState>()(
 
       // Initialize speakers for a new transcription
       initializeSpeakers: (transcriptionId, detectedSpeakers, existingMappings = []) => {
-        const state = get();
-        
-        // If this is the same transcription, preserve the original detected speakers
-        // and only update mappings
-        if (state.transcriptionId === transcriptionId && state.detectedSpeakers.length > 0) {
-          set({
-            speakerMappings: existingMappings,
-          });
-        } else {
-          // New transcription - set everything fresh
-          set({
-            transcriptionId,
-            detectedSpeakers,
-            speakerMappings: existingMappings,
-          });
-        }
+        set({
+          transcriptionId,
+          detectedSpeakers,
+          speakerMappings: existingMappings,
+        });
       },
 
       // Add a new speaker mapping
       addSpeaker: (speakerId, name, role) => {
         const state = get();
-        
+
         // Check if speaker already exists
         const existingMapping = state.speakerMappings.find(m => m.speakerId === speakerId);
         if (existingMapping) {
@@ -77,7 +66,7 @@ export const useSpeakerStore = create<SpeakerState>()(
       // Update an existing speaker mapping
       updateSpeaker: (speakerId, updates) => {
         const state = get();
-        
+
         const updatedMappings = state.speakerMappings.map(mapping =>
           mapping.speakerId === speakerId
             ? { ...mapping, ...updates }
@@ -92,7 +81,7 @@ export const useSpeakerStore = create<SpeakerState>()(
       // Delete a speaker mapping
       deleteSpeaker: (speakerId) => {
         const state = get();
-        
+
         const filteredMappings = state.speakerMappings.filter(
           mapping => mapping.speakerId !== speakerId
         );
@@ -113,22 +102,14 @@ export const useSpeakerStore = create<SpeakerState>()(
 
       // Computed selectors
       getMappedCount: () => {
-        const state = get();
-        // Only count detected speakers that have actual names (are truly mapped)
-        return state.speakerMappings.filter(m => 
-          state.detectedSpeakers.includes(m.speakerId) && 
-          m.name && 
-          m.name.trim() !== ''
-        ).length;
+        // Only count speakers that have actual names (are truly mapped)
+        return get().speakerMappings.filter(m => m.name && m.name.trim() !== '').length;
       },
 
       getUnmappedSpeakers: () => {
         const state = get();
-        // Only consider detected speakers, and check if they have meaningful mappings
-        return state.detectedSpeakers.filter(speaker => {
-          const mapping = state.speakerMappings.find(m => m.speakerId === speaker);
-          return !mapping || !mapping.name || mapping.name.trim() === '';
-        });
+        const mappedSpeakerIds = state.speakerMappings.map(m => m.speakerId);
+        return state.detectedSpeakers.filter(speaker => !mappedSpeakerIds.includes(speaker));
       },
 
       getSpeakerMapping: (speakerId) => {
