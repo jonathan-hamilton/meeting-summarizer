@@ -140,7 +140,9 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           startIcon={<EditIcon />}
           onClick={() => setDialogOpen(true)}
         >
-          {mappings.length > 0 ? "Edit Mappings" : "Map Speakers"}
+          {mappings.length > 0
+            ? "Edit/Delete Mappings"
+            : "Edit/Delete Mappings"}
         </Button>
       </Box>
 

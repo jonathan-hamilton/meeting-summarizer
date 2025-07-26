@@ -1,11 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
   Typography,
   Box,
   Chip,
-  Button,
   IconButton,
   Tooltip,
   Stack,
@@ -20,7 +19,6 @@ import {
   VolumeUp,
   CheckCircle,
   Error,
-  Edit,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
@@ -28,6 +26,7 @@ import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
 import { EnhancedSpeakerSegment } from "./EnhancedSpeakerSegment";
 import { sessionManager } from "../services/sessionManager";
+import { useSpeakerStore } from "../stores/speakerStore";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -41,9 +40,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   speakerMappings,
 }) => {
   const [copiedSegment, setCopiedSegment] = useState<string | null>(null);
-  const [currentSpeakerMappings, setCurrentSpeakerMappings] = useState<
-    SpeakerMapping[]
-  >([]);
   const [speakerSegments, setSpeakerSegments] = useState(
     transcription.speakerSegments || []
   );
@@ -51,28 +47,63 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
     useState(false);
 
-  // Use provided speaker mappings or those included in the transcription
-  const effectiveSpeakerMappings =
-    speakerMappings || transcription.speakerMappings || currentSpeakerMappings;
+  // Zustand store state and actions
+  const {
+    speakerMappings: storeSpeakerMappings,
+    detectedSpeakers: storeDetectedSpeakers,
+    getMappedCount,
+    getUnmappedSpeakers,
+    initializeSpeakers,
+    getAllMappings,
+  } = useSpeakerStore();
 
   // Extract unique speakers from transcript segments
   const allDetectedSpeakers = speakerSegments
     ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
     : [];
 
-  // Show all detected speakers (don't filter by mappings for the dialog)
-  // The dialog needs to see all speakers to allow creating mappings for them
-  const detectedSpeakers = allDetectedSpeakers;
+  // Initialize store when component mounts or transcription changes
+  useEffect(() => {
+    try {
+      const existingMappings =
+        speakerMappings || transcription.speakerMappings || [];
+      // Use the allDetectedSpeakers calculated from current speaker segments
+      const speakersFromSegments = speakerSegments
+        ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
+        : [];
+      initializeSpeakers(
+        transcription.transcriptionId,
+        speakersFromSegments,
+        existingMappings
+      );
+    } catch (error) {
+      console.error("Error initializing speakers:", error);
+    }
+  }, [
+    transcription.transcriptionId,
+    speakerMappings,
+    transcription.speakerMappings,
+    initializeSpeakers,
+    speakerSegments,
+  ]);
 
-  // Handle speaker mappings updates
-  const handleSpeakerMappingsChanged = (mappings: SpeakerMapping[]) => {
-    setCurrentSpeakerMappings(mappings);
-    // UI will update because state changes
+  // Use store state for speaker mappings and detected speakers
+  const effectiveSpeakerMappings = storeSpeakerMappings;
+  // Fallback to allDetectedSpeakers if store doesn't have detected speakers yet
+  const detectedSpeakers =
+    storeDetectedSpeakers.length > 0
+      ? storeDetectedSpeakers
+      : allDetectedSpeakers;
+
+  // Handle speaker mappings updates (legacy - now handled by store)
+  const handleSpeakerMappingsChanged = () => {
+    // The store will be updated directly by the SpeakerMappingComponent
+    // This handler is kept for backward compatibility but may be removed
+    setForceUpdate((prev) => prev + 1);
   };
 
-  // Handle speaker mapping dialog save
-  const handleSpeakerMappingsSaved = (mappings: SpeakerMapping[]) => {
-    setCurrentSpeakerMappings(mappings);
+  // Handle speaker mapping dialog save (simplified - store handles the state)
+  const handleSpeakerMappingsSaved = () => {
     setSpeakerMappingDialogOpen(false);
     // Force update to reflect changes
     setForceUpdate((prev) => prev + 1);
@@ -206,16 +237,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               variant="outlined"
               size="small"
             />
-
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Edit />}
-              onClick={() => setSpeakerMappingDialogOpen(true)}
-              sx={{ ml: 1 }}
-            >
-              Edit/Delete Mappings
-            </Button>
           </Stack>
 
           {/* Metadata chips */}
@@ -241,9 +262,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             {transcription.speakerCount && (
               <Chip
                 icon={<Person />}
-                label={`${transcription.speakerCount} speakers`}
+                label={`${getMappedCount?.() || 0}/${
+                  transcription.speakerCount
+                } speakers mapped`}
                 size="small"
                 variant="outlined"
+                color={
+                  (getMappedCount?.() || 0) === transcription.speakerCount
+                    ? "success"
+                    : "default"
+                }
               />
             )}
             {transcription.confidenceScore && (
@@ -275,6 +303,15 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               detectedSpeakers={detectedSpeakers}
               onMappingsChanged={handleSpeakerMappingsChanged}
             />
+
+            {/* Show unmapped speakers indicator */}
+            {getUnmappedSpeakers?.().length > 0 && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Unmapped Speakers: {getUnmappedSpeakers().join(", ")}
+                </Typography>
+              </Box>
+            )}
           </Box>
         )}
 
@@ -407,7 +444,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         open={speakerMappingDialogOpen}
         onClose={() => setSpeakerMappingDialogOpen(false)}
         transcriptionId={transcription.transcriptionId}
-        existingMappings={currentSpeakerMappings}
+        existingMappings={getAllMappings?.() || []}
         detectedSpeakers={detectedSpeakers}
         onMappingsSaved={handleSpeakerMappingsSaved}
       />
