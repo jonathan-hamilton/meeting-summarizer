@@ -135,27 +135,6 @@ const AppContent: React.FC = () => {
             margin: "0 auto",
             px: { xs: 2, sm: 2, md: 2 }, // Reduced padding for consistency
           }}
-          ref={(el: HTMLDivElement | null) => {
-            if (el) {
-              const rect = el.getBoundingClientRect();
-              console.log("📏 App Main Layout Container Dimensions:", {
-                component: "App",
-                element: "Main Layout Container",
-                width: rect.width,
-                height: rect.height,
-                offsetWidth: el.offsetWidth,
-                clientWidth: el.clientWidth,
-                scrollWidth: el.scrollWidth,
-                computedStyle: window.getComputedStyle(el).width,
-                maxWidth: window.getComputedStyle(el).maxWidth,
-                paddingLeft: window.getComputedStyle(el).paddingLeft,
-                paddingRight: window.getComputedStyle(el).paddingRight,
-                marginLeft: window.getComputedStyle(el).marginLeft,
-                marginRight: window.getComputedStyle(el).marginRight,
-                timestamp: new Date().toISOString(),
-              });
-            }
-          }}
         >
           <AppBar
             position="static"
@@ -233,27 +212,7 @@ const AppContent: React.FC = () => {
               sx={{ mt: 2, width: "100%", minHeight: "200px" }}
             >
               <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                <Box
-                  sx={{ width: "100%" }}
-                  ref={(el: HTMLDivElement | null) => {
-                    if (el) {
-                      const rect = el.getBoundingClientRect();
-                      console.log("📏 App FileUpload Container Dimensions:", {
-                        component: "App",
-                        element: "FileUpload Container Box",
-                        width: rect.width,
-                        height: rect.height,
-                        offsetWidth: el.offsetWidth,
-                        clientWidth: el.clientWidth,
-                        scrollWidth: el.scrollWidth,
-                        computedStyle: window.getComputedStyle(el).width,
-                        marginLeft: window.getComputedStyle(el).marginLeft,
-                        marginRight: window.getComputedStyle(el).marginRight,
-                        timestamp: new Date().toISOString(),
-                      });
-                    }
-                  }}
-                >
+                <Box sx={{ width: "100%" }}>
                   <Typography variant="h4" component="h2" gutterBottom>
                     Upload Audio File
                   </Typography>
@@ -265,30 +224,7 @@ const AppContent: React.FC = () => {
 
               {transcriptionResults.length > 0 && (
                 <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                  <Box
-                    sx={{ width: "100%" }}
-                    ref={(el: HTMLDivElement | null) => {
-                      if (el) {
-                        const rect = el.getBoundingClientRect();
-                        console.log(
-                          "📏 App TranscriptDisplay Container Dimensions:",
-                          {
-                            component: "App",
-                            element: "TranscriptDisplay Container Box",
-                            width: rect.width,
-                            height: rect.height,
-                            offsetWidth: el.offsetWidth,
-                            clientWidth: el.clientWidth,
-                            scrollWidth: el.scrollWidth,
-                            computedStyle: window.getComputedStyle(el).width,
-                            transcriptionResultsCount:
-                              transcriptionResults.length,
-                            timestamp: new Date().toISOString(),
-                          }
-                        );
-                      }
-                    }}
-                  >
+                  <Box sx={{ width: "100%" }}>
                     <Typography variant="h4" component="h2" gutterBottom>
                       Transcription Results
                     </Typography>

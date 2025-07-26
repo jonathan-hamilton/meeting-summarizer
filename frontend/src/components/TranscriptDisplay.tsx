@@ -129,37 +129,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   };
 
   if (loading) {
-    console.log("🔍 TranscriptDisplay Loading State Debug:", {
-      component: "TranscriptDisplay",
-      state: "loading",
-      transcriptionId: transcription.transcriptionId,
-      fileName: transcription.fileName,
-      timestamp: new Date().toISOString(),
-    });
-
     return (
-      <Card
-        sx={{ mb: 2, width: "100%" }}
-        ref={(el) => {
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            console.log("📏 TranscriptDisplay Loading Card Dimensions:", {
-              component: "TranscriptDisplay",
-              element: "Loading Card",
-              state: "loading",
-              width: rect.width,
-              height: rect.height,
-              offsetWidth: el.offsetWidth,
-              clientWidth: el.clientWidth,
-              scrollWidth: el.scrollWidth,
-              computedStyle: window.getComputedStyle(el).width,
-              marginLeft: window.getComputedStyle(el).marginLeft,
-              marginRight: window.getComputedStyle(el).marginRight,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        }}
-      >
+      <Card sx={{ mb: 2, width: "100%" }}>
         <CardContent>
           <Box
             display="flex"
@@ -178,36 +149,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   }
 
   if (transcription.status === "Failed" || transcription.errorMessage) {
-    console.log("🔍 TranscriptDisplay Error State Debug:", {
-      component: "TranscriptDisplay",
-      state: "error",
-      transcriptionId: transcription.transcriptionId,
-      fileName: transcription.fileName,
-      errorMessage: transcription.errorMessage,
-      timestamp: new Date().toISOString(),
-    });
-
     return (
-      <Card
-        sx={{ mb: 2, width: "100%" }}
-        ref={(el) => {
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            console.log("📏 TranscriptDisplay Error Card Dimensions:", {
-              component: "TranscriptDisplay",
-              element: "Error Card",
-              state: "error",
-              width: rect.width,
-              height: rect.height,
-              offsetWidth: el.offsetWidth,
-              clientWidth: el.clientWidth,
-              scrollWidth: el.scrollWidth,
-              computedStyle: window.getComputedStyle(el).width,
-              timestamp: new Date().toISOString(),
-            });
-          }
-        }}
-      >
+      <Card sx={{ mb: 2, width: "100%" }}>
         <CardContent>
           <Alert severity="error" icon={<Error />}>
             <Typography variant="h6" gutterBottom>
@@ -234,46 +177,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     );
   }
 
-  console.log("🔍 TranscriptDisplay Main Render Debug:", {
-    component: "TranscriptDisplay",
-    state: "success",
-    transcriptionId: transcription.transcriptionId,
-    fileName: transcription.fileName,
-    speakerSegmentsLength: speakerSegments?.length || 0,
-    detectedSpeakersLength: detectedSpeakers.length,
-    effectiveSpeakerMappingsLength: effectiveSpeakerMappings.length,
-    currentSpeakerMappingsLength: currentSpeakerMappings.length,
-    timestamp: new Date().toISOString(),
-  });
-
   return (
-    <Card
-      sx={{ mb: 2, width: "100%" }}
-      ref={(el) => {
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          console.log("📏 TranscriptDisplay Main Card Dimensions:", {
-            component: "TranscriptDisplay",
-            element: "Main Card",
-            state: "success",
-            width: rect.width,
-            height: rect.height,
-            offsetWidth: el.offsetWidth,
-            clientWidth: el.clientWidth,
-            scrollWidth: el.scrollWidth,
-            computedStyle: window.getComputedStyle(el).width,
-            marginLeft: window.getComputedStyle(el).marginLeft,
-            marginRight: window.getComputedStyle(el).marginRight,
-            paddingLeft: window.getComputedStyle(el).paddingLeft,
-            paddingRight: window.getComputedStyle(el).paddingRight,
-            borderLeft: window.getComputedStyle(el).borderLeftWidth,
-            borderRight: window.getComputedStyle(el).borderRightWidth,
-            boxSizing: window.getComputedStyle(el).boxSizing,
-            timestamp: new Date().toISOString(),
-          });
-        }
-      }}
-    >
+    <Card sx={{ mb: 2, width: "100%" }}>
       <CardContent>
         {/* Header with file info and metadata */}
         <Box sx={{ mb: 3 }}>

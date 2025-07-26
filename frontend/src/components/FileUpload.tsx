@@ -12,7 +12,6 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemText,
   ListItemSecondaryAction,
   Paper,
   Stepper,
@@ -230,18 +229,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Debug logging for FileUpload component */}
-      {(() => {
-        console.log("🔍 FileUpload Component Render Debug:", {
-          component: "FileUpload",
-          containerWidth: "100%",
-          uploadFilesCount: uploadFiles.length,
-          validationErrorsCount: validationErrors.length,
-          timestamp: new Date().toISOString(),
-        });
-        return null;
-      })()}
-
       {/* Drop Zone */}
       <Paper
         {...getRootProps()}
@@ -258,29 +245,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
             borderColor: "primary.main",
             backgroundColor: "primary.50",
           },
-        }}
-        ref={(el) => {
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            console.log("📏 FileUpload Paper Dimensions:", {
-              component: "FileUpload",
-              element: "Paper (Drop Zone)",
-              width: rect.width,
-              height: rect.height,
-              offsetWidth: el.offsetWidth,
-              clientWidth: el.clientWidth,
-              scrollWidth: el.scrollWidth,
-              computedStyle: window.getComputedStyle(el).width,
-              marginLeft: window.getComputedStyle(el).marginLeft,
-              marginRight: window.getComputedStyle(el).marginRight,
-              paddingLeft: window.getComputedStyle(el).paddingLeft,
-              paddingRight: window.getComputedStyle(el).paddingRight,
-              borderLeft: window.getComputedStyle(el).borderLeftWidth,
-              borderRight: window.getComputedStyle(el).borderRightWidth,
-              boxSizing: window.getComputedStyle(el).boxSizing,
-              timestamp: new Date().toISOString(),
-            });
-          }
         }}
       >
         <input {...getInputProps()} />
@@ -329,27 +293,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Upload Queue */}
       {uploadFiles.length > 0 && (
-        <Card
-          sx={{ mt: 3, width: "100%" }}
-          ref={(el) => {
-            if (el) {
-              const rect = el.getBoundingClientRect();
-              console.log("📏 FileUpload Upload Queue Card Dimensions:", {
-                component: "FileUpload",
-                element: "Upload Queue Card",
-                width: rect.width,
-                height: rect.height,
-                offsetWidth: el.offsetWidth,
-                clientWidth: el.clientWidth,
-                scrollWidth: el.scrollWidth,
-                computedStyle: window.getComputedStyle(el).width,
-                marginLeft: window.getComputedStyle(el).marginLeft,
-                marginRight: window.getComputedStyle(el).marginRight,
-                timestamp: new Date().toISOString(),
-              });
-            }
-          }}
-        >
+        <Card sx={{ mt: 3, width: "100%" }}>
           <CardContent>
             <Box
               sx={{
@@ -401,148 +345,152 @@ const FileUpload: React.FC<FileUploadProps> = ({
             <List>
               {uploadFiles.map((uploadFile) => (
                 <ListItem key={uploadFile.id} divider>
-                  <Box sx={{ display: "flex", alignItems: "center", mr: 2 }}>
+                  <Box
+                    sx={{ display: "flex", alignItems: "flex-start", mr: 2 }}
+                  >
                     {getStatusIcon(uploadFile.status)}
                   </Box>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  <Box sx={{ flexGrow: 1 }}>
+                    {/* File name and status */}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="body1">
+                        {uploadFile.file.name}
+                      </Typography>
+                      <Chip
+                        label={uploadFile.status}
+                        size="small"
+                        color={
+                          getStatusColor(uploadFile.status) as
+                            | "success"
+                            | "error"
+                            | "warning"
+                            | "info"
+                            | "default"
+                        }
+                      />
+                    </Box>
+
+                    {/* File size */}
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ mb: 1 }}
+                    >
+                      {formatFileSize(uploadFile.file.size)}
+                    </Typography>
+
+                    {/* Workflow Progress Stepper */}
+                    <Box sx={{ mt: 2 }}>
+                      <Stepper
+                        activeStep={
+                          uploadFile.status === "pending"
+                            ? 0
+                            : uploadFile.status === "uploading"
+                            ? uploadFile.progress > 90
+                              ? 2
+                              : 1
+                            : uploadFile.status === "completed"
+                            ? 3
+                            : uploadFile.status === "error"
+                            ? 1
+                            : 0
+                        }
+                        orientation="horizontal"
+                        sx={{
+                          "& .MuiStepConnector-root": {
+                            top: 10,
+                            left: "calc(-50% + 10px)",
+                            right: "calc(50% + 10px)",
+                          },
+                          "& .MuiStepLabel-root": {
+                            flexDirection: "column",
+                            "& .MuiStepLabel-label": {
+                              fontSize: "0.75rem",
+                              marginTop: "4px",
+                            },
+                          },
+                        }}
                       >
-                        <Typography variant="body1">
-                          {uploadFile.file.name}
-                        </Typography>
-                        <Chip
-                          label={uploadFile.status}
-                          size="small"
-                          color={
-                            getStatusColor(uploadFile.status) as
-                              | "success"
-                              | "error"
-                              | "warning"
-                              | "info"
-                              | "default"
-                          }
-                        />
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ mb: 1 }}
-                        >
-                          {formatFileSize(uploadFile.file.size)}
-                        </Typography>
-
-                        {/* Workflow Progress Stepper */}
-                        <Box sx={{ mt: 2 }}>
-                          <Stepper
-                            activeStep={
-                              uploadFile.status === "pending"
-                                ? 0
-                                : uploadFile.status === "uploading"
-                                ? uploadFile.progress > 90
-                                  ? 2
-                                  : 1
-                                : uploadFile.status === "completed"
-                                ? 3
-                                : uploadFile.status === "error"
-                                ? 1
-                                : 0
+                        {getWorkflowSteps(uploadFile).map((step, index) => (
+                          <Step
+                            key={`${uploadFile.id}-step-${index}`}
+                            completed={step.completed}
+                            disabled={
+                              uploadFile.status === "error" && !step.error
                             }
-                            orientation="horizontal"
-                            sx={{
-                              "& .MuiStepConnector-root": {
-                                top: 10,
-                                left: "calc(-50% + 10px)",
-                                right: "calc(50% + 10px)",
-                              },
-                              "& .MuiStepLabel-root": {
-                                flexDirection: "column",
-                                "& .MuiStepLabel-label": {
-                                  fontSize: "0.75rem",
-                                  marginTop: "4px",
-                                },
-                              },
-                            }}
                           >
-                            {getWorkflowSteps(uploadFile).map((step) => (
-                              <Step
-                                key={step.label}
-                                completed={step.completed}
-                                disabled={
-                                  uploadFile.status === "error" && !step.error
-                                }
-                              >
-                                <StepLabel
-                                  error={step.error}
-                                  icon={
-                                    step.active ? (
-                                      <CircularProgress size={20} />
-                                    ) : step.error ? (
-                                      <ErrorIcon color="error" />
-                                    ) : step.completed ? (
-                                      <CheckCircle color="success" />
-                                    ) : (
-                                      step.icon
-                                    )
-                                  }
-                                >
-                                  {step.label}
-                                </StepLabel>
-                              </Step>
-                            ))}
-                          </Stepper>
-                        </Box>
-
-                        {/* Upload Progress Bar */}
-                        {uploadFile.status === "uploading" && (
-                          <Box sx={{ mt: 2 }}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={uploadFile.progress}
-                              sx={{ height: 8, borderRadius: 4 }}
-                            />
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                              sx={{ mt: 0.5, display: "block" }}
+                            <StepLabel
+                              error={step.error}
+                              icon={
+                                step.active ? (
+                                  <CircularProgress size={20} />
+                                ) : step.error ? (
+                                  <ErrorIcon color="error" />
+                                ) : step.completed ? (
+                                  <CheckCircle color="success" />
+                                ) : (
+                                  step.icon
+                                )
+                              }
                             >
-                              {uploadFile.progress < 90
-                                ? `Uploading... ${uploadFile.progress}%`
-                                : "Processing transcription..."}
-                            </Typography>
-                          </Box>
-                        )}
+                              {step.label}
+                            </StepLabel>
+                          </Step>
+                        ))}
+                      </Stepper>
+                    </Box>
 
-                        {/* Error Display */}
-                        {uploadFile.error && (
-                          <Alert severity="error" sx={{ mt: 1 }}>
-                            {uploadFile.error}
-                          </Alert>
-                        )}
-
-                        {/* Success Display */}
-                        {uploadFile.result && (
-                          <Alert severity="success" sx={{ mt: 1 }}>
-                            <Typography variant="body2">
-                              ✅ Transcription completed in{" "}
-                              {uploadFile.result.processingTimeMs}ms
-                            </Typography>
-                            {uploadFile.result.speakerCount &&
-                              uploadFile.result.speakerCount > 1 && (
-                                <Typography variant="caption" display="block">
-                                  🎙️ Detected {uploadFile.result.speakerCount}{" "}
-                                  speakers
-                                </Typography>
-                              )}
-                          </Alert>
-                        )}
+                    {/* Upload Progress Bar */}
+                    {uploadFile.status === "uploading" && (
+                      <Box sx={{ mt: 2 }}>
+                        <LinearProgress
+                          variant="determinate"
+                          value={uploadFile.progress}
+                          sx={{ height: 8, borderRadius: 4 }}
+                        />
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 0.5, display: "block" }}
+                        >
+                          {uploadFile.progress < 90
+                            ? `Uploading... ${uploadFile.progress}%`
+                            : "Processing transcription..."}
+                        </Typography>
                       </Box>
-                    }
-                  />
+                    )}
+
+                    {/* Error Display */}
+                    {uploadFile.error && (
+                      <Alert severity="error" sx={{ mt: 1 }}>
+                        {uploadFile.error}
+                      </Alert>
+                    )}
+
+                    {/* Success Display */}
+                    {uploadFile.result && (
+                      <Alert severity="success" sx={{ mt: 1 }}>
+                        <Typography variant="body2">
+                          ✅ Transcription completed in{" "}
+                          {uploadFile.result.processingTimeMs}ms
+                        </Typography>
+                        {uploadFile.result.speakerCount &&
+                          uploadFile.result.speakerCount > 1 && (
+                            <Typography variant="caption" display="block">
+                              🎙️ Detected {uploadFile.result.speakerCount}{" "}
+                              speakers
+                            </Typography>
+                          )}
+                      </Alert>
+                    )}
+                  </Box>
                   <ListItemSecondaryAction>
                     <IconButton
                       edge="end"

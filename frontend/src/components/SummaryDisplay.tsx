@@ -444,7 +444,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             <AccordionDetails>
               <Box component="ol" sx={{ pl: 2 }}>
                 {summary.actionItems.map((item, index) => (
-                  <Typography component="li" key={index} sx={{ mb: 1 }}>
+                  <Typography
+                    component="li"
+                    key={`action-${index}-${item.substring(0, 20)}`}
+                    sx={{ mb: 1 }}
+                  >
                     {item}
                   </Typography>
                 ))}
@@ -465,7 +469,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             <AccordionDetails>
               <Box component="ol" sx={{ pl: 2 }}>
                 {summary.keyDecisions.map((decision, index) => (
-                  <Typography component="li" key={index} sx={{ mb: 1 }}>
+                  <Typography
+                    component="li"
+                    key={`decision-${index}-${decision.substring(0, 20)}`}
+                    sx={{ mb: 1 }}
+                  >
                     {decision}
                   </Typography>
                 ))}
@@ -485,7 +493,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             <AccordionDetails>
               <Box component="ol" sx={{ pl: 2 }}>
                 {summary.nextSteps.map((step, index) => (
-                  <Typography component="li" key={index} sx={{ mb: 1 }}>
+                  <Typography
+                    component="li"
+                    key={`step-${index}-${step.substring(0, 20)}`}
+                    sx={{ mb: 1 }}
+                  >
                     {step}
                   </Typography>
                 ))}
