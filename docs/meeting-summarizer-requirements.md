@@ -67,6 +67,45 @@
 - REQ-SPK-DEL-11: Deleted speaker mappings shall not be recoverable within the same session
 - REQ-SPK-DEL-12: System shall handle deletion of all speakers, resulting in all segments showing "Unassigned"
 
+### Speaker CRUD Operations Interface
+
+- REQ-SPK-CRUD-1: System shall provide an "Edit/Delete Mappings" button in the top right of the TranscriptDisplay component
+- REQ-SPK-CRUD-2: System shall open a dedicated SpeakerMappingDialog when "Edit/Delete Mappings" button is clicked
+- REQ-SPK-CRUD-3: SpeakerMappingDialog shall display all current speaker mappings with Name and Role fields
+- REQ-SPK-CRUD-4: Each speaker entry in the dialog shall have a pencil icon for editing operations
+- REQ-SPK-CRUD-5: Each speaker entry in the dialog shall have a trash can icon for deletion operations
+- REQ-SPK-CRUD-6: System shall provide "Close" and "Update Mappings" buttons at the bottom of the dialog
+- REQ-SPK-CRUD-7: "Update Mappings" button shall only be enabled when changes have been made in the dialog
+- REQ-SPK-CRUD-8: System shall validate all speaker mapping changes before allowing updates
+- REQ-SPK-CRUD-9: Dialog shall maintain state consistency during all CRUD operations
+
+#### Create Operations
+- REQ-SPK-CREATE-1: System shall provide "Add New Speaker" functionality in the SpeakerMappingDialog
+- REQ-SPK-CREATE-2: System shall allow users to specify Name and Role when creating new speaker mappings
+- REQ-SPK-CREATE-3: System shall validate new speaker entries to prevent duplicate names within the same meeting
+- REQ-SPK-CREATE-4: System shall generate unique speaker IDs for manually created speakers
+- REQ-SPK-CREATE-5: Newly created speakers shall be immediately available for transcript segment assignment
+- REQ-SPK-CREATE-6: System shall preserve creation metadata (timestamp, user) for manually added speakers
+
+#### Update Operations
+- REQ-SPK-UPDATE-1: System shall allow in-line editing of Name and Role fields for existing speakers
+- REQ-SPK-UPDATE-2: System shall provide real-time validation during speaker mapping updates
+- REQ-SPK-UPDATE-3: System shall preserve original auto-detected values when speakers are manually updated
+- REQ-SPK-UPDATE-4: Updated speaker names shall be reflected immediately in transcript segment displays
+- REQ-SPK-UPDATE-5: System shall maintain update history for audit purposes within the session
+- REQ-SPK-UPDATE-6: System shall validate that speaker name changes don't conflict with existing speakers
+- REQ-SPK-UPDATE-7: System shall allow reverting manual updates back to original auto-detected values
+
+#### Delete Operations
+- REQ-SPK-DELETE-1: System shall provide confirmation dialog before permanently deleting speaker mappings
+- REQ-SPK-DELETE-2: System shall display impact preview showing affected transcript segments before deletion
+- REQ-SPK-DELETE-3: Deleted speakers shall be removed from all transcript segment assignments
+- REQ-SPK-DELETE-4: Transcript segments of deleted speakers shall display "Unassigned" speaker label
+- REQ-SPK-DELETE-5: System shall update speaker counts and statistics immediately after deletion
+- REQ-SPK-DELETE-6: System shall prevent deletion of speakers if it would result in no speakers remaining
+- REQ-SPK-DELETE-7: Deleted speaker mappings shall not be recoverable within the same session
+- REQ-SPK-DELETE-8: System shall cascade speaker deletion updates to all dependent components
+
 ### Summarization
 
 - REQ-SUM-1: System shall generate concise meeting summaries from transcriptions

@@ -5,6 +5,7 @@ import {
   Typography,
   Box,
   Chip,
+  Button,
   IconButton,
   Tooltip,
   Stack,
@@ -19,9 +20,11 @@ import {
   VolumeUp,
   CheckCircle,
   Error,
+  Edit,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
+import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
 import { EnhancedSpeakerSegment } from "./EnhancedSpeakerSegment";
 import { sessionManager } from "../services/sessionManager";
@@ -45,6 +48,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     transcription.speakerSegments || []
   );
   const [forceUpdate, setForceUpdate] = useState(0);
+  const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
+    useState(false);
 
   // Use provided speaker mappings or those included in the transcription
   const effectiveSpeakerMappings =
@@ -55,15 +60,22 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
     : [];
 
-  // REQ-SPK-DEL-5: Filter out deleted speakers (only show speakers that have mappings)
-  const detectedSpeakers = allDetectedSpeakers.filter((speaker) =>
-    effectiveSpeakerMappings.some((mapping) => mapping.speakerId === speaker)
-  );
+  // Show all detected speakers (don't filter by mappings for the dialog)
+  // The dialog needs to see all speakers to allow creating mappings for them
+  const detectedSpeakers = allDetectedSpeakers;
 
   // Handle speaker mappings updates
   const handleSpeakerMappingsChanged = (mappings: SpeakerMapping[]) => {
     setCurrentSpeakerMappings(mappings);
     // UI will update because state changes
+  };
+
+  // Handle speaker mapping dialog save
+  const handleSpeakerMappingsSaved = (mappings: SpeakerMapping[]) => {
+    setCurrentSpeakerMappings(mappings);
+    setSpeakerMappingDialogOpen(false);
+    // Force update to reflect changes
+    setForceUpdate((prev) => prev + 1);
   };
 
   // Handle individual speaker segment reassignment
@@ -98,8 +110,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       return mapping.role ? `${mapping.name} (${mapping.role})` : mapping.name;
     }
 
-    // REQ-SPK-DEL-3: Display "Unassigned" for speakers without mappings (deleted speakers)
-    return "Unassigned";
+    // Return the original speaker ID if no mapping exists yet
+    return speakerId;
   };
 
   // Helper function to format time
@@ -194,6 +206,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               variant="outlined"
               size="small"
             />
+
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Edit />}
+              onClick={() => setSpeakerMappingDialogOpen(true)}
+              sx={{ ml: 1 }}
+            >
+              Edit/Delete Mappings
+            </Button>
           </Stack>
 
           {/* Metadata chips */}
@@ -379,6 +401,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
           </Typography>
         </Box>
       </CardContent>
+
+      {/* Speaker Mapping Dialog */}
+      <SpeakerMappingDialog
+        open={speakerMappingDialogOpen}
+        onClose={() => setSpeakerMappingDialogOpen(false)}
+        transcriptionId={transcription.transcriptionId}
+        existingMappings={currentSpeakerMappings}
+        detectedSpeakers={detectedSpeakers}
+        onMappingsSaved={handleSpeakerMappingsSaved}
+      />
     </Card>
   );
 };

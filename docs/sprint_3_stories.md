@@ -18,10 +18,11 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 | Story ID | Title | Status | Dependencies |
 |----------|-------|--------|--------------|
 | S3.1 | Session-Based Speaker Override & Privacy Controls | IN PROGRESS 🔄 | S2.7 - Manual Speaker Override Interface |
-| S3.2 | Segment-Level Speaker Override Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface |
-| S3.3 | Enhanced Export and Sharing (Session-Based) | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow |
-| S3.4 | User Privacy Communication & Data Controls | PENDING 🔄 | S3.1 - Session-Based Override System |
-| S3.5 | Performance and Security Testing Suite | PENDING 🔄 | None |
+| S3.2 | Speaker CRUD Operations Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface |
+| S3.3 | Segment-Level Speaker Override Interface | PENDING 🔄 | S3.2 - Speaker CRUD Operations Interface |
+| S3.4 | Enhanced Export and Sharing (Session-Based) | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow |
+| S3.5 | User Privacy Communication & Data Controls | PENDING 🔄 | S3.1 - Session-Based Override System |
+| S3.6 | Performance and Security Testing Suite | PENDING 🔄 | None |
 
 ## Technical Foundation Improvements ✅ COMPLETE
 
@@ -195,58 +196,63 @@ public class SessionOverrideAction
 
 #### S3.1 Implementation Progress
 
-**Current Status:** Significant progress made on core speaker reassignment functionality and session-based infrastructure.
+**Current Status:** Core session infrastructure complete, but UI integration and privacy controls missing.
 
 **Completed Components:**
 
-✅ **Session Management Infrastructure**
+✅ **Session Management Infrastructure (COMPLETE)**
 
 - Implemented complete session manager with 2-hour timeout and automatic cleanup
 - Created session-based storage with browser sessionStorage integration
 - Built session activity tracking and automatic data expiration
+- Complete privacy controls interface available via sessionManager.getPrivacyControls()
 
-✅ **Enhanced Speaker Reassignment UI**
+✅ **Enhanced Speaker Reassignment Backend (COMPLETE)**
 
 - Created EnhancedSpeakerSegment component with dropdown-based speaker reassignment
 - Implemented real-time speaker override functionality with Material-UI Select components
-- Added direct integration with TranscriptDisplay component via enableSpeakerReassignment prop
+- Added direct integration hooks for TranscriptDisplay component
+- Backend API endpoints support session-based override tracking
 
-✅ **Backend API Endpoint Compatibility**
+✅ **SpeakerMappingDialog Integration (COMPLETE - NEW)**
 
-- Resolved field name case mismatch between frontend (camelCase) and backend (PascalCase)
-- Fixed request format transformation for C# SpeakerMapping model compatibility
-- Implemented proper enum handling for SpeakerSource (AutoDetected = 0)
+- Added "Edit/Delete Mappings" button to TranscriptDisplay header for direct access to CRUD operations
+- Integrated comprehensive SpeakerMappingDialog with main transcript interface
+- Fixed speaker detection logic to show all detected speakers from transcript in dialog
+- Implemented proper dialog state management with mapping update callbacks
+- Resolved component import and prop compatibility issues for seamless functionality
 
-✅ **Console Debugging Cleanup (COMPLETED 2025-01-23)**
+✅ **Session Storage Components Built (NOT INTEGRATED)**
 
-- Removed extensive console debugging throughout speaker mapping callback chain
-- Cleaned up request/response logging in API service layer  
-- Removed visual debugging components and debug instrumentation
-- Production-ready logging maintained while removing development console output
-- Improved application performance by eliminating console log flooding
+- SessionStatus.tsx component exists with privacy indicators and "Clear All Data" functionality
+- useSessionManagement.ts hook provides complete session state management
+- Components built but not integrated into main TranscriptDisplay interface
 
-**In Progress:**
-🔄 **API Integration Completion** - Final validation of speaker mapping save functionality
-🔄 **UI Refresh Validation** - Ensuring speaker changes properly update transcript display
+**❌ MISSING INTEGRATION (Not Actually Complete):**
 
-**Recently Completed:**
-✅ **Console Debugging Cleanup (2025-01-23)** - Removed extensive debug logging across 7 components for production readiness
-✅ **React Hydration Fixes** - Resolved ListItem nesting issues in FileUpload component
-✅ **ErrorBoundary Restoration** - Uncommented and improved error boundary functionality
+🔄 **Privacy Indicators & User Notifications** - Built but not integrated into TranscriptDisplay
+🔄 **Revert Functionality UI** - Session storage supports revert, but no UI buttons in speaker components
+🔄 **Clear All Data Integration** - SessionStatus component exists but not used in main interface
+🔄 **Session Timeout Warnings** - Backend supports it, no UI dialogs implemented
+🔄 **Privacy Policy Modal** - Not implemented
 
-**Remaining Work:**
+**Actual Completion Status: ~55% Complete**
 
-- Privacy indicator implementation (session-only data notifications)
-- Revert functionality for individual speaker overrides
-- Session timeout warnings and data preservation options
-- Bulk "Clear All Data" functionality with confirmation dialogs
+**Remaining Work (High Priority):**
+
+1. **Integrate SessionStatus component** into TranscriptDisplay header
+2. **Add revert buttons** to speaker mapping interfaces  
+3. **Add "Clear All Data" button** to main interface
+4. **Create session timeout warning dialogs**
+5. **Build privacy policy modal**
+6. **Add privacy indicators** throughout the interface
 
 **Technical Implementation Details:**
 
-- Session-based data handling prevents persistent storage of meeting data
+- Session-based data handling infrastructure complete and functional
 - Speaker overrides maintained only during browser session with automatic cleanup
-- Complete callback chain for real-time UI updates when speaker mappings change
-- Material-UI integration with proper TypeScript type safety throughout
+- All session management APIs working but need UI integration
+- Material-UI integration patterns established for consistent design
 
 **Next Steps:**
 
@@ -257,11 +263,112 @@ public class SessionOverrideAction
 
 ---
 
-### Story S3.2: Segment-Level Speaker Override Interface
+### Story S3.2: Speaker CRUD Operations Interface
+
+As a user, I want to manage speaker mappings through a comprehensive interface so that I can create, update, and delete speaker assignments with full control over my transcript accuracy.
+
+#### S3.2 Acceptance Criteria
+
+**CRUD Interface Requirements:**
+
+- "Edit/Delete Mappings" button prominently displayed in the top right of TranscriptDisplay component
+- Clicking the button opens a dedicated SpeakerMappingDialog for comprehensive speaker management
+- Dialog displays all current speaker mappings with editable Name and Role fields
+- Each speaker entry has a pencil icon for editing and trash can icon for deletion
+- Dialog includes "Close" and "Update Mappings" buttons at the bottom
+- "Update Mappings" button only enabled when changes have been made in the dialog
+
+**Create Operations:**
+
+- "Add New Speaker" functionality allows users to create new speaker mappings manually
+- New speakers require Name and Role specification with real-time validation
+- System prevents duplicate speaker names within the same meeting
+- Newly created speakers immediately available for transcript segment assignment
+- Creation metadata (timestamp, session info) preserved for audit purposes
+
+**Update Operations:**
+
+- In-line editing of Name and Role fields for all existing speakers
+- Real-time validation prevents conflicts with existing speaker names
+- Original auto-detected values preserved as fallback when speakers are manually updated
+- Updated speaker names reflected immediately in transcript segment displays
+- Session-scoped update history maintained for revert capabilities
+
+**Delete Operations:**
+
+- Confirmation dialog with impact preview before permanent speaker deletion
+- Preview shows affected transcript segments and speaker count changes
+- Deleted speakers removed from all transcript segment assignments with "Unassigned" labeling
+- System prevents deletion if it would result in no speakers remaining
+- Speaker counts and statistics updated immediately after deletion
+- Cascading updates to all dependent components and displays
+
+**Session Integration:**
+
+- All CRUD operations integrate with session-based data handling (no persistent storage)
+- Changes preserved only during current browser session with automatic cleanup
+- Dialog state consistency maintained throughout all operations
+- Real-time updates reflected in main TranscriptDisplay and speaker mapping components
+
+#### S3.2 Dependencies
+
+S2.7 - Manual Speaker Override Interface (prerequisite for override functionality)
+
+#### S3.2 Developer Notes
+
+**Frontend Implementation:**
+
+- Enhance TranscriptDisplay component with "Edit/Delete Mappings" button placement
+- Create comprehensive SpeakerMappingDialog with CRUD functionality using Material-UI components
+- Implement state management for Create, Update, Delete operations with React hooks
+- Add form validation and real-time feedback using Material-UI form components
+- Create confirmation dialogs for destructive operations (deletion)
+
+**Backend Integration:**
+
+- Extend speaker mapping API endpoints to support full CRUD operations
+- Implement session-based speaker creation with unique ID generation
+- Add validation endpoints for speaker name conflicts and business rules
+- Create bulk update capabilities for efficient dialog operations
+- Implement cascade delete operations for speaker removal
+
+**Technical Implementation:**
+
+```tsx
+interface SpeakerCRUDDialog {
+  open: boolean;
+  speakers: SpeakerMapping[];
+  onClose: () => void;
+  onUpdate: (speakers: SpeakerMapping[]) => void;
+  onCreate: (speaker: Partial<SpeakerMapping>) => void;
+  onDelete: (speakerId: string) => void;
+  hasChanges: boolean;
+}
+
+interface SpeakerFormValidation {
+  nameExists: (name: string, excludeId?: string) => boolean;
+  validateRequired: (field: string) => boolean;
+  getValidationErrors: () => string[];
+}
+```
+
+**User Experience Considerations:**
+
+- Intuitive icon placement and hover states for discoverability
+- Loading states during CRUD operations with progress indicators
+- Toast notifications for successful operations and error feedback
+- Keyboard navigation support for accessibility
+- Mobile-responsive dialog design for cross-device compatibility
+
+**Time Estimate:** 8-10 hours (comprehensive CRUD interface with validation)
+
+---
+
+### Story S3.3: Segment-Level Speaker Override Interface
 
 As a user, I want to click on individual transcript segments and reassign them to different speakers so that I can correct AI misidentification where the wrong speaker was detected for specific portions of the conversation.
 
-#### S3.2 Acceptance Criteria
+#### S3.3 Acceptance Criteria
 
 **Segment Override Interface:**
 
@@ -286,11 +393,11 @@ As a user, I want to click on individual transcript segments and reassign them t
 - Manual overrides maintained with session-scoped revert capabilities
 - Clear indicators showing temporary nature of segment assignments
 
-#### S3.2 Dependencies
+#### S3.3 Dependencies
 
-S2.7 - Manual Speaker Override Interface (prerequisite for override functionality)
+S3.2 - Speaker CRUD Operations Interface (prerequisite for comprehensive speaker management)
 
-#### S3.2 Developer Notes
+#### S3.3 Developer Notes
 
 **Frontend Implementation:**
 
@@ -479,11 +586,11 @@ interface PrivacyControls {
 
 ---
 
-### Story S3.5: Performance and Security Testing Suite
+### Story S3.6: Performance and Security Testing Suite
 
 As a development team, we need comprehensive testing coverage for performance, security, and error handling scenarios to ensure production readiness and identify potential issues before deployment.
 
-#### S3.5 Acceptance Criteria
+#### S3.6 Acceptance Criteria
 
 **Performance Testing:**
 
@@ -517,11 +624,11 @@ As a development team, we need comprehensive testing coverage for performance, s
 - Mobile responsiveness testing for key user workflows
 - Accessibility testing for screen readers and keyboard navigation
 
-#### S3.5 Dependencies
+#### S3.6 Dependencies
 
 None (foundational testing infrastructure)
 
-#### S3.5 Developer Notes
+#### S3.6 Developer Notes
 
 **Testing Infrastructure:**
 
@@ -553,28 +660,31 @@ None (foundational testing infrastructure)
 **Sprint 3 Technical Architecture:**
 
 ```text
-S2.7 Override Interface → S3.1 Session-Based Persistence → S3.2 Segment Override → S3.3 Enhanced Export → S3.4 Privacy Controls
-       ↓                     ↓                           ↓                      ↓                    ↓
-   Foundation          Session Storage            Frontend Enhancement     Export/Share        Privacy/UX
+S2.7 Override Interface → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 Enhanced Export → S3.5 Privacy Controls
+       ↓                     ↓                              ↓                            ↓                     ↓                      ↓
+   Foundation          Session Storage              CRUD Interface               Segment Control        Export/Share          Privacy/UX
                                   ↓
-                               S3.5 Testing Suite (Cross-cutting)
+                               S3.6 Testing Suite (Cross-cutting)
 ```
 
 **Key Integration Points:**
 
 - S3.1 builds directly on S2.7's override infrastructure with session-based persistence for privacy protection
-- S3.2 completes the override workflow with segment-level granularity using session-scoped storage
-- S3.3 provides immediate export capabilities without requiring persistent data storage
-- S3.4 ensures users understand and control their session-based data handling
-- S3.5 provides comprehensive testing coverage across all implemented features with privacy validation
+- S3.2 provides comprehensive CRUD operations for speaker management through dedicated dialog interface
+- S3.3 completes the override workflow with segment-level granularity building on S3.2's speaker management
+- S3.4 provides immediate export capabilities without requiring persistent data storage
+- S3.5 ensures users understand and control their session-based data handling
+- S3.6 provides comprehensive testing coverage across all implemented features with privacy validation
 
 **Technical Dependencies:**
 
 - All stories build upon the completed Sprint 2 foundation (S2.1-S2.7)
-- S3.1 and S3.2 specifically require S2.7's override interface implementation
-- S3.3 integrates with S2.4 export functionality and session-based speaker workflow
-- S3.4 depends on S3.1's session management for privacy controls
-- S3.5 validates all implemented features with focus on data privacy and session management
+- S3.1 requires S2.7's override interface implementation for session-based persistence
+- S3.2 builds on S2.7 to provide comprehensive CRUD operations for speaker management
+- S3.3 depends on S3.2's CRUD interface for complete speaker management before segment-level overrides
+- S3.4 integrates with S2.4 export functionality and session-based speaker workflow
+- S3.5 depends on S3.1's session management for privacy controls
+- S3.6 validates all implemented features with focus on data privacy and session management
 
 ## Success Metrics
 
