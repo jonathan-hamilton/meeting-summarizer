@@ -25,9 +25,9 @@ import {
   Check as CheckIcon,
   Cancel as CancelIcon,
 } from "@mui/icons-material";
-import { apiService } from "../services/apiService";
 import type { SpeakerMapping, SpeakerSource, ValidationError } from "../types";
 import { sessionManager } from "../services/sessionManager";
+import { useSpeakerStore } from "../stores/speakerStore";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -87,6 +87,13 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   const [mappings, setMappings] = useState<MappingFormData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Use Zustand store for speaker management
+  const {
+    deleteSpeaker,
+    initializeSpeakers,
+    detectedSpeakers: storeDetectedSpeakers,
+  } = useSpeakerStore();
   const [success, setSuccess] = useState(false);
 
   // S2.5: State for confirmation dialog and speaker management
@@ -212,7 +219,16 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // S2.5: Confirm speaker removal
   const confirmRemoveSpeaker = () => {
     const { speakerIndex } = deleteConfirmation;
+    const speakerToRemove = mappings[speakerIndex];
+
+    // Remove from local form state
     setMappings((prev) => prev.filter((_, i) => i !== speakerIndex));
+
+    // Remove from Zustand store if it exists there
+    if (speakerToRemove && deleteSpeaker) {
+      deleteSpeaker(speakerToRemove.speakerId);
+    }
+
     setDeleteConfirmation({ open: false, speakerIndex: -1, speakerName: "" });
     setError(null);
   };
@@ -424,7 +440,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     try {
       setLoading(true);
       setError(null);
@@ -440,18 +456,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         return;
       }
 
-      // Filter out mappings with empty names (optional mappings)
-      const validMappings = mappings.filter((m) => m.name.trim() !== "");
-      console.log("🔍 Valid mappings after filtering:", validMappings);
-
-      if (validMappings.length === 0) {
-        console.log("❌ No valid mappings found");
-        setError("Please provide at least one speaker name mapping.");
-        return;
-      }
-
-      // S2.5 & S2.7: Convert to API format with source tracking and override detection
-      const speakerMappings: SpeakerMapping[] = validMappings.map((mapping) => {
+      // Convert to SpeakerMapping format for the store and parent callback
+      const speakerMappings: SpeakerMapping[] = mappings.map((mapping) => {
         const existingMapping = existingMappings.find(
           (m) => m.speakerId === mapping.speakerId
         );
@@ -477,7 +483,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           name: mapping.name.trim(),
           role: mapping.role.trim() || "Participant", // Default role if empty
           transcriptionId,
-          source: mapping.source, // S2.5: Include source information
+          source: mapping.source,
           // S2.7: Override tracking
           originalName: isOverridden
             ? originalName || existingMapping?.name
@@ -490,23 +496,27 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         };
       });
 
-      // Transform to PascalCase for C# backend - only send fields the backend expects
-      const backendMappings = speakerMappings.map((mapping) => ({
-        SpeakerId: mapping.speakerId,
-        Name: mapping.name,
-        Role: mapping.role,
-        TranscriptionId: mapping.transcriptionId,
-        Source: 0, // Always send as integer 0 (AutoDetected enum value)
-      }));
+      // Update Zustand store with the mappings (session-only persistence)
+      if (initializeSpeakers) {
+        const currentDetectedSpeakers =
+          storeDetectedSpeakers.length > 0
+            ? storeDetectedSpeakers
+            : detectedSpeakers;
+        initializeSpeakers(
+          transcriptionId,
+          currentDetectedSpeakers,
+          speakerMappings
+        );
+      }
 
-      const request = {
-        TranscriptionId: transcriptionId,
-        Mappings: backendMappings,
-      };
-
-      // Send backend-compatible PascalCase format
-      // @ts-expect-error - Using backend format that doesn't match frontend types
-      const response = await apiService.saveSpeakerMappings(request);
+      // Notify parent component
+      if (onMappingsSaved) {
+        console.log(
+          "✅ SpeakerMappingDialog: Calling onMappingsSaved callback"
+        );
+        onMappingsSaved(speakerMappings);
+        console.log("✅ SpeakerMappingDialog: Callback completed");
+      }
 
       setSuccess(true);
 
@@ -515,31 +525,11 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       setOriginalValues(new Map());
       setValidationErrors(new Map());
 
-      // Notify parent component
-      if (onMappingsSaved && response.data) {
-        console.log(
-          "✅ SpeakerMappingDialog: Calling onMappingsSaved callback",
-          {
-            mappingsCount: response.data.mappings.length,
-            mappings: response.data.mappings,
-            hasCallback: !!onMappingsSaved,
-          }
-        );
-        onMappingsSaved(response.data.mappings);
-        console.log("✅ SpeakerMappingDialog: Callback completed");
-      } else {
-        console.log("❌ SpeakerMappingDialog: Callback NOT called", {
-          hasCallback: !!onMappingsSaved,
-          hasResponseData: !!response.data,
-          responseSuccess: response.success,
-        });
-      }
-
       // Close dialog after short delay to show success message
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to save speaker mappings:", err);
       setError(
         err instanceof Error ? err.message : "Failed to save speaker mappings"
@@ -562,7 +552,20 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     }
   };
 
-  const hasChanges = mappings.some((m) => m.name.trim() !== "");
+  // Check if there are changes (names filled, new speakers added, or any modification from original)
+  const hasChanges =
+    mappings.some((m) => m.name.trim() !== "") ||
+    mappings.length > detectedSpeakers.length ||
+    mappings.length !== existingMappings.length ||
+    mappings.some((m, i) => {
+      const existing = existingMappings[i];
+      return (
+        !existing ||
+        existing.speakerId !== m.speakerId ||
+        existing.name !== m.name ||
+        existing.role !== m.role
+      );
+    });
 
   // S2.7: Check if there are any validation errors
   const hasValidationErrors = validationErrors.size > 0;
@@ -619,13 +622,22 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             <Typography variant="subtitle2" color="text.secondary">
               Auto-detected Speakers:
             </Typography>
-            {detectedSpeakers.map((speaker) => (
+            {mappings.map((mapping) => (
               <Chip
-                key={speaker}
-                label={speaker}
+                key={mapping.speakerId}
+                label={mapping.speakerId}
                 size="small"
                 variant="outlined"
-                icon={<MicIcon />}
+                icon={
+                  mapping.source === "AutoDetected" ? (
+                    <MicIcon />
+                  ) : (
+                    <PersonAddIcon />
+                  )
+                }
+                color={
+                  mapping.source === "AutoDetected" ? "default" : "secondary"
+                }
               />
             ))}
           </Box>

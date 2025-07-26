@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Typography,
-  Chip,
-  Alert,
-  CircularProgress,
-} from "@mui/material";
+import { Box, Button, Typography, Chip } from "@mui/material";
 import {
   Person as PersonIcon,
   Edit as EditIcon,
@@ -14,10 +7,10 @@ import {
   PersonAdd as PersonAddIcon,
   EditNote as EditNoteIcon,
 } from "@mui/icons-material";
-import { apiService } from "../services/apiService";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import { sessionManager } from "../services/sessionManager";
+import { useSpeakerStore } from "../stores/speakerStore";
 
 interface SpeakerMappingProps {
   transcriptionId: string;
@@ -30,58 +23,57 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   detectedSpeakers,
   onMappingsChanged,
 }) => {
-  const [mappings, setMappings] = useState<SpeakerMapping[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Load existing mappings when component mounts
+  // Use Zustand store for speaker management
+  const {
+    speakerMappings: storeMappings,
+    detectedSpeakers: storeDetectedSpeakers,
+    initializeSpeakers,
+  } = useSpeakerStore();
+
+  // Initialize speakers in store when component mounts
   useEffect(() => {
-    const loadExistingMappings = async () => {
-      if (!transcriptionId) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiService.getSpeakerMappings(transcriptionId);
-        if (response.data) {
-          setMappings(response.data.mappings);
-        }
-      } catch (err) {
-        // It's okay if no mappings exist yet
-        console.log("No existing mappings found:", err);
-        setMappings([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadExistingMappings();
-  }, [transcriptionId]);
+    if (transcriptionId) {
+      // Initialize Zustand store with detected speakers (session-only, no API calls)
+      initializeSpeakers(transcriptionId, detectedSpeakers, []);
+    }
+  }, [transcriptionId, detectedSpeakers, initializeSpeakers]);
 
   const handleMappingsSaved = (newMappings: SpeakerMapping[]) => {
-    setMappings(newMappings);
-
+    // The store will be updated by the dialog component
+    // Just trigger the callback for any parent components
     if (onMappingsChanged) {
       onMappingsChanged(newMappings);
     }
   };
 
-  // S2.6: Enhanced speaker list calculation to include both auto-detected and manually-added speakers
+  // Use store data, fallback to props
+  const effectiveMappings = storeMappings.length > 0 ? storeMappings : [];
+  const effectiveDetectedSpeakers =
+    storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : detectedSpeakers;
+
+  // Get all speakers (detected + manually added)
   const allSpeakers = [
-    ...detectedSpeakers,
-    ...mappings.map((m) => m.speakerId),
+    ...effectiveDetectedSpeakers,
+    ...effectiveMappings.map((m) => m.speakerId),
   ];
   const uniqueSpeakers = Array.from(new Set(allSpeakers));
+  const totalSpeakerCount = uniqueSpeakers.length;
 
   // Get session-based overrides
   const sessionOverrides = sessionManager.getOverrides();
 
-  // Function to check if a speaker is mapped (either through mappings or session overrides)
+  // Function to check if a detected speaker is mapped (has a name)
   const isSpeakerMapped = (speakerId: string): boolean => {
+    // Only check if it's a detected speaker that has been mapped with a name
+    if (!effectiveDetectedSpeakers.includes(speakerId)) {
+      return false;
+    }
+
     // Check traditional mappings first
-    const mapping = mappings.find((m) => m.speakerId === speakerId);
-    if (mapping && mapping.name) {
+    const mapping = effectiveMappings.find((m) => m.speakerId === speakerId);
+    if (mapping && mapping.name && mapping.name.trim() !== "") {
       return true;
     }
 
@@ -90,22 +82,22 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     return !!(override && override.action === "Override" && override.newValue);
   };
 
-  // Speakers are unmapped if they have no mapping or override assigned
-  const unmappedSpeakers = uniqueSpeakers.filter(
-    (speakerId) => !isSpeakerMapped(speakerId)
-  );
+  // Count only detected speakers that have been mapped with names
+  const mappedDetectedCount = effectiveDetectedSpeakers.filter((speakerId) =>
+    isSpeakerMapped(speakerId)
+  ).length;
 
-  // Count mapped speakers (includes both traditional mappings and session overrides)
-  const mappedCount = uniqueSpeakers.filter(isSpeakerMapped).length;
-
-  if (loading) {
-    return (
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 2 }}>
-        <CircularProgress size={16} />
-        <Typography variant="body2">Loading speaker mappings...</Typography>
-      </Box>
-    );
-  }
+  // Get unmapped speakers (both detected and manually added without names)
+  const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
+    if (effectiveDetectedSpeakers.includes(speakerId)) {
+      // For detected speakers, check if they're mapped
+      return !isSpeakerMapped(speakerId);
+    } else {
+      // For manually added speakers, check if they have a name
+      const mapping = effectiveMappings.find((m) => m.speakerId === speakerId);
+      return !mapping || !mapping.name || mapping.name.trim() === "";
+    }
+  });
 
   return (
     <Box
@@ -127,9 +119,9 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <PersonIcon color="primary" />
           <Typography variant="h6">Speaker Mappings</Typography>
-          {uniqueSpeakers.length > 0 && (
+          {totalSpeakerCount > 0 && (
             <Typography variant="body2" color="text.secondary">
-              ({mappedCount}/{uniqueSpeakers.length} mapped)
+              ({mappedDetectedCount}/{totalSpeakerCount} mapped)
             </Typography>
           )}
         </Box>
@@ -140,26 +132,21 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           startIcon={<EditIcon />}
           onClick={() => setDialogOpen(true)}
         >
-          {mappings.length > 0
+          {effectiveMappings.length > 0
             ? "Edit/Delete Mappings"
             : "Edit/Delete Mappings"}
         </Button>
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-
-      {mappedCount > 0 && (
+      {effectiveMappings.filter((m) => m.name && m.name.trim() !== "").length >
+        0 && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             Mapped Speakers:
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             {/* Show traditional mappings */}
-            {mappings
+            {effectiveMappings
               .filter((mapping) => mapping.name)
               .map((mapping) => {
                 // S2.6: Source-aware display with appropriate icons
@@ -206,7 +193,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
             {Object.entries(sessionOverrides)
               .map(([speakerId, override]) => {
                 // Only show overrides that aren't already covered by traditional mappings
-                const hasMapping = mappings.find(
+                const hasMapping = effectiveMappings.find(
                   (m) => m.speakerId === speakerId && m.name
                 );
                 if (
@@ -241,8 +228,11 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
             {unmappedSpeakers.map((speakerId) => {
               // S2.6: Determine speaker source for unmapped speakers
-              const isDetectedSpeaker = detectedSpeakers.includes(speakerId);
-              const mapping = mappings.find((m) => m.speakerId === speakerId);
+              const isDetectedSpeaker =
+                effectiveDetectedSpeakers.includes(speakerId);
+              const mapping = effectiveMappings.find(
+                (m) => m.speakerId === speakerId
+              );
               const isAutoDetected =
                 isDetectedSpeaker &&
                 (!mapping ||
@@ -268,18 +258,19 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         </Box>
       )}
 
-      {detectedSpeakers.length === 0 && mappings.length === 0 && (
-        <Typography variant="body2" color="text.secondary">
-          No speakers detected in this transcription.
-        </Typography>
-      )}
+      {effectiveDetectedSpeakers.length === 0 &&
+        effectiveMappings.length === 0 && (
+          <Typography variant="body2" color="text.secondary">
+            No speakers detected in this transcription.
+          </Typography>
+        )}
 
       <SpeakerMappingDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         transcriptionId={transcriptionId}
-        detectedSpeakers={detectedSpeakers}
-        existingMappings={mappings}
+        detectedSpeakers={effectiveDetectedSpeakers}
+        existingMappings={effectiveMappings}
         onMappingsSaved={handleMappingsSaved}
       />
     </Box>

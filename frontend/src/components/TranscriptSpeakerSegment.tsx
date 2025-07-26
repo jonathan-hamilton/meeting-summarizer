@@ -1,5 +1,5 @@
 /**
- * Enhanced Speaker Segment Component with Reassignment Capability (S3.1)
+ * Transcript Speaker Segment Component with Reassignment Capability (S3.1)
  * Allows users to reassign transcript segments to different speakers
  */
 
@@ -37,8 +37,9 @@ import {
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { sessionManager } from "../services/sessionManager";
+import { useSpeakerStore } from "../stores/speakerStore";
 
-interface EnhancedSpeakerSegmentProps {
+interface TranscriptSpeakerSegmentProps {
   segment: SpeakerSegment;
   index: number;
   speakerMappings?: SpeakerMapping[];
@@ -56,7 +57,9 @@ interface SpeakerOption {
 /**
  * Enhanced speaker segment component with reassignment functionality
  */
-export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
+export const TranscriptSpeakerSegment: React.FC<
+  TranscriptSpeakerSegmentProps
+> = ({
   segment,
   index,
   speakerMappings = [],
@@ -64,6 +67,9 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
   showReassignControls = true,
 }) => {
   const { applyOverride, revertOverride, isLoading } = useSessionManagement();
+
+  // Use Zustand store for speaker management
+  const { speakerMappings: storeMappings } = useSpeakerStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [createSpeakerOpen, setCreateSpeakerOpen] = useState(false);
@@ -82,8 +88,12 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
   const getSpeakerOptions = (): SpeakerOption[] => {
     const options: SpeakerOption[] = [];
 
+    // Use store mappings, fallback to props
+    const effectiveMappings =
+      storeMappings.length > 0 ? storeMappings : speakerMappings;
+
     // Add existing speakers from mappings
-    speakerMappings.forEach((mapping) => {
+    effectiveMappings.forEach((mapping) => {
       options.push({
         id: mapping.speakerId,
         name: mapping.name,
@@ -116,8 +126,12 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
       return override.newValue;
     }
 
+    // Use store mappings, fallback to props
+    const effectiveMappings =
+      storeMappings.length > 0 ? storeMappings : speakerMappings;
+
     // Then check speaker mappings
-    const mapping = speakerMappings.find(
+    const mapping = effectiveMappings.find(
       (m) => m.speakerId === segment.speaker
     );
     return mapping ? mapping.name : segment.speaker;
@@ -166,21 +180,9 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
     try {
       setAnchorEl(null);
 
-      console.log("DEBUG: handleReassignSpeaker called", {
-        newSpeakerId,
-        newSpeakerName,
-        originalSpeaker: segment.speaker,
-      });
-
       if (newSpeakerName) {
         // Creating a new speaker mapping - keep the original speaker ID
-        console.log(
-          "DEBUG: Calling applyOverride with",
-          segment.speaker,
-          newSpeakerName
-        );
         const success = await applyOverride(segment.speaker, newSpeakerName);
-        console.log("DEBUG: applyOverride result:", success);
 
         if (success) {
           setFeedback({
@@ -190,11 +192,6 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
           });
           // Trigger a parent re-render by calling onSpeakerChange with the same speaker ID
           // This will force the parent to refresh and show the new override
-          console.log(
-            "DEBUG: Calling onSpeakerChange with",
-            index,
-            segment.speaker
-          );
           onSpeakerChange?.(index, segment.speaker);
         } else {
           setFeedback({
@@ -205,7 +202,9 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
         }
       } else {
         // Reassigning to existing speaker
-        const targetSpeaker = speakerMappings.find(
+        const effectiveMappings =
+          storeMappings.length > 0 ? storeMappings : speakerMappings;
+        const targetSpeaker = effectiveMappings.find(
           (m) => m.speakerId === newSpeakerId
         );
         if (targetSpeaker) {
@@ -392,9 +391,24 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
 
         <Divider />
 
+        {/* Edit current speaker name option */}
         <MenuItem
           onClick={() => {
             setAnchorEl(null);
+            setNewSpeakerName(currentSpeakerName);
+            setCreateSpeakerOpen(true);
+          }}
+        >
+          <ListItemIcon>
+            <Edit />
+          </ListItemIcon>
+          <ListItemText primary="Edit current speaker name..." />
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            setAnchorEl(null);
+            setNewSpeakerName("");
             setCreateSpeakerOpen(true);
           }}
         >
@@ -412,7 +426,11 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle>Create New Speaker</DialogTitle>
+        <DialogTitle>
+          {newSpeakerName && newSpeakerName === currentSpeakerName
+            ? "Edit Speaker Name"
+            : "Create New Speaker"}
+        </DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -432,7 +450,9 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
             variant="contained"
             disabled={!newSpeakerName.trim()}
           >
-            Create & Assign
+            {newSpeakerName && newSpeakerName === currentSpeakerName
+              ? "Update Speaker"
+              : "Create & Assign"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -454,4 +474,4 @@ export const EnhancedSpeakerSegment: React.FC<EnhancedSpeakerSegmentProps> = ({
   );
 };
 
-export default EnhancedSpeakerSegment;
+export default TranscriptSpeakerSegment;

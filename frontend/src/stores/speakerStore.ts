@@ -32,11 +32,22 @@ export const useSpeakerStore = create<SpeakerState>()(
 
       // Initialize speakers for a new transcription
       initializeSpeakers: (transcriptionId, detectedSpeakers, existingMappings = []) => {
-        set({
-          transcriptionId,
-          detectedSpeakers,
-          speakerMappings: existingMappings,
-        });
+        const state = get();
+        
+        // If this is the same transcription, preserve the original detected speakers
+        // and only update mappings
+        if (state.transcriptionId === transcriptionId && state.detectedSpeakers.length > 0) {
+          set({
+            speakerMappings: existingMappings,
+          });
+        } else {
+          // New transcription - set everything fresh
+          set({
+            transcriptionId,
+            detectedSpeakers,
+            speakerMappings: existingMappings,
+          });
+        }
       },
 
       // Add a new speaker mapping
@@ -54,7 +65,7 @@ export const useSpeakerStore = create<SpeakerState>()(
           speakerId,
           name,
           role: role || '',
-          source: 'Manual' as SpeakerSource,
+          source: 'ManuallyAdded' as SpeakerSource,
           transcriptionId: state.transcriptionId!,
         };
 
@@ -102,13 +113,22 @@ export const useSpeakerStore = create<SpeakerState>()(
 
       // Computed selectors
       getMappedCount: () => {
-        return get().speakerMappings.length;
+        const state = get();
+        // Only count detected speakers that have actual names (are truly mapped)
+        return state.speakerMappings.filter(m => 
+          state.detectedSpeakers.includes(m.speakerId) && 
+          m.name && 
+          m.name.trim() !== ''
+        ).length;
       },
 
       getUnmappedSpeakers: () => {
         const state = get();
-        const mappedSpeakerIds = state.speakerMappings.map(m => m.speakerId);
-        return state.detectedSpeakers.filter(speaker => !mappedSpeakerIds.includes(speaker));
+        // Only consider detected speakers, and check if they have meaningful mappings
+        return state.detectedSpeakers.filter(speaker => {
+          const mapping = state.speakerMappings.find(m => m.speakerId === speaker);
+          return !mapping || !mapping.name || mapping.name.trim() === '';
+        });
       },
 
       getSpeakerMapping: (speakerId) => {

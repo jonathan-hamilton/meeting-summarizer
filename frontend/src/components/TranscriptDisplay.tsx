@@ -24,7 +24,7 @@ import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
-import { EnhancedSpeakerSegment } from "./EnhancedSpeakerSegment";
+import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
 
@@ -51,8 +51,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const {
     speakerMappings: storeSpeakerMappings,
     detectedSpeakers: storeDetectedSpeakers,
-    getMappedCount,
-    getUnmappedSpeakers,
     initializeSpeakers,
     getAllMappings,
   } = useSpeakerStore();
@@ -94,6 +92,30 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     storeDetectedSpeakers.length > 0
       ? storeDetectedSpeakers
       : allDetectedSpeakers;
+
+  // Check if speakers have been modified from original transcription
+  const hasModifiedSpeakers = () => {
+    // Check for manually added speakers (more speakers than originally detected)
+    const originalSpeakerCount =
+      transcription.speakerCount || allDetectedSpeakers.length;
+    const currentSpeakerCount =
+      effectiveSpeakerMappings.length + detectedSpeakers.length;
+
+    if (currentSpeakerCount > originalSpeakerCount) {
+      return true;
+    }
+
+    // Check for edited/renamed speakers
+    const hasEditedSpeakers = effectiveSpeakerMappings.some(
+      (mapping) => mapping.source === "ManuallyAdded" || mapping.isOverridden
+    );
+
+    // Check for session overrides
+    const sessionOverrides = sessionManager.getOverrides();
+    const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
+
+    return hasEditedSpeakers || hasSessionOverrides;
+  };
 
   // Handle speaker mappings updates (legacy - now handled by store)
   const handleSpeakerMappingsChanged = () => {
@@ -262,13 +284,42 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             {transcription.speakerCount && (
               <Chip
                 icon={<Person />}
-                label={`${getMappedCount?.() || 0}/${
-                  transcription.speakerCount
+                label={`${
+                  // Count only detected speakers that have been mapped with names
+                  detectedSpeakers.filter((speakerId) => {
+                    const mapping = effectiveSpeakerMappings.find(
+                      (m) => m.speakerId === speakerId
+                    );
+                    return (
+                      mapping && mapping.name && mapping.name.trim() !== ""
+                    );
+                  }).length
+                }/${
+                  // Total count includes detected + manually added speakers
+                  Array.from(
+                    new Set([
+                      ...detectedSpeakers,
+                      ...effectiveSpeakerMappings.map((m) => m.speakerId),
+                    ])
+                  ).length
                 } speakers mapped`}
                 size="small"
                 variant="outlined"
                 color={
-                  (getMappedCount?.() || 0) === transcription.speakerCount
+                  detectedSpeakers.filter((speakerId) => {
+                    const mapping = effectiveSpeakerMappings.find(
+                      (m) => m.speakerId === speakerId
+                    );
+                    return (
+                      mapping && mapping.name && mapping.name.trim() !== ""
+                    );
+                  }).length ===
+                  Array.from(
+                    new Set([
+                      ...detectedSpeakers,
+                      ...effectiveSpeakerMappings.map((m) => m.speakerId),
+                    ])
+                  ).length
                     ? "success"
                     : "default"
                 }
@@ -281,6 +332,17 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 )}% confidence`}
                 size="small"
                 variant="outlined"
+                sx={{
+                  textDecoration: hasModifiedSpeakers()
+                    ? "line-through"
+                    : "none",
+                  opacity: hasModifiedSpeakers() ? 0.7 : 1,
+                }}
+                title={
+                  hasModifiedSpeakers()
+                    ? "Original confidence - modified by speaker changes"
+                    : "Original transcription confidence"
+                }
               />
             )}
             {transcription.detectedLanguage && (
@@ -305,13 +367,43 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             />
 
             {/* Show unmapped speakers indicator */}
-            {getUnmappedSpeakers?.().length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Unmapped Speakers: {getUnmappedSpeakers().join(", ")}
-                </Typography>
-              </Box>
-            )}
+            {(() => {
+              // Calculate all unmapped speakers (detected + manually added without names)
+              const allSpeakers = [
+                ...detectedSpeakers,
+                ...effectiveSpeakerMappings.map((m) => m.speakerId),
+              ];
+              const uniqueSpeakers = Array.from(new Set(allSpeakers));
+              const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
+                if (detectedSpeakers.includes(speakerId)) {
+                  // For detected speakers, check if they have names
+                  const mapping = effectiveSpeakerMappings.find(
+                    (m) => m.speakerId === speakerId
+                  );
+                  return (
+                    !mapping || !mapping.name || mapping.name.trim() === ""
+                  );
+                } else {
+                  // For manually added speakers, check if they have names
+                  const mapping = effectiveSpeakerMappings.find(
+                    (m) => m.speakerId === speakerId
+                  );
+                  return (
+                    !mapping || !mapping.name || mapping.name.trim() === ""
+                  );
+                }
+              });
+
+              return (
+                unmappedSpeakers.length > 0 && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {unmappedSpeakers.join(", ")}
+                    </Typography>
+                  </Box>
+                )
+              );
+            })()}
           </Box>
         )}
 
@@ -350,7 +442,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>
               {speakerSegments.map((segment, index) => (
                 <Box key={`${index}-${forceUpdate}`} sx={{ mb: 2 }}>
-                  <EnhancedSpeakerSegment
+                  <TranscriptSpeakerSegment
                     segment={segment}
                     index={index}
                     speakerMappings={effectiveSpeakerMappings}
