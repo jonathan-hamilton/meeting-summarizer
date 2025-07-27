@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Card,
   CardContent,
@@ -55,23 +55,38 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     getAllMappings,
   } = useSpeakerStore();
 
-  // Extract unique speakers from transcript segments
-  const allDetectedSpeakers = speakerSegments
-    ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
-    : [];
+  // Memoize extracted unique speakers from transcript segments
+  const allDetectedSpeakers = useMemo(() => {
+    return speakerSegments
+      ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
+      : [];
+  }, [speakerSegments]);
+
+  // Memoize effective speaker mappings
+  const effectiveSpeakerMappings = useMemo(() => {
+    return storeSpeakerMappings;
+  }, [storeSpeakerMappings]);
+
+  // Memoize detected speakers with fallback
+  const detectedSpeakers = useMemo(() => {
+    return storeDetectedSpeakers.length > 0
+      ? storeDetectedSpeakers
+      : allDetectedSpeakers;
+  }, [storeDetectedSpeakers, allDetectedSpeakers]);
+
+  // Memoize session overrides
+  const sessionOverrides = useMemo(() => {
+    return sessionManager.getOverrides();
+  }, [forceUpdate]);
 
   // Initialize store when component mounts or transcription changes
   useEffect(() => {
     try {
       const existingMappings =
         speakerMappings || transcription.speakerMappings || [];
-      // Use the allDetectedSpeakers calculated from current speaker segments
-      const speakersFromSegments = speakerSegments
-        ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
-        : [];
       initializeSpeakers(
         transcription.transcriptionId,
-        speakersFromSegments,
+        allDetectedSpeakers,
         existingMappings
       );
     } catch (error) {
@@ -82,19 +97,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     speakerMappings,
     transcription.speakerMappings,
     initializeSpeakers,
-    speakerSegments,
+    allDetectedSpeakers,
   ]);
 
-  // Use store state for speaker mappings and detected speakers
-  const effectiveSpeakerMappings = storeSpeakerMappings;
-  // Fallback to allDetectedSpeakers if store doesn't have detected speakers yet
-  const detectedSpeakers =
-    storeDetectedSpeakers.length > 0
-      ? storeDetectedSpeakers
-      : allDetectedSpeakers;
-
-  // Check if speakers have been modified from original transcription
-  const hasModifiedSpeakers = () => {
+  // Memoize hasModifiedSpeakers calculation
+  const hasModifiedSpeakers = useMemo(() => {
     // Check for manually added speakers (more speakers than originally detected)
     const originalSpeakerCount =
       transcription.speakerCount || allDetectedSpeakers.length;
@@ -111,87 +118,132 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     );
 
     // Check for session overrides
-    const sessionOverrides = sessionManager.getOverrides();
     const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
 
     return hasEditedSpeakers || hasSessionOverrides;
-  };
+  }, [
+    transcription.speakerCount,
+    allDetectedSpeakers.length,
+    effectiveSpeakerMappings,
+    detectedSpeakers.length,
+    sessionOverrides,
+  ]);
 
-  // Handle speaker mappings updates (legacy - now handled by store)
-  const handleSpeakerMappingsChanged = () => {
-    // The store will be updated directly by the SpeakerMappingComponent
-    // This handler is kept for backward compatibility but may be removed
+  // Memoize speaker mapping statistics
+  const speakerMappingStats = useMemo(() => {
+    const mappedSpeakers = detectedSpeakers.filter((speakerId) => {
+      const mapping = effectiveSpeakerMappings.find(
+        (m) => m.speakerId === speakerId
+      );
+      return mapping && mapping.name && mapping.name.trim() !== "";
+    });
+
+    const totalSpeakers = Array.from(
+      new Set([
+        ...detectedSpeakers,
+        ...effectiveSpeakerMappings.map((m) => m.speakerId),
+      ])
+    );
+
+    return {
+      mappedCount: mappedSpeakers.length,
+      totalCount: totalSpeakers.length,
+      isFullyMapped: mappedSpeakers.length === totalSpeakers.length,
+    };
+  }, [detectedSpeakers, effectiveSpeakerMappings]);
+
+  // Memoize event handlers
+  const handleSpeakerMappingsChanged = useCallback(() => {
     setForceUpdate((prev) => prev + 1);
-  };
+  }, []);
 
-  // Handle speaker mapping dialog save (simplified - store handles the state)
-  const handleSpeakerMappingsSaved = () => {
+  const handleSpeakerMappingsSaved = useCallback(() => {
     setSpeakerMappingDialogOpen(false);
-    // Force update to reflect changes
     setForceUpdate((prev) => prev + 1);
-  };
+  }, []);
 
-  // Handle individual speaker segment reassignment
-  const handleSpeakerSegmentChange = (
-    segmentIndex: number,
-    newSpeaker: string
-  ) => {
-    setSpeakerSegments((prevSegments) =>
-      prevSegments.map((segment, index) =>
-        index === segmentIndex ? { ...segment, speaker: newSpeaker } : segment
-      )
-    );
+  const handleSpeakerSegmentChange = useCallback(
+    (segmentIndex: number, newSpeaker: string) => {
+      setSpeakerSegments((prevSegments) =>
+        prevSegments.map((segment, index) =>
+          index === segmentIndex ? { ...segment, speaker: newSpeaker } : segment
+        )
+      );
+      setForceUpdate((prev) => prev + 1);
+    },
+    []
+  );
 
-    // Force a re-render by updating a timestamp or counter
-    // This ensures that session-based overrides are reflected in the UI
-    setForceUpdate((prev) => prev + 1);
-  };
-  // Helper function to resolve speaker display name
-  const resolveSpeakerName = (speakerId: string): string => {
-    // First check for session-based overrides
-    const overrides = sessionManager.getOverrides();
-    const override = overrides[speakerId];
-    if (override && override.action === "Override" && override.newValue) {
-      return override.newValue;
-    }
+  // Memoize helper function to resolve speaker display name
+  const resolveSpeakerName = useCallback(
+    (speakerId: string): string => {
+      // First check for session-based overrides
+      const override = sessionOverrides[speakerId];
+      if (override && override.action === "Override" && override.newValue) {
+        return override.newValue;
+      }
 
-    // Then check speaker mappings
-    const mapping = effectiveSpeakerMappings.find(
-      (m) => m.speakerId === speakerId
-    );
-    if (mapping) {
-      return mapping.role ? `${mapping.name} (${mapping.role})` : mapping.name;
-    }
+      // Then check speaker mappings
+      const mapping = effectiveSpeakerMappings.find(
+        (m) => m.speakerId === speakerId
+      );
+      if (mapping) {
+        return mapping.role
+          ? `${mapping.name} (${mapping.role})`
+          : mapping.name;
+      }
 
-    // Return the original speaker ID if no mapping exists yet
-    return speakerId;
-  };
+      // Return the original speaker ID if no mapping exists yet
+      return speakerId;
+    },
+    [sessionOverrides, effectiveSpeakerMappings]
+  );
 
-  // Helper function to format time
-  const formatTime = (seconds: number): string => {
+  // Memoize utility functions
+  const formatTime = useCallback((seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
+  }, []);
 
-  // Helper function to format file size
-  const formatFileSize = (bytes: number): string => {
+  const formatFileSize = useCallback((bytes: number): string => {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     if (bytes === 0) return "0 Bytes";
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
-  };
+  }, []);
 
-  // Function to copy text to clipboard
-  const copyToClipboard = async (text: string, segmentId?: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedSegment(segmentId || "full");
-      setTimeout(() => setCopiedSegment(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
+  const copyToClipboard = useCallback(
+    async (text: string, segmentId?: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedSegment(segmentId || "full");
+        setTimeout(() => setCopiedSegment(null), 2000);
+      } catch (err) {
+        console.error("Failed to copy text: ", err);
+      }
+    },
+    []
+  );
+
+  // Memoize full transcript text for copy functionality
+  const fullTranscriptText = useMemo(() => {
+    if (!speakerSegments || speakerSegments.length === 0) {
+      return transcription.transcribedText || "";
     }
-  };
+    return speakerSegments
+      .map((s) => `${resolveSpeakerName(s.speaker)}: ${s.text}`)
+      .join("\n\n");
+  }, [speakerSegments, resolveSpeakerName, transcription.transcribedText]);
+
+  // Memoize copy handlers
+  const handleCopyFullTranscript = useCallback(() => {
+    copyToClipboard(fullTranscriptText);
+  }, [copyToClipboard, fullTranscriptText]);
+
+  const handleCopySimpleTranscript = useCallback(() => {
+    copyToClipboard(transcription.transcribedText!);
+  }, [copyToClipboard, transcription.transcribedText]);
 
   if (loading) {
     return (
@@ -284,44 +336,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             {transcription.speakerCount && (
               <Chip
                 icon={<Person />}
-                label={`${
-                  // Count only detected speakers that have been mapped with names
-                  detectedSpeakers.filter((speakerId) => {
-                    const mapping = effectiveSpeakerMappings.find(
-                      (m) => m.speakerId === speakerId
-                    );
-                    return (
-                      mapping && mapping.name && mapping.name.trim() !== ""
-                    );
-                  }).length
-                }/${
-                  // Total count includes detected + manually added speakers
-                  Array.from(
-                    new Set([
-                      ...detectedSpeakers,
-                      ...effectiveSpeakerMappings.map((m) => m.speakerId),
-                    ])
-                  ).length
-                } speakers mapped`}
+                label={`${speakerMappingStats.mappedCount}/${speakerMappingStats.totalCount} speakers mapped`}
                 size="small"
                 variant="outlined"
                 color={
-                  detectedSpeakers.filter((speakerId) => {
-                    const mapping = effectiveSpeakerMappings.find(
-                      (m) => m.speakerId === speakerId
-                    );
-                    return (
-                      mapping && mapping.name && mapping.name.trim() !== ""
-                    );
-                  }).length ===
-                  Array.from(
-                    new Set([
-                      ...detectedSpeakers,
-                      ...effectiveSpeakerMappings.map((m) => m.speakerId),
-                    ])
-                  ).length
-                    ? "success"
-                    : "default"
+                  speakerMappingStats.isFullyMapped ? "success" : "default"
                 }
               />
             )}
@@ -333,13 +352,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 size="small"
                 variant="outlined"
                 sx={{
-                  textDecoration: hasModifiedSpeakers()
-                    ? "line-through"
-                    : "none",
-                  opacity: hasModifiedSpeakers() ? 0.7 : 1,
+                  textDecoration: hasModifiedSpeakers ? "line-through" : "none",
+                  opacity: hasModifiedSpeakers ? 0.7 : 1,
                 }}
                 title={
-                  hasModifiedSpeakers()
+                  hasModifiedSpeakers
                     ? "Original confidence - modified by speaker changes"
                     : "Original transcription confidence"
                 }
@@ -383,15 +400,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               <Tooltip title="Copy full transcript">
                 <IconButton
                   size="small"
-                  onClick={() =>
-                    copyToClipboard(
-                      speakerSegments
-                        .map(
-                          (s) => `${resolveSpeakerName(s.speaker)}: ${s.text}`
-                        )
-                        .join("\n\n")
-                    )
-                  }
+                  onClick={handleCopyFullTranscript}
                   color={copiedSegment === "full" ? "success" : "default"}
                 >
                   <ContentCopy fontSize="small" />
@@ -429,9 +438,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               <Tooltip title="Copy transcript">
                 <IconButton
                   size="small"
-                  onClick={() =>
-                    copyToClipboard(transcription.transcribedText!)
-                  }
+                  onClick={handleCopySimpleTranscript}
                   color={copiedSegment === "full" ? "success" : "default"}
                 >
                   <ContentCopy fontSize="small" />
