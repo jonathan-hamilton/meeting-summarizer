@@ -3,7 +3,7 @@
  * Allows users to reassign transcript segments to different speakers
  */
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   Box,
   Chip,
@@ -76,20 +76,27 @@ export const TranscriptSpeakerSegment: React.FC<
 
   const menuOpen = Boolean(anchorEl);
 
+  // Memoize effective mappings and detected speakers
+  const effectiveMappings = useMemo(() => {
+    return storeMappings.length > 0 ? storeMappings : speakerMappings;
+  }, [storeMappings, speakerMappings]);
+
+  const effectiveDetectedSpeakers = useMemo(() => {
+    return storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : [];
+  }, [storeDetectedSpeakers]);
+
+  // Memoize session overrides
+  const sessionOverrides = useMemo(() => {
+    return sessionManager.getOverrides();
+  }, []);
+
   /**
    * Get all available speaker options
    */
-  const getSpeakerOptions = (): SpeakerOption[] => {
+  const getSpeakerOptions = useMemo((): SpeakerOption[] => {
     const options: SpeakerOption[] = [];
 
-    // Use store mappings, fallback to props
-    const effectiveMappings =
-      storeMappings.length > 0 ? storeMappings : speakerMappings;
-
-    // Get detected speakers from store first, fallback to extracting from mappings
-    const effectiveDetectedSpeakers =
-      storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : [];
-
+    // Use effective mappings
     const allSpeakerIds = new Set<string>();
 
     // Add detected speakers from store
@@ -142,72 +149,68 @@ export const TranscriptSpeakerSegment: React.FC<
 
       return a.name.localeCompare(b.name);
     });
-  };
+  }, [effectiveMappings, effectiveDetectedSpeakers, segment.speaker]);
 
-  /**
-   * Get the display name for the current speaker
-   * Always returns the original speaker ID (e.g., "Speaker 1") regardless of mappings
-   */
-  const getCurrentSpeakerName = (): string => {
+  // Memoize current speaker name
+  const currentSpeakerName = useMemo(() => {
     // Always return the original speaker ID for transcript segments
     return segment.speaker;
-  };
+  }, [segment.speaker]);
 
-  /**
-   * Format time for display
-   */
-  const formatTime = (seconds: number): string => {
+  // Memoize time formatting function
+  const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  }, []);
 
   /**
    * Handle speaker reassignment
    */
-  const handleReassignSpeaker = async (newSpeakerId: string) => {
-    try {
-      setAnchorEl(null);
+  const handleReassignSpeaker = useCallback(
+    async (newSpeakerId: string) => {
+      try {
+        setAnchorEl(null);
 
-      // Reassigning to existing speaker
-      const effectiveMappings =
-        storeMappings.length > 0 ? storeMappings : speakerMappings;
-      const targetSpeaker = effectiveMappings.find(
-        (m) => m.speakerId === newSpeakerId
-      );
-      if (targetSpeaker) {
-        const success = await applyOverride(
-          segment.speaker,
-          targetSpeaker.name
+        // Reassigning to existing speaker
+        const targetSpeaker = effectiveMappings.find(
+          (m) => m.speakerId === newSpeakerId
         );
-        if (success) {
-          setFeedback({
-            open: true,
-            message: `Segment reassigned to ${targetSpeaker.name}`,
-            severity: "success",
-          });
-          onSpeakerChange?.(index, newSpeakerId);
-        } else {
-          setFeedback({
-            open: true,
-            message: `Failed to reassign speaker to ${targetSpeaker.name}`,
-            severity: "error",
-          });
+        if (targetSpeaker) {
+          const success = await applyOverride(
+            segment.speaker,
+            targetSpeaker.name
+          );
+          if (success) {
+            setFeedback({
+              open: true,
+              message: `Segment reassigned to ${targetSpeaker.name}`,
+              severity: "success",
+            });
+            onSpeakerChange?.(index, newSpeakerId);
+          } else {
+            setFeedback({
+              open: true,
+              message: `Failed to reassign speaker to ${targetSpeaker.name}`,
+              severity: "error",
+            });
+          }
         }
+      } catch {
+        setFeedback({
+          open: true,
+          message: "Failed to reassign speaker",
+          severity: "error",
+        });
       }
-    } catch {
-      setFeedback({
-        open: true,
-        message: "Failed to reassign speaker",
-        severity: "error",
-      });
-    }
-  };
+    },
+    [effectiveMappings, applyOverride, segment.speaker, onSpeakerChange, index]
+  );
 
   /**
    * Handle revert speaker assignment
    */
-  const handleRevertSpeaker = async () => {
+  const handleRevertSpeaker = useCallback(async () => {
     try {
       setAnchorEl(null);
       const success = await revertOverride(segment.speaker);
@@ -226,43 +229,64 @@ export const TranscriptSpeakerSegment: React.FC<
         severity: "error",
       });
     }
-  };
+  }, [revertOverride, segment.speaker, onSpeakerChange, index]);
 
-  const speakerOptions = getSpeakerOptions();
-  const currentSpeakerName = getCurrentSpeakerName();
+  // Handle menu open
+  const handleMenuOpen = useCallback((e: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(e.currentTarget);
+  }, []);
 
-  // Check for overrides from both speaker mappings and session manager
-  const mappingOverridden = speakerOptions.find(
-    (opt) => opt.id === segment.speaker
-  )?.isOverridden;
+  // Handle menu close
+  const handleMenuClose = useCallback(() => {
+    setAnchorEl(null);
+  }, []);
 
-  // Check for session-based overrides for this specific speaker
-  const sessionOverrides = sessionManager.getOverrides();
-  const sessionOverridden =
-    sessionOverrides[segment.speaker]?.action === "Override";
+  // Handle feedback close
+  const handleFeedbackClose = useCallback(() => {
+    setFeedback((prev) => ({ ...prev, open: false }));
+  }, []);
 
-  // This segment is specifically overridden (for reassignment message)
-  const isSegmentOverridden = mappingOverridden || sessionOverridden;
+  // Memoize speaker options - moved for proper dependency order
+  const speakerOptions = getSpeakerOptions;
 
-  // Check if ANY speakers have been modified (affects all confidence scores)
-  const hasAnyModifiedSpeakers = () => {
+  // Memoize override status calculations
+  const overrideStatus = useMemo(() => {
+    // Check for overrides from both speaker mappings and session manager
+    const mappingOverridden = speakerOptions.find(
+      (opt) => opt.id === segment.speaker
+    )?.isOverridden;
+
+    // Check for session-based overrides for this specific speaker
+    const sessionOverridden =
+      sessionOverrides[segment.speaker]?.action === "Override";
+
+    // This segment is specifically overridden (for reassignment message)
+    const isSegmentOverridden = mappingOverridden || sessionOverridden;
+
+    return {
+      isSegmentOverridden,
+      mappingOverridden,
+      sessionOverridden,
+    };
+  }, [speakerOptions, segment.speaker, sessionOverrides]);
+
+  // Memoize check for any modified speakers
+  const hasAnyModifiedSpeakers = useMemo(() => {
     // Check for any session overrides
     const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
 
     // Check for any manually added or overridden speakers in mappings
-    const effectiveMappings =
-      storeMappings.length > 0 ? storeMappings : speakerMappings;
     const hasEditedSpeakers = effectiveMappings.some(
       (mapping) => mapping.source === "ManuallyAdded" || mapping.isOverridden
     );
 
     return hasSessionOverrides || hasEditedSpeakers;
-  };
+  }, [sessionOverrides, effectiveMappings]);
 
-  // Use segment-specific override for reassignment message, broader check for confidence strikethrough
-  const isOverridden = isSegmentOverridden;
-  const shouldStrikethroughConfidence =
-    isSegmentOverridden || hasAnyModifiedSpeakers();
+  // Memoize strikethrough decision
+  const shouldStrikethroughConfidence = useMemo(() => {
+    return overrideStatus.isSegmentOverridden || hasAnyModifiedSpeakers;
+  }, [overrideStatus.isSegmentOverridden, hasAnyModifiedSpeakers]);
 
   return (
     <>
@@ -286,7 +310,7 @@ export const TranscriptSpeakerSegment: React.FC<
               color: "white",
               fontWeight: "bold",
             }}
-            variant={isOverridden ? "outlined" : "filled"}
+            variant={overrideStatus.isSegmentOverridden ? "outlined" : "filled"}
           />
 
           <Typography variant="body2" color="text.secondary">
@@ -316,7 +340,7 @@ export const TranscriptSpeakerSegment: React.FC<
           {/* Reassignment Controls */}
           {showReassignControls && (
             <Stack direction="row" spacing={1}>
-              {isOverridden && (
+              {overrideStatus.isSegmentOverridden && (
                 <Tooltip title="Revert to original speaker">
                   <IconButton
                     size="small"
@@ -332,7 +356,7 @@ export const TranscriptSpeakerSegment: React.FC<
               <Tooltip title="Reassign speaker">
                 <IconButton
                   size="small"
-                  onClick={(e) => setAnchorEl(e.currentTarget)}
+                  onClick={handleMenuOpen}
                   disabled={isLoading}
                   color="primary"
                 >
@@ -344,7 +368,7 @@ export const TranscriptSpeakerSegment: React.FC<
         </Stack>
 
         {/* Session Override Indicator */}
-        {isOverridden && (
+        {overrideStatus.isSegmentOverridden && (
           <Alert severity="info" sx={{ mb: 1 }} icon={<Warning />}>
             This segment has been reassigned in your current session
           </Alert>
@@ -360,7 +384,7 @@ export const TranscriptSpeakerSegment: React.FC<
       <Menu
         anchorEl={anchorEl}
         open={menuOpen}
-        onClose={() => setAnchorEl(null)}
+        onClose={handleMenuClose}
         PaperProps={{
           sx: { minWidth: 250 },
         }}
@@ -392,12 +416,9 @@ export const TranscriptSpeakerSegment: React.FC<
       <Snackbar
         open={feedback.open}
         autoHideDuration={4000}
-        onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
+        onClose={handleFeedbackClose}
       >
-        <Alert
-          severity={feedback.severity}
-          onClose={() => setFeedback((prev) => ({ ...prev, open: false }))}
-        >
+        <Alert severity={feedback.severity} onClose={handleFeedbackClose}>
           {feedback.message}
         </Alert>
       </Snackbar>
