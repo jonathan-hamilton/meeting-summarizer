@@ -2,6 +2,64 @@
 
 This document tracks ongoing technical improvements, UI/UX enhancements, development workflow optimizations, and code quality improvements that don't fit into specific user stories but contribute to the overall system quality and developer experience.
 
+## 2025-01-22: Speaker Color System Centralization
+
+### Overview
+Centralized speaker color management system to eliminate code duplication and ensure consistent speaker visualization across all UI components.
+
+### Improvements Implemented
+
+#### 1. Centralized Color Utility Creation
+**Problem:** Multiple components had duplicate `getSpeakerColor` functions with inconsistent color arrays, leading to different speaker colors across UI elements.
+
+**Solution:** 
+- Created centralized `theme/speakerColors.ts` utility module
+- Implemented consistent 10-color palette with hash-based speaker assignment
+- Exported through main theme module for easy import access
+
+**Technical Details:**
+```typescript
+// Centralized color palette (10 distinct colors)
+const SPEAKER_COLORS = [
+  "#1976d2", "#dc004e", "#00796b", "#f57c00",
+  "#7b1fa2", "#388e3c", "#d32f2f", "#1565c0",
+  "#5d4037", "#303f9f"
+];
+
+// Hash-based consistent assignment algorithm
+export const getSpeakerColor = (speakerName: string): string => {
+  const hash = speakerName.split('').reduce((acc, char) => 
+    char.charCodeAt(0) + ((acc << 5) - acc), 0);
+  return SPEAKER_COLORS[Math.abs(hash) % SPEAKER_COLORS.length];
+};
+```
+
+#### 2. Component Deduplication & Integration
+**Problem:** Three components (`SpeakerMapping.tsx`, `SpeakerMappingDialog.tsx`, `TranscriptSpeakerSegment.tsx`) each had their own `getSpeakerColor` implementation.
+
+**Solution:**
+- Removed duplicate functions from all three components
+- Updated imports to use centralized utility
+- Standardized styling approach across all speaker chips
+- Updated test files to use centralized function
+
+**Components Updated:**
+- `SpeakerMapping.tsx`: Removed local color function, updated all Chip components with consistent `sx` styling
+- `SpeakerMappingDialog.tsx`: Removed duplicate function, using centralized import
+- `TranscriptSpeakerSegment.tsx`: Cleaned up color logic and menu functionality
+
+#### 3. Consistent UI Styling Implementation
+**Problem:** Speaker chips had inconsistent styling patterns across different components.
+
+**Solution:**
+- Standardized all speaker chips to use `sx` prop for styling
+- Ensured consistent text color (`white`) and background color application
+- Maintained visual consistency across speaker mapping and transcript views
+
+**Status:** ✅ **COMPLETE** - All speaker components now use centralized color system with consistent 10-color palette
+
+---
+
 ## 2025-01-22: Layout Centering & Development Tools Enhancement
 
 ### Overview

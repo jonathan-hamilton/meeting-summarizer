@@ -5,6 +5,7 @@ import React from "react";
 import "@testing-library/jest-dom";
 import TranscriptDisplay from "../../components/TranscriptDisplay";
 import { renderWithTheme } from "../utils/testUtils";
+import { getSpeakerColor } from "../../theme/speakerColors";
 import {
   mockTranscriptionResponseWithSpeakers,
   mockTranscriptionResponseSimpleText,
@@ -304,8 +305,12 @@ describe("TranscriptDisplay Component", () => {
       expect(speaker2Chip).toBeInTheDocument();
 
       // The chips should have background colors applied
-      expect(speaker1Chip).toHaveStyle({ backgroundColor: "#1976d2" }); // blue for Speaker 1
-      expect(speaker2Chip).toHaveStyle({ backgroundColor: "#388e3c" }); // green for Speaker 2
+      expect(speaker1Chip).toHaveStyle({
+        backgroundColor: getSpeakerColor("Speaker 1"),
+      });
+      expect(speaker2Chip).toHaveStyle({
+        backgroundColor: getSpeakerColor("Speaker 2"),
+      });
     });
   });
 

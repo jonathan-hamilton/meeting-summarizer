@@ -11,6 +11,7 @@ import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
+import { getSpeakerColor } from "../theme/speakerColors";
 
 interface SpeakerMappingProps {
   transcriptionId: string;
@@ -174,8 +175,14 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
                       mapping.role ? ` (${mapping.role})` : ""
                     }`}
                     variant="filled"
-                    color={isOverridden ? "secondary" : "primary"}
                     size="small"
+                    sx={{
+                      backgroundColor: getSpeakerColor(mapping.speakerId),
+                      color: "white",
+                      "& .MuiChip-icon": {
+                        color: "white",
+                      },
+                    }}
                     title={`${sourceLabel} speaker${
                       isOverridden
                         ? ` - overridden at ${new Date(
@@ -205,8 +212,14 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
                       icon={<EditNoteIcon />}
                       label={`${speakerId} → ${override.newValue}`}
                       variant="filled"
-                      color="info"
                       size="small"
+                      sx={{
+                        backgroundColor: getSpeakerColor(speakerId),
+                        color: "white",
+                        "& .MuiChip-icon": {
+                          color: "white",
+                        },
+                      }}
                       title={`session override - ${override.newValue}`}
                     />
                   );
@@ -246,8 +259,15 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
                   key={speakerId}
                   icon={<Icon />}
                   label={speakerId}
-                  variant="outlined"
+                  variant="filled"
                   size="small"
+                  sx={{
+                    backgroundColor: getSpeakerColor(speakerId),
+                    color: "white",
+                    "& .MuiChip-icon": {
+                      color: "white",
+                    },
+                  }}
                   title={`${sourceLabel} speaker`}
                 />
               );

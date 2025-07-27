@@ -16,28 +16,21 @@ import {
   Tooltip,
   Alert,
   Snackbar,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
   Stack,
-  Divider,
 } from "@mui/material";
 import {
   Person,
-  Edit,
   Undo,
-  Add,
   Check,
   Warning,
   Schedule,
+  SwapHoriz,
 } from "@mui/icons-material";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
+import { getSpeakerColor } from "../theme/speakerColors";
 
 interface TranscriptSpeakerSegmentProps {
   segment: SpeakerSegment;
@@ -69,11 +62,12 @@ export const TranscriptSpeakerSegment: React.FC<
   const { applyOverride, revertOverride, isLoading } = useSessionManagement();
 
   // Use Zustand store for speaker management
-  const { speakerMappings: storeMappings } = useSpeakerStore();
+  const {
+    speakerMappings: storeMappings,
+    detectedSpeakers: storeDetectedSpeakers,
+  } = useSpeakerStore();
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [createSpeakerOpen, setCreateSpeakerOpen] = useState(false);
-  const [newSpeakerName, setNewSpeakerName] = useState("");
   const [feedback, setFeedback] = useState<{
     open: boolean;
     message: string;
@@ -92,27 +86,62 @@ export const TranscriptSpeakerSegment: React.FC<
     const effectiveMappings =
       storeMappings.length > 0 ? storeMappings : speakerMappings;
 
-    // Add existing speakers from mappings
-    effectiveMappings.forEach((mapping) => {
+    // Get detected speakers from store first, fallback to extracting from mappings
+    const effectiveDetectedSpeakers =
+      storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : [];
+
+    const allSpeakerIds = new Set<string>();
+
+    // Add detected speakers from store
+    effectiveDetectedSpeakers.forEach((speakerId: string) =>
+      allSpeakerIds.add(speakerId)
+    );
+
+    // Add speakers from mappings (in case there are manually added ones)
+    effectiveMappings.forEach((mapping) =>
+      allSpeakerIds.add(mapping.speakerId)
+    );
+
+    // Add current segment speaker
+    allSpeakerIds.add(segment.speaker);
+
+    // Create options for all speakers
+    Array.from(allSpeakerIds).forEach((speakerId) => {
+      const mapping = effectiveMappings.find((m) => m.speakerId === speakerId);
+
+      let displayName: string;
+      if (mapping && mapping.name && mapping.name.trim() !== "") {
+        // Mapped speaker: show "Name (Role)" or just "Name"
+        displayName = mapping.role
+          ? `${mapping.name} (${mapping.role})`
+          : mapping.name;
+      } else {
+        // Unmapped speaker: show speaker ID
+        displayName = speakerId;
+      }
+
       options.push({
-        id: mapping.speakerId,
-        name: mapping.name,
-        isOriginal: mapping.speakerId === segment.speaker,
-        isOverridden: mapping.isOverridden || false,
+        id: speakerId,
+        name: displayName,
+        isOriginal: speakerId === segment.speaker,
+        isOverridden: mapping?.isOverridden || false,
       });
     });
 
-    // Add current segment speaker if not in mappings
-    if (!options.find((opt) => opt.id === segment.speaker)) {
-      options.push({
-        id: segment.speaker,
-        name: segment.speaker,
-        isOriginal: true,
-        isOverridden: false,
-      });
-    }
+    // Sort options: current speaker first, then mapped speakers, then unmapped
+    return options.sort((a, b) => {
+      if (a.isOriginal) return -1;
+      if (b.isOriginal) return 1;
 
-    return options;
+      // Prioritize mapped speakers (those with names different from IDs)
+      const aIsMapped = a.name !== a.id;
+      const bIsMapped = b.name !== b.id;
+
+      if (aIsMapped && !bIsMapped) return -1;
+      if (!aIsMapped && bIsMapped) return 1;
+
+      return a.name.localeCompare(b.name);
+    });
   };
 
   /**
@@ -122,30 +151,6 @@ export const TranscriptSpeakerSegment: React.FC<
   const getCurrentSpeakerName = (): string => {
     // Always return the original speaker ID for transcript segments
     return segment.speaker;
-  };
-
-  /**
-   * Get speaker color for visual consistency
-   */
-  const getSpeakerColor = (speakerId: string): string => {
-    const colors = [
-      "#1976d2",
-      "#388e3c",
-      "#f57c00",
-      "#7b1fa2",
-      "#c2185b",
-      "#5d4037",
-      "#455a64",
-      "#e91e63",
-    ];
-
-    const match = speakerId.match(/\d+/);
-    const index = match
-      ? (parseInt(match[0]) - 1) % colors.length
-      : speakerId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) %
-        colors.length;
-
-    return colors[index];
   };
 
   /**
@@ -160,53 +165,34 @@ export const TranscriptSpeakerSegment: React.FC<
   /**
    * Handle speaker reassignment
    */
-  const handleReassignSpeaker = async (
-    newSpeakerId: string,
-    newSpeakerName?: string
-  ) => {
+  const handleReassignSpeaker = async (newSpeakerId: string) => {
     try {
       setAnchorEl(null);
 
-      if (newSpeakerName) {
-        // Creating a new speaker mapping - keep the original speaker ID
-        const success = await applyOverride(segment.speaker, newSpeakerName);
-
+      // Reassigning to existing speaker
+      const effectiveMappings =
+        storeMappings.length > 0 ? storeMappings : speakerMappings;
+      const targetSpeaker = effectiveMappings.find(
+        (m) => m.speakerId === newSpeakerId
+      );
+      if (targetSpeaker) {
+        const success = await applyOverride(
+          segment.speaker,
+          targetSpeaker.name
+        );
         if (success) {
           setFeedback({
             open: true,
-            message: `Segment reassigned to ${newSpeakerName}`,
+            message: `Segment reassigned to ${targetSpeaker.name}`,
             severity: "success",
           });
-          // Trigger a parent re-render by calling onSpeakerChange with the same speaker ID
-          // This will force the parent to refresh and show the new override
-          onSpeakerChange?.(index, segment.speaker);
+          onSpeakerChange?.(index, newSpeakerId);
         } else {
           setFeedback({
             open: true,
-            message: `Failed to reassign speaker to ${newSpeakerName}`,
+            message: `Failed to reassign speaker to ${targetSpeaker.name}`,
             severity: "error",
           });
-        }
-      } else {
-        // Reassigning to existing speaker
-        const effectiveMappings =
-          storeMappings.length > 0 ? storeMappings : speakerMappings;
-        const targetSpeaker = effectiveMappings.find(
-          (m) => m.speakerId === newSpeakerId
-        );
-        if (targetSpeaker) {
-          const success = await applyOverride(
-            segment.speaker,
-            targetSpeaker.name
-          );
-          if (success) {
-            setFeedback({
-              open: true,
-              message: `Segment reassigned to ${targetSpeaker.name}`,
-              severity: "success",
-            });
-            onSpeakerChange?.(index, newSpeakerId);
-          }
         }
       }
     } catch {
@@ -242,49 +228,41 @@ export const TranscriptSpeakerSegment: React.FC<
     }
   };
 
-  /**
-   * Handle create new speaker
-   */
-  const handleCreateSpeaker = async () => {
-    if (!newSpeakerName.trim()) return;
-
-    await handleReassignSpeaker(`custom_${Date.now()}`, newSpeakerName.trim());
-    setCreateSpeakerOpen(false);
-    setNewSpeakerName("");
-  };
-
   const speakerOptions = getSpeakerOptions();
   const currentSpeakerName = getCurrentSpeakerName();
-  
+
   // Check for overrides from both speaker mappings and session manager
   const mappingOverridden = speakerOptions.find(
     (opt) => opt.id === segment.speaker
   )?.isOverridden;
-  
+
   // Check for session-based overrides for this specific speaker
   const sessionOverrides = sessionManager.getOverrides();
-  const sessionOverridden = sessionOverrides[segment.speaker]?.action === "Override";
-  
+  const sessionOverridden =
+    sessionOverrides[segment.speaker]?.action === "Override";
+
   // This segment is specifically overridden (for reassignment message)
   const isSegmentOverridden = mappingOverridden || sessionOverridden;
-  
+
   // Check if ANY speakers have been modified (affects all confidence scores)
   const hasAnyModifiedSpeakers = () => {
     // Check for any session overrides
     const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
-    
+
     // Check for any manually added or overridden speakers in mappings
-    const effectiveMappings = storeMappings.length > 0 ? storeMappings : speakerMappings;
+    const effectiveMappings =
+      storeMappings.length > 0 ? storeMappings : speakerMappings;
     const hasEditedSpeakers = effectiveMappings.some(
       (mapping) => mapping.source === "ManuallyAdded" || mapping.isOverridden
     );
-    
+
     return hasSessionOverrides || hasEditedSpeakers;
   };
-  
+
   // Use segment-specific override for reassignment message, broader check for confidence strikethrough
   const isOverridden = isSegmentOverridden;
-  const shouldStrikethroughConfidence = isSegmentOverridden || hasAnyModifiedSpeakers();
+  const shouldStrikethroughConfidence =
+    isSegmentOverridden || hasAnyModifiedSpeakers();
 
   return (
     <>
@@ -324,7 +302,9 @@ export const TranscriptSpeakerSegment: React.FC<
               variant="body2"
               color="text.secondary"
               sx={{
-                textDecoration: shouldStrikethroughConfidence ? "line-through" : "none",
+                textDecoration: shouldStrikethroughConfidence
+                  ? "line-through"
+                  : "none",
               }}
             >
               {Math.round(segment.confidence * 100)}% confidence
@@ -356,7 +336,7 @@ export const TranscriptSpeakerSegment: React.FC<
                   disabled={isLoading}
                   color="primary"
                 >
-                  <Edit />
+                  <SwapHoriz />
                 </IconButton>
               </Tooltip>
             </Stack>
@@ -391,8 +371,6 @@ export const TranscriptSpeakerSegment: React.FC<
           </Typography>
         </MenuItem>
 
-        <Divider />
-
         {speakerOptions.map((option) => (
           <MenuItem
             key={option.id}
@@ -408,74 +386,7 @@ export const TranscriptSpeakerSegment: React.FC<
             />
           </MenuItem>
         ))}
-
-        <Divider />
-
-        {/* Edit current speaker name option */}
-        <MenuItem
-          onClick={() => {
-            setAnchorEl(null);
-            setNewSpeakerName(currentSpeakerName);
-            setCreateSpeakerOpen(true);
-          }}
-        >
-          <ListItemIcon>
-            <Edit />
-          </ListItemIcon>
-          <ListItemText primary="Edit current speaker name..." />
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => {
-            setAnchorEl(null);
-            setNewSpeakerName("");
-            setCreateSpeakerOpen(true);
-          }}
-        >
-          <ListItemIcon>
-            <Add />
-          </ListItemIcon>
-          <ListItemText primary="Create new speaker..." />
-        </MenuItem>
       </Menu>
-
-      {/* Create New Speaker Dialog */}
-      <Dialog
-        open={createSpeakerOpen}
-        onClose={() => setCreateSpeakerOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          {newSpeakerName && newSpeakerName === currentSpeakerName
-            ? "Edit Speaker Name"
-            : "Create New Speaker"}
-        </DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Speaker Name"
-            fullWidth
-            variant="outlined"
-            value={newSpeakerName}
-            onChange={(e) => setNewSpeakerName(e.target.value)}
-            placeholder="Enter speaker name..."
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateSpeakerOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleCreateSpeaker}
-            variant="contained"
-            disabled={!newSpeakerName.trim()}
-          >
-            {newSpeakerName && newSpeakerName === currentSpeakerName
-              ? "Update Speaker"
-              : "Create & Assign"}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Feedback Snackbar */}
       <Snackbar
