@@ -6,32 +6,27 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 ## Workflow Steps
 
-### Step 1: Update Sprint Documentation
+### Step 1: Git Status Check
 
+- Before executing any git operations, Step 1 needs to be complete
+- Run `git status` to show current changes
+
+### Step 2: Update Sprint Documentation
+
+- Use results of git changes and any changed files
 - Identify the current story being worked on from context
-- Update the appropriate `docs/sprint_*_stories.md` file
+- Before making updates to documentation, present propsed changes to the User for confirmation
 - Update technical-debt.md if applicable
+- Update the appropriate `docs/sprint_*_stories.md` file
 - Update technical-improvement.md if applicable
 - Mark story status as COMPLETE with ✅
 - Add completion timestamp and summary details
 - Update implementation progress section
 - Document any technical notes or deviations from original plan
-- Update the technical-debt.md where/if appropriate
-- Before making updates to documentation, present propsed changes to the User for confirmation
+- Update the technical-debt.md and technical-improvements.md where/if appropriate
+- Present changes to user for confirmation to update documentation
 
-### Step 2: Git Status Check
-
-- Before executing any git operations, Step 1 needs to be complete
-- Run `git status` to show current changes
-- Present changes to user for confirmation
-- Wait for user approval before proceeding
-
-### Step 3: Stage Changes
-
-- Run `git add .` to stage all changes
-- Confirm staging completed successfully
-
-### Step 4: Commit with Smart Message
+### Step 3: Commit with Smart Message
 
 - Generate intelligent commit message based on:
   - Story number and title
@@ -41,12 +36,6 @@ This prompt handles the complete workflow for updating sprint documentation and 
   - Acceptance criteria completion
 - Use conventional commit format: `feat:`, `fix:`, `docs:`, etc.
 - Include story reference and completion status
-
-### Step 5: Push to Remote
-
-- Run `git push origin main`
-- Confirm push completed successfully
-- Provide completion summary
 
 ## Example Commit Message Format
 
