@@ -41,18 +41,25 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     }
   }, [transcriptionId, detectedSpeakers, initializeSpeakers]);
 
+  // Memoize callback handlers
   const handleMappingsSaved = useCallback(
     (newMappings: SpeakerMapping[]) => {
       // The store will be updated by the dialog component
       // Just trigger the callback for any parent components
-      if (onMappingsChanged) {
-        onMappingsChanged(newMappings);
-      }
+      onMappingsChanged?.(newMappings);
     },
     [onMappingsChanged]
   );
 
-  // Step 2: Memoize Effective Data (Replace multiple fallback calculations)
+  const handleOpenDialog = useCallback(() => {
+    setDialogOpen(true);
+  }, []);
+
+  const handleCloseDialog = useCallback(() => {
+    setDialogOpen(false);
+  }, []);
+
+  // Memoize effective data (Replace multiple fallback calculations)
   const effectiveData = useMemo(
     () => ({
       mappings: storeMappings.length > 0 ? storeMappings : [],
@@ -64,10 +71,10 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     [storeMappings, storeDetectedSpeakers, detectedSpeakers]
   );
 
-  // Step 3: Memoize Session Overrides (Replace expensive call on every render)
+  // Memoize session overrides (Replace expensive call on every render)
   const sessionOverrides = useMemo(() => sessionManager.getOverrides(), []);
 
-  // Function to check if a detected speaker is mapped (has a name)
+  // Memoize speaker mapping checker function
   const isSpeakerMapped = useCallback(
     (speakerId: string): boolean => {
       // Only check if it's a detected speaker that has been mapped with a name
@@ -94,7 +101,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     [effectiveData.mappings, effectiveData.speakers, sessionOverrides]
   );
 
-  // Step 4: Memoize computed speaker data (Replace expensive calculations)
+  // Memoize computed speaker data (Replace expensive calculations)
   const computedSpeakerData = useMemo(() => {
     // Get all speakers (detected + manually added)
     const allSpeakers = [
@@ -132,13 +139,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     };
   }, [effectiveData, isSpeakerMapped]);
 
-  // Count only detected speakers that have been mapped with names
-  const mappedDetectedCount = computedSpeakerData.mappedDetectedCount;
-
-  // Get unmapped speakers (both detected and manually added without names)
-  const unmappedSpeakers = computedSpeakerData.unmappedSpeakers;
-
-  // Step 5: Memoize rendered speaker lists (Replace inline filtering/mapping)
+  // Memoize rendered speaker lists (Replace inline filtering/mapping)
   const mappedTraditionalSpeakers = useMemo(() => {
     return effectiveData.mappings.filter((mapping) => mapping.name);
   }, [effectiveData.mappings]);
@@ -162,15 +163,117 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       .filter(Boolean);
   }, [sessionOverrides, effectiveData.mappings]);
 
-  return (
-    <Box
-      sx={{
-        p: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 1,
-      }}
-    >
+  // Memoize mapped speakers chips
+  const mappedSpeakersChips = useMemo(() => {
+    const traditionalChips = mappedTraditionalSpeakers.map((mapping) => {
+      // Source-aware display with appropriate icons
+      const isAutoDetected =
+        !mapping.source || mapping.source === ("AutoDetected" as SpeakerSource);
+
+      // Override indicator
+      const isOverridden = mapping.isOverridden;
+
+      let Icon = isAutoDetected ? MicIcon : PersonAddIcon;
+      let sourceLabel = isAutoDetected ? "auto-detected" : "manually-added";
+
+      // Show override icon for overridden speakers
+      if (isOverridden) {
+        Icon = EditNoteIcon;
+        sourceLabel = "manually overridden";
+      }
+
+      return (
+        <Chip
+          key={mapping.speakerId}
+          icon={<Icon />}
+          label={`${mapping.speakerId} → ${mapping.name}${
+            mapping.role ? ` (${mapping.role})` : ""
+          }`}
+          variant="filled"
+          size="small"
+          sx={{
+            backgroundColor: getSpeakerColor(mapping.speakerId),
+            color: "white",
+            "& .MuiChip-icon": {
+              color: "white",
+            },
+          }}
+          title={`${sourceLabel} speaker${
+            isOverridden
+              ? ` - overridden at ${new Date(
+                  mapping.overriddenAt || ""
+                ).toLocaleString()}`
+              : ""
+          }`}
+        />
+      );
+    });
+
+    const sessionOverrideChips = sessionOverrideSpeakers.map((item) => {
+      if (!item) return null;
+      const { speakerId, override } = item;
+
+      return (
+        <Chip
+          key={`override-${speakerId}`}
+          icon={<EditNoteIcon />}
+          label={`${speakerId} → ${override.newValue}`}
+          variant="filled"
+          size="small"
+          sx={{
+            backgroundColor: getSpeakerColor(speakerId),
+            color: "white",
+            "& .MuiChip-icon": {
+              color: "white",
+            },
+          }}
+          title={`session override - ${override.newValue}`}
+        />
+      );
+    });
+
+    return [...traditionalChips, ...sessionOverrideChips.filter(Boolean)];
+  }, [mappedTraditionalSpeakers, sessionOverrideSpeakers]);
+
+  // Memoize unmapped speakers chips
+  const unmappedSpeakersChips = useMemo(() => {
+    return computedSpeakerData.unmappedSpeakers.map((speakerId) => {
+      // Determine speaker source for unmapped speakers
+      const isDetectedSpeaker = effectiveData.speakers.includes(speakerId);
+      const mapping = effectiveData.mappings.find(
+        (m) => m.speakerId === speakerId
+      );
+      const isAutoDetected =
+        isDetectedSpeaker &&
+        (!mapping ||
+          !mapping.source ||
+          mapping.source === ("AutoDetected" as SpeakerSource));
+      const Icon = isAutoDetected ? MicIcon : PersonAddIcon;
+      const sourceLabel = isAutoDetected ? "auto-detected" : "manually-added";
+
+      return (
+        <Chip
+          key={speakerId}
+          icon={<Icon />}
+          label={speakerId}
+          variant="filled"
+          size="small"
+          sx={{
+            backgroundColor: getSpeakerColor(speakerId),
+            color: "white",
+            "& .MuiChip-icon": {
+              color: "white",
+            },
+          }}
+          title={`${sourceLabel} speaker`}
+        />
+      );
+    });
+  }, [computedSpeakerData.unmappedSpeakers, effectiveData]);
+
+  // Memoize header section
+  const headerSection = useMemo(
+    () => (
       <Box
         sx={{
           display: "flex",
@@ -184,8 +287,8 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           <Typography variant="h6">Speaker Mappings</Typography>
           {computedSpeakerData.totalSpeakerCount > 0 && (
             <Typography variant="body2" color="text.secondary">
-              ({mappedDetectedCount}/{computedSpeakerData.totalSpeakerCount}{" "}
-              mapped)
+              ({computedSpeakerData.mappedDetectedCount}/
+              {computedSpeakerData.totalSpeakerCount} mapped)
             </Typography>
           )}
         </Box>
@@ -194,148 +297,80 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           variant="outlined"
           size="small"
           startIcon={<EditIcon />}
-          onClick={() => setDialogOpen(true)}
+          onClick={handleOpenDialog}
         >
           Manage Mappings
         </Button>
       </Box>
+    ),
+    [computedSpeakerData, handleOpenDialog]
+  );
 
-      {mappedTraditionalSpeakers.length > 0 && (
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Mapped Speakers:
-          </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {/* Show traditional mappings */}
-            {mappedTraditionalSpeakers.map((mapping) => {
-              // S2.6: Source-aware display with appropriate icons
-              const isAutoDetected =
-                !mapping.source ||
-                mapping.source === ("AutoDetected" as SpeakerSource);
+  // Memoize mapped speakers section
+  const mappedSpeakersSection = useMemo(() => {
+    if (mappedSpeakersChips.length === 0) return null;
 
-              // S2.7: Override indicator
-              const isOverridden = mapping.isOverridden;
-
-              let Icon = isAutoDetected ? MicIcon : PersonAddIcon;
-              let sourceLabel = isAutoDetected
-                ? "auto-detected"
-                : "manually-added";
-
-              // S2.7: Show override icon for overridden speakers
-              if (isOverridden) {
-                Icon = EditNoteIcon;
-                sourceLabel = "manually overridden";
-              }
-
-              return (
-                <Chip
-                  key={mapping.speakerId}
-                  icon={<Icon />}
-                  label={`${mapping.speakerId} → ${mapping.name}${
-                    mapping.role ? ` (${mapping.role})` : ""
-                  }`}
-                  variant="filled"
-                  size="small"
-                  sx={{
-                    backgroundColor: getSpeakerColor(mapping.speakerId),
-                    color: "white",
-                    "& .MuiChip-icon": {
-                      color: "white",
-                    },
-                  }}
-                  title={`${sourceLabel} speaker${
-                    isOverridden
-                      ? ` - overridden at ${new Date(
-                          mapping.overriddenAt || ""
-                        ).toLocaleString()}`
-                      : ""
-                  }`}
-                />
-              );
-            })}
-
-            {/* Show session-based overrides */}
-            {sessionOverrideSpeakers.map((item) => {
-              if (!item) return null;
-              const { speakerId, override } = item;
-
-              return (
-                <Chip
-                  key={`override-${speakerId}`}
-                  icon={<EditNoteIcon />}
-                  label={`${speakerId} → ${override.newValue}`}
-                  variant="filled"
-                  size="small"
-                  sx={{
-                    backgroundColor: getSpeakerColor(speakerId),
-                    color: "white",
-                    "& .MuiChip-icon": {
-                      color: "white",
-                    },
-                  }}
-                  title={`session override - ${override.newValue}`}
-                />
-              );
-            })}
-          </Box>
+    return (
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Mapped Speakers:
+        </Typography>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {mappedSpeakersChips}
         </Box>
-      )}
+      </Box>
+    );
+  }, [mappedSpeakersChips]);
 
-      {unmappedSpeakers.length > 0 && (
-        <Box>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Unmapped Speakers:
-          </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {unmappedSpeakers.map((speakerId) => {
-              // S2.6: Determine speaker source for unmapped speakers
-              const isDetectedSpeaker =
-                effectiveData.speakers.includes(speakerId);
-              const mapping = effectiveData.mappings.find(
-                (m) => m.speakerId === speakerId
-              );
-              const isAutoDetected =
-                isDetectedSpeaker &&
-                (!mapping ||
-                  !mapping.source ||
-                  mapping.source === ("AutoDetected" as SpeakerSource));
-              const Icon = isAutoDetected ? MicIcon : PersonAddIcon;
-              const sourceLabel = isAutoDetected
-                ? "auto-detected"
-                : "manually-added";
+  // Memoize unmapped speakers section
+  const unmappedSpeakersSection = useMemo(() => {
+    if (computedSpeakerData.unmappedSpeakers.length === 0) return null;
 
-              return (
-                <Chip
-                  key={speakerId}
-                  icon={<Icon />}
-                  label={speakerId}
-                  variant="filled"
-                  size="small"
-                  sx={{
-                    backgroundColor: getSpeakerColor(speakerId),
-                    color: "white",
-                    "& .MuiChip-icon": {
-                      color: "white",
-                    },
-                  }}
-                  title={`${sourceLabel} speaker`}
-                />
-              );
-            })}
-          </Box>
+    return (
+      <Box>
+        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+          Unmapped Speakers:
+        </Typography>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+          {unmappedSpeakersChips}
         </Box>
-      )}
+      </Box>
+    );
+  }, [computedSpeakerData.unmappedSpeakers, unmappedSpeakersChips]);
 
-      {effectiveData.speakers.length === 0 &&
-        effectiveData.mappings.length === 0 && (
-          <Typography variant="body2" color="text.secondary">
-            No speakers detected in this transcription.
-          </Typography>
-        )}
+  // Memoize empty state
+  const emptyState = useMemo(() => {
+    if (
+      effectiveData.speakers.length > 0 ||
+      effectiveData.mappings.length > 0
+    ) {
+      return null;
+    }
+
+    return (
+      <Typography variant="body2" color="text.secondary">
+        No speakers detected in this transcription.
+      </Typography>
+    );
+  }, [effectiveData.speakers.length, effectiveData.mappings.length]);
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 1,
+      }}
+    >
+      {headerSection}
+      {mappedSpeakersSection}
+      {unmappedSpeakersSection}
+      {emptyState}
 
       <SpeakerMappingDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={handleCloseDialog}
         transcriptionId={transcriptionId}
         detectedSpeakers={effectiveData.speakers}
         existingMappings={effectiveData.mappings}
