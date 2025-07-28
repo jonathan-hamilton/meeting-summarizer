@@ -125,3 +125,60 @@ export const useSpeakerStore = create<SpeakerState>()(
     }
   )
 );
+
+// Pure validation functions (used by useSpeakerValidation hook)
+export const validateSpeakerMapping = (
+  mapping: { speakerId: string; name: string; role: string },
+  speakerId: string,
+  allMappings: { speakerId: string; name: string; role: string }[]
+): { field: 'name' | 'role'; message: string; speakerId: string }[] => {
+  const errors: { field: 'name' | 'role'; message: string; speakerId: string }[] = [];
+
+  // Check for empty name
+  if (!mapping.name || mapping.name.trim() === '') {
+    errors.push({
+      field: 'name',
+      message: 'Speaker name is required',
+      speakerId,
+    });
+  }
+
+  // Check for duplicate names
+  const duplicateName = allMappings.find(
+    (m) => 
+      m.speakerId !== speakerId && 
+      m.name && 
+      m.name.trim().toLowerCase() === mapping.name.trim().toLowerCase()
+  );
+
+  if (duplicateName) {
+    errors.push({
+      field: 'name',
+      message: `Name "${mapping.name}" is already used by another speaker`,
+      speakerId,
+    });
+  }
+
+  return errors;
+};
+
+export const validateAllMappings = (
+  allMappings: { speakerId: string; name: string; role: string }[]
+): { 
+  isValid: boolean; 
+  errorsBySpeaker: Map<string, { field: 'name' | 'role'; message: string; speakerId: string }[]> 
+} => {
+  const errorsBySpeaker = new Map<string, { field: 'name' | 'role'; message: string; speakerId: string }[]>();
+
+  allMappings.forEach((mapping) => {
+    const errors = validateSpeakerMapping(mapping, mapping.speakerId, allMappings);
+    if (errors.length > 0) {
+      errorsBySpeaker.set(mapping.speakerId, errors);
+    }
+  });
+
+  return {
+    isValid: errorsBySpeaker.size === 0,
+    errorsBySpeaker,
+  };
+};
