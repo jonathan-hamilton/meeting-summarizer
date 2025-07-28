@@ -1,6 +1,6 @@
-# Commit and Push Workflow
+# Update Documentation and Commit Workflow
 
-## Command: `commit-push`
+## Command: `update-commit`
 
 This prompt handles the complete workflow for updating sprint documentation and committing completed work to git.
 
