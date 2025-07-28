@@ -6,6 +6,7 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 
 ## Sprint 3 Goals
 
+- Validate Sprint 3 foundation work through comprehensive test coverage for Zustand stores and session management
 - Complete speaker override workflow with session-based revert capabilities and user privacy protection
 - Enable segment-level speaker reassignment for granular transcript accuracy during active sessions
 - Implement enhanced export capabilities with immediate download and sharing options
@@ -17,6 +18,7 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 
 | Story ID | Title | Status | Dependencies |
 |----------|-------|--------|--------------|
+| S3.0 | Foundation Test Coverage Updates | PENDING 🔄 | Sprint 2 completion, existing test infrastructure |
 | S3.1 | Session-Based Speaker Override & Privacy Controls | IN PROGRESS 🔄 | S2.7 - Manual Speaker Override Interface |
 | S3.2 | Speaker CRUD Operations Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface |
 | S3.3 | Segment-Level Speaker Override Interface | PENDING 🔄 | S3.2 - Speaker CRUD Operations Interface |
@@ -138,6 +140,108 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 ---
 
 ## User Stories
+
+### Story S3.0: Foundation Test Coverage Updates
+
+As a development team, we need comprehensive test coverage for the Sprint 3 foundation improvements to ensure reliability and prevent regressions before implementing new CRUD features.
+
+#### S3.0 Acceptance Criteria
+
+**Zustand Store Testing:**
+
+- Complete unit test coverage for `speakerStore.ts` with all CRUD operations
+- Test state management behaviors: `addSpeaker()`, `updateSpeaker()`, `deleteSpeaker()`
+- Validate computed selectors: `getMappedCount()`, `getUnmappedSpeakers()`, `getSpeakerMapping()`
+- Test store initialization and state transitions
+- Verify error handling and edge cases in state operations
+- Test persistence integration with session storage
+
+**Session Management Testing:**
+
+- Comprehensive unit tests for `sessionManager.ts` (319-line implementation)
+- Test session lifecycle: initialization, activity tracking, timeout handling
+- Validate privacy controls: `clearAllData()`, `extendSession()`, `exportBeforeClear()`
+- Test session storage integration and automatic cleanup
+- Verify session status tracking and real-time updates
+- Test session timeout warnings and data preservation options
+
+**Performance Optimization Validation:**
+
+- Update tests for memoized `SpeakerMapping.tsx` component
+- Validate performance improvements maintain exact functionality
+- Test React.memo and useCallback optimizations
+- Verify expensive operations are properly cached
+- Test component re-render behavior under various prop changes
+- Ensure optimization doesn't break existing workflows
+
+**Component Integration Testing:**
+
+- Update component tests for console debugging cleanup changes
+- Test session-based speaker management workflow integration
+- Validate Zustand store integration with React components
+- Test error boundary behavior with updated components
+- Verify Material-UI integration patterns remain consistent
+- Test mobile responsiveness after foundation changes
+
+**Frontend Test Infrastructure:**
+
+- Create missing test files for new stores and services
+- Update existing component tests for recent foundation changes
+- Implement integration tests for session-speaker workflow
+- Add mock implementations for session management services
+- Create test utilities for Zustand store testing
+- Update test setup for session storage mocking
+
+#### S3.0 Dependencies
+
+Sprint 2 completion, existing test infrastructure
+
+#### S3.0 Developer Notes
+
+**Priority Test Files to Create:**
+
+```typescript
+// High Priority - Missing Foundation Tests
+frontend/src/__tests__/stores/speakerStore.test.ts
+frontend/src/__tests__/stores/speakerMappingStore.test.ts
+frontend/src/__tests__/services/sessionManager.test.ts
+frontend/src/__tests__/hooks/useSessionManagement.test.ts
+
+// Medium Priority - Update Existing Tests
+frontend/src/__tests__/components/SpeakerMapping.test.tsx // Performance validation
+frontend/src/__tests__/components/TranscriptDisplay.test.tsx // Session integration
+frontend/src/__tests__/components/SpeakerMappingDialog.test.tsx // Zustand integration
+
+// Integration Priority - New Workflow Tests
+frontend/src/__tests__/integration/sessionSpeakerWorkflow.test.tsx
+```
+
+**Testing Strategy:**
+
+- **Zustand Store Testing**: Use Zustand's testing utilities and React Testing Library
+- **Session Management**: Mock browser sessionStorage and test timeout behaviors
+- **Performance Validation**: Test component render counts and memoization effectiveness
+- **Integration Testing**: Test complete user workflows with session management
+- **Regression Protection**: Ensure all existing functionality remains intact
+
+**Test Coverage Goals:**
+
+- Zustand stores: 95% line coverage, 90% branch coverage
+- Session management: 90% line coverage, 85% branch coverage
+- Updated components: Maintain existing coverage levels
+- Integration workflows: 80% coverage for critical paths
+
+**Mock and Test Data:**
+
+- Create session management mocks for consistent testing
+- Build Zustand store test utilities for state manipulation
+- Develop speaker mapping test data generators
+- Create session timeout simulation utilities
+- Build privacy controls testing helpers
+
+**Time Estimate:** 4-6 hours (foundation test implementation and validation)
+
+---
 
 ### Story S3.1: Session-Based Speaker Override & Privacy Controls
 
@@ -721,15 +825,16 @@ None (foundational testing infrastructure)
 **Sprint 3 Technical Architecture:**
 
 ```text
-S2.7 Override Interface → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 Enhanced Export → S3.5 Privacy Controls
-       ↓                     ↓                              ↓                            ↓                     ↓                      ↓
-   Foundation          Session Storage              CRUD Interface               Segment Control        Export/Share          Privacy/UX
+S2.7 Override Interface → S3.0 Foundation Tests → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 Enhanced Export → S3.5 Privacy Controls
+       ↓                     ↓                       ↓                              ↓                            ↓                     ↓                      ↓
+   Foundation           Test Coverage         Session Storage              CRUD Interface               Segment Control        Export/Share          Privacy/UX
                                   ↓
                                S3.6 Testing Suite (Cross-cutting)
 ```
 
 **Key Integration Points:**
 
+- S3.0 provides foundation test coverage for Sprint 3 infrastructure before implementing new features
 - S3.1 builds directly on S2.7's override infrastructure with session-based persistence for privacy protection
 - S3.2 provides comprehensive CRUD operations for speaker management through dedicated dialog interface
 - S3.3 completes the override workflow with segment-level granularity building on S3.2's speaker management
@@ -740,8 +845,9 @@ S2.7 Override Interface → S3.1 Session-Based Persistence → S3.2 Speaker CRUD
 **Technical Dependencies:**
 
 - All stories build upon the completed Sprint 2 foundation (S2.1-S2.7)
-- S3.1 requires S2.7's override interface implementation for session-based persistence
-- S3.2 builds on S2.7 to provide comprehensive CRUD operations for speaker management
+- S3.0 validates Sprint 3 foundation work (Zustand stores, session management, performance optimizations)
+- S3.1 requires S2.7's override interface implementation and S3.0's validated foundation for session-based persistence
+- S3.2 builds on S2.7 and S3.0's tested foundation to provide comprehensive CRUD operations for speaker management
 - S3.3 depends on S3.2's CRUD interface for complete speaker management before segment-level overrides
 - S3.4 integrates with S2.4 export functionality and session-based speaker workflow
 - S3.5 depends on S3.1's session management for privacy controls

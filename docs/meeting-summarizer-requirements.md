@@ -148,6 +148,19 @@
 
 ## Non-Functional Requirements
 
+### Testing & Quality Assurance
+
+- REQ-TST-1: System shall maintain minimum 85% test coverage for all core functionality
+- REQ-TST-2: System shall include comprehensive unit tests for all Zustand state management stores
+- REQ-TST-3: System shall validate session management functionality through automated testing
+- REQ-TST-4: System shall include performance regression tests for optimized components
+- REQ-TST-5: System shall test session-based privacy controls and data cleanup mechanisms
+- REQ-TST-6: System shall include integration tests for complete speaker management workflows
+- REQ-TST-7: System shall validate component behavior after performance optimizations
+- REQ-TST-8: System shall test error boundaries and fallback mechanisms
+- REQ-TST-9: System shall include cross-browser compatibility testing for core features
+- REQ-TST-10: System shall validate accessibility compliance through automated testing
+
 ### Performance
 
 - REQ-NFR-1: System shall process audio files within 2x the duration of the recording
@@ -199,12 +212,20 @@
 - Speaker role assignment interface
 - AI-powered summarization
 
-### Phase 1.5: Enhanced Speaker Management (Sprint 2.5) 🔄
+### Phase 1.5: Enhanced Speaker Management (Sprint 2.5) ✅
 
 - Manual speaker addition and removal capabilities
 - Visual distinction between auto-detected and user-added speakers
 - Enhanced speaker mapping interface with full CRUD operations
 - Audit trail for speaker management actions
+
+### Phase 1.8: Foundation Test Coverage (Sprint 3.0) 🔄
+
+- Comprehensive test coverage for Zustand state management stores
+- Session management testing with privacy controls validation
+- Performance optimization validation for memoized components
+- Integration testing for session-based speaker workflow
+- Component test updates for recent foundation improvements
 
 ### Phase 2: Smart Speaker Identification (Future Enhancement)
 
