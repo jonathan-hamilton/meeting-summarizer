@@ -80,6 +80,7 @@
 - REQ-SPK-CRUD-9: Dialog shall maintain state consistency during all CRUD operations
 
 #### Create Operations
+
 - REQ-SPK-CREATE-1: System shall provide "Add New Speaker" functionality in the SpeakerMappingDialog
 - REQ-SPK-CREATE-2: System shall allow users to specify Name and Role when creating new speaker mappings
 - REQ-SPK-CREATE-3: System shall validate new speaker entries to prevent duplicate names within the same meeting
@@ -88,6 +89,7 @@
 - REQ-SPK-CREATE-6: System shall preserve creation metadata (timestamp, user) for manually added speakers
 
 #### Update Operations
+
 - REQ-SPK-UPDATE-1: System shall allow in-line editing of Name and Role fields for existing speakers
 - REQ-SPK-UPDATE-2: System shall provide real-time validation during speaker mapping updates
 - REQ-SPK-UPDATE-3: System shall preserve original auto-detected values when speakers are manually updated
@@ -97,6 +99,7 @@
 - REQ-SPK-UPDATE-7: System shall allow reverting manual updates back to original auto-detected values
 
 #### Delete Operations
+
 - REQ-SPK-DELETE-1: System shall provide confirmation dialog before permanently deleting speaker mappings
 - REQ-SPK-DELETE-2: System shall display impact preview showing affected transcript segments before deletion
 - REQ-SPK-DELETE-3: Deleted speakers shall be removed from all transcript segment assignments

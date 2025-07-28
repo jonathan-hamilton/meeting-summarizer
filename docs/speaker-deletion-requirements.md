@@ -2,123 +2,180 @@
 
 ## Problem Statement
 
-The current speaker deletion functionality has unclear behavior regarding:
+The current speaker deletion functionality needs clear specification for:
+
 1. What happens to transcript segments when a speaker mapping is deleted
-2. How the UI should reflect deleted speakers
-3. Whether deletion should be permanent or just remove the name/role mapping
+2. How the UI should reflect deleted speakers in the dialog and transcript display
+3. How the speaker counts and confidence indicators should update
+4. How transcript segments should be relabeled for deleted speakers
 
 ## Business Requirements
 
-### BR-DEL-1: Speaker Mapping Deletion Types
-The system shall support two types of speaker deletion:
-- **Mapping Deletion**: Remove only the name/role assignment, keeping the speaker segments visible as "Speaker X"
-- **Speaker Hiding**: Remove the speaker entirely from the UI display (segments are hidden)
+### BR-DEL-1: Session-Only Speaker Deletion
 
-### BR-DEL-2: Default Deletion Behavior
-By default, speaker deletion shall perform **Mapping Deletion** - removing only the name/role assignment while preserving all transcript segments with their original speaker labels.
+The system shall support session-only speaker deletion with no persistent storage:
 
-### BR-DEL-3: Transcript Segment Preservation
-When a speaker mapping is deleted:
+- **Local State Deletion**: Remove speaker from the SpeakerMappingDialog's local state
+- **UI State Updates**: Update all related UI components to reflect the deletion
+- **No API Persistence**: No backend API calls are made for speaker deletion
+
+### BR-DEL-2: Speaker Removal Workflow
+
+When "Remove Speaker" is clicked:
+
+- The speaker shall be immediately removed from the SpeakerMappingDialog
+- The "Save Mappings" button shall become enabled
+- The dialog shall remain open to allow further modifications or saving
+
+### BR-DEL-3: Transcript Segment Handling
+
+When a speaker mapping is deleted and changes are saved:
+
 - All transcript segments originally assigned to that speaker shall remain visible
-- Segments shall display with the original auto-detected speaker label (e.g., "Speaker 2")
-- Confidence scores for those segments shall remain unchanged
-- Timestamps and text content shall remain unchanged
+- Segments shall be relabeled as "unassigned" 
+- The speaker chip in transcript segments shall display "unassigned" label
+- Confidence scores for those segments shall have strikethrough styling
 
-### BR-DEL-4: UI State Consistency
-After speaker deletion:
-- The deleted speaker shall appear in "Unmapped Speakers" section if segments still exist
-- Speaker count shall reflect current mapping status (mapped vs total detected)
-- Dialog state shall reflect the current mappings accurately
-- Parent component shall update to show correct mapped/unmapped counts
+### BR-DEL-4: Speaker Count Updates
+
+After speaker deletion and save:
+
+- Speaker count shall update to reflect the reduced total (e.g., 0/3 becomes 0/2)
+- The count shall only include remaining speakers in the dialog
+- Confidence percentage for unassigned segments shall have strikethrough styling
 
 ## Technical Requirements
 
-### TR-DEL-1: Backend API Behavior
-- DELETE `/api/SpeakerMapping/{transcriptionId}` shall remove all speaker mappings for a transcription
-- Transcript data and segments shall remain unchanged
-- Subsequent GET requests shall return 404 (no mappings found)
-- Original auto-detected speakers shall still be available in transcript data
+### TR-DEL-1: Local State Management
 
-### TR-DEL-2: Frontend State Management
-- Dialog state shall accurately reflect current mappings after deletion
-- Parent component state shall update immediately when dialog saves changes
-- No re-initialization of dialog state should occur after successful save
-- Success state shall persist until dialog is closed
+The deletion implementation shall use established state management patterns:
 
-### TR-DEL-3: Data Flow
-1. User deletes speaker mapping in dialog
-2. Dialog removes mapping from local state
-3. User clicks "Save Mappings"
-4. Dialog calls DELETE API endpoint
-5. Dialog shows success message
-6. Dialog calls parent callback with updated mappings (empty array for full deletion)
-7. Parent updates its state with new mappings
-8. Parent UI reflects updated speaker counts and unmapped speakers
+- Remove speaker from `mappedSpeakers` array in SpeakerMappingDialog state
+- Update `saveEnabled` state to true when deletion occurs
+- Integrate with `speakerStore` and related hooks for consistent state management
+- Use existing speaker-related hooks (e.g., `useSpeaker`, `useSpeakerMappings`) for state updates
+- No API calls or backend persistence required
+
+### TR-DEL-2: UI Component Updates
+
+Upon speaker deletion:
+
+- **Remove Button**: Immediately remove the speaker row from the dialog
+- **Save Button**: Enable "Save Mappings" button to allow user to commit changes
+- **Speaker Count**: Maintain current speaker count until save operation
+- **Dialog State**: Keep dialog open to allow further modifications
+
+### TR-DEL-3: Save Operation Handling
+
+When "Save Mappings" is clicked after deletion:
+
+- Apply the modified speaker mappings to parent component via established hooks
+- Update `speakerStore` state to reflect speaker deletion and mapping changes
+- Update transcript segments to reflect "unassigned" status for deleted speaker segments
+- Close the SpeakerMappingDialog
+- Trigger re-render of TranscriptDisplay with updated mappings via state management hooks
+
+### TR-DEL-4: TranscriptDisplay Integration
+
+After save operation with deleted speaker:
+
+- Display segments with "unassigned" speaker chips
+- Apply strikethrough styling to confidence percentages for unassigned segments
+- Update speaker count display (e.g., 0/3 → 0/2)
+- Maintain all segment visibility and content
 
 ## User Experience Requirements
 
-### UX-DEL-1: Clear Feedback
-- User shall see immediate visual feedback when speaker is removed in dialog
-- Success message shall clearly indicate what was deleted
-- Unmapped speakers section shall show previously mapped speakers after deletion
+### UX-DEL-1: Immediate Visual Feedback
 
-### UX-DEL-2: Predictable Behavior
+- User shall see immediate removal of speaker row when "Remove Speaker" is clicked
+- "Save Mappings" button shall become enabled to indicate pending changes
+- Dialog shall remain open to allow further modifications
+
+### UX-DEL-2: Post-Save Behavior
+
 - Transcript segments shall always remain visible (no content disappears)
-- Speaker labels shall revert to original auto-detected names after mapping deletion
-- Count displays shall accurately reflect current state
+After save operation:
 
-### UX-DEL-3: Recovery Path
-- User shall be able to re-map deleted speakers by opening the dialog again
-- All original auto-detected speakers shall still be available for mapping
+- Dialog shall close automatically
+- Transcript segments for deleted speaker shall display "unassigned" chips  
+- Confidence percentages shall have strikethrough styling
+- Speaker count shall update to show reduced total (e.g., 0/3 → 0/2)
+
+### UX-DEL-3: Predictable Workflow
+
+- Changes are only applied when "Save Mappings" is clicked
+- All deletions happen within the session only (no persistent storage)
+- User can continue working with the updated transcript immediately
 
 ## Implementation Priority
 
-**Phase 1 (Immediate)**: Fix basic deletion with mapping deletion behavior
-- Ensure dialog state doesn't revert after save
-- Fix parent component state updates
-- Verify API DELETE endpoint works correctly
+**Phase 1 (Current)**: Session-only speaker deletion
 
-**Phase 2 (Future)**: Enhanced deletion options
-- Add "Hide Speaker" option for complete removal from UI
+- Remove speaker from dialog state immediately
+- Enable save button when deletion occurs
+- Integrate with existing `speakerStore` and speaker-related hooks for state consistency
+- Update transcript display after save with "unassigned" labels
+- Implement strikethrough styling for unassigned confidence scores
+
+**Phase 2 (Future)**: Enhanced user experience
+
+- Add confirmation dialogs for speaker deletion
+- Add undo functionality within the session
 - Add bulk operations for multiple speaker deletion
-- Add undo functionality for recent deletions
 
 ## Test Scenarios
 
-### Scenario 1: Single Speaker Mapping Deletion
-1. Start with 2 auto-detected speakers, both mapped with names
-2. Delete Speaker 2 mapping in dialog
-3. Save changes
-4. Verify: Speaker 2 appears in "Unmapped Speakers" section
-5. Verify: Transcript still shows all Speaker 2 segments with original label
-6. Verify: Count shows "1/2 mapped"
+### Scenario 1: Single Speaker Deletion and Save
 
-### Scenario 2: All Speaker Mappings Deletion
-1. Start with 2 mapped speakers
-2. Delete both speaker mappings
-3. Save changes  
-4. Verify: Both speakers appear in "Unmapped Speakers" section
-5. Verify: Count shows "0/2 mapped"
-6. Verify: All transcript segments remain visible
+1. Start with 3 auto-detected speakers, 1 mapped with name (0/3 mapped state)
+2. User clicks "Remove Speaker" for the mapped speaker in dialog
+3. Verify: Speaker row is immediately removed from dialog
+4. Verify: "Save Mappings" button becomes enabled
+5. User clicks "Save Mappings"
+6. Verify: Dialog closes automatically
+7. Verify: Transcript segments for deleted speaker show "unassigned" chips
+8. Verify: Confidence percentages for those segments have strikethrough styling
+9. Verify: Speaker count updates to "0/2 mapped"
 
-### Scenario 3: Dialog State Consistency
-1. Delete a speaker mapping
-2. Save changes and see success message
-3. Verify dialog still shows correct state (deleted speaker not in mappings)
-4. Close dialog and reopen
-5. Verify dialog initializes with current state (no deleted speaker)
+### Scenario 2: Multiple Speaker Operations
+
+1. Start with 3 auto-detected speakers, 2 mapped (2/3 mapped state)
+2. Delete one speaker mapping in dialog
+3. Add a mapping for an unmapped speaker
+4. Save changes
+5. Verify: Dialog closes and all changes are applied
+6. Verify: Deleted speaker segments show "unassigned" with strikethrough confidence
+7. Verify: Newly mapped speaker segments show correct name
+8. Verify: Count updates appropriately
+
+### Scenario 3: Dialog Workflow Without Save
+
+1. Delete a speaker mapping in dialog
+2. Verify: Speaker row removed and Save button enabled
+3. User closes dialog without saving
+4. Verify: Original state is preserved (no changes applied)
+5. Reopen dialog
+6. Verify: Dialog shows original mappings (deleted speaker is back)
 
 ## Open Questions for Product Owner
 
-1. **Future Enhancement**: Should we add a "Hide Speaker" option that completely removes segments from view?
-2. **Bulk Operations**: Should users be able to delete multiple speakers at once?
-3. **Undo Functionality**: Should recent deletions be reversible within the same session?
-4. **Confirmation Flow**: Is the current confirmation dialog sufficient, or do we need additional warnings?
+1. **Confirmation UX**: Should speaker deletion require a confirmation step within the dialog?
+2. **Undo Functionality**: Should there be a way to undo speaker deletion within the session?
+3. **Bulk Operations**: Should users be able to delete multiple speakers at once?
+4. **Visual Indicators**: Are strikethrough confidence scores sufficient for indicating unassigned segments?
 
 ## Definition of Done
 
-- [ ] Speaker deletion removes only mapping data, preserves transcript segments
-- [ ] Dialog state remains consistent after successful save
+- [ ] Speaker deletion removes only mapping data, preserves transcript segments with "unassigned" labels
+- [ ] Dialog state updates immediately when speaker is deleted (row removed, Save button enabled)
+- [ ] Integration with `speakerStore` and related hooks maintains state consistency across components
+- [ ] Save operation closes dialog and applies all changes to transcript display via state management
+- [ ] Unassigned segments display "unassigned" chips with strikethrough confidence percentages
+- [ ] Speaker count updates correctly after save (e.g., 0/3 → 0/2)
+- [ ] No API calls are made for speaker deletion (session-only behavior)
+- [ ] Dialog can be closed without saving and original state is preserved
+- [ ] All test scenarios pass with expected UI behaviors
 - [ ] Parent component updates immediately with correct counts
 - [ ] Deleted speakers appear in unmapped section if segments exist
 - [ ] All transcript content remains visible with original speaker labels

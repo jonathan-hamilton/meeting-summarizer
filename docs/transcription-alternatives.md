@@ -37,7 +37,7 @@ services.AddScoped<IOpenAIService>(serviceProvider =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<OpenAIOptions>>();
     var logger = serviceProvider.GetRequiredService<ILogger<OpenAIService>>();
-    
+
     if (options.Value.IsValid())
     {
         logger.LogInformation("Using OpenAI transcription service");

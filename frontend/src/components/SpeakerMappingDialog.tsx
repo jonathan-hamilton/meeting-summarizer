@@ -140,7 +140,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         }
       );
 
-            
       // Add manually-added speakers from existing mappings
       const manualSpeakers = existingMappings
         .filter(
