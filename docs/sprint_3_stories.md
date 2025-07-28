@@ -156,8 +156,7 @@ As a privacy-conscious user, I want my speaker override actions to be preserved 
 **Privacy Protection Requirements:**
 
 - Clear visual indicators showing data is session-only and will not be permanently stored
-- User notification system explaining session-based data handling
-- Explicit "Clear All Data" button for immediate data deletion during session
+- User notification system explaining session-based data handling with clear messaging that closing the browser window will automatically clear all session data
 - Session timeout warnings with data preservation options
 - Privacy policy integration explaining session-based approach
 
@@ -216,8 +215,7 @@ public class SessionOverrideAction
 - Implement session-based API service with clear session management
 - Add privacy indicators and session status display in SpeakerMappingDialog
 - Create session timeout warnings and data preservation dialogs
-- Implement "Clear All Data" functionality with confirmation
-- Add privacy policy modal explaining session-based approach
+- Add privacy policy modal explaining session-based approach with clear messaging that data is automatically cleared when the browser window is closed
 
 **Time Estimate:** 6-8 hours (backend-heavy implementation)
 
@@ -260,7 +258,7 @@ public class SessionOverrideAction
 
 ✅ **Session Storage Components Built (NOT INTEGRATED)**
 
-- SessionStatus.tsx component exists with privacy indicators and "Clear All Data" functionality
+- SessionStatus.tsx component exists with privacy indicators and session status display
 - useSessionManagement.ts hook provides complete session state management
 - Components built but not integrated into main TranscriptDisplay interface
 
@@ -268,7 +266,7 @@ public class SessionOverrideAction
 
 🔄 **Privacy Indicators & User Notifications** - Built but not integrated into TranscriptDisplay
 🔄 **Revert Functionality UI** - Session storage supports revert, but no UI buttons in speaker components
-🔄 **Clear All Data Integration** - SessionStatus component exists but not used in main interface
+🔄 **Session Status Integration** - SessionStatus component exists but not used in main interface
 🔄 **Session Timeout Warnings** - Backend supports it, no UI dialogs implemented
 🔄 **Privacy Policy Modal** - Not implemented
 
@@ -282,7 +280,7 @@ public class SessionOverrideAction
 - Implemented session-only speaker management respecting privacy requirements
 - Ensured no speaker data persists beyond browser session lifetime
 
-### Actual Completion Status: ~85% Complete (Updated)
+### Actual Completion Status: ~90% Complete (Updated)
 
 ✅ **Speaker Management UI Improvements (COMPLETE - NEW)**
 
@@ -294,22 +292,29 @@ public class SessionOverrideAction
 - Resolved syntax errors and component import issues in TranscriptSpeakerSegment
 - Ensured proper component state management for real-time UI updates
 
+✅ **Privacy Architecture Simplified (COMPLETE - NEW)**
+
+- Removed unnecessary manual "Clear All Data" functionality since users can simply close their browser window
+- Session-based architecture automatically handles data cleanup on browser close
+- Privacy messaging updated to clearly communicate that closing browser window clears all data
+- Simplified user experience by removing redundant manual data clearing options
+
 **Remaining Work (High Priority):**
 
 1. **Connect SpeakerMappingDialog to Zustand store** for real-time CRUD operations
-2. **Integrate SessionStatus component** into TranscriptDisplay header
+2. **Integrate SessionStatus component** into TranscriptDisplay header  
 3. **Add revert buttons** to speaker mapping interfaces
-4. **Add "Clear All Data" button** to main interface
-5. **Create session timeout warning dialogs**
-6. **Build privacy policy modal**
-7. **Add privacy indicators** throughout the interface
+4. **Create session timeout warning dialogs**
+5. **Build privacy policy modal**
+6. **Add privacy indicators** throughout the interface with clear messaging that data is automatically cleared when browser window is closed
 
 **Technical Implementation Details:**
 
 - Session-based data handling infrastructure complete and functional
-- Speaker overrides maintained only during browser session with automatic cleanup
+- Speaker overrides maintained only during browser session with automatic cleanup when browser window is closed
 - All session management APIs working but need UI integration
 - Material-UI integration patterns established for consistent design
+- Privacy architecture simplified by removing redundant manual data clearing functionality
 
 **Next Steps:**
 
@@ -573,11 +578,11 @@ As a privacy-conscious user, I want clear information about how my meeting data 
 
 **User Data Controls:**
 
-- "Clear All Session Data" button prominently available in main interface
-- Session timeout warning with options to extend or clear data immediately
-- Export before clearing data prompts when user initiates data deletion
+- Session timeout warning with options to extend session or allow automatic data clearing when browser window is closed
+- Export before session expiration prompts when user may lose data
 - Session activity indicator showing last interaction timestamp
 - Browser storage usage indicator (showing minimal footprint)
+- Clear messaging that closing the browser window will automatically clear all session data
 
 **Privacy Policy Integration:**
 
@@ -633,7 +638,6 @@ interface PrivacyControls {
   sessionDuration: number;
   lastActivity: Date;
   dataSize: string;
-  clearAllData: () => void;
   extendSession: () => void;
   exportBeforeClear: () => void;
 }

@@ -169,6 +169,14 @@
 - REQ-NFR-11: System shall comply with data privacy regulations (GDPR, CCPA)
 - REQ-NFR-12: System shall provide audit logging for all user actions
 
+### Privacy & Data Handling
+
+- REQ-PRI-1: System shall use session-based data storage with automatic cleanup when browser window is closed
+- REQ-PRI-2: System shall clearly communicate to users that closing their browser window will automatically clear all session data
+- REQ-PRI-3: System shall display privacy indicators showing data is temporary and session-only
+- REQ-PRI-4: System shall not persist user meeting data beyond the active browser session
+- REQ-PRI-5: System shall provide clear messaging about automatic data deletion when session ends
+
 ### Reliability
 
 - REQ-NFR-13: System shall achieve 99.5% uptime availability
