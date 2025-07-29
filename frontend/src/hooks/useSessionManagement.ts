@@ -55,11 +55,17 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
    * Update session status from session manager
    */
   const updateStatus = useCallback(() => {
-    const status = sessionManager.getSessionStatus();
-    const controls = sessionManager.getPrivacyControls();
-    
-    setSessionStatus(status);
-    setPrivacyControls(controls);
+    try {
+      const status = sessionManager.getSessionStatus();
+      const controls = sessionManager.getPrivacyControls();
+      
+      setSessionStatus(status);
+      setPrivacyControls(controls);
+    } catch (err) {
+      // Handle sessionManager errors gracefully
+      console.warn('Failed to update session status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update session status');
+    }
   }, []);
 
   /**
@@ -150,8 +156,13 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
    * Extend session by updating activity
    */
   const extendSession = useCallback(() => {
-    sessionManager.extendSession();
-    updateStatus();
+    try {
+      sessionManager.extendSession();
+      updateStatus();
+    } catch (err) {
+      console.warn('Failed to extend session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to extend session');
+    }
   }, [updateStatus]);
 
   /**
@@ -185,8 +196,13 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
 
   // Update privacy controls when session status changes
   useEffect(() => {
-    const controls = sessionManager.getPrivacyControls();
-    setPrivacyControls(controls);
+    try {
+      const controls = sessionManager.getPrivacyControls();
+      setPrivacyControls(controls);
+    } catch (err) {
+      // Handle sessionManager errors gracefully
+      console.warn('Failed to update privacy controls:', err);
+    }
   }, [sessionStatus]);
 
   return {
