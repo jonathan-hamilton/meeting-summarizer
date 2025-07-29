@@ -178,9 +178,14 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
     updateStatus();
 
     // Subscribe to session status changes
-    const unsubscribe = sessionManager.onStatusChange((status) => {
-      setSessionStatus(status);
-    });
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = sessionManager.onStatusChange((status) => {
+        setSessionStatus(status);
+      });
+    } catch (error) {
+      console.warn('Failed to subscribe to session status changes:', error);
+    }
 
     // Periodic status refresh every 30 seconds
     const interval = setInterval(() => {
@@ -189,7 +194,9 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
 
     // Cleanup on unmount
     return () => {
-      unsubscribe();
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
       clearInterval(interval);
     };
   }, [updateStatus]);

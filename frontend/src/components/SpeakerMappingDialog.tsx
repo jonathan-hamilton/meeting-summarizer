@@ -69,7 +69,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     handleRemoveSpeaker,
     confirmRemoveSpeaker,
     cancelRemoveSpeaker,
-    calculateNextSpeakerId,
   } = useSpeakerManagement();
 
   // Use validation hook for validation logic
@@ -103,19 +102,12 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     validateForEditMode
   );
 
-  // Static session overrides (no memoization needed for static call)
-  const sessionOverrides = sessionManager.getOverrides();
-
-  // Calculate max speaker number for new IDs
-  const maxNumber = useMemo(() => {
-    const nextId = calculateNextSpeakerId(existingMappings);
-    const match = nextId.match(/speaker_(\d+)/i);
-    return match ? parseInt(match[1], 10) - 1 : 0;
-  }, [existingMappings, calculateNextSpeakerId]);
-
   // Initialize mappings when dialog opens or existing mappings change
   useEffect(() => {
     const initializeMappings = () => {
+      // Get session overrides only when initializing
+      const sessionOverrides = sessionManager.getOverrides();
+
       const initialMappings: MappingFormData[] = detectedSpeakers.map(
         (speakerId) => {
           const existing = existingMappings.find(
@@ -163,7 +155,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       setError(null);
       setSuccess(false);
     }
-  }, [open, detectedSpeakers, existingMappings, sessionOverrides, maxNumber]);
+  }, [open, detectedSpeakers, existingMappings]);
 
   // Direct event handlers (simplified from wrapper functions)
   const handleAddSpeakerLocal = useCallback(() => {

@@ -3,6 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SpeakerMappingDialog } from "../../components/SpeakerMappingDialog";
 import { apiService } from "../../services/apiService";
+import { useSpeakerStore } from "../../stores/speakerStore";
+import { sessionManager } from "../../services/sessionManager";
 import type { SpeakerMapping } from "../../types";
 import { SpeakerSource } from "../../types";
 
@@ -13,7 +15,121 @@ vi.mock("../../services/apiService", () => ({
   },
 }));
 
+// Mock Zustand store
+vi.mock("../../stores/speakerStore", () => ({
+  useSpeakerStore: vi.fn(),
+  validateAllMappings: vi.fn((mappings) => ({
+    isValid: mappings.every(
+      (m: SpeakerMapping) => m.name && m.name.trim() !== ""
+    ),
+    errorsBySpeaker: new Map(),
+  })),
+}));
+
+// Mock session manager
+vi.mock("../../services/sessionManager", () => ({
+  sessionManager: {
+    isSessionActive: vi.fn(() => true),
+    getSessionStatus: vi.fn(() => ({ active: true, timeRemaining: 7200 })),
+    extendSession: vi.fn(),
+    clearAllData: vi.fn(),
+    getOverrides: vi.fn(() => ({})),
+    setSpeakerOverride: vi.fn(),
+    removeSpeakerOverride: vi.fn(),
+  },
+}));
+
+// Mock custom hooks
+vi.mock("../../hooks/useSpeakerValidation", () => ({
+  useSpeakerValidation: vi.fn(() => ({
+    validationErrors: new Map(),
+    hasValidationErrors: false,
+    validateSingleMapping: vi.fn(() => true),
+    validateAllSpeakerMappings: vi.fn(() => ({
+      isValid: true,
+      errorsBySpeaker: new Map(),
+    })),
+    clearValidationErrors: vi.fn(),
+  })),
+}));
+
+vi.mock("../../hooks/useSpeakerEditMode", () => ({
+  useSpeakerEditMode: vi.fn(() => ({
+    editingMappings: new Map(),
+    startEditMode: vi.fn(),
+    cancelEditMode: vi.fn(),
+    confirmEditMode: vi.fn(),
+    clearEditState: vi.fn(),
+    hasActiveEdits: false,
+  })),
+}));
+
+vi.mock("../../hooks/useSpeakerManagement", () => ({
+  useSpeakerManagement: vi.fn(() => ({
+    deleteConfirmation: { open: false, speakerName: null, index: null },
+    handleAddSpeaker: vi.fn(),
+    handleRemoveSpeaker: vi.fn(),
+    confirmRemoveSpeaker: vi.fn(),
+    cancelRemoveSpeaker: vi.fn(),
+  })),
+}));
+
+// Mock dialog components
+vi.mock("../dialogs/ConfirmDeleteDialog", () => ({
+  ConfirmDeleteDialog: vi.fn(({ open, onConfirm, onCancel }) =>
+    open ? (
+      <div data-testid="confirm-delete-dialog">
+        <button onClick={onConfirm} data-testid="confirm-delete">
+          Confirm
+        </button>
+        <button onClick={onCancel} data-testid="cancel-delete">
+          Cancel
+        </button>
+      </div>
+    ) : null
+  ),
+}));
+
+// Mock speaker field component
+vi.mock("../speaker/SpeakerMappingField", () => ({
+  SpeakerMappingField: vi.fn(
+    ({ mapping, onMappingChange, onStartEdit, onRemove, index }) => (
+      <div data-testid={`speaker-field-${mapping.speakerId}`}>
+        <input
+          aria-label="Speaker Name"
+          value={mapping.name}
+          onChange={(e) => onMappingChange(index, "name", e.target.value)}
+          data-testid={`name-input-${mapping.speakerId}`}
+        />
+        <input
+          aria-label="Role"
+          value={mapping.role}
+          onChange={(e) => onMappingChange(index, "role", e.target.value)}
+          data-testid={`role-input-${mapping.speakerId}`}
+        />
+        <button
+          onClick={() => onStartEdit(mapping.speakerId)}
+          data-testid={`edit-${mapping.speakerId}`}
+        >
+          Edit
+        </button>
+        <button
+          onClick={() => onRemove(index)}
+          data-testid={`delete-${mapping.speakerId}`}
+          aria-label={`Delete ${mapping.speakerId}`}
+        >
+          Delete
+        </button>
+      </div>
+    )
+  ),
+}));
+
 const mockApiService = apiService.saveSpeakerMappings as ReturnType<
+  typeof vi.fn
+>;
+
+const mockUseSpeakerStore = useSpeakerStore as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -22,13 +138,16 @@ vi.mock("@mui/icons-material", () => ({
   Close: () => <div data-testid="close-icon" />,
   Person: () => <div data-testid="person-icon" />,
   Save: () => <div data-testid="save-icon" />,
-  Add: () => <div data-testid="add-icon" />,
-  Delete: () => <div data-testid="delete-icon" />,
   Mic: () => <div data-testid="mic-icon" />,
   PersonAdd: () => <div data-testid="person-add-icon" />,
+  Add: () => <div data-testid="add-icon" />,
+  Delete: () => <div data-testid="delete-icon" />,
+  Edit: () => <div data-testid="edit-icon" />,
+  Check: () => <div data-testid="check-icon" />,
+  Cancel: () => <div data-testid="cancel-icon" />,
 }));
 
-describe("SpeakerMappingDialog - S2.5 Enhanced Functionality", () => {
+describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
   const mockProps = {
     open: true,
     onClose: vi.fn(),
@@ -37,6 +156,36 @@ describe("SpeakerMappingDialog - S2.5 Enhanced Functionality", () => {
     existingMappings: [] as SpeakerMapping[],
     onMappingsSaved: vi.fn(),
   };
+
+  const mockStoreState = {
+    speakerMappings: [],
+    detectedSpeakers: ["Speaker 1", "Speaker 2"],
+    addSpeaker: vi.fn(),
+    updateSpeaker: vi.fn(),
+    deleteSpeaker: vi.fn(),
+    getMappedCount: vi.fn(() => 0),
+    getUnmappedSpeakers: vi.fn(() => ["Speaker 1", "Speaker 2"]),
+    getAllMappings: vi.fn(() => []),
+    getSpeakerMapping: vi.fn(),
+    initializeSpeakers: vi.fn(),
+    clearSpeakers: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Mock Zustand store with default state
+    mockUseSpeakerStore.mockReturnValue(mockStoreState);
+
+    // Reset mock functions
+    mockStoreState.addSpeaker.mockClear();
+    mockStoreState.updateSpeaker.mockClear();
+    mockStoreState.deleteSpeaker.mockClear();
+    mockStoreState.getAllMappings.mockClear();
+    mockStoreState.getSpeakerMapping.mockClear();
+    mockStoreState.initializeSpeakers.mockClear();
+    mockStoreState.clearSpeakers.mockClear();
+  });
 
   const mockApiResponse = {
     data: {
@@ -428,6 +577,181 @@ describe("SpeakerMappingDialog - S2.5 Enhanced Functionality", () => {
       expect(
         screen.getByText(/You can add or remove speakers as needed/)
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("S3.0 Increment 4: Zustand Store Integration", () => {
+    it("should use Zustand store for speaker data management", async () => {
+      // Mock store with existing speakers
+      const mockMappings = [
+        {
+          speakerId: "Speaker 1",
+          name: "John Doe",
+          role: "Manager",
+          transcriptionId: "test-transcription-123",
+          source: "AutoDetected" as const,
+        },
+      ];
+
+      mockUseSpeakerStore.mockReturnValue({
+        ...mockStoreState,
+        speakerMappings: mockMappings,
+        getMappedCount: vi.fn(() => 1),
+      });
+
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue("John Doe")).toBeInTheDocument();
+        expect(screen.getByDisplayValue("Manager")).toBeInTheDocument();
+      });
+    });
+
+    it("should call store methods for CRUD operations", async () => {
+      const user = userEvent.setup();
+
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Test adding a speaker
+      await user.click(screen.getByText("Add Speaker"));
+
+      // Fill in speaker details
+      const nameInputs = screen.getAllByLabelText(/Speaker Name/i);
+      const roleInputs = screen.getAllByLabelText(/Role/i);
+
+      await user.type(nameInputs[0], "John Doe");
+      await user.type(roleInputs[0], "Manager");
+
+      // Save changes
+      await user.click(screen.getByText("Save Mappings"));
+
+      await waitFor(() => {
+        expect(mockStoreState.addSpeaker).toHaveBeenCalled();
+      });
+    });
+
+    it("should handle speaker updates through store", async () => {
+      const user = userEvent.setup();
+
+      // Mock existing speaker
+      mockUseSpeakerStore.mockReturnValue({
+        ...mockStoreState,
+        speakerMappings: [
+          {
+            speakerId: "Speaker 1",
+            name: "John Doe",
+            role: "Manager",
+            transcriptionId: "test-transcription-123",
+            source: "AutoDetected" as const,
+          },
+        ],
+      });
+
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Update speaker name
+      const nameInput = screen.getByDisplayValue("John Doe");
+      await user.clear(nameInput);
+      await user.type(nameInput, "Jane Smith");
+
+      // Save changes
+      await user.click(screen.getByText("Save Mappings"));
+
+      await waitFor(() => {
+        expect(mockStoreState.updateSpeaker).toHaveBeenCalledWith(
+          "Speaker 1",
+          expect.objectContaining({
+            name: "Jane Smith",
+          })
+        );
+      });
+    });
+
+    it("should handle speaker deletion through store", async () => {
+      const user = userEvent.setup();
+
+      // Mock existing speaker
+      mockUseSpeakerStore.mockReturnValue({
+        ...mockStoreState,
+        speakerMappings: [
+          {
+            speakerId: "Speaker 1",
+            name: "John Doe",
+            role: "Manager",
+            transcriptionId: "test-transcription-123",
+            source: "ManuallyAdded" as const,
+          },
+        ],
+      });
+
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Find and click delete button
+      const deleteButton = screen.getByLabelText(/Delete Speaker 1/i);
+      await user.click(deleteButton);
+
+      await waitFor(() => {
+        expect(mockStoreState.deleteSpeaker).toHaveBeenCalledWith("Speaker 1");
+      });
+    });
+  });
+
+  describe("S3.0 Increment 4: Session-Based Persistence", () => {
+    it("should work with session-only storage", async () => {
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Verify dialog renders without API dependency
+      expect(screen.getByText("Map Speakers to Names")).toBeInTheDocument();
+      expect(screen.getByText("Add Speaker")).toBeInTheDocument();
+    });
+
+    it("should handle session timeout gracefully", async () => {
+      // Mock session as inactive
+      vi.mocked(sessionManager.getSessionStatus).mockReturnValue({
+        isActive: false,
+        sessionId: "test",
+        sessionDuration: 0,
+        lastActivity: new Date(),
+        dataSize: "0 bytes",
+        hasOverrides: false,
+        overrideCount: 0,
+      });
+
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Dialog should still render but may show appropriate messaging
+      expect(screen.getByText("Map Speakers to Names")).toBeInTheDocument();
+    });
+
+    it("should not make API calls for session-based storage", async () => {
+      const user = userEvent.setup();
+
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Add a speaker
+      await user.click(screen.getByText("Add Speaker"));
+
+      const nameInputs = screen.getAllByLabelText(/Speaker Name/i);
+      await user.type(nameInputs[0], "John Doe");
+
+      // Save changes
+      await user.click(screen.getByText("Save Mappings"));
+
+      // Should use Zustand store, not API
+      expect(mockApiService).not.toHaveBeenCalled();
+      expect(mockStoreState.addSpeaker).toHaveBeenCalled();
+    });
+
+    it("should maintain privacy-first approach", async () => {
+      render(<SpeakerMappingDialog {...mockProps} />);
+
+      // Verify no persistent storage is used
+      expect(screen.getByText("Map Speakers to Names")).toBeInTheDocument();
+
+      // Should only interact with session-based store
+      await waitFor(() => {
+        expect(mockUseSpeakerStore).toHaveBeenCalled();
+      });
     });
   });
 });

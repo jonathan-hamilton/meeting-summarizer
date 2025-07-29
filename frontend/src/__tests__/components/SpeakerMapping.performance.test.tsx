@@ -1,12 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import React from "react";
 import { SpeakerMappingComponent } from "../../components/SpeakerMapping";
 import { useSpeakerStore } from "../../stores/speakerStore";
-import {
-  sessionManager,
-  SessionOverrideAction,
-} from "../../services/sessionManager";
+import { sessionManager } from "../../services/sessionManager";
 import type { SpeakerMapping } from "../../types";
 
 // Mock dependencies
@@ -27,8 +23,12 @@ vi.mock("../../theme/speakerColors", () => ({
   getSpeakerColor: vi.fn((speakerId: string) => `#${speakerId.slice(-6)}`),
 }));
 
-const mockUseSpeakerStore = useSpeakerStore as ReturnType<typeof vi.fn>;
-const mockSessionManager = sessionManager as any;
+const mockUseSpeakerStore = useSpeakerStore as jest.MockedFunction<
+  typeof useSpeakerStore
+>;
+const mockSessionManager = sessionManager as unknown as {
+  getOverrides: ReturnType<typeof vi.fn>;
+};
 
 describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization Validation", () => {
   const defaultProps = {

@@ -9,7 +9,10 @@ import {
 } from "@mui/icons-material";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import type { SpeakerMapping, SpeakerSource } from "../types";
-import { sessionManager } from "../services/sessionManager";
+import {
+  sessionManager,
+  type SessionOverrideAction,
+} from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
 import { getSpeakerColor } from "../theme/speakerColors";
 
@@ -91,7 +94,9 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       }
 
       // Check session-based overrides
-      const override = sessionOverrides[speakerId];
+      const override = sessionOverrides[speakerId] as
+        | SessionOverrideAction
+        | undefined;
       return !!(
         override &&
         override.action === "Override" &&
@@ -147,16 +152,18 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   const sessionOverrideSpeakers = useMemo(() => {
     return Object.entries(sessionOverrides)
       .map(([speakerId, override]) => {
+        // Type assertion for override
+        const typedOverride = override as SessionOverrideAction;
         // Only show overrides that aren't already covered by traditional mappings
         const hasMapping = effectiveData.mappings.find(
           (m) => m.speakerId === speakerId && m.name
         );
         if (
           !hasMapping &&
-          override.action === "Override" &&
-          override.newValue
+          typedOverride.action === "Override" &&
+          typedOverride.newValue
         ) {
-          return { speakerId, override };
+          return { speakerId, override: typedOverride };
         }
         return null;
       })
