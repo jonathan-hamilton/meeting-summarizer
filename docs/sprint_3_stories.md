@@ -1,30 +1,44 @@
-# Sprint 3 User Stories - Speaker Override Persistence & Advanced Features
+# Sprint 3 Documentation - Reorganized Structure
 
-## Sprint Overview
+**⚠️ NOTICE: This file has been reorganized for better maintainability**
 
-Sprint 3 completes the comprehensive speaker management system initiated in Sprint 2 with privacy-first session-based persistence. This sprint focuses on session-scoped speaker override functionality, segment-level speaker control, and enhanced export capabilities while maintaining strict data minimization principles. The application remains intentionally session-based to protect user privacy and minimize data retention.
+The Sprint 3 documentation has been split into separate files for easier management and navigation. Please refer to the new structure below:
 
-## Sprint 3 Goals
+## New Documentation Structure
 
-- Validate Sprint 3 foundation work through comprehensive test coverage for Zustand stores and session management
-- Complete speaker override workflow with session-based revert capabilities and user privacy protection
-- Enable segment-level speaker reassignment for granular transcript accuracy during active sessions
-- Implement enhanced export capabilities with immediate download and sharing options
-- Build robust testing framework addressing performance, security, and error handling
-- Establish clear user communication about session-based data handling and privacy protection
-- Create foundation for privacy-conscious enterprise features
+**Main Sprint 3 Overview:**
+- [Sprint 3 README](./sprints/sprint_3/README.md) - Main overview, progress tracker, and integration notes
 
-## Progress Tracker
+**Individual Story Files:**
+- [S3.0 Foundation Test Coverage](./sprints/sprint_3/s3.0_foundation_test_coverage.md) - IN PROGRESS 🔄
+- [S3.1 Session-Based Override](./sprints/sprint_3/s3.1_session_based_override.md) - PENDING 🔄  
+- [S3.2 Speaker CRUD Interface](./sprints/sprint_3/s3.2_speaker_crud_interface.md) - PENDING 🔄
+- [S3.3 Segment-Level Override](./sprints/sprint_3/s3.3_segment_level_override.md) - PENDING 🔄
+- [S3.4 Enhanced Export & Sharing](./sprints/sprint_3/s3.4_enhanced_export_sharing.md) - PENDING 🔄
+- [S3.5 Privacy Communication](./sprints/sprint_3/s3.5_privacy_communication.md) - PENDING 🔄
+- [S3.6 Performance & Security Testing](./sprints/sprint_3/s3.6_performance_security_testing.md) - PENDING 🔄
 
-| Story ID | Title | Status | Dependencies |
-|----------|-------|--------|--------------|
-| S3.0 | Foundation Test Coverage Updates | IN PROGRESS 🔄 | Sprint 2 completion, existing test infrastructure |
-| S3.1 | Session-Based Speaker Override & Privacy Controls | PENDING 🔄 | S2.7 - Manual Speaker Override Interface |
-| S3.2 | Speaker CRUD Operations Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface |
-| S3.3 | Segment-Level Speaker Override Interface | PENDING 🔄 | S3.2 - Speaker CRUD Operations Interface |
-| S3.4 | Enhanced Export and Sharing (Session-Based) | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow |
-| S3.5 | User Privacy Communication & Data Controls | PENDING 🔄 | S3.1 - Session-Based Override System |
-| S3.6 | Performance and Security Testing Suite | PENDING 🔄 | None |
+**Supporting Documentation:**
+- [Technical Foundation Improvements](./sprints/sprint_3/technical_foundation.md) - Completed foundation work
+
+## Benefits of New Structure
+
+✅ **Improved Maintainability** - Each story is now in its own focused file  
+✅ **Better Navigation** - Easy to find and reference specific stories  
+✅ **Reduced File Size** - No more 700+ line files  
+✅ **Cleaner Git History** - Changes to individual stories don't affect others  
+✅ **Enhanced Collaboration** - Multiple developers can work on different stories simultaneously  
+
+## Migration Notes
+
+- All content has been preserved and reorganized
+- Progress tracking and status remain unchanged
+- All technical details and implementation notes maintained
+- Cross-references between stories updated with proper links
+
+---
+
+**Previous Content:** This file previously contained all Sprint 3 stories in a single 716-line document. The content has been split into the organized structure above for better maintainability.
 
 ## Technical Foundation Improvements ✅ COMPLETE
 
