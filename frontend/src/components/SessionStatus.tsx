@@ -6,8 +6,6 @@
 import React from "react";
 import {
   Box,
-  Card,
-  CardContent,
   Typography,
   Chip,
   Button,
@@ -26,13 +24,11 @@ import {
   Storage as StorageIcon,
   Clear as ClearIcon,
   Extension as ExtensionIcon,
-  Warning as WarningIcon,
   Info as InfoIcon,
 } from "@mui/icons-material";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 
 interface SessionStatusProps {
-  compact?: boolean;
   showControls?: boolean;
 }
 
@@ -40,7 +36,6 @@ interface SessionStatusProps {
  * Component to display session status and privacy controls
  */
 export const SessionStatus: React.FC<SessionStatusProps> = ({
-  compact = false,
   showControls = true,
 }) => {
   const {
@@ -52,6 +47,7 @@ export const SessionStatus: React.FC<SessionStatusProps> = ({
     extendSession,
   } = useSessionManagement();
 
+  const [dialogOpen, setDialogOpen] = React.useState(false);
   const [clearDialogOpen, setClearDialogOpen] = React.useState(false);
 
   /**
@@ -99,50 +95,58 @@ export const SessionStatus: React.FC<SessionStatusProps> = ({
   };
 
   /**
-   * Calculate session progress (for warning state)
+   * Calculate time until session expiry
    */
-  const getSessionProgress = (): number => {
-    const maxDuration = 120; // 2 hours in minutes
-    return Math.min((sessionStatus.sessionDuration / maxDuration) * 100, 100);
+  const getTimeUntilExpiry = (): number => {
+    const SESSION_TIMEOUT_MINUTES = 120;
+    return Math.max(0, SESSION_TIMEOUT_MINUTES - privacyControls.sessionDuration);
   };
 
   /**
    * Handle clear all data with confirmation
    */
   const handleClearData = async () => {
-    setClearDialogOpen(false);
-    await clearAllData();
+    try {
+      await clearAllData();
+      setClearDialogOpen(false);
+      setDialogOpen(false);
+    } catch (err) {
+      console.error("Failed to clear session data:", err);
+    }
   };
 
-  if (compact) {
-    return (
-      <Box display="flex" alignItems="center" gap={1}>
-        <Chip
-          icon={<SecurityIcon />}
-          label={getStatusLabel()}
-          color={getStatusColor()}
-          size="small"
-          variant="outlined"
-        />
-        <Tooltip
-          title={`${sessionStatus.overrideCount} override(s), ${sessionStatus.dataSize}`}
-        >
-          <Chip
-            icon={<StorageIcon />}
-            label={`${sessionStatus.overrideCount}`}
-            size="small"
-            variant="outlined"
-          />
-        </Tooltip>
-      </Box>
-    );
-  }
+  /**
+   * Handle extend session
+   */
+  const handleExtendSession = async () => {
+    try {
+      await extendSession();
+    } catch (err) {
+      console.error("Failed to extend session:", err);
+    }
+  };
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Stack spacing={2}>
-          {/* Header */}
+    <>
+      {/* Session Status Button */}
+      <Chip
+        icon={<SecurityIcon />}
+        label={`Session: ${getStatusLabel()}`}
+        size="small"
+        color={getStatusColor()}
+        variant="outlined"
+        onClick={() => setDialogOpen(true)}
+        sx={{ cursor: 'pointer' }}
+      />
+
+      {/* Session Details Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
           <Box
             display="flex"
             justifyContent="space-between"
@@ -158,98 +162,112 @@ export const SessionStatus: React.FC<SessionStatusProps> = ({
               variant="outlined"
             />
           </Box>
+        </DialogTitle>
+        
+        <DialogContent>
+          <Stack spacing={3}>
+            {/* Error Display */}
+            {error && (
+              <Alert severity="error" onClose={() => {}}>
+                {error}
+              </Alert>
+            )}
 
-          {/* Error Display */}
-          {error && (
-            <Alert severity="error" onClose={() => {}}>
-              {error}
-            </Alert>
-          )}
-
-          {/* Session Information */}
-          <Stack spacing={1}>
-            <Box display="flex" alignItems="center" gap={1}>
-              <ScheduleIcon color="action" />
-              <Typography variant="body2">
-                Session Duration:{" "}
-                {formatDuration(sessionStatus.sessionDuration)}
-              </Typography>
-            </Box>
-
-            <Box display="flex" alignItems="center" gap={1}>
-              <StorageIcon color="action" />
-              <Typography variant="body2">
-                Data Size: {sessionStatus.dataSize}
-              </Typography>
-            </Box>
-
-            <Box display="flex" alignItems="center" gap={1}>
-              <ExtensionIcon color="action" />
-              <Typography variant="body2">
-                Overrides: {sessionStatus.overrideCount}
-              </Typography>
-            </Box>
-          </Stack>
-
-          {/* Session Progress Bar (for warning state) */}
-          {privacyControls.sessionStatus === "warning" && (
-            <Box>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={1}
-              >
-                <Typography variant="body2" color="warning.main">
-                  Session expiring soon
+            {/* Session Information */}
+            <Stack spacing={2}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <ScheduleIcon color="action" />
+                <Typography variant="body2">
+                  Session Duration:{" "}
+                  {formatDuration(sessionStatus.sessionDuration)}
                 </Typography>
-                <WarningIcon color="warning" fontSize="small" />
               </Box>
-              <LinearProgress
-                variant="determinate"
-                value={getSessionProgress()}
-                color="warning"
-              />
-            </Box>
-          )}
 
-          {/* Privacy Information */}
-          <Alert severity="info" icon={<InfoIcon />}>
-            Your data is stored temporarily in your browser session and will be
-            automatically cleared when you close this tab or after 2 hours of
-            inactivity.
-          </Alert>
+              <Box display="flex" alignItems="center" gap={1}>
+                <StorageIcon color="action" />
+                <Typography variant="body2">
+                  Data Size: {sessionStatus.dataSize}
+                </Typography>
+              </Box>
 
-          {/* Controls */}
-          {showControls && (
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              {privacyControls.sessionStatus === "warning" && (
-                <Button
-                  variant="outlined"
-                  color="warning"
-                  onClick={extendSession}
-                  disabled={isLoading}
-                >
-                  Extend Session
-                </Button>
-              )}
-
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<ClearIcon />}
-                onClick={() => setClearDialogOpen(true)}
-                disabled={isLoading || sessionStatus.overrideCount === 0}
-              >
-                Clear All Data
-              </Button>
+              <Box display="flex" alignItems="center" gap={1}>
+                <ExtensionIcon color="action" />
+                <Typography variant="body2">
+                  Overrides: {sessionStatus.overrideCount}
+                </Typography>
+              </Box>
             </Stack>
-          )}
 
-          {/* Loading Indicator */}
-          {isLoading && <LinearProgress />}
-        </Stack>
-      </CardContent>
+            {/* Session Progress Bar (for warning state) */}
+            {privacyControls.sessionStatus === "warning" && (
+              <Box>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={1}
+                >
+                  <Typography variant="caption">Session Expiring</Typography>
+                  <Typography variant="caption">
+                    {formatDuration(getTimeUntilExpiry())} remaining
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={
+                    ((120 - getTimeUntilExpiry()) / 120) * 100
+                  }
+                  color="warning"
+                />
+              </Box>
+            )}
+
+            {/* Privacy Notice */}
+            <Alert severity="info" icon={<InfoIcon />}>
+              Your data is stored temporarily in your browser session and will be
+              automatically cleared when you close this tab or after 2 hours of
+              inactivity.
+            </Alert>
+
+            {/* Control Buttons */}
+            {showControls && (
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                {privacyControls.sessionStatus === "warning" && (
+                  <Tooltip title="Extend session by 2 hours">
+                    <Button
+                      variant="outlined"
+                      onClick={handleExtendSession}
+                      disabled={isLoading}
+                      startIcon={<ScheduleIcon />}
+                    >
+                      Extend Session
+                    </Button>
+                  </Tooltip>
+                )}
+                
+                <Tooltip title="Clear all session data immediately">
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => setClearDialogOpen(true)}
+                    disabled={isLoading}
+                    startIcon={<ClearIcon />}
+                  >
+                    Clear All Data
+                  </Button>
+                </Tooltip>
+              </Stack>
+            )}
+
+            {/* Loading indicator */}
+            {isLoading && <LinearProgress />}
+          </Stack>
+        </DialogContent>
+        
+        <DialogActions>
+          <Button onClick={() => setDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Clear Data Confirmation Dialog */}
       <Dialog
@@ -283,7 +301,7 @@ export const SessionStatus: React.FC<SessionStatusProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-    </Card>
+    </>
   );
 };
 

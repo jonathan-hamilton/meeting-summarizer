@@ -25,6 +25,7 @@ import { SpeakerMappingComponent } from "./SpeakerMapping";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
+import { SessionStatus } from "./SessionStatus";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
 
@@ -369,6 +370,9 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 variant="outlined"
               />
             )}
+            
+            {/* Session Status Display */}
+            <SessionStatus />
           </Stack>
         </Box>
 
