@@ -19,6 +19,7 @@ import {
   VolumeUp,
   CheckCircle,
   Error,
+  Undo,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
@@ -54,6 +55,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     detectedSpeakers: storeDetectedSpeakers,
     initializeSpeakers,
     getAllMappings,
+    clearSpeakers,
   } = useSpeakerStore();
 
   // Memoize extracted unique speakers from transcript segments
@@ -130,6 +132,34 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     sessionOverrides,
   ]);
 
+  // Memoize speaker reassignment detection
+  const hasSpeakerReassignments = useMemo(() => {
+    // Check if any speaker segments have been changed from original
+    const originalSegments = transcription.speakerSegments || [];
+    const currentSegments = speakerSegments;
+    
+    // Compare current segments with original segments
+    const hasSegmentChanges = currentSegments.some((segment, index) => {
+      const originalSegment = originalSegments[index];
+      return originalSegment && segment.speaker !== originalSegment.speaker;
+    });
+
+    // Check for speaker mappings (name/role assignments)
+    const hasMappings = effectiveSpeakerMappings.some(
+      mapping => mapping.name && mapping.name.trim() !== ''
+    );
+
+    // Check for session overrides (dropdown reassignments)
+    const hasOverrides = Object.keys(sessionOverrides).length > 0;
+
+    return hasSegmentChanges || hasMappings || hasOverrides;
+  }, [
+    transcription.speakerSegments,
+    speakerSegments,
+    effectiveSpeakerMappings,
+    sessionOverrides,
+  ]);
+
   // Memoize speaker mapping statistics
   const speakerMappingStats = useMemo(() => {
     const mappedSpeakers = detectedSpeakers.filter((speakerId) => {
@@ -174,6 +204,29 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     },
     []
   );
+
+  // Handle reverting all speakers to original auto-detected values
+  const handleRevertAllSpeakers = useCallback(async () => {
+    try {
+      // Clear all session overrides first
+      await sessionManager.clearSessionData();
+      
+      // Clear all speaker mappings to revert to original auto-detected speakers
+      clearSpeakers();
+      
+      // Re-initialize with original detected speakers (no mappings)
+      initializeSpeakers(transcription.transcriptionId, allDetectedSpeakers, []);
+      
+      // Reset speaker segments to original speakers
+      setSpeakerSegments(transcription.speakerSegments || []);
+      
+      // Force update to reflect changes
+      setForceUpdate((prev) => prev + 1);
+      
+    } catch (error) {
+      console.error('Failed to revert all speakers:', error);
+    }
+  }, [clearSpeakers, initializeSpeakers, transcription.transcriptionId, transcription.speakerSegments, allDetectedSpeakers]);
 
   // Memoize helper function to resolve speaker display name
   const resolveSpeakerName = useCallback(
@@ -337,7 +390,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             {transcription.speakerCount && (
               <Chip
                 icon={<Person />}
-                label={`${speakerMappingStats.mappedCount}/${speakerMappingStats.totalCount} speakers mapped`}
+                label={`${speakerMappingStats.mappedCount}/${speakerMappingStats.totalCount} speakers named`}
                 size="small"
                 variant="outlined"
                 color={
@@ -399,8 +452,22 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               sx={{ mb: 2 }}
             >
               <Typography variant="h6" component="h4">
-                Speaker Transcript
+                Transcript
               </Typography>
+              <Box sx={{ flexGrow: 1 }} />
+              {hasSpeakerReassignments && (
+                <Tooltip title="Revert all speakers to original auto-detected values">
+                  <Chip
+                    icon={<Undo />}
+                    label="Revert to Original"
+                    size="small"
+                    variant="outlined"
+                    color="warning"
+                    onClick={handleRevertAllSpeakers}
+                    clickable
+                  />
+                </Tooltip>
+              )}
               <Tooltip title="Copy full transcript">
                 <IconButton
                   size="small"

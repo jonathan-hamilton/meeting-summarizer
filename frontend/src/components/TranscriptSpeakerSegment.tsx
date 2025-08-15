@@ -1,5 +1,10 @@
 /**
- * Transcript Speaker Segment Component with Reassignment Capability (S3.1)
+ * Transcript Simport {
+  Person,
+  Check,
+  Schedule,
+  SwapHoriz,
+} from "@mui/icons-material";egment Component with Reassignment Capability (S3.1)
  * Allows users to reassign transcript segments to different speakers
  */
 
@@ -20,9 +25,7 @@ import {
 } from "@mui/material";
 import {
   Person,
-  Undo,
   Check,
-  Warning,
   Schedule,
   SwapHoriz,
 } from "@mui/icons-material";
@@ -59,7 +62,7 @@ export const TranscriptSpeakerSegment: React.FC<
   onSpeakerChange,
   showReassignControls = true,
 }) => {
-  const { applyOverride, revertOverride, isLoading } = useSessionManagement();
+  const { isLoading } = useSessionManagement();
 
   // Use Zustand store for speaker management
   const {
@@ -172,31 +175,28 @@ export const TranscriptSpeakerSegment: React.FC<
       try {
         setAnchorEl(null);
 
-        // Reassigning to existing speaker
-        const targetSpeaker = effectiveMappings.find(
-          (m) => m.speakerId === newSpeakerId
-        );
-        if (targetSpeaker) {
-          const success = await applyOverride(
-            segment.speaker,
-            targetSpeaker.name
-          );
-          if (success) {
-            setFeedback({
-              open: true,
-              message: `Segment reassigned to ${targetSpeaker.name}`,
-              severity: "success",
-            });
-            onSpeakerChange?.(index, newSpeakerId);
-          } else {
-            setFeedback({
-              open: true,
-              message: `Failed to reassign speaker to ${targetSpeaker.name}`,
-              severity: "error",
-            });
-          }
-        }
-      } catch {
+        // Create session override action
+        const overrideAction = {
+          action: 'Override' as const,
+          originalValue: segment.speaker,
+          newValue: newSpeakerId,
+          timestamp: new Date(),
+          fieldModified: 'speaker'
+        };
+
+        // Store the override in session
+        sessionManager.storeOverride(segment.speaker, overrideAction);
+
+        setFeedback({
+          open: true,
+          message: `Segment reassigned to ${newSpeakerId}`,
+          severity: "success",
+        });
+        
+        // Notify parent component of change
+        onSpeakerChange?.(index, newSpeakerId);
+
+      } catch (error) {
         setFeedback({
           open: true,
           message: "Failed to reassign speaker",
@@ -204,32 +204,8 @@ export const TranscriptSpeakerSegment: React.FC<
         });
       }
     },
-    [effectiveMappings, applyOverride, segment.speaker, onSpeakerChange, index]
+    [segment.speaker, onSpeakerChange, index]
   );
-
-  /**
-   * Handle revert speaker assignment
-   */
-  const handleRevertSpeaker = useCallback(async () => {
-    try {
-      setAnchorEl(null);
-      const success = await revertOverride(segment.speaker);
-      if (success) {
-        setFeedback({
-          open: true,
-          message: "Speaker assignment reverted",
-          severity: "success",
-        });
-        onSpeakerChange?.(index, segment.speaker);
-      }
-    } catch {
-      setFeedback({
-        open: true,
-        message: "Failed to revert speaker assignment",
-        severity: "error",
-      });
-    }
-  }, [revertOverride, segment.speaker, onSpeakerChange, index]);
 
   // Handle menu open
   const handleMenuOpen = useCallback((e: React.MouseEvent<HTMLElement>) => {
@@ -339,40 +315,18 @@ export const TranscriptSpeakerSegment: React.FC<
 
           {/* Reassignment Controls */}
           {showReassignControls && (
-            <Stack direction="row" spacing={1}>
-              {overrideStatus.isSegmentOverridden && (
-                <Tooltip title="Revert to original speaker">
-                  <IconButton
-                    size="small"
-                    onClick={handleRevertSpeaker}
-                    disabled={isLoading}
-                    color="warning"
-                  >
-                    <Undo />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              <Tooltip title="Reassign speaker">
-                <IconButton
-                  size="small"
-                  onClick={handleMenuOpen}
-                  disabled={isLoading}
-                  color="primary"
-                >
-                  <SwapHoriz />
-                </IconButton>
-              </Tooltip>
-            </Stack>
+            <Tooltip title="Reassign speaker">
+              <IconButton
+                size="small"
+                onClick={handleMenuOpen}
+                disabled={isLoading}
+                color="primary"
+              >
+                <SwapHoriz />
+              </IconButton>
+            </Tooltip>
           )}
         </Stack>
-
-        {/* Session Override Indicator */}
-        {overrideStatus.isSegmentOverridden && (
-          <Alert severity="info" sx={{ mb: 1 }} icon={<Warning />}>
-            This segment has been reassigned in your current session
-          </Alert>
-        )}
 
         {/* Segment Text */}
         <Typography variant="body1" sx={{ mt: 1, pl: 2 }}>

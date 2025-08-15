@@ -291,13 +291,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <PersonIcon color="primary" />
-          <Typography variant="h6">Speaker Mappings</Typography>
-          {computedSpeakerData.totalSpeakerCount > 0 && (
-            <Typography variant="body2" color="text.secondary">
-              ({computedSpeakerData.mappedDetectedCount}/
-              {computedSpeakerData.totalSpeakerCount} mapped)
-            </Typography>
-          )}
+          <Typography variant="h6">Speakers</Typography>
         </Box>
 
         <Button
@@ -306,7 +300,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           startIcon={<EditIcon />}
           onClick={handleOpenDialog}
         >
-          Manage Mappings
+          Manage Names
         </Button>
       </Box>
     ),
@@ -336,7 +330,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     return (
       <Box>
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          Unmapped Speakers:
+          Unnamed Speakers:
         </Typography>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
           {unmappedSpeakersChips}
