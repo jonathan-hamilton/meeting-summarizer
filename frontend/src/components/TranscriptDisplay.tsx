@@ -208,8 +208,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Handle reverting all speakers to original auto-detected values
   const handleRevertAllSpeakers = useCallback(async () => {
     try {
-      // Clear all session overrides first
-      await sessionManager.clearSessionData();
+      // Clear only speaker overrides (not entire session data)
+      sessionManager.clearSpeakerOverrides();
       
       // Clear all speaker mappings to revert to original auto-detected speakers
       clearSpeakers();

@@ -12,8 +12,10 @@ import {
 import { Brightness4, Brightness7, HealthAndSafety } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
+import { EnvironmentProvider, useEnvironment } from "./contexts/EnvironmentProvider";
 import { HealthDialog } from "./components/HealthDialog";
 import { SessionTimeoutWarningDialog } from "./components/SessionTimeoutWarningDialog";
+import { PrivacyPolicyDialog } from "./components/PrivacyPolicyDialog";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import apiService from "./services/apiService";
@@ -38,12 +40,18 @@ const SummaryDisplayDemo = React.lazy(
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
+  const { isProductionMode, toggleEnvironmentMode } = useEnvironment();
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
   const [healthDialogOpen, setHealthDialogOpen] = useState(false);
   const [isServerHealthy, setIsServerHealthy] = useState<boolean | null>(null);
+
+  // Update OpenAI state based on environment mode
   const [isOpenAIEnabled, setIsOpenAIEnabled] = useState<boolean | null>(null);
+
+  // State for forcing Privacy Policy dialog (for testing in dev mode)
+  const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
 
   // Listen for session expiry events
   useEffect(() => {
@@ -85,17 +93,31 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleOpenAIToggle = async () => {
-    if (isOpenAIEnabled === null) return;
+  // Sync OpenAI state with environment mode
+  useEffect(() => {
+    if (isProductionMode) {
+      // In production mode, try to enable real API calls
+      setIsOpenAIEnabled(true);
+      apiService.toggleOpenAI(true).catch(() => {
+        console.warn('Failed to enable real API calls in production mode');
+      });
+    } else {
+      // In development mode, use mocked API calls
+      setIsOpenAIEnabled(false);
+      apiService.toggleOpenAI(false).catch(() => {
+        console.warn('Failed to enable mock API calls in development mode');
+      });
+    }
+  }, [isProductionMode]);
 
-    try {
-      const newState = !isOpenAIEnabled;
-      const response = await apiService.toggleOpenAI(newState);
-      if (response.success) {
-        setIsOpenAIEnabled(newState);
-      }
-    } catch (error) {
-      console.error("Failed to toggle OpenAI:", error);
+  const handleEnvironmentToggle = async () => {
+    toggleEnvironmentMode();
+  };
+
+  const handleEnvironmentDoubleClick = () => {
+    // In development mode, allow triggering Privacy Policy for testing
+    if (!isProductionMode) {
+      setForceShowPrivacyPolicy(true);
     }
   };
 
@@ -165,22 +187,20 @@ const AppContent: React.FC = () => {
               {/* Only show development controls in development mode */}
               {import.meta.env.DEV && (
                 <>
-                  {/* OpenAI Toggle Switch */}
+                  {/* Environment Mode Toggle Switch */}
                   <Tooltip
                     title={
-                      isOpenAIEnabled === null
-                        ? "Checking OpenAI status..."
-                        : isOpenAIEnabled
-                        ? "OpenAI services enabled (real API calls)"
-                        : "Mock services enabled (test mode)"
+                      isProductionMode
+                        ? "Production mode (real API calls, Privacy Policy enabled)"
+                        : "Development mode (mocked API calls) - Double-click to test Privacy Policy"
                     }
                   >
                     <Switch
-                      checked={isOpenAIEnabled || false}
-                      onChange={handleOpenAIToggle}
-                      disabled={isOpenAIEnabled === null}
+                      checked={isProductionMode}
+                      onChange={handleEnvironmentToggle}
+                      onDoubleClick={handleEnvironmentDoubleClick}
                       color="default"
-                      sx={{ mr: 1 }}
+                      sx={{ mr: 1, cursor: 'pointer' }}
                     />
                   </Tooltip>
 
@@ -211,6 +231,12 @@ const AppContent: React.FC = () => {
 
           {/* Global session timeout warning dialog */}
           <SessionTimeoutWarningDialog />
+
+          {/* Privacy policy dialog (production only, first visit) */}
+          <PrivacyPolicyDialog 
+            forceShow={forceShowPrivacyPolicy}
+            onAccepted={() => setForceShowPrivacyPolicy(false)}
+          />
 
           <Box sx={{ py: 4, width: "100%" }}>
             <Typography variant="h2" component="h1" gutterBottom align="center">
@@ -265,12 +291,14 @@ const AppContent: React.FC = () => {
   );
 };
 
-// Main app component with theme provider
+// Main app component with theme and environment providers
 const App: React.FC = () => {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <EnvironmentProvider>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </EnvironmentProvider>
   );
 };
 

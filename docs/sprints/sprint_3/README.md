@@ -19,7 +19,7 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 | Story ID | Title | Status | Dependencies | Story File |
 |----------|-------|--------|--------------|------------|
 | S3.0 | Foundation Test Coverage Updates | IN PROGRESS 🔄 | Sprint 2 completion, existing test infrastructure | [S3.0 Story](./s3.0_foundation_test_coverage.md) |
-| S3.1 | Session-Based Speaker Override & Privacy Controls | PENDING 🔄 | S2.7 - Manual Speaker Override Interface | [S3.1 Story](./s3.1_session_based_override.md) |
+| S3.1 | Session-Based Speaker Override & Privacy Controls | COMPLETE ✅ | S2.7 - Manual Speaker Override Interface | [S3.1 Story](./s3.1_session_based_override.md) |
 | S3.2 | Speaker CRUD Operations Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface | [S3.2 Story](./s3.2_speaker_crud_interface.md) |
 | S3.3 | Segment-Level Speaker Override Interface | PENDING 🔄 | S3.2 - Speaker CRUD Operations Interface | [S3.3 Story](./s3.3_segment_level_override.md) |
 | S3.4 | Enhanced Export and Sharing (Session-Based) | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow | [S3.4 Story](./s3.4_enhanced_export_sharing.md) |

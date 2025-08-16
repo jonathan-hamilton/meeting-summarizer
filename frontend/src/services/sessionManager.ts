@@ -288,6 +288,22 @@ class SessionManager {
   }
 
   /**
+   * Clear only speaker overrides without refreshing the page
+   */
+  public clearSpeakerOverrides(): void {
+    const sessionData = JSON.parse(sessionStorage.getItem('meetingSummarizerSession') || '{}');
+    
+    // Clear only the overrides, keep other session data
+    sessionData.overrides = {};
+    
+    // Update session storage
+    sessionStorage.setItem('meetingSummarizerSession', JSON.stringify(sessionData));
+    
+    // Notify listeners of the change
+    this.notifyListeners();
+  }
+
+  /**
    * Calculate approximate size of session data
    */
   private calculateDataSize(): string {
