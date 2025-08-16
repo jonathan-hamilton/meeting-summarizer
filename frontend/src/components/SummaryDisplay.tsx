@@ -706,9 +706,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           </Tabs>
         </Box>
 
-        {summaryStyles.map((style, index) =>
-          renderSummaryTab(style.style, index)
-        )}
+        {summaryStyles.map((style, index) => (
+          <div key={style.style}>
+            {renderSummaryTab(style.style, index)}
+          </div>
+        ))}
       </Card>
 
       {/* Snackbar for notifications */}

@@ -21,6 +21,7 @@ export interface UseSessionManagementReturn {
 
   // Session management
   extendSession: () => void;
+  extendSessionByMinutes: (minutes: number) => void;
   refreshStatus: () => void;
 }
 
@@ -45,6 +46,7 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
     dataSize: '0 B',
     clearAllData: async () => {},
     extendSession: () => {},
+    extendSessionByMinutes: () => {},
     exportBeforeClear: async () => {}
   });
 
@@ -166,6 +168,19 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
   }, [updateStatus]);
 
   /**
+   * Extend session by specific number of minutes
+   */
+  const extendSessionByMinutes = useCallback((minutes: number) => {
+    try {
+      sessionManager.extendSessionByMinutes(minutes);
+      updateStatus();
+    } catch (err) {
+      console.warn('Failed to extend session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to extend session');
+    }
+  }, [updateStatus]);
+
+  /**
    * Refresh session status manually
    */
   const refreshStatus = useCallback(() => {
@@ -221,6 +236,7 @@ export const useSessionManagement = (): UseSessionManagementReturn => {
     revertOverride,
     clearAllData,
     extendSession,
+    extendSessionByMinutes,
     refreshStatus
   };
 };

@@ -13,9 +13,12 @@ import { Brightness4, Brightness7, HealthAndSafety } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import { HealthDialog } from "./components/HealthDialog";
+import { SessionTimeoutWarningDialog } from "./components/SessionTimeoutWarningDialog";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import apiService from "./services/apiService";
+import { sessionManager } from "./services/sessionManager";
+
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
 
@@ -41,6 +44,20 @@ const AppContent: React.FC = () => {
   const [healthDialogOpen, setHealthDialogOpen] = useState(false);
   const [isServerHealthy, setIsServerHealthy] = useState<boolean | null>(null);
   const [isOpenAIEnabled, setIsOpenAIEnabled] = useState<boolean | null>(null);
+
+  // Listen for session expiry events
+  useEffect(() => {
+    const handleSessionStatusChange = () => {
+      // Session status monitoring - no action needed here as sessionManager handles expiry
+    };
+
+    // Subscribe to session status changes from sessionManager
+    const unsubscribe = sessionManager.onStatusChange(handleSessionStatusChange);
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [transcriptionResults.length]); // Add dependency to track changes
 
   const handleTranscriptionComplete = (result: TranscriptionResponse) => {
     setTranscriptionResults((prev) => [result, ...prev]);
@@ -191,6 +208,9 @@ const AppContent: React.FC = () => {
           </AppBar>
 
           <HealthDialog open={healthDialogOpen} onClose={closeHealthDialog} />
+
+          {/* Global session timeout warning dialog */}
+          <SessionTimeoutWarningDialog />
 
           <Box sx={{ py: 4, width: "100%" }}>
             <Typography variant="h2" component="h1" gutterBottom align="center">

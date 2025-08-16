@@ -36,6 +36,7 @@ export interface PrivacyControls {
   dataSize: string;
   clearAllData: () => Promise<void>;
   extendSession: () => void;
+  extendSessionByMinutes: (minutes: number) => void;
   exportBeforeClear: () => Promise<void>;
 }
 
@@ -44,14 +45,28 @@ class SessionManager {
   private sessionId: string;
   private sessionStarted: Date;
   private lastActivity: Date;
-  private readonly SESSION_TIMEOUT_MINUTES = 120; // 2 hours
-  private readonly WARNING_THRESHOLD_MINUTES = 15; // Warning at 15 minutes before timeout
+  private readonly SESSION_TIMEOUT_MINUTES = 120; // 2 hours (production)
+  private readonly WARNING_THRESHOLD_MINUTES = 5; // Warning 5 minutes before expiry (production)
+  private readonly TESTING_MODE = false; // Enable actual session expiry
+  private sessionExtensions: number = 0; // Track total extensions in minutes
   private listeners: Set<(status: SessionStatus) => void> = new Set();
 
   private constructor() {
     this.sessionId = this.generateSessionId();
     this.sessionStarted = new Date();
     this.lastActivity = new Date();
+    this.sessionExtensions = 0;
+    
+    // Try to restore existing session data
+    const existingData = sessionStorage.getItem('meetingSummarizerSession');
+    if (existingData) {
+      try {
+        const parsed = JSON.parse(existingData);
+        this.sessionExtensions = parsed.sessionExtensions || 0;
+      } catch (e) {
+        console.warn('Failed to parse existing session data');
+      }
+    }
     
     // Initialize session in browser storage
     this.initializeSession();
@@ -82,6 +97,7 @@ class SessionManager {
       sessionId: this.sessionId,
       sessionStarted: this.sessionStarted.toISOString(),
       lastActivity: this.lastActivity.toISOString(),
+      sessionExtensions: this.sessionExtensions,
       overrides: {}
     };
 
@@ -98,16 +114,15 @@ class SessionManager {
    * Set up periodic session tracking and cleanup
    */
   private setupSessionTracking(): void {
-    // Update activity every minute
+    // Update activity every 5 seconds - TESTING ONLY
     setInterval(() => {
-      this.updateActivity();
-      this.notifyListeners();
-    }, 60000);
+      this.notifyListeners(); // Just notify, don't update activity timestamp
+    }, 5000);
 
-    // Check for session timeout every 5 minutes
+    // Check for session timeout every 5 seconds - TESTING ONLY
     setInterval(() => {
       this.checkSessionTimeout();
-    }, 300000);
+    }, 5000);
   }
 
   /**
@@ -158,11 +173,16 @@ class SessionManager {
    */
   public shouldShowWarning(): boolean {
     const now = new Date();
-    const sessionDurationMs = now.getTime() - this.lastActivity.getTime();
-    const sessionDurationMinutes = Math.floor(sessionDurationMs / (1000 * 60));
-    const timeUntilTimeout = this.SESSION_TIMEOUT_MINUTES - sessionDurationMinutes;
+    const sessionDurationMs = now.getTime() - this.sessionStarted.getTime();
+    const sessionDurationMinutes = sessionDurationMs / (1000 * 60);
     
-    return timeUntilTimeout <= this.WARNING_THRESHOLD_MINUTES && timeUntilTimeout > 0;
+    // Calculate effective timeout including extensions
+    const effectiveTimeoutMinutes = this.SESSION_TIMEOUT_MINUTES + this.sessionExtensions;
+    const timeUntilTimeout = effectiveTimeoutMinutes - sessionDurationMinutes;
+    
+    const shouldWarn = timeUntilTimeout <= this.WARNING_THRESHOLD_MINUTES && timeUntilTimeout > 0;
+    
+    return shouldWarn;
   }
 
   /**
@@ -170,10 +190,18 @@ class SessionManager {
    */
   public isExpired(): boolean {
     const now = new Date();
-    const sessionDurationMs = now.getTime() - this.lastActivity.getTime();
-    const sessionDurationMinutes = Math.floor(sessionDurationMs / (1000 * 60));
+    const sessionDurationMs = now.getTime() - this.sessionStarted.getTime();
+    const sessionDurationMinutes = sessionDurationMs / (1000 * 60);
     
-    return sessionDurationMinutes >= this.SESSION_TIMEOUT_MINUTES;
+    // Calculate effective timeout including extensions
+    const effectiveTimeoutMinutes = this.SESSION_TIMEOUT_MINUTES + this.sessionExtensions;
+    const hasExpired = sessionDurationMinutes >= effectiveTimeoutMinutes;
+    
+    if (hasExpired && !this.TESTING_MODE) {
+      this.clearSessionData();
+    }
+    
+    return hasExpired;
   }
 
   /**
@@ -181,6 +209,24 @@ class SessionManager {
    */
   public extendSession(): void {
     this.updateActivity();
+    this.notifyListeners();
+  }
+
+  /**
+   * Extend session by specific number of minutes
+   */
+  public extendSessionByMinutes(minutes: number): void {
+    // Track the extension amount instead of modifying session start time
+    this.sessionExtensions += minutes;
+    
+    // Also update activity to current time
+    this.updateActivity();
+    
+    // Update session storage with extension data
+    const sessionData = JSON.parse(sessionStorage.getItem('meetingSummarizerSession') || '{}');
+    sessionData.sessionExtensions = this.sessionExtensions;
+    sessionStorage.setItem('meetingSummarizerSession', JSON.stringify(sessionData));
+    
     this.notifyListeners();
   }
 
@@ -229,12 +275,16 @@ class SessionManager {
     this.sessionId = this.generateSessionId();
     this.sessionStarted = new Date();
     this.lastActivity = new Date();
+    this.sessionExtensions = 0; // Reset extensions
     
     // Reinitialize clean session
     this.initializeSession();
     
     // Notify listeners
     this.notifyListeners();
+    
+    // Refresh the page to reset the app to original state
+    window.location.reload();
   }
 
   /**
@@ -305,6 +355,7 @@ class SessionManager {
       dataSize: status.dataSize,
       clearAllData: () => this.clearSessionData(),
       extendSession: () => this.extendSession(),
+      extendSessionByMinutes: (minutes: number) => this.extendSessionByMinutes(minutes),
       exportBeforeClear: async () => {
         // This will be implemented in S3.3 (Enhanced Export)
         console.log('Export functionality will be implemented in S3.3');

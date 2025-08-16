@@ -53,21 +53,36 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   existingMappings = [],
   onMappingsSaved,
 }) => {
-  const [mappings, setMappings] = useState<MappingFormData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Use Zustand store for speaker management
-  const { initializeSpeakers, detectedSpeakers: storeDetectedSpeakers } =
-    useSpeakerStore();
+  // Use Zustand store for real-time speaker management
+  const { 
+    speakerMappings,
+    initializeSpeakers, 
+    addSpeaker: addSpeakerToStore,
+    updateSpeaker: updateSpeakerInStore,
+    deleteSpeaker: deleteSpeakerFromStore,
+    getAllMappings,
+    detectedSpeakers: storeDetectedSpeakers 
+  } = useSpeakerStore();
 
-  // Use speaker management hook
+  // Convert Zustand store data to local format for UI compatibility
+  const mappings: MappingFormData[] = useMemo(() => {
+    return speakerMappings.map(mapping => ({
+      speakerId: mapping.speakerId,
+      name: mapping.name,
+      role: mapping.role,
+      source: mapping.source || 'AutoDetected' as SpeakerSource
+    }));
+  }, [speakerMappings]);
+
+  // Use speaker management hook with Zustand store integration
   const {
     deleteConfirmation,
     handleAddSpeaker,
     handleRemoveSpeaker,
-    confirmRemoveSpeaker,
     cancelRemoveSpeaker,
   } = useSpeakerManagement();
 
@@ -88,7 +103,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     [validateSingleMapping, mappings]
   );
 
-  // Use edit mode hook for edit state management
+  // Use edit mode hook for edit state management - updated to work with Zustand
   const {
     editingMappings,
     startEditMode,
@@ -97,7 +112,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     clearEditState,
     hasActiveEdits,
   } = useSpeakerEditMode(
-    setMappings,
+    // Pass a mock setter since we'll handle updates via Zustand
+    () => {},
     clearValidationErrors,
     validateForEditMode
   );
@@ -108,7 +124,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       // Get session overrides only when initializing
       const sessionOverrides = sessionManager.getOverrides();
 
-      const initialMappings: MappingFormData[] = detectedSpeakers.map(
+      const initialMappings: SpeakerMapping[] = detectedSpeakers.map(
         (speakerId) => {
           const existing = existingMappings.find(
             (m) => m.speakerId === speakerId
@@ -127,7 +143,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             speakerId,
             name: name,
             role: existing?.role || "",
-            source: existing?.source || "AutoDetected",
+            source: existing?.source || "AutoDetected" as SpeakerSource,
+            transcriptionId,
           };
         }
       );
@@ -138,16 +155,22 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           (existing) =>
             existing.source === "ManuallyAdded" &&
             !detectedSpeakers.includes(existing.speakerId)
-        )
-        .map((existing) => ({
-          speakerId: existing.speakerId,
-          name: existing.name,
-          role: existing.role,
-          source: "ManuallyAdded" as SpeakerSource,
-        }));
+        );
 
       const allMappings = [...initialMappings, ...manualSpeakers];
-      setMappings(allMappings);
+      
+      // Initialize Zustand store with all mappings
+      if (initializeSpeakers) {
+        const currentDetectedSpeakers =
+          storeDetectedSpeakers.length > 0
+            ? storeDetectedSpeakers
+            : detectedSpeakers;
+        initializeSpeakers(
+          transcriptionId,
+          currentDetectedSpeakers,
+          allMappings
+        );
+      }
     };
 
     if (open) {
@@ -155,52 +178,60 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       setError(null);
       setSuccess(false);
     }
-  }, [open, detectedSpeakers, existingMappings]);
+  }, [open, detectedSpeakers, existingMappings, transcriptionId, initializeSpeakers, storeDetectedSpeakers]);
 
-  // Direct event handlers (simplified from wrapper functions)
+  // Direct event handlers using Zustand store operations
   const handleAddSpeakerLocal = useCallback(() => {
     const newMapping = handleAddSpeaker();
-    setMappings((prev) => [...prev, newMapping]);
+    // Add to Zustand store instead of local state
+    addSpeakerToStore(
+      newMapping.speakerId,
+      newMapping.name,
+      newMapping.role
+    );
     setError(null);
-  }, [handleAddSpeaker]);
+  }, [handleAddSpeaker, addSpeakerToStore]);
 
   const handleRemoveSpeakerLocal = useCallback(
     (index: number) => {
       const speakerToRemove = mappings[index];
-      handleRemoveSpeaker(index, speakerToRemove, mappings.length, setError);
+      if (speakerToRemove) {
+        handleRemoveSpeaker(index, speakerToRemove, mappings.length, setError);
+      }
     },
     [mappings, handleRemoveSpeaker]
   );
 
   const confirmRemoveSpeakerLocal = useCallback(() => {
-    confirmRemoveSpeaker(setMappings, setError);
-  }, [confirmRemoveSpeaker]);
+    // Get the speaker to remove from deleteConfirmation
+    if (deleteConfirmation && deleteConfirmation.speakerId) {
+      deleteSpeakerFromStore(deleteConfirmation.speakerId);
+      cancelRemoveSpeaker(); // Clear the confirmation state
+      setError(null);
+    }
+  }, [deleteConfirmation, deleteSpeakerFromStore, cancelRemoveSpeaker]);
 
   const handleMappingChange = useCallback(
     (index: number, field: "name" | "role", value: string) => {
-      setMappings((prev) =>
-        prev.map((mapping, i) =>
-          i === index ? { ...mapping, [field]: value } : mapping
-        )
-      );
+      const mapping = mappings[index];
+      if (!mapping) return;
+
+      // Update in Zustand store immediately for real-time updates
+      updateSpeakerInStore(mapping.speakerId, { [field]: value });
       setError(null);
 
       // Real-time validation during edit mode
-      setMappings((prevMappings) => {
-        const mapping = prevMappings[index];
-        if (mapping && editingMappings.has(mapping.speakerId)) {
-          // Validate the updated mapping
-          const updatedMapping = { ...mapping, [field]: value };
-          validateSingleMapping(
-            updatedMapping,
-            mapping.speakerId,
-            prevMappings
-          );
-        }
-        return prevMappings;
-      });
+      if (editingMappings.has(mapping.speakerId)) {
+        // Validate the updated mapping
+        const updatedMapping = { ...mapping, [field]: value };
+        validateSingleMapping(
+          updatedMapping,
+          mapping.speakerId,
+          mappings
+        );
+      }
     },
-    [editingMappings, validateSingleMapping]
+    [mappings, editingMappings, updateSpeakerInStore, validateSingleMapping]
   );
 
   const handleSave = useCallback(() => {
@@ -219,8 +250,30 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         return;
       }
 
-      // Convert to SpeakerMapping format for the store and parent callback
-      const speakerMappings: SpeakerMapping[] = mappings.map((mapping) => {
+      // Get current mappings from Zustand store (they're already updated in real-time)
+      const currentMappings = getAllMappings();
+
+      // Store session overrides for any modified speakers
+      currentMappings.forEach((mapping) => {
+        const existing = existingMappings.find(m => m.speakerId === mapping.speakerId);
+        
+        // Check if the name has been overridden
+        if (existing && existing.name !== mapping.name && mapping.name.trim() !== '') {
+          const overrideAction = {
+            action: 'Override' as const,
+            originalValue: existing.name || existing.speakerId,
+            newValue: mapping.name,
+            timestamp: new Date(),
+            fieldModified: 'name'
+          };
+          
+          // Store the override in session storage
+          sessionManager.storeOverride(mapping.speakerId, overrideAction);
+        }
+      });
+
+      // Convert to SpeakerMapping format for parent callback
+      const speakerMappingsForCallback: SpeakerMapping[] = currentMappings.map((mapping) => {
         const existingMapping = existingMappings.find(
           (m) => m.speakerId === mapping.speakerId
         );
@@ -244,8 +297,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         return {
           speakerId: mapping.speakerId,
           name: mapping.name.trim(),
-          role: mapping.role.trim() || "Participant", // Default role if empty
-          transcriptionId,
+          role: mapping.role.trim() || "Participant",
+          transcriptionId: mapping.transcriptionId || transcriptionId,
           source: mapping.source,
           // Override tracking
           originalName: isOverridden
@@ -259,25 +312,12 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         };
       });
 
-      // Update Zustand store with the mappings (session-only persistence)
-      if (initializeSpeakers) {
-        const currentDetectedSpeakers =
-          storeDetectedSpeakers.length > 0
-            ? storeDetectedSpeakers
-            : detectedSpeakers;
-        initializeSpeakers(
-          transcriptionId,
-          currentDetectedSpeakers,
-          speakerMappings
-        );
-      }
-
       // Notify parent component
       if (onMappingsSaved) {
         console.log(
           "✅ SpeakerMappingDialog: Calling onMappingsSaved callback"
         );
-        onMappingsSaved(speakerMappings);
+        onMappingsSaved(speakerMappingsForCallback);
         console.log("✅ SpeakerMappingDialog: Callback completed");
       }
 
@@ -302,11 +342,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   }, [
     validateAllSpeakerMappings,
     mappings,
+    getAllMappings,
     existingMappings,
     transcriptionId,
-    initializeSpeakers,
-    storeDetectedSpeakers,
-    detectedSpeakers,
     onMappingsSaved,
     onClose,
     clearValidationErrors,
