@@ -86,6 +86,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  // Check if there's a completed file to disable upload
+  const hasCompletedFile = uploadFiles.some(file => file.status === "completed");
+
   const uploadFileToServer = useCallback(
     async (uploadFile: UploadFile) => {
       setUploadFiles((prev) =>
@@ -184,6 +187,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     },
     maxSize: maxFileSize,
     multiple: true,
+    disabled: hasCompletedFile, // Disable dropzone if file has been processed
   });
 
   const removeFile = (fileId: string) => {
@@ -231,34 +235,49 @@ const FileUpload: React.FC<FileUploadProps> = ({
     <Box sx={{ width: "100%" }}>
       {/* Drop Zone */}
       <Paper
-        {...getRootProps()}
+        {...(hasCompletedFile ? {} : getRootProps())}
         sx={{
           p: 4,
           width: "100%",
           border: "2px dashed",
-          borderColor: isDragActive ? "primary.main" : "grey.300",
-          backgroundColor: isDragActive ? "primary.50" : "background.paper",
+          borderColor: hasCompletedFile 
+            ? "grey.200" 
+            : isDragActive 
+              ? "primary.main" 
+              : "grey.300",
+          backgroundColor: hasCompletedFile 
+            ? "grey.50" 
+            : isDragActive 
+              ? "primary.50" 
+              : "background.paper",
           textAlign: "center",
-          cursor: "pointer",
+          cursor: hasCompletedFile ? "default" : "pointer",
+          opacity: hasCompletedFile ? 0.6 : 1,
           transition: "all 0.2s ease-in-out",
-          "&:hover": {
+          "&:hover": hasCompletedFile ? {} : {
             borderColor: "primary.main",
             backgroundColor: "primary.50",
           },
         }}
       >
-        <input {...getInputProps()} />
+        {!hasCompletedFile && <input {...getInputProps()} />}
         <CloudUpload
           sx={{
             fontSize: 48,
-            color: isDragActive ? "primary.main" : "grey.400",
+            color: hasCompletedFile 
+              ? "grey.400" 
+              : isDragActive 
+                ? "primary.main" 
+                : "grey.400",
             mb: 2,
           }}
         />
-        <Typography variant="h6" gutterBottom>
-          {isDragActive
-            ? "Drop your audio files here"
-            : "Drag & drop audio files here, or click to select"}
+        <Typography variant="h6" gutterBottom color={hasCompletedFile ? "text.disabled" : "text.primary"}>
+          {hasCompletedFile
+            ? "File processing complete - Refresh page to upload another file"
+            : isDragActive
+              ? "Drop your audio files here"
+              : "Drag & drop audio files here, or click to select"}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           Supported formats: {acceptedFileTypes.join(", ")}
@@ -266,7 +285,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
         <Typography variant="body2" color="text.secondary">
           Maximum file size: {formatFileSize(maxFileSize)}
         </Typography>
-        <Button variant="contained" startIcon={<CloudUpload />} sx={{ mt: 2 }}>
+        <Button 
+          variant="contained" 
+          startIcon={<CloudUpload />} 
+          sx={{ mt: 2 }}
+          disabled={hasCompletedFile}
+        >
           Select Files
         </Button>
       </Paper>

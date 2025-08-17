@@ -309,4 +309,63 @@ describe("FileUpload Component - S1.3 Integration Tests", () => {
       expect(screen.getByText("Complete")).toBeInTheDocument();
     });
   });
+
+  it("should disable upload functionality after file is completed", async () => {
+    const mockApiResponse = {
+      data: mockTranscriptionResponse,
+      success: true,
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mockApiService = apiService as any;
+    mockApiService.uploadFile.mockImplementation(
+      (_file: File, progressCallback: (progress: number) => void) => {
+        // Simulate upload progress
+        setTimeout(() => progressCallback(100), 100);
+        return Promise.resolve(mockApiResponse);
+      }
+    );
+
+    render(
+      <FileUpload onTranscriptionComplete={mockOnTranscriptionComplete} />
+    );
+
+    // Upload a file first
+    const testFile = new File(["test audio content"], "test-audio.mp3", {
+      type: "audio/mp3",
+    });
+
+    const fileInput = screen
+      .getByRole("button", { name: /select files/i })
+      .parentElement?.querySelector('input[type="file"]');
+
+    if (fileInput) {
+      Object.defineProperty(fileInput, "files", {
+        value: [testFile],
+        writable: false,
+      });
+
+      fireEvent.change(fileInput);
+    }
+
+    // Wait for completion
+    await waitFor(() => {
+      expect(screen.getByText("completed")).toBeInTheDocument();
+    });
+
+    // Check that dropzone is disabled
+    expect(
+      screen.getByText("File processing complete - Refresh page to upload another file")
+    ).toBeInTheDocument();
+
+    // Check that SELECT FILES button is disabled
+    const selectButton = screen.getByRole("button", { name: /select files/i });
+    expect(selectButton).toBeDisabled();
+
+    // Verify that drag and drop is disabled by checking for absence of file input
+    const disabledFileInput = screen
+      .getByRole("button", { name: /select files/i })
+      .parentElement?.querySelector('input[type="file"]');
+    expect(disabledFileInput).toBeNull();
+  });
 });
