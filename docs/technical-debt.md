@@ -2,6 +2,54 @@
 
 ## Recently Resolved Issues
 
+### Speaker Management Enhancement & Reset Functionality ✅ RESOLVED
+
+**Date Resolved**: August 17, 2025  
+**Component**: Frontend (Speaker Management System)  
+
+**Problem**: Multiple issues in speaker management workflow affecting user experience:
+1. Speaker count statistics were incorrect after deletions (showing "0/3 speakers named" instead of "0/2")
+2. Reset functionality failed to restore all original speakers in the UI
+3. Confidence scores lacked proper invalidation when transcript structure was modified
+4. "Unassigned" speakers appeared in reassignment dropdown options
+5. Save button in dialog was incorrectly enabled when no changes were made
+
+**Solution**: Comprehensive speaker management system enhancement:
+
+- **Fixed speaker count calculations**: Implemented `currentActiveSpeakers` filtering logic to exclude deleted speakers from statistics
+- **Enhanced reset functionality**: Modified reset to use original `transcription.speakerSegments` instead of modified segments, ensuring all speakers are restored
+- **Implemented confidence score invalidation**: Created global `isTranscriptStructureInvalidated` logic to strikethrough confidence scores when structural changes occur
+- **Improved "Unassigned" handling**: Enhanced speaker detection logic and filtered "Unassigned" options from dropdown menus
+- **Fixed change detection**: Added baseline mapping tracking for accurate dialog state management
+
+**Technical Implementation**:
+
+```tsx
+// Fixed speaker count calculation
+const currentActiveSpeakers = useMemo(() => {
+  if (storeSpeakerMappings.length > 0 && storeSpeakerMappings.length < detectedSpeakers.length) {
+    return baseSpeakers.filter(speakerId => {
+      return storeSpeakerMappings.some(mapping => mapping.speakerId === speakerId);
+    });
+  }
+  return baseSpeakers;
+}, [detectedSpeakers, storeSpeakerMappings]);
+
+// Enhanced confidence score invalidation
+const isTranscriptStructureInvalidated = useMemo(() => {
+  return hasSegmentReassignments || hasSessionOverrides || hasSpeakerDeletions;
+}, [/* dependencies */]);
+```
+
+**Files Modified**:
+
+- `frontend/src/components/TranscriptDisplay.tsx` - Enhanced reset logic and confidence invalidation
+- `frontend/src/components/SpeakerMapping.tsx` - Fixed speaker filtering and count calculations  
+- `frontend/src/components/SpeakerMappingDialog.tsx` - Added baseline mapping tracking
+- `frontend/src/components/TranscriptSpeakerSegment.tsx` - Improved "Unassigned" handling and dropdown filtering
+
+**Impact**: Resolved all major speaker management workflow issues, providing accurate statistics, reliable reset functionality, and proper confidence score feedback for transcript modifications.
+
 ### Speaker Mapping Persistence and Segment Display Issues ✅ RESOLVED
 
 **Date Resolved**: August 17, 2025  

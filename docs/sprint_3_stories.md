@@ -12,7 +12,7 @@ The Sprint 3 documentation has been split into separate files for easier managem
 **Individual Story Files:**
 - [S3.0 Foundation Test Coverage](./sprints/sprint_3/s3.0_foundation_test_coverage.md) - COMPLETE ✅
 - [S3.1 Session-Based Override](./sprints/sprint_3/s3.1_session_based_override.md) - COMPLETE ✅ (Aug 16, 2025)
-- [S3.2 Speaker CRUD Interface](./sprints/sprint_3/s3.2_speaker_crud_interface.md) - PENDING 🔄
+- [S3.2 Speaker CRUD Interface](./sprints/sprint_3/s3.2_speaker_crud_interface.md) - COMPLETE ✅ (Aug 17, 2025)
 - [S3.3 Segment-Level Override](./sprints/sprint_3/s3.3_segment_level_override.md) - PENDING 🔄
 - [S3.4 Enhanced Export & Sharing](./sprints/sprint_3/s3.4_enhanced_export_sharing.md) - PENDING 🔄
 - [S3.5 Privacy Communication](./sprints/sprint_3/s3.5_privacy_communication.md) - PENDING 🔄

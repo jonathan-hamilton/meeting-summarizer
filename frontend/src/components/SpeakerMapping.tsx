@@ -102,15 +102,34 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   // Memoize effective data - simplified to avoid infinite loops
   const effectiveData = useMemo(
     () => {
+      const baseSpeakers = storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : detectedSpeakers;
+      
+      // Only filter out speakers if:
+      // 1. We have mappings AND 
+      // 2. There are fewer mappings than store detected speakers (indicating deletions)
+      let filteredSpeakers = baseSpeakers;
+      const shouldFilter = storeMappings.length > 0 && storeMappings.length < storeDetectedSpeakers.length;
+      if (shouldFilter) {
+        // Filter to only include speakers that have mappings (excludes deleted speakers)
+        filteredSpeakers = baseSpeakers.filter(speakerId => {
+          return storeMappings.some(mapping => mapping.speakerId === speakerId);
+        });
+      }
+      
       const data = {
         mappings: storeMappings || [],
-        speakers: storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : detectedSpeakers,
+        speakers: filteredSpeakers,
       };
       
       console.log('🔄 effectiveData updated:', {
         storeMappingsCount: storeMappings?.length || 0,
         storeDetectedSpeakersCount: storeDetectedSpeakers?.length || 0,
         detectedSpeakersCount: detectedSpeakers?.length || 0,
+        baseSpeakersCount: baseSpeakers.length,
+        filteredSpeakersCount: filteredSpeakers.length,
+        shouldFilter,
+        baseSpeakers,
+        filteredSpeakers,
         mappings: data.mappings.map(m => ({ id: m.speakerId, name: m.name, role: m.role })),
         speakers: data.speakers
       });

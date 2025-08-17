@@ -58,12 +58,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     clearSpeakers,
   } = useSpeakerStore();
 
-  // Memoize extracted unique speakers from transcript segments
+  // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
-    return speakerSegments
-      ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
+    return transcription.speakerSegments
+      ? Array.from(new Set(transcription.speakerSegments.map((s) => s.speaker)))
       : [];
-  }, [speakerSegments]);
+  }, [transcription.speakerSegments]);
 
   // Memoize effective speaker mappings
   const effectiveSpeakerMappings = useMemo(() => {
@@ -76,6 +76,23 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       ? storeDetectedSpeakers
       : allDetectedSpeakers;
   }, [storeDetectedSpeakers, allDetectedSpeakers]);
+
+  // Memoize current active speakers (excluding deleted ones)
+  const currentActiveSpeakers = useMemo(() => {
+    const baseSpeakers = detectedSpeakers;
+    
+    // Only filter out speakers if:
+    // 1. We have mappings AND 
+    // 2. There are fewer mappings than detected speakers (indicating deletions)
+    if (storeSpeakerMappings.length > 0 && storeSpeakerMappings.length < detectedSpeakers.length) {
+      // Filter to only include speakers that have mappings (excludes deleted speakers)
+      return baseSpeakers.filter(speakerId => {
+        return storeSpeakerMappings.some(mapping => mapping.speakerId === speakerId);
+      });
+    }
+    
+    return baseSpeakers;
+  }, [detectedSpeakers, storeSpeakerMappings]);
 
   // Memoize session overrides
   const sessionOverrides = useMemo(() => {
@@ -172,6 +189,35 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     sessionOverrides,
   ]);
 
+  // Memoize transcript structure invalidation (for confidence score strikethrough)
+  const isTranscriptStructureInvalidated = useMemo(() => {
+    // Check if any speaker segments have been reassigned (structural change)
+    const originalSegments = transcription.speakerSegments || [];
+    const currentSegments = speakerSegments;
+    
+    const hasSegmentReassignments = currentSegments.some((segment, index) => {
+      const originalSegment = originalSegments[index];
+      return originalSegment && segment.speaker !== originalSegment.speaker;
+    });
+
+    // Check for session overrides (dropdown reassignments)
+    const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
+
+    // Check if speakers have been deleted (fewer active speakers than original)
+    const originalSpeakerCount = allDetectedSpeakers.length;
+    const currentActiveSpeakerCount = currentActiveSpeakers.length;
+    const hasSpeakerDeletions = currentActiveSpeakerCount < originalSpeakerCount;
+
+    // Confidence is invalidated by structural changes, NOT by name/role assignments
+    return hasSegmentReassignments || hasSessionOverrides || hasSpeakerDeletions;
+  }, [
+    transcription.speakerSegments,
+    speakerSegments,
+    sessionOverrides,
+    allDetectedSpeakers.length,
+    currentActiveSpeakers.length,
+  ]);
+
   // Memoize speaker mapping statistics
   const speakerMappingStats = useMemo(() => {
     // Use the reactive storeSpeakerMappings instead of getAllMappings()
@@ -183,8 +229,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     // Get all speakers that actually appear in segments (considering overrides)
     const speakersInSegments = new Set<string>();
     
-    // Add original detected speakers
-    detectedSpeakers.forEach(id => speakersInSegments.add(id));
+    // Use current active speakers (excludes deleted speakers)
+    currentActiveSpeakers.forEach((id: string) => speakersInSegments.add(id));
     
     // Add manually added speakers from mappings
     currentMappings.forEach(m => speakersInSegments.add(m.speakerId));
@@ -213,7 +259,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       totalCount: allSpeakerIds.length,
       isFullyMapped: mappedSpeakers.length === allSpeakerIds.length,
     };
-  }, [detectedSpeakers, storeSpeakerMappings]);
+  }, [currentActiveSpeakers, storeSpeakerMappings]);
 
   // Memoize event handlers
   const handleSpeakerMappingsChanged = useCallback(() => {
@@ -240,20 +286,29 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Handle reverting all speakers to original auto-detected values
   const handleRevertAllSpeakers = useCallback(async () => {
     try {
+      console.log('🔄 RESET: Starting reset process...');
+      console.log('🔄 RESET: allDetectedSpeakers:', allDetectedSpeakers);
+      console.log('🔄 RESET: original speakerSegments:', transcription.speakerSegments?.map(s => s.speaker));
+      
       // Clear only speaker overrides (not entire session data)
       sessionManager.clearSpeakerOverrides();
       
       // Clear all speaker mappings to revert to original auto-detected speakers
       clearSpeakers();
+      console.log('🔄 RESET: Cleared speakers');
       
       // Re-initialize with original detected speakers (no mappings)
       initializeSpeakers(transcription.transcriptionId, allDetectedSpeakers, []);
+      console.log('🔄 RESET: Re-initialized with speakers:', allDetectedSpeakers);
       
       // Reset speaker segments to original speakers
       setSpeakerSegments(transcription.speakerSegments || []);
+      console.log('🔄 RESET: Reset speaker segments');
       
       // Force update to reflect changes
       setForceUpdate((prev) => prev + 1);
+      
+      console.log('🔄 RESET: Reset complete');
       
     } catch (error) {
       console.error('Failed to revert all speakers:', error);
@@ -390,13 +445,30 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             <Typography variant="h5" component="h3" sx={{ flexGrow: 1 }}>
               {transcription.fileName}
             </Typography>
-            <Chip
-              icon={<CheckCircle />}
-              label={transcription.status}
-              color="success"
-              variant="outlined"
-              size="small"
-            />
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Chip
+                icon={<CheckCircle />}
+                label={transcription.status}
+                color="success"
+                variant="outlined"
+                size="small"
+              />
+              {/* Reset button - show when there are any modifications */}
+              {(hasModifiedSpeakers || hasSpeakerReassignments) && (
+                <Tooltip title="Reset all changes and revert to original transcript">
+                  <Chip
+                    icon={<Undo />}
+                    label="RESET TRANSCRIPT"
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    onClick={handleRevertAllSpeakers}
+                    clickable
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
           </Stack>
 
           {/* Metadata chips */}
@@ -438,12 +510,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 size="small"
                 variant="outlined"
                 sx={{
-                  textDecoration: hasModifiedSpeakers ? "line-through" : "none",
-                  opacity: hasModifiedSpeakers ? 0.7 : 1,
+                  textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
+                  opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
                 }}
                 title={
-                  hasModifiedSpeakers
-                    ? "Original confidence - modified by speaker changes"
+                  isTranscriptStructureInvalidated
+                    ? "Original confidence - invalidated by transcript modifications"
                     : "Original transcription confidence"
                 }
               />
@@ -487,19 +559,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 Transcript
               </Typography>
               <Box sx={{ flexGrow: 1 }} />
-              {hasSpeakerReassignments && (
-                <Tooltip title="Revert all speakers to original auto-detected values">
-                  <Chip
-                    icon={<Undo />}
-                    label="Revert to Original"
-                    size="small"
-                    variant="outlined"
-                    color="warning"
-                    onClick={handleRevertAllSpeakers}
-                    clickable
-                  />
-                </Tooltip>
-              )}
               <Tooltip title="Copy full transcript">
                 <IconButton
                   size="small"
@@ -521,6 +580,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                     speakerMappings={effectiveSpeakerMappings}
                     showReassignControls={true}
                     onSpeakerChange={handleSpeakerSegmentChange}
+                    isTranscriptStructureInvalidated={isTranscriptStructureInvalidated}
                   />
                 </Box>
               ))}

@@ -111,6 +111,149 @@ frontend/src/stores/speakerStore.ts
 
 **Development Impact:** Improved developer and user experience by eliminating unexpected data loss and providing reliable speaker management workflow.
 
+#### 5. Speaker Count Statistics & Reset Functionality Enhancement
+
+**Problem Solved:** Speaker count statistics were inaccurate after deletions and reset functionality failed to restore all original speakers.
+
+**Implementation:**
+
+- **Active Speaker Filtering**: Implemented `currentActiveSpeakers` calculation that properly excludes deleted speakers from statistics
+- **Reset Logic Enhancement**: Modified reset to use original `transcription.speakerSegments` instead of modified segments, ensuring complete speaker restoration
+- **Debugging Enhancement**: Added comprehensive logging throughout reset process for troubleshooting
+
+**Technical Innovation:**
+
+```tsx
+// Enhanced speaker count calculation
+const currentActiveSpeakers = useMemo(() => {
+  const baseSpeakers = detectedSpeakers;
+  
+  if (storeSpeakerMappings.length > 0 && storeSpeakerMappings.length < detectedSpeakers.length) {
+    return baseSpeakers.filter(speakerId => {
+      return storeSpeakerMappings.some(mapping => mapping.speakerId === speakerId);
+    });
+  }
+  
+  return baseSpeakers;
+}, [detectedSpeakers, storeSpeakerMappings]);
+
+// Fixed reset to use original transcript data
+const allDetectedSpeakers = useMemo(() => {
+  return transcription.speakerSegments
+    ? Array.from(new Set(transcription.speakerSegments.map((s) => s.speaker)))
+    : [];
+}, [transcription.speakerSegments]);
+```
+
+**User Experience Impact:** Accurate speaker statistics and reliable reset functionality that properly restores all original speakers.
+
+#### 6. Confidence Score Invalidation System
+
+**Problem Solved:** Confidence scores did not reflect when transcript modifications invalidated the original AI confidence assessment.
+
+**Implementation:**
+
+- **Global Invalidation Logic**: Created `isTranscriptStructureInvalidated` calculation to detect structural transcript changes
+- **Selective Invalidation**: Distinguished between name/role assignments (valid) vs structural changes (invalid confidence)
+- **Visual Feedback**: Implemented strikethrough styling for both main confidence chip and individual segment confidence scores
+- **Component Integration**: Passed invalidation state to all child components for consistent behavior
+
+**Technical Innovation:**
+
+```tsx
+const isTranscriptStructureInvalidated = useMemo(() => {
+  const hasSegmentReassignments = currentSegments.some((segment, index) => {
+    const originalSegment = originalSegments[index];
+    return originalSegment && segment.speaker !== originalSegment.speaker;
+  });
+
+  const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
+  const hasSpeakerDeletions = currentActiveSpeakerCount < originalSpeakerCount;
+
+  return hasSegmentReassignments || hasSessionOverrides || hasSpeakerDeletions;
+}, [/* dependencies */]);
+```
+
+**User Experience Impact:** Clear visual feedback when transcript modifications affect original AI confidence, helping users understand data reliability.
+
+#### 7. "Unassigned" Speaker Handling Enhancement
+
+**Problem Solved:** "Unassigned" speakers appearing in dropdown options and inconsistent handling of deleted speakers.
+
+**Implementation:**
+
+- **Dropdown Filtering**: Enhanced speaker option generation to exclude "Unassigned" speakers from reassignment menus
+- **Visual Indicators**: Added strikethrough styling for confidence scores on "Unassigned" segments
+- **Detection Logic**: Improved speaker detection to distinguish between deleted vs uninitialized speakers
+- **UI Consistency**: Standardized "Unassigned" display across all speaker-related components
+
+**Technical Innovation:**
+
+```tsx
+// Enhanced speaker option filtering
+return options
+  .filter(option => option.name !== "Unassigned")
+  .sort((a, b) => {
+    if (a.isOriginal) return -1;
+    if (b.isOriginal) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+// Improved speaker detection logic
+const isLikelyDeleted = hasAnyMappings && 
+  (speakerId.startsWith('Speaker ') || speakerId.match(/^Speaker\s*\d+$/i));
+
+if (isLikelyDeleted) {
+  displayName = "Unassigned";
+}
+```
+
+**User Experience Impact:** Cleaner UI with proper handling of deleted speakers and prevention of invalid reassignment options.
+
+#### 8. Dialog Change Detection Optimization
+
+**Problem Solved:** Save button was incorrectly enabled when no actual changes were made to speaker mappings.
+
+**Implementation:**
+
+- **Baseline Mapping Tracking**: Added `baselineMappings` state to capture initial dialog state after speaker initialization
+- **Accurate Comparison**: Enhanced `hasChanges` logic to compare against proper baseline instead of stale existing mappings
+- **Initialization Handling**: Distinguished between first-time initialization and subsequent change detection
+
+**Technical Innovation:**
+
+```tsx
+// Enhanced change detection with baseline
+const hasChanges = useMemo(() => {
+  const referenceMapping = baselineMappings.length > 0 ? baselineMappings : existingMappings;
+  
+  if (referenceMapping.length === 0) {
+    return (
+      mappings.some((m) => m.name.trim() !== "") ||
+      mappings.length > detectedSpeakers.length
+    );
+  }
+
+  return mappings.some((m, i) => {
+    const existing = referenceMapping[i];
+    return !existing || existing.name !== m.name || existing.role !== m.role;
+  });
+}, [mappings, detectedSpeakers.length, baselineMappings, existingMappings]);
+```
+
+**User Experience Impact:** Accurate save button state prevents confusion and unnecessary save operations when no changes have been made.
+
+**Files Modified:**
+
+```
+frontend/src/components/SpeakerMapping.tsx - Enhanced filtering and count logic
+frontend/src/components/SpeakerMappingDialog.tsx - Added baseline tracking
+frontend/src/components/TranscriptDisplay.tsx - Enhanced reset and confidence invalidation
+frontend/src/components/TranscriptSpeakerSegment.tsx - Improved "Unassigned" handling
+```
+
+**Overall Impact:** Comprehensive speaker management system enhancement providing accurate statistics, reliable functionality, and clear user feedback for all transcript modification scenarios.
+
 ## 2025-08-16: S3.1 Privacy Architecture & Environment Management (COMPLETE)
 
 ### Overview

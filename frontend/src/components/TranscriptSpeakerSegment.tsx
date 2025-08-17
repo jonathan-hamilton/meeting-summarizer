@@ -31,7 +31,6 @@ import {
 } from "@mui/icons-material";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
-import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
 import { getSpeakerColor } from "../theme/speakerColors";
 
@@ -41,6 +40,7 @@ interface TranscriptSpeakerSegmentProps {
   speakerMappings?: SpeakerMapping[];
   onSpeakerChange?: (segmentIndex: number, newSpeaker: string) => void;
   showReassignControls?: boolean;
+  isTranscriptStructureInvalidated?: boolean; // Whether confidence scores should be struck through
 }
 
 interface SpeakerOption {
@@ -61,6 +61,7 @@ export const TranscriptSpeakerSegment: React.FC<
   speakerMappings = [],
   onSpeakerChange,
   showReassignControls = true,
+  isTranscriptStructureInvalidated = false,
 }) => {
   const { isLoading } = useSessionManagement();
 
@@ -88,11 +89,6 @@ export const TranscriptSpeakerSegment: React.FC<
     return storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : [];
   }, [storeDetectedSpeakers]);
 
-  // Memoize session overrides
-  const sessionOverrides = useMemo(() => {
-    return sessionManager.getOverrides();
-  }, []);
-
   /**
    * Get all available speaker options
    */
@@ -112,22 +108,38 @@ export const TranscriptSpeakerSegment: React.FC<
       allSpeakerIds.add(mapping.speakerId)
     );
 
-    // Add current segment speaker
-    allSpeakerIds.add(segment.speaker);
+    // Add current segment speaker (but not if it's "Unassigned")
+    if (segment.speaker !== "Unassigned") {
+      allSpeakerIds.add(segment.speaker);
+    }
 
     // Create options for all speakers
     Array.from(allSpeakerIds).forEach((speakerId) => {
       const mapping = effectiveMappings.find((m) => m.speakerId === speakerId);
 
       let displayName: string;
-      if (mapping && mapping.name && mapping.name.trim() !== "") {
-        // Mapped speaker: show "Name (Role)" or just "Name"
-        displayName = mapping.role
-          ? `${mapping.name} (${mapping.role})`
-          : mapping.name;
+      if (mapping) {
+        if (mapping.name && mapping.name.trim() !== "") {
+          // Mapped speaker with name: show "Name (Role)" or just "Name"
+          displayName = mapping.role
+            ? `${mapping.name} (${mapping.role})`
+            : mapping.name;
+        } else {
+          // Mapped but unnamed speaker: show speaker ID
+          displayName = speakerId;
+        }
       } else {
-        // Unmapped speaker: show speaker ID
-        displayName = speakerId;
+        // No mapping found - check if this is a deleted speaker vs uninitialized
+        const hasAnyMappings = effectiveMappings.length > 0;
+        const isLikelyDeleted = hasAnyMappings && 
+          (speakerId.startsWith('Speaker ') || speakerId.match(/^Speaker\s*\d+$/i));
+        
+        if (isLikelyDeleted) {
+          displayName = "Unassigned";
+        } else {
+          // Probably just not initialized yet, show the speaker ID
+          displayName = speakerId;
+        }
       }
 
       options.push({
@@ -139,19 +151,22 @@ export const TranscriptSpeakerSegment: React.FC<
     });
 
     // Sort options: current speaker first, then mapped speakers, then unmapped
-    return options.sort((a, b) => {
-      if (a.isOriginal) return -1;
-      if (b.isOriginal) return 1;
+    // Filter out "Unassigned" speakers from dropdown options
+    return options
+      .filter(option => option.name !== "Unassigned")
+      .sort((a, b) => {
+        if (a.isOriginal) return -1;
+        if (b.isOriginal) return 1;
 
-      // Prioritize mapped speakers (those with names different from IDs)
-      const aIsMapped = a.name !== a.id;
-      const bIsMapped = b.name !== b.id;
+        // Prioritize mapped speakers (those with names different from IDs)
+        const aIsMapped = a.name !== a.id;
+        const bIsMapped = b.name !== b.id;
 
-      if (aIsMapped && !bIsMapped) return -1;
-      if (!aIsMapped && bIsMapped) return 1;
+        if (aIsMapped && !bIsMapped) return -1;
+        if (!aIsMapped && bIsMapped) return 1;
 
-      return a.name.localeCompare(b.name);
-    });
+        return a.name.localeCompare(b.name);
+      });
   }, [effectiveMappings, effectiveDetectedSpeakers, segment.speaker]);
 
   // Get speaker mappings from the store
@@ -165,12 +180,32 @@ export const TranscriptSpeakerSegment: React.FC<
     
     // Look up the assigned name and role from speaker mappings using the effective speaker ID
     const mapping = getAllMappings().find((m: SpeakerMapping) => m.speakerId === effectiveSpeakerId);
+    const allMappings = getAllMappings();
     
-    let displayName = effectiveSpeakerId; // fallback to speaker ID
-    if (mapping && mapping.name && mapping.name.trim()) {
-      displayName = mapping.name.trim();
-      if (mapping.role && mapping.role.trim()) {
-        displayName += ` (${mapping.role.trim()})`;
+    let displayName = effectiveSpeakerId; // Default to speaker ID
+    
+    if (mapping) {
+      if (mapping.name && mapping.name.trim()) {
+        displayName = mapping.name.trim();
+        if (mapping.role && mapping.role.trim()) {
+          displayName += ` (${mapping.role.trim()})`;
+        }
+      } else {
+        // Mapped but unnamed - show the speaker ID
+        displayName = effectiveSpeakerId;
+      }
+    } else {
+      // No mapping found - check if this is a deleted speaker vs uninitialized
+      // If there are mappings for other speakers, this one might be deleted
+      const hasAnyMappings = allMappings.length > 0;
+      const isLikelyDeleted = hasAnyMappings && 
+        (effectiveSpeakerId.startsWith('Speaker ') || effectiveSpeakerId.match(/^Speaker\s*\d+$/i));
+      
+      if (isLikelyDeleted) {
+        displayName = "Unassigned";
+      } else {
+        // Probably just not initialized yet, show the speaker ID
+        displayName = effectiveSpeakerId;
       }
     }
     
@@ -251,23 +286,10 @@ export const TranscriptSpeakerSegment: React.FC<
     };
   }, [speakerOptions, segment.speaker]);
 
-  // Memoize check for any modified speakers
-  const hasAnyModifiedSpeakers = useMemo(() => {
-    // Check for any session overrides
-    const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
-
-    // Check for any manually added or overridden speakers in mappings
-    const hasEditedSpeakers = effectiveMappings.some(
-      (mapping) => mapping.source === "ManuallyAdded" || mapping.isOverridden
-    );
-
-    return hasSessionOverrides || hasEditedSpeakers;
-  }, [sessionOverrides, effectiveMappings]);
-
-  // Memoize strikethrough decision
+  // Memoize strikethrough decision - use global transcript invalidation
   const shouldStrikethroughConfidence = useMemo(() => {
-    return overrideStatus.isSegmentOverridden || hasAnyModifiedSpeakers;
-  }, [overrideStatus.isSegmentOverridden, hasAnyModifiedSpeakers]);
+    return isTranscriptStructureInvalidated || currentSpeakerInfo.displayName === "Unassigned";
+  }, [isTranscriptStructureInvalidated, currentSpeakerInfo.displayName]);
 
   return (
     <>

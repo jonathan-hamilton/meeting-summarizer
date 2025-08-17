@@ -55,6 +55,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  
+  // Track the baseline mappings for change detection
+  const [baselineMappings, setBaselineMappings] = useState<SpeakerMapping[]>([]);
 
   // Use Zustand store for real-time speaker management
   const { 
@@ -219,6 +222,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         detectedSpeakers,
         allMappings
       );
+      
+      // Capture baseline after initialization for change detection
+      setBaselineMappings([...allMappings]);
     };
 
     initializeMappings();
@@ -460,12 +466,25 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // Memoize computed values
   // Check if there are changes (names filled, new speakers added, or any modification from original)
   const hasChanges = useMemo(() => {
+    // Use baselineMappings for comparison if available, otherwise fall back to existingMappings
+    const referenceMapping = baselineMappings.length > 0 ? baselineMappings : existingMappings;
+    
+    // If no reference mappings, we're initializing for the first time
+    // Only consider it a change if speakers have been named or manually added/removed
+    if (referenceMapping.length === 0) {
+      return (
+        mappings.some((m) => m.name.trim() !== "") ||
+        mappings.length > detectedSpeakers.length
+      );
+    }
+
+    // Normal change detection when we have reference mappings to compare against
     return (
       mappings.some((m) => m.name.trim() !== "") ||
       mappings.length > detectedSpeakers.length ||
-      mappings.length !== existingMappings.length ||
+      mappings.length !== referenceMapping.length ||
       mappings.some((m, i) => {
-        const existing = existingMappings[i];
+        const existing = referenceMapping[i];
         return (
           !existing ||
           existing.speakerId !== m.speakerId ||
@@ -474,7 +493,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         );
       })
     );
-  }, [mappings, detectedSpeakers.length, existingMappings]);
+  }, [mappings, detectedSpeakers.length, baselineMappings, existingMappings]);
 
   // Check if the form is valid and ready to save
   const canSave = useMemo(() => {
