@@ -229,3 +229,194 @@ public class SummaryOptions
     /// </summary>
     public bool IncludeKeyDecisions => Style == SummaryStyle.KeyDecisions || Style == SummaryStyle.Detailed;
 }
+
+/// <summary>
+/// S3.4: Meeting summary with role-aware action items
+/// </summary>
+public class MeetingSummary
+{
+    /// <summary>
+    /// Unique identifier for this meeting summary
+    /// </summary>
+    public string SummaryId { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>
+    /// Associated transcription ID
+    /// </summary>
+    public string TranscriptionId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Meeting narrative overview (targeting one page)
+    /// </summary>
+    public string MeetingOverview { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Action items grouped by speaker role
+    /// </summary>
+    public List<ActionItemsByRole> ActionItemsByRole { get; set; } = new();
+
+    /// <summary>
+    /// Items that were identified but not assigned to any speaker
+    /// </summary>
+    public List<UnassignedActionItem> UnassignedActionItems { get; set; } = new();
+
+    /// <summary>
+    /// Meeting metadata
+    /// </summary>
+    public MeetingMetadata Metadata { get; set; } = new();
+
+    /// <summary>
+    /// Generation metadata
+    /// </summary>
+    public GenerationMetadata Generation { get; set; } = new();
+}
+
+/// <summary>
+/// Action items grouped by a specific speaker/role
+/// </summary>
+public class ActionItemsByRole
+{
+    /// <summary>
+    /// Speaker identifier (e.g., "Speaker 1", "John Smith")
+    /// </summary>
+    public string SpeakerId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Mapped speaker name
+    /// </summary>
+    public string SpeakerName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Speaker role/title
+    /// </summary>
+    public string SpeakerRole { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Action items assigned to this speaker
+    /// </summary>
+    public List<ActionItem> ActionItems { get; set; } = new();
+}
+
+/// <summary>
+/// Individual action item with metadata
+/// </summary>
+public class ActionItem
+{
+    /// <summary>
+    /// Description of the action item
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Whether this was explicitly assigned or implicitly committed
+    /// </summary>
+    public bool IsExplicitAssignment { get; set; }
+
+    /// <summary>
+    /// AI confidence score for this action item (0.0 - 1.0)
+    /// </summary>
+    public double Confidence { get; set; }
+
+    /// <summary>
+    /// Source text snippet that led to this action item
+    /// </summary>
+    public string? SourceText { get; set; }
+}
+
+/// <summary>
+/// Action item that couldn't be assigned to a specific speaker
+/// </summary>
+public class UnassignedActionItem
+{
+    /// <summary>
+    /// Description of the action item
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// AI confidence score for this action item (0.0 - 1.0)
+    /// </summary>
+    public double Confidence { get; set; }
+
+    /// <summary>
+    /// Source text snippet that led to this action item
+    /// </summary>
+    public string? SourceText { get; set; }
+
+    /// <summary>
+    /// Reason why it couldn't be assigned
+    /// </summary>
+    public string? UnassignedReason { get; set; }
+}
+
+/// <summary>
+/// Meeting metadata for context
+/// </summary>
+public class MeetingMetadata
+{
+    /// <summary>
+    /// Meeting participants from speaker mappings
+    /// </summary>
+    public List<string> Participants { get; set; } = new();
+
+    /// <summary>
+    /// Estimated meeting duration (if available)
+    /// </summary>
+    public TimeSpan? Duration { get; set; }
+
+    /// <summary>
+    /// Number of speakers detected
+    /// </summary>
+    public int SpeakerCount { get; set; }
+}
+
+/// <summary>
+/// Generation metadata for tracking
+/// </summary>
+public class GenerationMetadata
+{
+    /// <summary>
+    /// Timestamp when summary was generated
+    /// </summary>
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Processing time in milliseconds
+    /// </summary>
+    public long ProcessingTimeMs { get; set; }
+
+    /// <summary>
+    /// Token count of the generated content
+    /// </summary>
+    public int TokenCount { get; set; }
+
+    /// <summary>
+    /// Whether the summary is editable (session-based)
+    /// </summary>
+    public bool IsEditable { get; set; } = true;
+}
+
+/// <summary>
+/// Request model for S3.4 meeting summary generation
+/// </summary>
+public class MeetingSummaryRequest
+{
+    /// <summary>
+    /// The transcript text to summarize
+    /// </summary>
+    [Required(ErrorMessage = "Transcript is required")]
+    [StringLength(500000, ErrorMessage = "Transcript cannot exceed 500,000 characters")]
+    public string Transcript { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Speaker mappings for role-aware action items
+    /// </summary>
+    [Required(ErrorMessage = "Speaker mappings are required")]
+    public List<SpeakerMapping> SpeakerMappings { get; set; } = new();
+
+    /// <summary>
+    /// Maximum number of tokens for the narrative overview
+    /// </summary>
+    [Range(200, 1500, ErrorMessage = "Max tokens must be between 200 and 1500")]
+    public int MaxTokens { get; set; } = 800;
+}

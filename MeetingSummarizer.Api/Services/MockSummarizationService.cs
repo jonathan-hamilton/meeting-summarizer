@@ -258,4 +258,171 @@ public class MockSummarizationService : ISummarizationService
         decisions.Add("Resource allocation approved based on role requirements");
         return decisions;
     }
+
+    /// <summary>
+    /// S3.4: Generates a mock meeting summary with role-aware action items
+    /// </summary>
+    public async Task<MeetingSummary> GenerateMeetingSummaryAsync(
+        string transcript,
+        List<SpeakerMapping> speakerMappings,
+        int maxTokens = 800,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning("Using mock S3.4 meeting summary service - OpenAI API not available");
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        // Simulate processing time
+        await Task.Delay(Random.Shared.Next(2000, 5000), cancellationToken);
+
+        stopwatch.Stop();
+
+        var wordCount = transcript.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        var participantNames = string.Join(", ", speakerMappings.Select(m => m.Name));
+
+        var meetingSummary = new MeetingSummary
+        {
+            MeetingOverview = $"[MOCK MEETING SUMMARY] This meeting involved {speakerMappings.Count} participants: {participantNames}. " +
+                             "The discussion covered key business topics with productive participation from all roles. " +
+                             "Several actionable decisions were made and responsibilities were clearly assigned. " +
+                             $"The meeting transcript contained approximately {wordCount} words and represents a typical collaborative session. " +
+                             "This is a simulated summary for development and testing purposes.",
+            
+            Metadata = new MeetingMetadata
+            {
+                Participants = speakerMappings.Select(m => m.Name).ToList(),
+                SpeakerCount = speakerMappings.Count,
+                Duration = TimeSpan.FromMinutes(Math.Max(5, wordCount / 150)) // Estimate duration
+            },
+            
+            Generation = new GenerationMetadata
+            {
+                ProcessingTimeMs = stopwatch.ElapsedMilliseconds,
+                TokenCount = maxTokens / 2, // Mock token usage
+                IsEditable = true
+            }
+        };
+
+        // Generate mock action items by role
+        for (int i = 0; i < speakerMappings.Count; i++)
+        {
+            var mapping = speakerMappings[i];
+            var roleActionItems = new ActionItemsByRole
+            {
+                SpeakerId = mapping.SpeakerId,
+                SpeakerName = mapping.Name,
+                SpeakerRole = mapping.Role,
+                ActionItems = GenerateMockActionItemsForRole(mapping.Role, i + 1)
+            };
+            meetingSummary.ActionItemsByRole.Add(roleActionItems);
+        }
+
+        // Add a few unassigned action items
+        meetingSummary.UnassignedActionItems.Add(new UnassignedActionItem
+        {
+            Description = "Follow up on budget approval process",
+            Confidence = 0.7,
+            SourceText = "[Mock] Discussion about budget timeline",
+            UnassignedReason = "Multiple people mentioned but no clear assignment"
+        });
+
+        meetingSummary.UnassignedActionItems.Add(new UnassignedActionItem
+        {
+            Description = "Schedule follow-up meeting in two weeks",
+            Confidence = 0.8,
+            SourceText = "[Mock] General agreement on timing",
+            UnassignedReason = "Administrative task requiring coordination"
+        });
+
+        _logger.LogInformation("Mock S3.4 meeting summary generated. Speakers: {SpeakerCount}, Action items: {ActionCount}, Time: {TimeMs}ms",
+            speakerMappings.Count, meetingSummary.ActionItemsByRole.Sum(g => g.ActionItems.Count), stopwatch.ElapsedMilliseconds);
+
+        return meetingSummary;
+    }
+
+    /// <summary>
+    /// Generates mock action items for a specific role
+    /// </summary>
+    private List<ActionItem> GenerateMockActionItemsForRole(string role, int speakerIndex)
+    {
+        var actionItems = new List<ActionItem>();
+
+        // Role-specific action items
+        switch (role.ToLowerInvariant())
+        {
+            case "manager":
+            case "lead":
+            case "director":
+                actionItems.Add(new ActionItem
+                {
+                    Description = "Review team performance metrics and provide feedback",
+                    IsExplicitAssignment = true,
+                    Confidence = 0.9,
+                    SourceText = "[Mock] Explicit assignment during discussion"
+                });
+                actionItems.Add(new ActionItem
+                {
+                    Description = "Approve budget allocation for next quarter",
+                    IsExplicitAssignment = false,
+                    Confidence = 0.7,
+                    SourceText = "[Mock] Implied commitment based on role"
+                });
+                break;
+
+            case "developer":
+            case "engineer":
+            case "architect":
+                actionItems.Add(new ActionItem
+                {
+                    Description = "Implement new feature based on requirements",
+                    IsExplicitAssignment = true,
+                    Confidence = 0.95,
+                    SourceText = "[Mock] Clear technical assignment"
+                });
+                actionItems.Add(new ActionItem
+                {
+                    Description = "Update technical documentation",
+                    IsExplicitAssignment = false,
+                    Confidence = 0.6,
+                    SourceText = "[Mock] Mentioned as good practice"
+                });
+                break;
+
+            case "designer":
+            case "ux":
+            case "ui":
+                actionItems.Add(new ActionItem
+                {
+                    Description = "Create wireframes for new user interface",
+                    IsExplicitAssignment = true,
+                    Confidence = 0.9,
+                    SourceText = "[Mock] Design task assignment"
+                });
+                break;
+
+            default:
+                actionItems.Add(new ActionItem
+                {
+                    Description = $"Complete {role}-specific tasks discussed in meeting",
+                    IsExplicitAssignment = false,
+                    Confidence = 0.5,
+                    SourceText = "[Mock] General role-based responsibility"
+                });
+                break;
+        }
+
+        // Add a common action item for variety
+        if (speakerIndex % 2 == 0)
+        {
+            actionItems.Add(new ActionItem
+            {
+                Description = "Provide status update at next team meeting",
+                IsExplicitAssignment = false,
+                Confidence = 0.6,
+                SourceText = "[Mock] Implied ongoing responsibility"
+            });
+        }
+
+        return actionItems;
+    }
 }

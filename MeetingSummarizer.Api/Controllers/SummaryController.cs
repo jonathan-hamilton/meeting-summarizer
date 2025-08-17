@@ -521,4 +521,59 @@ public class SummaryController : ControllerBase
             return StatusCode(500, new { error = "Failed to retrieve service status" });
         }
     }
+
+    /// <summary>
+    /// S3.4: Generate a meeting summary with role-aware action items
+    /// </summary>
+    /// <param name="request">The meeting summary request</param>
+    /// <returns>Meeting summary with role-grouped action items</returns>
+    [HttpPost("meeting-summary")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(MeetingSummary), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(503)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> GenerateMeetingSummary([FromBody] MeetingSummaryRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Received S3.4 meeting summary request. Speakers: {SpeakerCount}, MaxTokens: {MaxTokens}",
+                request.SpeakerMappings.Count, request.MaxTokens);
+
+            // Validate the service is available
+            if (!await _summarizationService.IsServiceAvailableAsync())
+            {
+                _logger.LogWarning("Summarization service is not available for meeting summary generation");
+                return StatusCode(503, new { error = "Summarization service is currently unavailable" });
+            }
+
+            // Generate the meeting summary
+            var meetingSummary = await _summarizationService.GenerateMeetingSummaryAsync(
+                request.Transcript,
+                request.SpeakerMappings,
+                request.MaxTokens);
+
+            _logger.LogInformation("S3.4 meeting summary generation completed. Summary ID: {SummaryId}, Action items: {ActionCount}, Time: {TimeMs}ms",
+                meetingSummary.SummaryId, 
+                meetingSummary.ActionItemsByRole.Sum(g => g.ActionItems.Count), 
+                meetingSummary.Generation.ProcessingTimeMs);
+
+            return Ok(meetingSummary);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid meeting summary generation request");
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogError(ex, "Meeting summary service error");
+            return StatusCode(503, new { error = "Meeting summary service is currently unavailable", details = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating meeting summary");
+            return StatusCode(500, new { error = "An error occurred while generating the meeting summary" });
+        }
+    }
 }

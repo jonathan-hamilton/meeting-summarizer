@@ -114,6 +114,66 @@ public class SummarizationService : ISummarizationService
         }
     }
 
+    /// <summary>
+    /// S3.4: Generates a meeting summary with role-aware action items
+    /// </summary>
+    public async Task<MeetingSummary> GenerateMeetingSummaryAsync(
+        string transcript,
+        List<SpeakerMapping> speakerMappings,
+        int maxTokens = 800,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        try
+        {
+            _logger.LogInformation("Starting S3.4 meeting summary generation. Speakers: {SpeakerCount}, MaxTokens: {MaxTokens}",
+                speakerMappings.Count, maxTokens);
+
+            ValidateMeetingSummaryInput(transcript, speakerMappings, maxTokens);
+
+            // Replace speaker labels with real names in transcript
+            var enhancedTranscript = ApplySpeakerMappings(transcript, speakerMappings);
+
+            // Build specialized prompt for meeting summary with action items
+            var prompt = BuildMeetingSummaryPrompt(enhancedTranscript, speakerMappings, maxTokens);
+
+            // Use the existing OpenAI service for summarization
+            var summaryText = await _openAIService.SummarizeTextAsync(prompt, cancellationToken);
+
+            stopwatch.Stop();
+
+            // Parse the structured meeting summary
+            var meetingSummary = ParseMeetingSummaryResult(summaryText, transcript, speakerMappings, stopwatch.ElapsedMilliseconds, maxTokens);
+
+            _logger.LogInformation("S3.4 meeting summary generation completed. Speakers: {SpeakerCount}, Action items: {ActionCount}, Time: {TimeMs}ms",
+                speakerMappings.Count, meetingSummary.ActionItemsByRole.Sum(g => g.ActionItems.Count), stopwatch.ElapsedMilliseconds);
+
+            return meetingSummary;
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, "Error generating S3.4 meeting summary");
+
+            // Return an error meeting summary
+            return new MeetingSummary
+            {
+                MeetingOverview = $"Error generating meeting summary: {ex.Message}",
+                Metadata = new MeetingMetadata
+                {
+                    Participants = speakerMappings.Select(m => m.Name).ToList(),
+                    SpeakerCount = speakerMappings.Count
+                },
+                Generation = new GenerationMetadata
+                {
+                    ProcessingTimeMs = stopwatch.ElapsedMilliseconds,
+                    IsEditable = false
+                }
+            };
+        }
+    }
+
     public async Task<bool> IsServiceAvailableAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -413,5 +473,209 @@ public class SummarizationService : ISummarizationService
     private static int EstimateTokenCount(string text)
     {
         return string.IsNullOrWhiteSpace(text) ? 0 : text.Length / 4;
+    }
+
+    /// <summary>
+    /// S3.4: Validates input parameters for meeting summary generation
+    /// </summary>
+    private static void ValidateMeetingSummaryInput(string transcript, List<SpeakerMapping> speakerMappings, int maxTokens)
+    {
+        if (string.IsNullOrWhiteSpace(transcript))
+        {
+            throw new ArgumentException("Transcript cannot be null or empty", nameof(transcript));
+        }
+
+        if (transcript.Length > 500000) // 500KB limit
+        {
+            throw new ArgumentException("Transcript is too long for meeting summary generation", nameof(transcript));
+        }
+
+        if (speakerMappings == null || speakerMappings.Count == 0)
+        {
+            throw new ArgumentException("Speaker mappings are required for meeting summary generation", nameof(speakerMappings));
+        }
+
+        if (maxTokens < 200 || maxTokens > 1500)
+        {
+            throw new ArgumentException("MaxTokens must be between 200 and 1500", nameof(maxTokens));
+        }
+    }
+
+    /// <summary>
+    /// S3.4: Builds a specialized prompt for meeting summary with role-aware action items
+    /// </summary>
+    private string BuildMeetingSummaryPrompt(string enhancedTranscript, List<SpeakerMapping> speakerMappings, int maxTokens)
+    {
+        var promptBuilder = new StringBuilder();
+
+        // System prompt for S3.4 meeting summary
+        promptBuilder.AppendLine("You are an expert meeting assistant that creates structured meeting summaries with role-aware action items.");
+        promptBuilder.AppendLine("Your response must be in JSON format with the following structure:");
+        promptBuilder.AppendLine("{");
+        promptBuilder.AppendLine("  \"overview\": \"Meeting narrative overview (1 page max)\",");
+        promptBuilder.AppendLine("  \"actionItemsByRole\": [");
+        promptBuilder.AppendLine("    {");
+        promptBuilder.AppendLine("      \"speakerId\": \"Speaker identifier\",");
+        promptBuilder.AppendLine("      \"speakerName\": \"Speaker name\",");
+        promptBuilder.AppendLine("      \"speakerRole\": \"Speaker role\",");
+        promptBuilder.AppendLine("      \"actionItems\": [");
+        promptBuilder.AppendLine("        {");
+        promptBuilder.AppendLine("          \"description\": \"Action item description\",");
+        promptBuilder.AppendLine("          \"isExplicitAssignment\": true/false,");
+        promptBuilder.AppendLine("          \"confidence\": 0.0-1.0,");
+        promptBuilder.AppendLine("          \"sourceText\": \"Source text snippet (optional)\"");
+        promptBuilder.AppendLine("        }");
+        promptBuilder.AppendLine("      ]");
+        promptBuilder.AppendLine("    }");
+        promptBuilder.AppendLine("  ],");
+        promptBuilder.AppendLine("  \"unassignedActionItems\": [");
+        promptBuilder.AppendLine("    {");
+        promptBuilder.AppendLine("      \"description\": \"Action item description\",");
+        promptBuilder.AppendLine("      \"confidence\": 0.0-1.0,");
+        promptBuilder.AppendLine("      \"sourceText\": \"Source text snippet (optional)\",");
+        promptBuilder.AppendLine("      \"unassignedReason\": \"Why it couldn't be assigned\"");
+        promptBuilder.AppendLine("    }");
+        promptBuilder.AppendLine("  ]");
+        promptBuilder.AppendLine("}");
+        promptBuilder.AppendLine();
+
+        // Analysis instructions
+        promptBuilder.AppendLine("Analysis Guidelines:");
+        promptBuilder.AppendLine($"1. Create a narrative overview (target: {maxTokens} tokens max)");
+        promptBuilder.AppendLine("2. Extract action items and assign them to specific speakers when possible");
+        promptBuilder.AppendLine("3. Consider both explicit assignments (\"John will do X\") and implicit commitments (\"I'll handle that\")");
+        promptBuilder.AppendLine("4. Use confidence scores: 0.9+ for explicit, 0.6-0.8 for implicit, 0.3-0.5 for inferred");
+        promptBuilder.AppendLine("5. If an action item cannot be clearly assigned, put it in unassignedActionItems");
+        promptBuilder.AppendLine();
+
+        // Speaker context
+        promptBuilder.AppendLine("Meeting participants:");
+        foreach (var mapping in speakerMappings)
+        {
+            promptBuilder.AppendLine($"- {mapping.SpeakerId} = {mapping.Name} ({mapping.Role})");
+        }
+        promptBuilder.AppendLine();
+
+        promptBuilder.AppendLine("Meeting transcript to analyze:");
+        promptBuilder.AppendLine(enhancedTranscript);
+
+        return promptBuilder.ToString();
+    }
+
+    /// <summary>
+    /// S3.4: Parses the meeting summary result from OpenAI response
+    /// </summary>
+    private MeetingSummary ParseMeetingSummaryResult(string summaryText, string originalTranscript, List<SpeakerMapping> speakerMappings, long processingTime, int maxTokens)
+    {
+        try
+        {
+            // Try to parse JSON response
+            var jsonDoc = JsonDocument.Parse(summaryText);
+            var root = jsonDoc.RootElement;
+
+            var meetingSummary = new MeetingSummary
+            {
+                TranscriptionId = string.Empty, // Will be set by controller
+                MeetingOverview = root.GetProperty("overview").GetString() ?? string.Empty,
+                Metadata = new MeetingMetadata
+                {
+                    Participants = speakerMappings.Select(m => m.Name).ToList(),
+                    SpeakerCount = speakerMappings.Count,
+                    Duration = EstimateDuration(originalTranscript)
+                },
+                Generation = new GenerationMetadata
+                {
+                    ProcessingTimeMs = processingTime,
+                    TokenCount = EstimateTokenCount(summaryText),
+                    IsEditable = true
+                }
+            };
+
+            // Parse action items by role
+            if (root.TryGetProperty("actionItemsByRole", out var actionItemsArray))
+            {
+                foreach (var roleElement in actionItemsArray.EnumerateArray())
+                {
+                    var actionItemsByRole = new ActionItemsByRole
+                    {
+                        SpeakerId = roleElement.GetProperty("speakerId").GetString() ?? string.Empty,
+                        SpeakerName = roleElement.GetProperty("speakerName").GetString() ?? string.Empty,
+                        SpeakerRole = roleElement.GetProperty("speakerRole").GetString() ?? string.Empty
+                    };
+
+                    if (roleElement.TryGetProperty("actionItems", out var itemsArray))
+                    {
+                        foreach (var itemElement in itemsArray.EnumerateArray())
+                        {
+                            var actionItem = new ActionItem
+                            {
+                                Description = itemElement.GetProperty("description").GetString() ?? string.Empty,
+                                IsExplicitAssignment = itemElement.GetProperty("isExplicitAssignment").GetBoolean(),
+                                Confidence = itemElement.GetProperty("confidence").GetDouble(),
+                                SourceText = itemElement.TryGetProperty("sourceText", out var sourceTextElement) ? sourceTextElement.GetString() : null
+                            };
+                            actionItemsByRole.ActionItems.Add(actionItem);
+                        }
+                    }
+
+                    meetingSummary.ActionItemsByRole.Add(actionItemsByRole);
+                }
+            }
+
+            // Parse unassigned action items
+            if (root.TryGetProperty("unassignedActionItems", out var unassignedArray))
+            {
+                foreach (var itemElement in unassignedArray.EnumerateArray())
+                {
+                    var unassignedItem = new UnassignedActionItem
+                    {
+                        Description = itemElement.GetProperty("description").GetString() ?? string.Empty,
+                        Confidence = itemElement.GetProperty("confidence").GetDouble(),
+                        SourceText = itemElement.TryGetProperty("sourceText", out var sourceTextElement) ? sourceTextElement.GetString() : null,
+                        UnassignedReason = itemElement.TryGetProperty("unassignedReason", out var reasonElement) ? reasonElement.GetString() : null
+                    };
+                    meetingSummary.UnassignedActionItems.Add(unassignedItem);
+                }
+            }
+
+            return meetingSummary;
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse JSON meeting summary, falling back to text parsing");
+            
+            // Fallback to text-based parsing
+            return new MeetingSummary
+            {
+                MeetingOverview = summaryText,
+                Metadata = new MeetingMetadata
+                {
+                    Participants = speakerMappings.Select(m => m.Name).ToList(),
+                    SpeakerCount = speakerMappings.Count,
+                    Duration = EstimateDuration(originalTranscript)
+                },
+                Generation = new GenerationMetadata
+                {
+                    ProcessingTimeMs = processingTime,
+                    TokenCount = EstimateTokenCount(summaryText),
+                    IsEditable = true
+                }
+            };
+        }
+    }
+
+    /// <summary>
+    /// Estimates meeting duration based on transcript length
+    /// </summary>
+    private static TimeSpan? EstimateDuration(string transcript)
+    {
+        if (string.IsNullOrWhiteSpace(transcript))
+            return null;
+
+        // Rough estimate: 150 words per minute average speaking rate
+        var wordCount = transcript.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+        var estimatedMinutes = Math.Max(1, wordCount / 150);
+        
+        return TimeSpan.FromMinutes(estimatedMinutes);
     }
 }

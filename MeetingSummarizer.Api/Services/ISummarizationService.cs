@@ -34,6 +34,20 @@ public interface ISummarizationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// S3.4: Generate a meeting summary with role-aware action items
+    /// </summary>
+    /// <param name="transcript">The transcript text to summarize</param>
+    /// <param name="speakerMappings">Speaker name and role mappings</param>
+    /// <param name="maxTokens">Maximum tokens for the narrative overview</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Meeting summary with role-grouped action items</returns>
+    Task<MeetingSummary> GenerateMeetingSummaryAsync(
+        string transcript,
+        List<SpeakerMapping> speakerMappings,
+        int maxTokens = 800,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Check if the summarization service is properly configured and available
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
