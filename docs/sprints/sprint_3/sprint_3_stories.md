@@ -22,7 +22,7 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 | S3.1 | Session-Based Speaker Override & Privacy Controls | COMPLETE ✅ | S2.7 - Manual Speaker Override Interface |
 | S3.2 | Speaker CRUD Operations Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface |
 | S3.3 | Segment-Level Speaker Override Interface | COMPLETE ✅ | S3.2 - Speaker CRUD Operations Interface |
-| S3.4 | Enhanced Export and Sharing (Session-Based) | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow |
+| S3.4 | AI Meeting Summary Generation & Email Sharing | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow |
 | S3.5 | User Privacy Communication & Data Controls | PENDING 🔄 | S3.1 - Session-Based Override System |
 | S3.6 | Performance and Security Testing Suite | PENDING 🔄 | None |
 
@@ -944,7 +944,7 @@ interface SpeakerSegmentWithOverride extends SpeakerSegment {
 
 ---
 
-### Story S3.4: Enhanced Export and Sharing (Session-Based)
+### Story S3.4: AI Meeting Summary Generation & Email Sharing
 
 As a user, I want enhanced export options for my current session's meeting data so that I can immediately download and share meeting insights without requiring persistent data storage.
 
@@ -1166,7 +1166,7 @@ None (foundational testing infrastructure)
 **Sprint 3 Technical Architecture:**
 
 ```text
-S2.7 Override Interface → S3.0 Foundation Tests → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 Enhanced Export → S3.5 Privacy Controls
+S2.7 Override Interface → S3.0 Foundation Tests → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 AI Summary & Email → S3.5 Privacy Controls
        ↓                     ↓                       ↓                              ↓                            ↓                     ↓                      ↓
    Foundation           Test Coverage         Session Storage              CRUD Interface               Segment Control        Export/Share          Privacy/UX
                                   ↓

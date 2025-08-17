@@ -14,7 +14,7 @@ The Sprint 3 documentation has been split into separate files for easier managem
 - [S3.1 Session-Based Override](./sprints/sprint_3/s3.1_session_based_override.md) - COMPLETE ✅ (Aug 16, 2025)
 - [S3.2 Speaker CRUD Interface](./sprints/sprint_3/s3.2_speaker_crud_interface.md) - COMPLETE ✅ (Aug 17, 2025)
 - [S3.3 Segment-Level Override](./sprints/sprint_3/s3.3_segment_level_override.md) - COMPLETE ✅
-- [S3.4 Enhanced Export & Sharing](./sprints/sprint_3/s3.4_enhanced_export_sharing.md) - PENDING 🔄
+- [S3.4 AI Meeting Summary & Email Sharing](./sprints/sprint_3/s3.4_enhanced_export_sharing.md) - PENDING 🔄
 - [S3.5 Privacy Communication](./sprints/sprint_3/s3.5_privacy_communication.md) - PENDING 🔄
 - [S3.6 Performance & Security Testing](./sprints/sprint_3/s3.6_performance_security_testing.md) - PENDING 🔄
 
@@ -704,7 +704,7 @@ interface SpeakerSegmentWithOverride extends SpeakerSegment {
 
 ---
 
-### Story S3.4: Enhanced Export and Sharing (Session-Based)
+### Story S3.4: AI Meeting Summary Generation & Email Sharing
 
 As a user, I want enhanced export options for my current session's meeting data so that I can immediately download and share meeting insights without requiring persistent data storage.
 
@@ -926,7 +926,7 @@ None (foundational testing infrastructure)
 **Sprint 3 Technical Architecture:**
 
 ```text
-S2.7 Override Interface → S3.0 Foundation Tests → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 Enhanced Export → S3.5 Privacy Controls
+S2.7 Override Interface → S3.0 Foundation Tests → S3.1 Session-Based Persistence → S3.2 Speaker CRUD Operations → S3.3 Segment Override → S3.4 AI Summary & Email → S3.5 Privacy Controls
        ↓                     ↓                       ↓                              ↓                            ↓                     ↓                      ↓
    Foundation           Test Coverage         Session Storage              CRUD Interface               Segment Control        Export/Share          Privacy/UX
                                   ↓
