@@ -2,6 +2,45 @@
 
 ## Recently Resolved Issues
 
+### Speaker Mapping Persistence and Segment Display Issues ✅ RESOLVED
+
+**Date Resolved**: August 17, 2025  
+**Component**: Frontend (Speaker Management)  
+
+**Problem**: Multiple critical issues in speaker mapping workflow:
+1. Speaker mappings were being lost after dialog closure due to conflicting re-initialization
+2. Transcript segment reassignment affected all segments with the same speaker instead of individual segments
+3. Inconsistent speaker name/color display when segments were reassigned
+4. `TranscriptDisplay` component was overwriting store mappings with empty data during re-initialization
+
+**Solution**: Implemented comprehensive speaker management fixes:
+
+- **Fixed mapping persistence**: Modified `SpeakerMapping.tsx` to avoid re-initialization after dialog saves, preserving speaker mappings in store
+- **Corrected segment re-initialization**: Updated `TranscriptDisplay.tsx` to use current store mappings instead of stale props when re-initializing
+- **Implemented per-segment reassignment**: Replaced global session overrides with direct segment updates via `onSpeakerChange` callback in `TranscriptSpeakerSegment.tsx`
+- **Unified speaker display logic**: Created consistent `currentSpeakerInfo` calculation that ensures both chip color and label reflect the same effective speaker
+- **Enhanced store validation**: Updated `speakerStore.ts` to allow empty names for unedited speakers while maintaining duplicate name validation
+
+**Technical Implementation**:
+
+```tsx
+// Before: Global session overrides affecting all segments
+sessionManager.storeOverride(segment.speaker, overrideAction);
+
+// After: Direct segment updates for per-segment control  
+onSpeakerChange?.(index, newSpeakerId);
+```
+
+**Files Modified**:
+
+- `frontend/src/components/SpeakerMapping.tsx` - Removed conflicting re-initialization logic
+- `frontend/src/components/SpeakerMappingDialog.tsx` - Enhanced store integration and validation
+- `frontend/src/components/TranscriptDisplay.tsx` - Fixed mapping preservation during re-initialization
+- `frontend/src/components/TranscriptSpeakerSegment.tsx` - Implemented per-segment reassignment
+- `frontend/src/stores/speakerStore.ts` - Updated validation to allow empty names
+
+**Impact**: Resolved critical speaker mapping workflow issues, enabling reliable speaker name assignment and accurate per-segment speaker reassignment functionality.
+
 ### SpeakerMappingDialog Component Architecture Optimization ✅ RESOLVED
 
 **Date Resolved**: 2025-07-29  

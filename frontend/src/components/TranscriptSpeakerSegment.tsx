@@ -154,11 +154,31 @@ export const TranscriptSpeakerSegment: React.FC<
     });
   }, [effectiveMappings, effectiveDetectedSpeakers, segment.speaker]);
 
-  // Memoize current speaker name
-  const currentSpeakerName = useMemo(() => {
-    // Always return the original speaker ID for transcript segments
-    return segment.speaker;
-  }, [segment.speaker]);
+  // Get speaker mappings from the store
+  const getAllMappings = useSpeakerStore((state) => state.getAllMappings);
+
+  // Memoize current speaker name and effective speaker ID
+  const currentSpeakerInfo = useMemo(() => {
+    // For individual segments, use the actual segment.speaker (which gets updated by parent component)
+    // Session overrides are only used for global speaker-to-speaker reassignments, not individual segments
+    const effectiveSpeakerId = segment.speaker;
+    
+    // Look up the assigned name and role from speaker mappings using the effective speaker ID
+    const mapping = getAllMappings().find((m: SpeakerMapping) => m.speakerId === effectiveSpeakerId);
+    
+    let displayName = effectiveSpeakerId; // fallback to speaker ID
+    if (mapping && mapping.name && mapping.name.trim()) {
+      displayName = mapping.name.trim();
+      if (mapping.role && mapping.role.trim()) {
+        displayName += ` (${mapping.role.trim()})`;
+      }
+    }
+    
+    return {
+      effectiveSpeakerId,
+      displayName
+    };
+  }, [segment.speaker, getAllMappings]);
 
   // Memoize time formatting function
   const formatTime = useCallback((seconds: number): string => {
@@ -175,26 +195,14 @@ export const TranscriptSpeakerSegment: React.FC<
       try {
         setAnchorEl(null);
 
-        // Create session override action
-        const overrideAction = {
-          action: 'Override' as const,
-          originalValue: segment.speaker,
-          newValue: newSpeakerId,
-          timestamp: new Date(),
-          fieldModified: 'speaker'
-        };
-
-        // Store the override in session
-        sessionManager.storeOverride(segment.speaker, overrideAction);
+        // Notify parent component to update this specific segment
+        onSpeakerChange?.(index, newSpeakerId);
 
         setFeedback({
           open: true,
           message: `Segment reassigned to ${newSpeakerId}`,
           severity: "success",
         });
-        
-        // Notify parent component of change
-        onSpeakerChange?.(index, newSpeakerId);
 
       } catch (error) {
         setFeedback({
@@ -204,7 +212,7 @@ export const TranscriptSpeakerSegment: React.FC<
         });
       }
     },
-    [segment.speaker, onSpeakerChange, index]
+    [onSpeakerChange, index]
   );
 
   // Handle menu open
@@ -227,24 +235,21 @@ export const TranscriptSpeakerSegment: React.FC<
 
   // Memoize override status calculations
   const overrideStatus = useMemo(() => {
-    // Check for overrides from both speaker mappings and session manager
+    // For individual segment reassignment, we update segment.speaker directly
+    // So we only check for speaker mapping overrides, not session overrides
     const mappingOverridden = speakerOptions.find(
       (opt) => opt.id === segment.speaker
     )?.isOverridden;
 
-    // Check for session-based overrides for this specific speaker
-    const sessionOverridden =
-      sessionOverrides[segment.speaker]?.action === "Override";
-
-    // This segment is specifically overridden (for reassignment message)
-    const isSegmentOverridden = mappingOverridden || sessionOverridden;
+    // Individual segments are not considered "overridden" - they're just updated
+    const isSegmentOverridden = mappingOverridden || false;
 
     return {
       isSegmentOverridden,
       mappingOverridden,
-      sessionOverridden,
+      sessionOverridden: false, // No longer used for individual segments
     };
-  }, [speakerOptions, segment.speaker, sessionOverrides]);
+  }, [speakerOptions, segment.speaker]);
 
   // Memoize check for any modified speakers
   const hasAnyModifiedSpeakers = useMemo(() => {
@@ -279,10 +284,10 @@ export const TranscriptSpeakerSegment: React.FC<
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
           <Chip
             icon={<Person />}
-            label={currentSpeakerName}
+            label={currentSpeakerInfo.displayName}
             size="small"
             sx={{
-              backgroundColor: getSpeakerColor(segment.speaker),
+              backgroundColor: getSpeakerColor(currentSpeakerInfo.effectiveSpeakerId),
               color: "white",
               fontWeight: "bold",
             }}

@@ -2,6 +2,115 @@
 
 This document tracks ongoing technical improvements, UI/UX enhancements, development workflow optimizations, and code quality improvements that don't fit into specific user stories but contribute to the overall system quality and developer experience.
 
+## 2025-08-17: Speaker Management Workflow Reliability & Data Consistency (COMPLETE)
+
+### Overview
+
+Implemented comprehensive fixes to speaker mapping workflow ensuring data persistence, accurate segment reassignment, and consistent visual feedback across the speaker management system.
+
+### Technical Achievements
+
+#### 1. Speaker Mapping Data Persistence
+
+**Problem Solved:** Speaker mappings were being lost after dialog closure due to conflicting component re-initialization patterns.
+
+**Implementation:**
+
+- **SpeakerMapping Component**: Removed redundant re-initialization logic in `handleMappingsSaved` callback that was overwriting freshly saved mappings
+- **TranscriptDisplay Component**: Enhanced `useEffect` dependencies and logic to preserve current store mappings during component re-initialization
+- **Store Integration**: Improved fallback logic to prioritize current Zustand store state over stale props/transcription data
+
+**Technical Innovation:**
+
+```tsx
+// Before: Conflicting re-initialization
+const existingMappings = speakerMappings || transcription.speakerMappings || [];
+initializeSpeakers(transcriptionId, allDetectedSpeakers, existingMappings);
+
+// After: Store-aware initialization  
+const currentStoreMappings = getAllMappings();
+const existingMappings = currentStoreMappings.length > 0 
+  ? currentStoreMappings 
+  : speakerMappings || transcription.speakerMappings || [];
+```
+
+**Impact:** Eliminated data loss scenarios where users would lose speaker name assignments after saving mappings.
+
+#### 2. Per-Segment Speaker Reassignment
+
+**Problem Solved:** Transcript segment reassignment was affecting all segments with the same speaker instead of individual segments.
+
+**Implementation:**
+
+- **Session Override Elimination**: Replaced global session override system with direct segment updates for individual reassignment
+- **Callback-Based Updates**: Leveraged existing `onSpeakerChange(segmentIndex, newSpeaker)` callback for precise segment targeting
+- **Visual Consistency**: Unified speaker info calculation to ensure color and label consistency after reassignment
+
+**Technical Innovation:**
+
+```tsx
+// Before: Global session overrides affecting all segments
+sessionManager.storeOverride(segment.speaker, overrideAction);
+
+// After: Direct segment updates
+onSpeakerChange?.(index, newSpeakerId);
+```
+
+**User Experience Impact:** Users can now reassign individual transcript segments without affecting other segments from the same speaker.
+
+#### 3. Speaker Display Logic Unification
+
+**Problem Solved:** Inconsistent speaker name/color display when segments were reassigned, showing mixed speaker information.
+
+**Implementation:**
+
+- **Unified Speaker Info**: Created `currentSpeakerInfo` object that calculates both effective speaker ID and display name using consistent logic
+- **Color Consistency**: Updated chip color to use the same effective speaker ID as the label
+- **Name Resolution**: Implemented proper speaker mapping lookup with name/role concatenation
+
+**Technical Innovation:**
+
+```tsx
+const currentSpeakerInfo = useMemo(() => {
+  const effectiveSpeakerId = segment.speaker; // Direct segment speaker after updates
+  const mapping = getAllMappings().find(m => m.speakerId === effectiveSpeakerId);
+  
+  let displayName = effectiveSpeakerId;
+  if (mapping?.name?.trim()) {
+    displayName = mapping.name.trim();
+    if (mapping.role?.trim()) {
+      displayName += ` (${mapping.role.trim()})`;
+    }
+  }
+  
+  return { effectiveSpeakerId, displayName };
+}, [segment.speaker, getAllMappings]);
+```
+
+**Visual Impact:** Consistent speaker representation across all UI components with matching colors and names.
+
+#### 4. Enhanced Store Validation
+
+**Problem Solved:** Store validation was too restrictive, preventing natural workflow where speakers could remain unnamed during editing.
+
+**Implementation:**
+
+- **Flexible Validation**: Updated `validateSpeakerMapping` to only validate filled names, allowing empty names for unedited speakers
+- **Duplicate Name Checking**: Maintained duplicate name validation while removing required name validation
+- **Workflow Support**: Enabled natural editing flow where users can save partially completed speaker assignments
+
+**Files Modified:**
+
+```
+frontend/src/components/SpeakerMapping.tsx
+frontend/src/components/SpeakerMappingDialog.tsx  
+frontend/src/components/TranscriptDisplay.tsx
+frontend/src/components/TranscriptSpeakerSegment.tsx
+frontend/src/stores/speakerStore.ts
+```
+
+**Development Impact:** Improved developer and user experience by eliminating unexpected data loss and providing reliable speaker management workflow.
+
 ## 2025-08-16: S3.1 Privacy Architecture & Environment Management (COMPLETE)
 
 ### Overview

@@ -184,3 +184,5 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+
+console-logs.txt

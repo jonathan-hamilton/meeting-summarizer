@@ -29,26 +29,63 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Use Zustand store for speaker management
-  const {
-    speakerMappings: storeMappings,
-    detectedSpeakers: storeDetectedSpeakers,
-    initializeSpeakers,
-  } = useSpeakerStore();
+  // Use Zustand store for speaker management - use individual selectors to avoid re-render issues
+  const storeMappings = useSpeakerStore((state) => state.speakerMappings);
+  const storeDetectedSpeakers = useSpeakerStore((state) => state.detectedSpeakers);  
+  const initializeSpeakers = useSpeakerStore((state) => state.initializeSpeakers);
 
-  // Initialize speakers in store when component mounts
+  // Memoize session overrides - use empty object as fallback to avoid infinite loops
+  const sessionOverrides = useMemo(() => {
+    try {
+      return sessionManager.getOverrides() || {};
+    } catch (error) {
+      console.warn('Error getting session overrides:', error);
+      return {};
+    }
+  }, []);
+
+  // Initialize speakers in store when component mounts or transcriptionId changes
   useEffect(() => {
     if (transcriptionId) {
-      // Initialize Zustand store with detected speakers (session-only, no API calls)
-      initializeSpeakers(transcriptionId, detectedSpeakers, []);
+      // Only initialize if the store doesn't have data for this transcription
+      const currentTranscriptionId = useSpeakerStore.getState().transcriptionId;
+      const currentMappings = useSpeakerStore.getState().speakerMappings;
+      
+      if (currentTranscriptionId !== transcriptionId || currentMappings.length === 0) {
+        console.log('🔄 Initial store initialization for transcription:', transcriptionId);
+        initializeSpeakers(transcriptionId, detectedSpeakers, []);
+      }
     }
-  }, [transcriptionId, detectedSpeakers, initializeSpeakers]);
+  }, [transcriptionId, initializeSpeakers]); // Removed detectedSpeakers dependency
 
   // Memoize callback handlers
   const handleMappingsSaved = useCallback(
     (newMappings: SpeakerMapping[]) => {
-      // The store will be updated by the dialog component
-      // Just trigger the callback for any parent components
+      console.log('🔄 handleMappingsSaved called with:', newMappings);
+      
+      // Clear any session overrides that might conflict with the new mappings
+      const sessionOverrides = sessionManager.getOverrides();
+      const mappedSpeakerIds = new Set(newMappings.filter(m => m.name && m.name.trim() !== "").map(m => m.speakerId));
+      
+      // Check if any session overrides point to speakers that now have proper mappings
+      let needsClearOverrides = false;
+      Object.keys(sessionOverrides).forEach(speakerId => {
+        const override = sessionOverrides[speakerId];
+        if (override.action === "Override" && override.newValue && mappedSpeakerIds.has(override.newValue)) {
+          needsClearOverrides = true;
+        }
+      });
+      
+      // Clear conflicting session overrides
+      if (needsClearOverrides) {
+        sessionManager.clearSpeakerOverrides();
+      }
+      
+      // The store should already be updated by the dialog component
+      // Don't re-initialize here as it can cause the mappings to be lost
+      console.log('🔄 Speaker mappings already saved to store, skipping re-initialization');
+      
+      // Notify parent component of changes
       onMappingsChanged?.(newMappings);
     },
     [onMappingsChanged]
@@ -62,91 +99,60 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     setDialogOpen(false);
   }, []);
 
-  // Memoize effective data (Replace multiple fallback calculations)
+  // Memoize effective data - simplified to avoid infinite loops
   const effectiveData = useMemo(
-    () => ({
-      mappings: storeMappings.length > 0 ? storeMappings : [],
-      speakers:
-        storeDetectedSpeakers.length > 0
-          ? storeDetectedSpeakers
-          : detectedSpeakers,
-    }),
-    [storeMappings, storeDetectedSpeakers, detectedSpeakers]
-  );
-
-  // Memoize session overrides (Replace expensive call on every render)
-  const sessionOverrides = useMemo(() => sessionManager.getOverrides(), []);
-
-  // Memoize speaker mapping checker function
-  const isSpeakerMapped = useCallback(
-    (speakerId: string): boolean => {
-      // Only check if it's a detected speaker that has been mapped with a name
-      if (!effectiveData.speakers.includes(speakerId)) {
-        return false;
-      }
-
-      // Check traditional mappings first
-      const mapping = effectiveData.mappings.find(
-        (m) => m.speakerId === speakerId
-      );
-      if (mapping && mapping.name && mapping.name.trim() !== "") {
-        return true;
-      }
-
-      // Check session-based overrides
-      const override = sessionOverrides[speakerId] as
-        | SessionOverrideAction
-        | undefined;
-      return !!(
-        override &&
-        override.action === "Override" &&
-        override.newValue
-      );
+    () => {
+      const data = {
+        mappings: storeMappings || [],
+        speakers: storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : detectedSpeakers,
+      };
+      
+      console.log('🔄 effectiveData updated:', {
+        storeMappingsCount: storeMappings?.length || 0,
+        storeDetectedSpeakersCount: storeDetectedSpeakers?.length || 0,
+        detectedSpeakersCount: detectedSpeakers?.length || 0,
+        mappings: data.mappings.map(m => ({ id: m.speakerId, name: m.name, role: m.role })),
+        speakers: data.speakers
+      });
+      
+      return data;
     },
-    [effectiveData.mappings, effectiveData.speakers, sessionOverrides]
+    [storeMappings, storeDetectedSpeakers, detectedSpeakers]
   );
 
   // Memoize computed speaker data (Replace expensive calculations)
   const computedSpeakerData = useMemo(() => {
-    // Get all speakers (detected + manually added)
+    // Include all speakers from both detected speakers and current mappings
     const allSpeakers = [
       ...effectiveData.speakers,
-      ...effectiveData.mappings.map((m) => m.speakerId),
+      ...effectiveData.mappings.map((m: any) => m.speakerId),
     ];
     const uniqueSpeakers = Array.from(new Set(allSpeakers));
-    const totalSpeakerCount = uniqueSpeakers.length;
 
-    // Count only detected speakers that have been mapped with names
-    const mappedDetectedCount = effectiveData.speakers.filter((speakerId) =>
-      isSpeakerMapped(speakerId)
-    ).length;
-
-    // Get unmapped speakers (both detected and manually added without names)
+    // Get unmapped speakers - simplified logic
     const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
-      if (effectiveData.speakers.includes(speakerId)) {
-        // For detected speakers, check if they're mapped
-        return !isSpeakerMapped(speakerId);
-      } else {
-        // For manually added speakers, check if they have a name
-        const mapping = effectiveData.mappings.find(
-          (m) => m.speakerId === speakerId
-        );
-        return !mapping || !mapping.name || mapping.name.trim() === "";
-      }
+      const mapping = effectiveData.mappings.find((m: any) => m.speakerId === speakerId);
+      return !mapping || !mapping.name || mapping.name.trim() === "";
     });
 
     return {
       allSpeakers,
       uniqueSpeakers,
-      totalSpeakerCount,
-      mappedDetectedCount,
+      totalSpeakerCount: uniqueSpeakers.length,
+      mappedDetectedCount: effectiveData.speakers.length - unmappedSpeakers.filter(id => effectiveData.speakers.includes(id)).length,
       unmappedSpeakers,
     };
-  }, [effectiveData, isSpeakerMapped]);
+  }, [effectiveData]);
 
   // Memoize rendered speaker lists (Replace inline filtering/mapping)
   const mappedTraditionalSpeakers = useMemo(() => {
-    return effectiveData.mappings.filter((mapping) => mapping.name);
+    const mapped = effectiveData.mappings.filter((mapping: any) => {
+      const hasName = mapping.name && mapping.name.trim() !== "";
+      console.log(`🔍 Checking mapping: ${mapping.speakerId} -> name: "${mapping.name}" -> hasName: ${hasName}`);
+      return hasName;
+    });
+    console.log('🔄 mappedTraditionalSpeakers:', mapped);
+    return mapped;
   }, [effectiveData.mappings]);
 
   const sessionOverrideSpeakers = useMemo(() => {
@@ -154,12 +160,20 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       .map(([speakerId, override]) => {
         // Type assertion for override
         const typedOverride = override as SessionOverrideAction;
-        // Only show overrides that aren't already covered by traditional mappings
+        
+        // Don't show session overrides if the speaker already has a proper mapping with a name
         const hasMapping = effectiveData.mappings.find(
-          (m) => m.speakerId === speakerId && m.name
+          (m) => m.speakerId === speakerId && m.name && m.name.trim() !== ""
         );
+        
+        // Also don't show overrides where the newValue (target speaker) has a proper mapping
+        const targetHasMapping = typedOverride.newValue && effectiveData.mappings.find(
+          (m) => m.speakerId === typedOverride.newValue && m.name && m.name.trim() !== ""
+        );
+        
         if (
           !hasMapping &&
+          !targetHasMapping &&
           typedOverride.action === "Override" &&
           typedOverride.newValue
         ) {
@@ -193,7 +207,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         <Chip
           key={mapping.speakerId}
           icon={<Icon />}
-          label={`${mapping.speakerId} → ${mapping.name}${
+          label={`${mapping.name}${
             mapping.role ? ` (${mapping.role})` : ""
           }`}
           variant="filled"
@@ -314,7 +328,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     return (
       <Box sx={{ mb: 2 }}>
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
-          Mapped Speakers:
+          Named Speakers:
         </Typography>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
           {mappedSpeakersChips}

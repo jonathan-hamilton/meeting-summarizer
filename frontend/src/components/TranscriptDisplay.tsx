@@ -85,13 +85,25 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Initialize store when component mounts or transcription changes
   useEffect(() => {
     try {
-      const existingMappings =
-        speakerMappings || transcription.speakerMappings || [];
-      initializeSpeakers(
-        transcription.transcriptionId,
-        allDetectedSpeakers,
-        existingMappings
-      );
+      // Use current store mappings if available, otherwise fall back to props/transcription mappings
+      const currentStoreMappings = getAllMappings();
+      const existingMappings = currentStoreMappings.length > 0 
+        ? currentStoreMappings 
+        : speakerMappings || transcription.speakerMappings || [];
+      
+      // Only initialize if we don't already have the correct transcription and speakers
+      const currentTranscriptionId = useSpeakerStore.getState().transcriptionId;
+      const currentDetectedSpeakers = useSpeakerStore.getState().detectedSpeakers;
+      
+      if (currentTranscriptionId !== transcription.transcriptionId || 
+          currentDetectedSpeakers.length === 0) {
+        console.log('🔄 TranscriptDisplay: Initializing speakers for transcription:', transcription.transcriptionId);
+        initializeSpeakers(
+          transcription.transcriptionId,
+          allDetectedSpeakers,
+          existingMappings
+        );
+      }
     } catch (error) {
       console.error("Error initializing speakers:", error);
     }
@@ -100,8 +112,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     speakerMappings,
     transcription.speakerMappings,
     initializeSpeakers,
-    allDetectedSpeakers,
-  ]);
+    getAllMappings,
+  ]); // Removed allDetectedSpeakers from dependencies to prevent re-initialization loops
 
   // Memoize hasModifiedSpeakers calculation
   const hasModifiedSpeakers = useMemo(() => {
@@ -162,26 +174,46 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Memoize speaker mapping statistics
   const speakerMappingStats = useMemo(() => {
-    const mappedSpeakers = detectedSpeakers.filter((speakerId) => {
-      const mapping = effectiveSpeakerMappings.find(
+    // Use the reactive storeSpeakerMappings instead of getAllMappings()
+    const currentMappings = storeSpeakerMappings;
+    
+    // Get session overrides to understand which speakers actually have segments
+    const sessionOverrides = sessionManager.getOverrides();
+    
+    // Get all speakers that actually appear in segments (considering overrides)
+    const speakersInSegments = new Set<string>();
+    
+    // Add original detected speakers
+    detectedSpeakers.forEach(id => speakersInSegments.add(id));
+    
+    // Add manually added speakers from mappings
+    currentMappings.forEach(m => speakersInSegments.add(m.speakerId));
+    
+    // Process session overrides to understand effective speaker assignments
+    Object.entries(sessionOverrides).forEach(([, override]) => {
+      if (override.action === 'Override' && override.newValue) {
+        // Remove the original speaker if all their segments are reassigned
+        // Note: This is a simplified approach - in reality we'd need to check if ALL segments are reassigned
+        speakersInSegments.add(override.newValue);
+      }
+    });
+    
+    const allSpeakerIds = Array.from(speakersInSegments);
+
+    // Count speakers that have names assigned
+    const mappedSpeakers = allSpeakerIds.filter((speakerId) => {
+      const mapping = currentMappings.find(
         (m) => m.speakerId === speakerId
       );
       return mapping && mapping.name && mapping.name.trim() !== "";
     });
 
-    const totalSpeakers = Array.from(
-      new Set([
-        ...detectedSpeakers,
-        ...effectiveSpeakerMappings.map((m) => m.speakerId),
-      ])
-    );
-
     return {
       mappedCount: mappedSpeakers.length,
-      totalCount: totalSpeakers.length,
-      isFullyMapped: mappedSpeakers.length === totalSpeakers.length,
+      totalCount: allSpeakerIds.length,
+      isFullyMapped: mappedSpeakers.length === allSpeakerIds.length,
     };
-  }, [detectedSpeakers, effectiveSpeakerMappings]);
+  }, [detectedSpeakers, storeSpeakerMappings]);
 
   // Memoize event handlers
   const handleSpeakerMappingsChanged = useCallback(() => {

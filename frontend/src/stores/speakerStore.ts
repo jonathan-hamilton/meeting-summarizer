@@ -134,30 +134,25 @@ export const validateSpeakerMapping = (
 ): { field: 'name' | 'role'; message: string; speakerId: string }[] => {
   const errors: { field: 'name' | 'role'; message: string; speakerId: string }[] = [];
 
-  // Check for empty name
-  if (!mapping.name || mapping.name.trim() === '') {
-    errors.push({
-      field: 'name',
-      message: 'Speaker name is required',
-      speakerId,
-    });
-  }
+  // Only validate names that have been filled in (allowing empty names for unedited speakers)
+  if (mapping.name && mapping.name.trim() !== '') {
+    // Check for duplicate names only if a name is provided
+    const duplicateName = allMappings.find(
+      (m) => 
+        m.speakerId !== speakerId && 
+        m.name && 
+        m.name.trim().toLowerCase() === mapping.name.trim().toLowerCase()
+    );
 
-  // Check for duplicate names
-  const duplicateName = allMappings.find(
-    (m) => 
-      m.speakerId !== speakerId && 
-      m.name && 
-      m.name.trim().toLowerCase() === mapping.name.trim().toLowerCase()
-  );
-
-  if (duplicateName) {
-    errors.push({
-      field: 'name',
-      message: `Name "${mapping.name}" is already used by another speaker`,
-      speakerId,
-    });
+    if (duplicateName) {
+      errors.push({
+        field: 'name',
+        message: `Name "${mapping.name}" is already used by another speaker`,
+        speakerId,
+      });
+    }
   }
+  // Note: We no longer require names to be filled - empty names are allowed
 
   return errors;
 };

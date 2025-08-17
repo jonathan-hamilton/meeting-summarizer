@@ -23,11 +23,10 @@ import {
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
+import { getSpeakerColor } from "../theme/speakerColors";
 import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
 import { useSpeakerValidation } from "../hooks/useSpeakerValidation";
-import { useSpeakerEditMode } from "../hooks/useSpeakerEditMode";
-import { useSpeakerManagement } from "../hooks/useSpeakerManagement";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -64,8 +63,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     addSpeaker: addSpeakerToStore,
     updateSpeaker: updateSpeakerInStore,
     deleteSpeaker: deleteSpeakerFromStore,
-    getAllMappings,
-    detectedSpeakers: storeDetectedSpeakers 
+    getAllMappings
   } = useSpeakerStore();
 
   // Convert Zustand store data to local format for UI compatibility
@@ -78,13 +76,13 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     }));
   }, [speakerMappings]);
 
-  // Use speaker management hook with Zustand store integration
-  const {
-    deleteConfirmation,
-    handleAddSpeaker,
-    handleRemoveSpeaker,
-    cancelRemoveSpeaker,
-  } = useSpeakerManagement();
+  // Simple state management for dialog
+  const [deleteConfirmation, setDeleteConfirmation] = useState({
+    open: false,
+    speakerIndex: -1,
+    speakerName: "",
+    speakerId: "",
+  });
 
   // Use validation hook for validation logic
   const {
@@ -95,38 +93,85 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     clearValidationErrors,
   } = useSpeakerValidation();
 
-  // Create wrapper function for validation that matches hook signature
-  const validateForEditMode = useCallback(
-    (mapping: MappingFormData, speakerId: string): boolean => {
-      return validateSingleMapping(mapping, speakerId, mappings);
-    },
-    [validateSingleMapping, mappings]
-  );
+  // Use edit mode hook for edit state management - simplified for Zustand
+  const [editingMappings, setEditingMappings] = useState<Set<string>>(new Set());
+  const [originalValues, setOriginalValues] = useState<Map<string, { name: string; role: string }>>(new Map());
 
-  // Use edit mode hook for edit state management - updated to work with Zustand
-  const {
-    editingMappings,
-    startEditMode,
-    cancelEditMode,
-    confirmEditMode,
-    clearEditState,
-    hasActiveEdits,
-  } = useSpeakerEditMode(
-    // Pass a mock setter since we'll handle updates via Zustand
-    () => {},
-    clearValidationErrors,
-    validateForEditMode
-  );
+  // Simplified edit mode functions that work with Zustand
+  const startEditMode = useCallback((speakerId: string) => {
+    const mapping = mappings.find(m => m.speakerId === speakerId);
+    if (mapping) {
+      setOriginalValues(prev => new Map(prev.set(speakerId, {
+        name: mapping.name,
+        role: mapping.role,
+      })));
+      setEditingMappings(prev => new Set(prev.add(speakerId)));
+      clearValidationErrors(speakerId);
+    }
+  }, [mappings, clearValidationErrors]);
+
+  const cancelEditMode = useCallback((speakerId: string) => {
+    const original = originalValues.get(speakerId);
+    if (original) {
+      updateSpeakerInStore(speakerId, {
+        name: original.name,
+        role: original.role,
+      });
+    }
+    setEditingMappings(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(speakerId);
+      return newSet;
+    });
+    setOriginalValues(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(speakerId);
+      return newMap;
+    });
+    clearValidationErrors(speakerId);
+  }, [originalValues, updateSpeakerInStore, clearValidationErrors]);
+
+  const confirmEditMode = useCallback((speakerId: string) => {
+    setEditingMappings(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(speakerId);
+      return newSet;
+    });
+    setOriginalValues(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(speakerId);
+      return newMap;
+    });
+  }, []);
+
+  const clearEditState = useCallback(() => {
+    setEditingMappings(new Set());
+    setOriginalValues(new Map());
+  }, []);
+
+  const hasActiveEdits = editingMappings.size > 0;
 
   // Initialize mappings when dialog opens or existing mappings change
   useEffect(() => {
+    if (!open) return;
+
     const initializeMappings = () => {
       // Get session overrides only when initializing
       const sessionOverrides = sessionManager.getOverrides();
 
+      // Get current mappings from the store (they may have been updated by previous saves)
+      const currentStoreMappings = getAllMappings();
+      
+      console.log('🔄 Dialog initialization - currentStoreMappings:', currentStoreMappings);
+      console.log('🔄 Dialog initialization - existingMappings:', existingMappings);
+      console.log('🔄 Dialog initialization - detectedSpeakers:', detectedSpeakers);
+
+      // Create mappings for detected speakers
       const initialMappings: SpeakerMapping[] = detectedSpeakers.map(
         (speakerId) => {
-          const existing = existingMappings.find(
+          // First check current store mappings, then fallback to existingMappings
+          const storeMapping = currentStoreMappings.find(m => m.speakerId === speakerId);
+          const existing = storeMapping || existingMappings.find(
             (m) => m.speakerId === speakerId
           );
 
@@ -144,41 +189,84 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             name: name,
             role: existing?.role || "",
             source: existing?.source || "AutoDetected" as SpeakerSource,
-            transcriptionId,
+            transcriptionId: existing?.transcriptionId || transcriptionId,
           };
         }
       );
 
-      // Add manually-added speakers from existing mappings
-      const manualSpeakers = existingMappings
+      // Add manually-added speakers from store mappings first, then from existing mappings
+      const storeManualSpeakers = currentStoreMappings.filter(
+        (mapping) =>
+          mapping.source === "ManuallyAdded" &&
+          !detectedSpeakers.includes(mapping.speakerId)
+      );
+      
+      const existingManualSpeakers = existingMappings
         .filter(
           (existing) =>
             existing.source === "ManuallyAdded" &&
-            !detectedSpeakers.includes(existing.speakerId)
+            !detectedSpeakers.includes(existing.speakerId) &&
+            !storeManualSpeakers.find(s => s.speakerId === existing.speakerId)
         );
 
-      const allMappings = [...initialMappings, ...manualSpeakers];
+      const allMappings = [...initialMappings, ...storeManualSpeakers, ...existingManualSpeakers];
       
-      // Initialize Zustand store with all mappings
-      if (initializeSpeakers) {
-        const currentDetectedSpeakers =
-          storeDetectedSpeakers.length > 0
-            ? storeDetectedSpeakers
-            : detectedSpeakers;
-        initializeSpeakers(
-          transcriptionId,
-          currentDetectedSpeakers,
-          allMappings
-        );
-      }
+      console.log('🔄 Dialog initialization - final allMappings:', allMappings);
+      
+      // Initialize Zustand store with all mappings - use original detectedSpeakers
+      initializeSpeakers(
+        transcriptionId,
+        detectedSpeakers,
+        allMappings
+      );
     };
 
-    if (open) {
-      initializeMappings();
-      setError(null);
-      setSuccess(false);
+    initializeMappings();
+    setError(null);
+    setSuccess(false);
+  }, [open, transcriptionId]); // Simplified dependencies to prevent infinite loops
+
+  // Simple functions for speaker management
+  const handleAddSpeaker = useCallback(() => {
+    // Calculate next speaker ID
+    const existingSpeakerNumbers = mappings.map((mapping) => {
+      const match = mapping.speakerId.match(/speaker_(\d+)/i) || mapping.speakerId.match(/Speaker (\d+)/i);
+      return match ? parseInt(match[1], 10) : 0;
+    });
+    const maxNumber = Math.max(0, ...existingSpeakerNumbers);
+    const newSpeakerId = `Speaker ${maxNumber + 1}`;
+    
+    return {
+      speakerId: newSpeakerId,
+      name: "",
+      role: "",
+      source: "ManuallyAdded" as SpeakerSource,
+    };
+  }, [mappings]);
+
+  const handleRemoveSpeaker = useCallback((index: number, speakerToRemove: MappingFormData) => {
+    if (mappings.length <= 1) {
+      setError("Cannot remove the last remaining speaker. At least one speaker is required.");
+      return false;
     }
-  }, [open, detectedSpeakers, existingMappings, transcriptionId, initializeSpeakers, storeDetectedSpeakers]);
+
+    setDeleteConfirmation({
+      open: true,
+      speakerIndex: index,
+      speakerName: speakerToRemove.name || speakerToRemove.speakerId,
+      speakerId: speakerToRemove.speakerId,
+    });
+    return true;
+  }, [mappings.length]);
+
+  const cancelRemoveSpeaker = useCallback(() => {
+    setDeleteConfirmation({
+      open: false,
+      speakerIndex: -1,
+      speakerName: "",
+      speakerId: "",
+    });
+  }, []);
 
   // Direct event handlers using Zustand store operations
   const handleAddSpeakerLocal = useCallback(() => {
@@ -196,13 +284,13 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     (index: number) => {
       const speakerToRemove = mappings[index];
       if (speakerToRemove) {
-        handleRemoveSpeaker(index, speakerToRemove, mappings.length, setError);
+        handleRemoveSpeaker(index, speakerToRemove);
       }
     },
     [mappings, handleRemoveSpeaker]
   );
 
-  const confirmRemoveSpeakerLocal = useCallback(() => {
+  const confirmRemoveSpeaker = useCallback(() => {
     // Get the speaker to remove from deleteConfirmation
     if (deleteConfirmation && deleteConfirmation.speakerId) {
       deleteSpeakerFromStore(deleteConfirmation.speakerId);
@@ -238,6 +326,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     try {
       setLoading(true);
       setError(null);
+      
+      // Clear any existing validation errors
+      clearValidationErrors();
 
       // Validate all mappings before saving
       console.log("🔍 Validating mappings...", { mappings });
@@ -246,9 +337,12 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
       if (!validationResult) {
         console.log("❌ Validation failed");
-        setError("Please fix validation errors before saving.");
+        setError("Please fix the highlighted validation errors before saving.");
+        setLoading(false);
         return;
       }
+
+      // Note: We allow empty names for unedited speakers - validation only checks for duplicates
 
       // Get current mappings from Zustand store (they're already updated in real-time)
       const currentMappings = getAllMappings();
@@ -382,20 +476,42 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     );
   }, [mappings, detectedSpeakers.length, existingMappings]);
 
+  // Check if the form is valid and ready to save
+  const canSave = useMemo(() => {
+    return hasChanges && !hasValidationErrors && !loading;
+  }, [hasChanges, hasValidationErrors, loading]);
+
   // Memoize UI components
   const speakerChips = useMemo(() => {
-    return mappings.map((mapping) => (
-      <Chip
-        key={mapping.speakerId}
-        label={mapping.speakerId}
-        size="small"
-        variant="outlined"
-        icon={
-          mapping.source === "AutoDetected" ? <MicIcon /> : <PersonAddIcon />
+    return mappings.map((mapping) => {
+      // Show name and role if available, otherwise fall back to speakerId
+      let chipLabel = mapping.speakerId;
+      if (mapping.name && mapping.name.trim()) {
+        chipLabel = mapping.name.trim();
+        if (mapping.role && mapping.role.trim()) {
+          chipLabel += ` (${mapping.role.trim()})`;
         }
-        color={mapping.source === "AutoDetected" ? "default" : "secondary"}
-      />
-    ));
+      }
+
+      return (
+        <Chip
+          key={mapping.speakerId}
+          label={chipLabel}
+          size="small"
+          variant="filled"
+          icon={
+            mapping.source === "AutoDetected" ? <MicIcon /> : <PersonAddIcon />
+          }
+          sx={{
+            backgroundColor: getSpeakerColor(mapping.speakerId),
+            color: 'white',
+            '& .MuiChip-icon': {
+              color: 'white'
+            }
+          }}
+        />
+      );
+    });
   }, [mappings]);
 
   const mappingFields = useMemo(() => {
@@ -536,18 +652,18 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={
-              loading || !hasChanges || hasValidationErrors || hasActiveEdits
-            }
+            disabled={!canSave || hasActiveEdits}
             startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
             title={
               hasValidationErrors
                 ? "Please fix validation errors before saving"
                 : hasActiveEdits
                 ? "Please save or cancel active edits before saving all changes"
+                : !hasChanges
+                ? "No changes to save"
                 : loading
-                ? "Saving..."
-                : "Save Mappings"
+                ? "Saving changes..."
+                : "Save all speaker mappings"
             }
           >
             {loading ? "Saving..." : "Save Mappings"}
@@ -559,7 +675,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       <ConfirmDeleteDialog
         open={deleteConfirmation.open}
         speakerName={deleteConfirmation.speakerName}
-        onConfirm={confirmRemoveSpeakerLocal}
+        onConfirm={confirmRemoveSpeaker}
         onCancel={cancelRemoveSpeaker}
       />
     </>
