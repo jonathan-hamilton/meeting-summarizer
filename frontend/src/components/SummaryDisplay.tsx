@@ -1,225 +1,164 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
-  Box,
   Card,
   CardContent,
   Typography,
+  Box,
   Button,
-  ButtonGroup,
+  IconButton,
+  Tooltip,
+  Stack,
   Chip,
+  Alert,
+  CircularProgress,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Alert,
-  CircularProgress,
-  Tab,
-  Tabs,
-  IconButton,
-  Tooltip,
   Snackbar,
-  Stack,
+  ButtonGroup,
   Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
   Paper,
 } from "@mui/material";
 import {
-  ExpandMore,
+  Psychology,
   ContentCopy,
   Download,
-  Refresh,
-  Psychology,
-  ChecklistRtl,
-  Gavel,
-  Business,
-  Notes,
   Print,
+  ExpandMore,
+  Person,
+  Assignment,
+  Schedule,
+  CheckCircle,
 } from "@mui/icons-material";
-import type {
-  SummaryResult,
-  SummaryStyle,
-  SpeakerMapping,
-  ExportFormat,
-  TranscriptionSummaryRequest,
-} from "../types";
-import { SummaryStyle as SummaryStyleEnum } from "../types";
-import { apiService } from "../services/apiService";
+import type { SpeakerMapping, MeetingSummary } from "../types";
+import { useSpeakerStore } from "../stores/speakerStore";
+import apiService from "../services/apiService";
 
 interface SummaryDisplayProps {
   transcriptionId: string;
+  transcriptText: string;
   speakerMappings?: SpeakerMapping[];
-  onSummaryGenerated?: (summary: SummaryResult) => void;
+  onSummaryGenerated?: (summary: MeetingSummary) => void;
 }
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
+interface SnackbarState {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "info" | "warning";
 }
-
-const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
-  <div
-    role="tabpanel"
-    hidden={value !== index}
-    id={`summary-tabpanel-${index}`}
-    aria-labelledby={`summary-tab-${index}`}
-  >
-    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
-  </div>
-);
 
 const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   transcriptionId,
+  transcriptText,
   speakerMappings,
   onSummaryGenerated,
 }) => {
-  const [summaries, setSummaries] = useState<
-    Record<SummaryStyle, SummaryResult | null>
-  >({
-    [SummaryStyleEnum.Brief]: null,
-    [SummaryStyleEnum.Detailed]: null,
-    [SummaryStyleEnum.ActionItems]: null,
-    [SummaryStyleEnum.KeyDecisions]: null,
-    [SummaryStyleEnum.ExecutiveSummary]: null,
-  });
+  // Get current speaker mappings from Zustand store
+  const { getAllMappings } = useSpeakerStore();
+  
+  // Use store mappings if available, otherwise fall back to props
+  const effectiveSpeakerMappings = useMemo(() => {
+    const storeMappings = getAllMappings();
+    return storeMappings.length > 0 ? storeMappings : (speakerMappings || []);
+  }, [getAllMappings, speakerMappings]);
 
-  const [loading, setLoading] = useState<Record<SummaryStyle, boolean>>({
-    [SummaryStyleEnum.Brief]: false,
-    [SummaryStyleEnum.Detailed]: false,
-    [SummaryStyleEnum.ActionItems]: false,
-    [SummaryStyleEnum.KeyDecisions]: false,
-    [SummaryStyleEnum.ExecutiveSummary]: false,
-  });
-
+  const [summary, setSummary] = useState<MeetingSummary | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState(0);
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [maxTokens, setMaxTokens] = useState(500);
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: "success" | "error" | "info";
-  }>({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
+    open: false,
+    message: "",
+    severity: "info",
+  });
 
-  const summaryStyles: Array<{
-    style: SummaryStyle;
-    label: string;
-    description: string;
-    icon: React.ReactNode;
-  }> = [
-    {
-      style: SummaryStyleEnum.Brief,
-      label: "Brief Summary",
-      description: "Concise overview of key points",
-      icon: <Notes />,
-    },
-    {
-      style: SummaryStyleEnum.Detailed,
-      label: "Detailed Analysis",
-      description: "Comprehensive breakdown with context",
-      icon: <Psychology />,
-    },
-    {
-      style: SummaryStyleEnum.ActionItems,
-      label: "Action Items",
-      description: "Tasks and next steps identified",
-      icon: <ChecklistRtl />,
-    },
-    {
-      style: SummaryStyleEnum.KeyDecisions,
-      label: "Key Decisions",
-      description: "Important decisions and outcomes",
-      icon: <Gavel />,
-    },
-    {
-      style: SummaryStyleEnum.ExecutiveSummary,
-      label: "Executive Summary",
-      description: "High-level overview for leadership",
-      icon: <Business />,
-    },
-  ];
-
-  // Extract available roles from speaker mappings
-  const availableRoles = speakerMappings
-    ? Array.from(
-        new Set(speakerMappings.map((mapping) => mapping.role))
-      ).filter(Boolean)
-    : [];
-
-  const handleGenerateSummary = async (style: SummaryStyle) => {
-    if (!transcriptionId) {
-      setError("No transcription ID provided");
+  const handleGenerateSummary = async () => {
+    if (!transcriptionId || !transcriptText) {
+      setError("No transcription ID or transcript text provided");
       return;
     }
 
-    setLoading((prev) => ({ ...prev, [style]: true }));
+    setLoading(true);
     setError(null);
 
     try {
-      const request: TranscriptionSummaryRequest = {
-        transcriptionId,
-        style,
-        targetRole: selectedRole || undefined,
-        maxTokens,
-      };
+      const response = await apiService.generateMeetingSummary({
+        transcript: transcriptText,
+        speakerMappings: effectiveSpeakerMappings,
+        maxTokens: 800,
+      });
 
-      const response = await apiService.generateTranscriptionSummary(
-        transcriptionId,
-        request
-      );
-
-      if (response.success && response.data) {
-        setSummaries((prev) => ({ ...prev, [style]: response.data! }));
-        onSummaryGenerated?.(response.data);
-        showSnackbar("Summary generated successfully!", "success");
-      } else {
+      if (!response.success || !response.data) {
         const errorMessage = response.message || "Failed to generate summary";
         setError(errorMessage);
-        showSnackbar(errorMessage, "error");
+        setSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: "error",
+        });
+        return;
       }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An unexpected error occurred";
+
+      setSummary(response.data);
+      setError(null);
+      onSummaryGenerated?.(response.data);
+      
+      setSnackbar({
+        open: true,
+        message: "Meeting summary generated successfully!",
+        severity: "success",
+      });
+    } catch (err: any) {
+      const errorMessage = err?.message || "Failed to generate summary";
       setError(errorMessage);
-      showSnackbar(errorMessage, "error");
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
     } finally {
-      setLoading((prev) => ({ ...prev, [style]: false }));
+      setLoading(false);
     }
   };
 
-  const handleCopyToClipboard = async (content: string, type: string) => {
+  const handleCopyToClipboard = async (text: string, type: string) => {
     try {
-      await navigator.clipboard.writeText(content);
-      showSnackbar(`${type} copied to clipboard!`, "success");
-    } catch {
-      showSnackbar("Failed to copy to clipboard", "error");
+      await navigator.clipboard.writeText(text);
+      setSnackbar({
+        open: true,
+        message: `${type} copied to clipboard!`,
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Failed to copy to clipboard",
+        severity: "error",
+      });
     }
   };
 
-  const handleExport = (summary: SummaryResult, format: ExportFormat) => {
-    let content: string;
-    let mimeType: string;
-    let fileExtension: string;
+  const handleExport = (format: "text" | "markdown" | "html") => {
+    if (!summary) return;
+
+    let content = "";
+    let filename = "";
+    let mimeType = "";
 
     switch (format) {
+      case "text":
+        content = formatAsText(summary);
+        filename = `meeting-summary-${summary.summaryId}.txt`;
+        mimeType = "text/plain";
+        break;
       case "markdown":
         content = formatAsMarkdown(summary);
+        filename = `meeting-summary-${summary.summaryId}.md`;
         mimeType = "text/markdown";
-        fileExtension = "md";
         break;
       case "html":
         content = formatAsHtml(summary);
+        filename = `meeting-summary-${summary.summaryId}.html`;
         mimeType = "text/html";
-        fileExtension = "html";
-        break;
-      case "text":
-      default:
-        content = formatAsText(summary);
-        mimeType = "text/plain";
-        fileExtension = "txt";
         break;
     }
 
@@ -227,491 +166,352 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `meeting-summary-${summary.summaryType}-${
-      new Date().toISOString().split("T")[0]
-    }.${fileExtension}`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    showSnackbar(`Summary exported as ${format.toUpperCase()}!`, "success");
+    setSnackbar({
+      open: true,
+      message: `Summary exported as ${format.toUpperCase()}`,
+      severity: "success",
+    });
   };
 
-  const formatAsText = (summary: SummaryResult): string => {
-    let content = `Meeting Summary - ${summary.summaryType}\n`;
-    content += `Generated: ${new Date(summary.generatedAt).toLocaleString()}\n`;
-    if (summary.generatedFor) {
-      content += `Target Role: ${summary.generatedFor}\n`;
-    }
-    content += `Processing Time: ${summary.processingTimeMs}ms\n`;
-    content += `Token Count: ${summary.tokenCount}\n\n`;
+  const formatAsText = (summary: MeetingSummary): string => {
+    let content = `MEETING SUMMARY\n`;
+    content += `Generated: ${new Date(summary.generation.generatedAt).toLocaleString()}\n`;
+    content += `Processing Time: ${summary.generation.processingTimeMs}ms\n`;
+    content += `Token Count: ${summary.generation.tokenCount}\n\n`;
 
-    content += `Summary:\n${summary.content}\n\n`;
+    content += `MEETING OVERVIEW\n`;
+    content += `${summary.meetingOverview}\n\n`;
 
-    if (summary.actionItems && summary.actionItems.length > 0) {
-      content += `Action Items:\n`;
-      summary.actionItems.forEach((item, index) => {
-        content += `${index + 1}. ${item}\n`;
+    if (summary.actionItemsByRole.length > 0) {
+      content += `ACTION ITEMS BY ROLE\n`;
+      summary.actionItemsByRole.forEach((roleGroup) => {
+        content += `\n${roleGroup.speakerName} (${roleGroup.speakerRole}):\n`;
+        roleGroup.actionItems.forEach((item, index) => {
+          content += `  ${index + 1}. ${item.description}\n`;
+        });
       });
-      content += "\n";
     }
 
-    if (summary.keyDecisions && summary.keyDecisions.length > 0) {
-      content += `Key Decisions:\n`;
-      summary.keyDecisions.forEach((decision, index) => {
-        content += `${index + 1}. ${decision}\n`;
-      });
-      content += "\n";
-    }
-
-    if (summary.nextSteps && summary.nextSteps.length > 0) {
-      content += `Next Steps:\n`;
-      summary.nextSteps.forEach((step, index) => {
-        content += `${index + 1}. ${step}\n`;
+    if (summary.unassignedActionItems.length > 0) {
+      content += `\nUNASSIGNED ACTION ITEMS\n`;
+      summary.unassignedActionItems.forEach((item, index) => {
+        content += `  ${index + 1}. ${item.description}\n`;
       });
     }
 
     return content;
   };
 
-  const formatAsMarkdown = (summary: SummaryResult): string => {
-    let content = `# Meeting Summary - ${summary.summaryType}\n\n`;
-    content += `**Generated:** ${new Date(
-      summary.generatedAt
-    ).toLocaleString()}  \n`;
-    if (summary.generatedFor) {
-      content += `**Target Role:** ${summary.generatedFor}  \n`;
-    }
-    content += `**Processing Time:** ${summary.processingTimeMs}ms  \n`;
-    content += `**Token Count:** ${summary.tokenCount}  \n\n`;
+  const formatAsMarkdown = (summary: MeetingSummary): string => {
+    let content = `# Meeting Summary\n\n`;
+    content += `**Generated:** ${new Date(summary.generation.generatedAt).toLocaleString()}  \n`;
+    content += `**Processing Time:** ${summary.generation.processingTimeMs}ms  \n`;
+    content += `**Token Count:** ${summary.generation.tokenCount}  \n\n`;
 
-    content += `## Summary\n\n${summary.content}\n\n`;
+    content += `## Meeting Overview\n\n${summary.meetingOverview}\n\n`;
 
-    if (summary.actionItems && summary.actionItems.length > 0) {
-      content += `## Action Items\n\n`;
-      summary.actionItems.forEach((item, index) => {
-        content += `${index + 1}. ${item}\n`;
+    if (summary.actionItemsByRole.length > 0) {
+      content += `## Action Items by Role\n\n`;
+      summary.actionItemsByRole.forEach((roleGroup) => {
+        content += `### ${roleGroup.speakerName} (${roleGroup.speakerRole})\n\n`;
+        roleGroup.actionItems.forEach((item, index) => {
+          content += `${index + 1}. ${item.description}\n`;
+        });
+        content += `\n`;
       });
-      content += "\n";
     }
 
-    if (summary.keyDecisions && summary.keyDecisions.length > 0) {
-      content += `## Key Decisions\n\n`;
-      summary.keyDecisions.forEach((decision, index) => {
-        content += `${index + 1}. ${decision}\n`;
-      });
-      content += "\n";
-    }
-
-    if (summary.nextSteps && summary.nextSteps.length > 0) {
-      content += `## Next Steps\n\n`;
-      summary.nextSteps.forEach((step, index) => {
-        content += `${index + 1}. ${step}\n`;
+    if (summary.unassignedActionItems.length > 0) {
+      content += `## Unassigned Action Items\n\n`;
+      summary.unassignedActionItems.forEach((item, index) => {
+        content += `${index + 1}. ${item.description}\n`;
       });
     }
 
     return content;
   };
 
-  const formatAsHtml = (summary: SummaryResult): string => {
+  const formatAsHtml = (summary: MeetingSummary): string => {
     let content = `<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Summary - ${summary.summaryType}</title>
+    <title>Meeting Summary</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #1976d2; }
-        h2 { color: #424242; }
-        .metadata { background: #f5f5f5; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
-        .content { line-height: 1.6; }
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1, h2, h3 { color: #333; }
+        .metadata { color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        .overview { margin-bottom: 30px; line-height: 1.6; }
+        .action-items { margin-bottom: 20px; }
         ol { padding-left: 20px; }
     </style>
 </head>
 <body>
-    <h1>Meeting Summary - ${summary.summaryType}</h1>
+    <h1>Meeting Summary</h1>
     <div class="metadata">
-        <strong>Generated:</strong> ${new Date(
-          summary.generatedAt
-        ).toLocaleString()}<br>`;
-
-    if (summary.generatedFor) {
-      content += `        <strong>Target Role:</strong> ${summary.generatedFor}<br>`;
-    }
-    content += `        <strong>Processing Time:</strong> ${
-      summary.processingTimeMs
-    }ms<br>
-        <strong>Token Count:</strong> ${summary.tokenCount}
+        <strong>Generated:</strong> ${new Date(summary.generation.generatedAt).toLocaleString()}<br>
+        <strong>Processing Time:</strong> ${summary.generation.processingTimeMs}ms<br>
+        <strong>Token Count:</strong> ${summary.generation.tokenCount}
     </div>
     
-    <h2>Summary</h2>
-    <div class="content">${summary.content.replace(/\n/g, "<br>")}</div>`;
+    <h2>Meeting Overview</h2>
+    <div class="overview">${summary.meetingOverview}</div>`;
 
-    if (summary.actionItems && summary.actionItems.length > 0) {
-      content += `    
-    <h2>Action Items</h2>
-    <ol>`;
-      summary.actionItems.forEach((item) => {
-        content += `        <li>${item}</li>`;
+    if (summary.actionItemsByRole.length > 0) {
+      content += `<h2>Action Items by Role</h2>`;
+      summary.actionItemsByRole.forEach((roleGroup) => {
+        content += `<h3>${roleGroup.speakerName} (${roleGroup.speakerRole})</h3>`;
+        content += `<ol>`;
+        roleGroup.actionItems.forEach((item) => {
+          content += `<li>${item.description}</li>`;
+        });
+        content += `</ol>`;
       });
-      content += `    </ol>`;
     }
 
-    if (summary.keyDecisions && summary.keyDecisions.length > 0) {
-      content += `    
-    <h2>Key Decisions</h2>
-    <ol>`;
-      summary.keyDecisions.forEach((decision) => {
-        content += `        <li>${decision}</li>`;
+    if (summary.unassignedActionItems.length > 0) {
+      content += `<h2>Unassigned Action Items</h2><ol>`;
+      summary.unassignedActionItems.forEach((item) => {
+        content += `<li>${item.description}</li>`;
       });
-      content += `    </ol>`;
+      content += `</ol>`;
     }
 
-    if (summary.nextSteps && summary.nextSteps.length > 0) {
-      content += `    
-    <h2>Next Steps</h2>
-    <ol>`;
-      summary.nextSteps.forEach((step) => {
-        content += `        <li>${step}</li>`;
-      });
-      content += `    </ol>`;
-    }
-
-    content += `
-</body>
-</html>`;
-
+    content += `</body></html>`;
     return content;
   };
 
-  const showSnackbar = (
-    message: string,
-    severity: "success" | "error" | "info"
-  ) => {
-    setSnackbar({ open: true, message, severity });
-  };
-
   const handleSnackbarClose = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
+    setSnackbar({ ...snackbar, open: false });
   };
 
-  const renderSummaryContent = (summary: SummaryResult) => (
-    <Card elevation={2}>
-      <CardContent>
-        {/* Summary Metadata */}
-        <Box sx={{ mb: 2 }}>
-          <Stack direction="row" spacing={1} sx={{ mb: 1, flexWrap: "wrap" }}>
-            <Chip label={summary.summaryType} color="primary" size="small" />
-            {summary.generatedFor && (
-              <Chip
-                label={`For: ${summary.generatedFor}`}
-                color="secondary"
-                size="small"
-              />
-            )}
-            <Chip
-              label={`${summary.tokenCount} tokens`}
-              variant="outlined"
-              size="small"
-            />
-            <Chip
-              label={`${summary.processingTimeMs}ms`}
-              variant="outlined"
-              size="small"
-            />
-          </Stack>
-          <Typography variant="caption" color="text.secondary">
-            Generated: {new Date(summary.generatedAt).toLocaleString()}
-          </Typography>
-        </Box>
-
-        {/* Main Content */}
-        <Typography variant="body1" sx={{ mb: 2, whiteSpace: "pre-wrap" }}>
-          {summary.content}
-        </Typography>
-
-        {/* Action Items */}
-        {summary.actionItems && summary.actionItems.length > 0 && (
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Typography variant="h6">
-                <ChecklistRtl sx={{ mr: 1, verticalAlign: "middle" }} />
-                Action Items ({summary.actionItems.length})
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box component="ol" sx={{ pl: 2 }}>
-                {summary.actionItems.map((item, index) => (
-                  <Typography
-                    component="li"
-                    key={`action-${index}-${item.substring(0, 20)}`}
-                    sx={{ mb: 1 }}
-                  >
-                    {item}
-                  </Typography>
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* Key Decisions */}
-        {summary.keyDecisions && summary.keyDecisions.length > 0 && (
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Typography variant="h6">
-                <Gavel sx={{ mr: 1, verticalAlign: "middle" }} />
-                Key Decisions ({summary.keyDecisions.length})
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box component="ol" sx={{ pl: 2 }}>
-                {summary.keyDecisions.map((decision, index) => (
-                  <Typography
-                    component="li"
-                    key={`decision-${index}-${decision.substring(0, 20)}`}
-                    sx={{ mb: 1 }}
-                  >
-                    {decision}
-                  </Typography>
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* Next Steps */}
-        {summary.nextSteps && summary.nextSteps.length > 0 && (
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMore />}>
-              <Typography variant="h6">
-                Next Steps ({summary.nextSteps.length})
-              </Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box component="ol" sx={{ pl: 2 }}>
-                {summary.nextSteps.map((step, index) => (
-                  <Typography
-                    component="li"
-                    key={`step-${index}-${step.substring(0, 20)}`}
-                    sx={{ mb: 1 }}
-                  >
-                    {step}
-                  </Typography>
-                ))}
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-        )}
-
-        {/* Action Buttons */}
-        <Divider sx={{ my: 2 }} />
-        <Stack direction="row" spacing={1} flexWrap="wrap">
-          <Tooltip title="Copy to clipboard">
-            <IconButton
-              onClick={() => handleCopyToClipboard(summary.content, "Summary")}
-              size="small"
-            >
-              <ContentCopy />
-            </IconButton>
-          </Tooltip>
-
-          <ButtonGroup size="small" variant="outlined">
-            <Button
-              startIcon={<Download />}
-              onClick={() => handleExport(summary, "text")}
-            >
-              TXT
-            </Button>
-            <Button onClick={() => handleExport(summary, "markdown")}>
-              MD
-            </Button>
-            <Button onClick={() => handleExport(summary, "html")}>HTML</Button>
-          </ButtonGroup>
-
-          <Tooltip title="Print summary">
-            <IconButton size="small" onClick={() => window.print()}>
-              <Print />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-
-  const renderSummaryTab = (style: SummaryStyle, index: number) => {
-    const summary = summaries[style];
-    const isLoading = loading[style];
-    const styleInfo = summaryStyles.find((s) => s.style === style)!;
-
-    return (
-      <TabPanel value={selectedTab} index={index}>
-        <Box sx={{ mb: 3 }}>
-          <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-            {styleInfo.icon}
-            <Box>
-              <Typography variant="h6">{styleInfo.label}</Typography>
-              <Typography variant="body2" color="text.secondary">
-                {styleInfo.description}
-              </Typography>
-            </Box>
-          </Stack>
-
-          {!summary && !isLoading && (
-            <Paper
-              sx={{ p: 3, textAlign: "center", bgcolor: "background.default" }}
-            >
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                No summary generated yet for {styleInfo.label.toLowerCase()}
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<Psychology />}
-                onClick={() => handleGenerateSummary(style)}
-                disabled={!transcriptionId}
-              >
-                Generate {styleInfo.label}
-              </Button>
-            </Paper>
-          )}
-
-          {isLoading && (
-            <Paper sx={{ p: 3, textAlign: "center" }}>
-              <CircularProgress sx={{ mb: 2 }} />
-              <Typography variant="body1">
-                Generating {styleInfo.label.toLowerCase()}...
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                This may take up to 30 seconds
-              </Typography>
-            </Paper>
-          )}
-
-          {summary && !isLoading && (
-            <Box>
-              {renderSummaryContent(summary)}
-              <Box sx={{ mt: 2, textAlign: "right" }}>
-                <Button
-                  startIcon={<Refresh />}
-                  onClick={() => handleGenerateSummary(style)}
-                  variant="outlined"
-                  size="small"
-                >
-                  Regenerate
-                </Button>
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </TabPanel>
-    );
+  const getTotalActionItems = (): number => {
+    if (!summary) return 0;
+    return summary.actionItemsByRole.reduce((total, role) => total + role.actionItems.length, 0) + 
+           summary.unassignedActionItems.length;
   };
 
   return (
-    <Box>
-      {/* Configuration Panel */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Summary Configuration
+    <Card sx={{ width: "100%" }}>
+      <CardContent>
+        <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
+          <Psychology color="primary" />
+          <Typography variant="h5" component="h3">
+            AI-Powered Meeting Summary
           </Typography>
+        </Stack>
 
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Target Role (Optional)</InputLabel>
-              <Select
-                value={selectedRole}
-                label="Target Role (Optional)"
-                onChange={(e) => setSelectedRole(e.target.value)}
-              >
-                <MenuItem value="">
-                  <em>No specific role</em>
-                </MenuItem>
-                {availableRoles.map((role) => (
-                  <MenuItem key={role} value={role}>
-                    {role}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              size="small"
-              type="number"
-              label="Max Tokens"
-              value={maxTokens}
-              onChange={(e) => setMaxTokens(Number(e.target.value))}
-              inputProps={{ min: 100, max: 2000 }}
-              sx={{ minWidth: 120 }}
-            />
-
+        {/* Generate Button */}
+        {!summary && !loading && (
+          <Box sx={{ textAlign: "center", py: 4 }}>
             <Button
-              variant="outlined"
+              variant="contained"
+              size="large"
               startIcon={<Psychology />}
-              onClick={() => {
-                // Generate all summary types
-                Object.values(SummaryStyleEnum).forEach((style) => {
-                  if (!summaries[style]) {
-                    handleGenerateSummary(style);
-                  }
-                });
-              }}
-              disabled={Object.values(loading).some(Boolean)}
+              onClick={handleGenerateSummary}
+              disabled={!transcriptionId || !transcriptText}
+              sx={{ mb: 2 }}
             >
-              Generate All
+              Generate Meeting Summary
             </Button>
-          </Stack>
+            <Typography variant="body2" color="text.secondary">
+              Creates a comprehensive summary with role-aware action items
+            </Typography>
+          </Box>
+        )}
 
-          {speakerMappings && speakerMappings.length > 0 && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Role-aware summaries will be generated using speaker mappings for{" "}
-              {speakerMappings.length} speakers.
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
+        {/* Loading State */}
+        {loading && (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <CircularProgress size={40} sx={{ mb: 2 }} />
+            <Typography variant="body1">
+              Generating meeting summary...
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              This may take a few moments
+            </Typography>
+          </Box>
+        )}
 
-      {/* Error Display */}
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
+        {/* Error State */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            <Typography variant="body2">{error}</Typography>
+          </Alert>
+        )}
 
-      {/* Summary Tabs */}
-      <Card>
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={selectedTab}
-            onChange={(_, newValue) => setSelectedTab(newValue)}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            {summaryStyles.map((style) => (
-              <Tab
-                key={style.style}
-                label={style.label}
-                icon={
-                  loading[style.style] ? (
-                    <CircularProgress size={16} />
-                  ) : summaries[style.style] ? (
-                    <Box sx={{ color: "success.main" }}>✓</Box>
-                  ) : undefined
-                }
-                iconPosition="end"
-              />
-            ))}
-          </Tabs>
-        </Box>
+        {/* Summary Content */}
+        {summary && !loading && (
+          <Box>
+            {/* Summary Header with Metadata */}
+            <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
+              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+                <CheckCircle color="success" />
+                <Typography variant="h6">Summary Generated</Typography>
+                <Box sx={{ flexGrow: 1 }} />
+                
+                {/* Action Buttons */}
+                <Tooltip title="Copy full summary">
+                  <IconButton
+                    onClick={() => handleCopyToClipboard(formatAsText(summary), "Summary")}
+                    size="small"
+                  >
+                    <ContentCopy />
+                  </IconButton>
+                </Tooltip>
 
-        {summaryStyles.map((style, index) => (
-          <div key={style.style}>
-            {renderSummaryTab(style.style, index)}
-          </div>
-        ))}
-      </Card>
+                <ButtonGroup size="small" variant="outlined">
+                  <Button
+                    startIcon={<Download />}
+                    onClick={() => handleExport("text")}
+                  >
+                    TXT
+                  </Button>
+                  <Button onClick={() => handleExport("markdown")}>
+                    MD
+                  </Button>
+                  <Button onClick={() => handleExport("html")}>HTML</Button>
+                </ButtonGroup>
+
+                <Tooltip title="Print summary">
+                  <IconButton size="small" onClick={() => window.print()}>
+                    <Print />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+
+              {/* Metadata Chips */}
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                <Chip
+                  icon={<Schedule />}
+                  label={`${summary.generation.processingTimeMs}ms`}
+                  variant="outlined"
+                  size="small"
+                />
+                <Chip
+                  label={`${summary.generation.tokenCount} tokens`}
+                  variant="outlined"
+                  size="small"
+                />
+                <Chip
+                  icon={<Assignment />}
+                  label={`${getTotalActionItems()} action items`}
+                  variant="outlined"
+                  size="small"
+                />
+                <Chip
+                  icon={<Person />}
+                  label={`${summary.actionItemsByRole.length} speakers`}
+                  variant="outlined"
+                  size="small"
+                />
+              </Stack>
+              
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                Generated: {new Date(summary.generation.generatedAt).toLocaleString()}
+              </Typography>
+            </Paper>
+
+            {/* Meeting Overview */}
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="h6" gutterBottom>
+                Meeting Overview
+              </Typography>
+              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                {summary.meetingOverview}
+              </Typography>
+            </Box>
+
+            <Divider sx={{ my: 3 }} />
+
+            {/* Action Items by Role */}
+            {summary.actionItemsByRole.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Action Items by Role
+                </Typography>
+                {summary.actionItemsByRole.map((roleGroup, index) => (
+                  <Accordion key={index} sx={{ mb: 1 }}>
+                    <AccordionSummary expandIcon={<ExpandMore />}>
+                      <Stack direction="row" alignItems="center" spacing={2}>
+                        <Person color="primary" />
+                        <Box>
+                          <Typography variant="subtitle1">
+                            {roleGroup.speakerName}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {roleGroup.speakerRole} • {roleGroup.actionItems.length} action items
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                        {roleGroup.actionItems.map((item, itemIndex) => (
+                          <Typography
+                            component="li"
+                            key={itemIndex}
+                            variant="body2"
+                            sx={{ mb: 1 }}
+                          >
+                            {item.description}
+                            {item.confidence < 0.8 && (
+                              <Chip
+                                label="Low Confidence"
+                                size="small"
+                                color="warning"
+                                variant="outlined"
+                                sx={{ ml: 1, fontSize: "0.7rem" }}
+                              />
+                            )}
+                          </Typography>
+                        ))}
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                ))}
+              </Box>
+            )}
+
+            {/* Unassigned Action Items */}
+            {summary.unassignedActionItems.length > 0 && (
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  Unassigned Action Items
+                </Typography>
+                <Paper sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}>
+                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                    {summary.unassignedActionItems.map((item, index) => (
+                      <Typography
+                        component="li"
+                        key={index}
+                        variant="body2"
+                        sx={{ mb: 1 }}
+                      >
+                        {item.description}
+                        {item.confidence < 0.8 && (
+                          <Chip
+                            label="Low Confidence"
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            sx={{ ml: 1, fontSize: "0.7rem" }}
+                          />
+                        )}
+                      </Typography>
+                    ))}
+                  </Box>
+                </Paper>
+              </Box>
+            )}
+          </Box>
+        )}
+      </CardContent>
 
       {/* Snackbar for notifications */}
       <Snackbar
@@ -724,7 +524,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </Card>
   );
 };
 

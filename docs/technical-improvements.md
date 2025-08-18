@@ -2,6 +2,53 @@
 
 This document tracks ongoing technical improvements, UI/UX enhancements, development workflow optimizations, and code quality improvements that don't fit into specific user stories but contribute to the overall system quality and developer experience.
 
+## 2025-08-17: Critical Azure Speech Services Requirements & Discovery (COMPLETE)
+
+### Overview
+
+Identified critical speaker diarization accuracy limitations in OpenAI Whisper and completed comprehensive requirements documentation for Azure Speech Services migration, establishing foundation for Sprint 4 implementation.
+
+### Technical Achievements
+
+#### 1. Speaker Diarization Accuracy Analysis
+
+**Critical Discovery:**
+- **Test Case**: 4-speaker audio file (`sample-scrum.mp3`) validation
+- **OpenAI Whisper Result**: Only 2 speakers detected with significant misattribution
+- **Impact Assessment**: Core "who said what" value proposition severely compromised
+- **Root Cause**: Whisper optimized for transcription, not dedicated speaker diarization
+
+**Strategic Decision:**
+- Immediate pivot to Azure Speech Services for superior speaker diarization
+- Maintain OpenAI as fallback service for reliability
+- Implement service abstraction for seamless provider switching
+
+#### 2. Comprehensive Azure Speech Services Requirements
+
+**Requirements Documentation Complete:**
+- **REQ-AZR-1 to REQ-AZR-10**: Azure Speech Services integration specifications
+- **REQ-ABS-1 to REQ-ABS-7**: Service abstraction layer architecture
+- **REQ-COST-1 to REQ-COST-5**: Cost management and monitoring
+- **REQ-FALL-1 to REQ-FALL-5**: Fallback strategy implementation
+
+**Technical Architecture:**
+- Factory pattern with `ITranscriptionService` interface
+- Azure westus2 region with batch transcription for free diarization
+- Cost optimization: Free tier (5 hours/month), then $0.18/hour
+- Authentication: API key for dev, Managed Identity for production
+
+#### 3. OpenAI Service Integration Completion
+
+**API Configuration Success:**
+- Properly configured OpenAI API keys via dotnet user-secrets
+- Validated real Whisper API calls vs mock service usage
+- Confirmed GPT-4o-mini summarization working correctly
+- Established baseline for Azure comparison testing
+
+### Impact
+
+This technical foundation ensures Sprint 4 addresses the fundamental accuracy issue while maintaining all completed speaker management features. The service abstraction approach enables gradual migration with minimal disruption to existing functionality.
+
 ## 2025-08-17: S3.4 AI-Powered Meeting Summary Infrastructure (COMPLETE)
 
 ### Overview

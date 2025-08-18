@@ -186,3 +186,5 @@ temp/
 *.sw?
 
 console-logs.txt
+
+sample-audio-files/

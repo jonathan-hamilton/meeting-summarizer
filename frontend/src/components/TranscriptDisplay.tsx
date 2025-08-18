@@ -20,6 +20,8 @@ import {
   CheckCircle,
   Error,
   Undo,
+  Download,
+  Delete,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
@@ -315,6 +317,33 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     }
   }, [clearSpeakers, initializeSpeakers, transcription.transcriptionId, transcription.speakerSegments, allDetectedSpeakers]);
 
+  // Handle exporting transcription as JSON
+  const handleExportTranscription = useCallback(() => {
+    const dataToExport = {
+      ...transcription,
+      exportedAt: new Date().toISOString(),
+      exportNote: "Real Whisper transcription for testing - saved from TranscriptDisplay component"
+    };
+    
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `transcription-${transcription.transcriptionId}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [transcription]);
+
+  // Handle deleting transcription (this would need to be passed up to parent)
+  const handleDeleteTranscription = useCallback(() => {
+    // For now, just show an alert - in a real app you'd pass this up to the parent
+    alert('Delete functionality would be implemented here');
+  }, []);
+
   // Memoize helper function to resolve speaker display name
   const resolveSpeakerName = useCallback(
     (speakerId: string): string => {
@@ -453,6 +482,30 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 variant="outlined"
                 size="small"
               />
+              
+              {/* Export and Delete buttons */}
+              <Tooltip title="Download transcription as JSON for reuse">
+                <IconButton
+                  size="small"
+                  onClick={handleExportTranscription}
+                  color="primary"
+                  sx={{ ml: 1 }}
+                >
+                  <Download />
+                </IconButton>
+              </Tooltip>
+              
+              <Tooltip title="Remove transcription">
+                <IconButton
+                  size="small"
+                  onClick={handleDeleteTranscription}
+                  color="error"
+                  sx={{ ml: 0.5 }}
+                >
+                  <Delete />
+                </IconButton>
+              </Tooltip>
+              
               {/* Reset button - show when there are any modifications */}
               {(hasModifiedSpeakers || hasSpeakerReassignments) && (
                 <Tooltip title="Reset all changes and revert to original transcript">
@@ -637,11 +690,9 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         {transcription.transcribedText && (
           <Box sx={{ mt: 4 }}>
             <Divider sx={{ mb: 3 }} />
-            <Typography variant="h5" component="h3" gutterBottom>
-              AI-Powered Meeting Summary
-            </Typography>
             <SummaryDisplay
               transcriptionId={transcription.transcriptionId}
+              transcriptText={transcription.transcribedText || ""}
               speakerMappings={effectiveSpeakerMappings}
             />
           </Box>

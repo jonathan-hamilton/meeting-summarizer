@@ -8,9 +8,8 @@ import type {
   TranscriptionResponse,
   SpeakerMappingRequest,
   SpeakerMappingResponse,
-  SummaryRequest,
-  SummaryResult,
-  TranscriptionSummaryRequest
+  MeetingSummaryRequest,
+  MeetingSummary
 } from '../types';
 import { sessionManager, type SessionOverrideAction } from './sessionManager';
 
@@ -296,23 +295,11 @@ class ApiService {
     });
   }
 
-  // Summary endpoints (S2.4)
-  async generateSummary(request: SummaryRequest): Promise<ApiResponse<SummaryResult>> {
-    return this.request<SummaryResult>({
+  // S3.4: Meeting Summary endpoint
+  async generateMeetingSummary(request: MeetingSummaryRequest): Promise<ApiResponse<MeetingSummary>> {
+    return this.request<MeetingSummary>({
       method: 'POST',
-      url: '/api/summary/generate',
-      data: request,
-      timeout: 60000, // 1 minute for AI generation
-    });
-  }
-
-  async generateTranscriptionSummary(
-    transcriptionId: string, 
-    request: TranscriptionSummaryRequest
-  ): Promise<ApiResponse<SummaryResult>> {
-    return this.request<SummaryResult>({
-      method: 'POST',
-      url: `/api/summary/${transcriptionId}/summarize`,
+      url: '/api/summary/meeting-summary',
       data: request,
       timeout: 60000, // 1 minute for AI generation
     });

@@ -85,9 +85,10 @@ public class OpenAIService : IOpenAIService
             var transcriptionOptions = new AudioTranscriptionOptions
             {
                 ResponseFormat = AudioTranscriptionFormat.Text,
-                Temperature = 0.1f, // Lower temperature for more consistent transcription
-                // Note: Language can be specified for better performance if known
-                // Language = "en"
+                Temperature = 0.0f, // Lowest temperature for maximum consistency
+                Language = "en", // Explicit English language for better accuracy
+                // Add prompt to help with technical terms and speaker identification
+                Prompt = "This is a software development team meeting with speakers discussing API integration, database migration, frontend development, and QA testing. Technical terms include: API, database, migration, sprint, backlog, pull requests, DevOps, connection pooling, dashboard, endpoints, regression tests."
             };
 
             using var timeoutCts = new CancellationTokenSource(_requestTimeout);
@@ -148,7 +149,9 @@ public class OpenAIService : IOpenAIService
             var transcriptionOptions = new AudioTranscriptionOptions
             {
                 ResponseFormat = AudioTranscriptionFormat.Text,
-                Temperature = 0.1f // Lower temperature for more consistent transcription
+                Temperature = 0.0f, // Lowest temperature for maximum consistency
+                Language = "en", // Explicit English language for better accuracy
+                Prompt = "This is a software development team meeting with speakers discussing API integration, database migration, frontend development, and QA testing. Technical terms include: API, database, migration, sprint, backlog, pull requests, DevOps, connection pooling, dashboard, endpoints, regression tests."
             };
 
             using var timeoutCts = new CancellationTokenSource(_requestTimeout);

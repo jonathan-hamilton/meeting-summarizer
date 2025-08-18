@@ -4,6 +4,22 @@
 
 The Sprint 3 documentation has been split into separate files for easier management and navigation. Please refer to the new structure below:
 
+## 🚨 CRITICAL UPDATE: Sprint 3 Discovery (Aug 17, 2025)
+
+**Major Issue Identified:** During Sprint 3 validation testing, OpenAI Whisper showed severe speaker diarization limitations:
+- **Test Case:** 4-speaker audio file (`sample-scrum.mp3`)
+- **Result:** Only 2 speakers detected with significant misattribution
+- **Impact:** Core "who said what" functionality compromised
+
+**Strategic Response:** Requirements updated for Azure Speech Services migration in Sprint 4
+- ✅ **Requirements Complete:** Added REQ-AZR, REQ-ABS, REQ-COST, REQ-FALL requirement sets
+- 🔄 **Next Phase:** Sprint 4 story creation for Azure integration
+- 📋 **Documentation:** Full analysis in [Sprint 3 README](./sprints/sprint_3/README.md)
+
+This discovery ensures Sprint 4 prioritizes fixing the fundamental accuracy issue.
+
+---
+
 ## New Documentation Structure
 
 **Main Sprint 3 Overview:**

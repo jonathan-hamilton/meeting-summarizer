@@ -123,52 +123,55 @@ export interface RequestConfig {
   headers?: Record<string, string>;
 }
 
-// Summary Types (S2.4)
-export const SummaryStyle = {
-  Brief: 'Brief',
-  Detailed: 'Detailed',
-  ActionItems: 'ActionItems',
-  KeyDecisions: 'KeyDecisions',
-  ExecutiveSummary: 'ExecutiveSummary'
-} as const;
-
-export type SummaryStyle = typeof SummaryStyle[keyof typeof SummaryStyle];
-
-export interface SummaryRequest {
+// S3.4: Meeting Summary Types (replacing old summary system)
+export interface MeetingSummaryRequest {
   transcript: string;
-  style: SummaryStyle;
-  targetRole?: string;
-  maxTokens?: number;
-  speakerMappings?: SpeakerMapping[];
-}
-
-export interface TranscriptionSummaryRequest {
-  transcriptionId: string;
-  style: SummaryStyle;
-  targetRole?: string;
+  speakerMappings: SpeakerMapping[];
   maxTokens?: number;
 }
 
-export interface SummaryResult {
-  summaryId: string;
-  transcriptionId: string;
-  summaryType: SummaryStyle;
-  content: string;
-  actionItems?: string[];
-  keyDecisions?: string[];
-  nextSteps?: string[];
+export interface ActionItem {
+  description: string;
+  isExplicitAssignment: boolean;
+  confidence: number;
+  sourceText?: string;
+}
+
+export interface ActionItemsByRole {
+  speakerId: string;
+  speakerName: string;
+  speakerRole: string;
+  actionItems: ActionItem[];
+}
+
+export interface UnassignedActionItem {
+  description: string;
+  confidence: number;
+  sourceText?: string;
+  reason: string;
+}
+
+export interface MeetingMetadata {
+  participants: string[];
+  duration?: string;
+  speakerCount: number;
+}
+
+export interface GenerationMetadata {
   generatedAt: string;
-  generatedFor?: string;
   processingTimeMs: number;
   tokenCount: number;
-  usedSpeakerMappings: boolean;
+  isEditable: boolean;
 }
 
-export interface SummaryOptions {
-  style: SummaryStyle;
-  targetRole?: string;
-  maxTokens: number;
-  temperature: number;
+export interface MeetingSummary {
+  summaryId: string;
+  transcriptionId: string;
+  meetingOverview: string;
+  actionItemsByRole: ActionItemsByRole[];
+  unassignedActionItems: UnassignedActionItem[];
+  metadata: MeetingMetadata;
+  generation: GenerationMetadata;
 }
 
 export type ExportFormat = 'text' | 'markdown' | 'html';

@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import { Psychology } from "@mui/icons-material";
 import SummaryDisplay from "../components/SummaryDisplay";
-import type { SpeakerMapping, SummaryResult } from "../types";
+import type { SpeakerMapping, MeetingSummary } from "../types";
 
 const SummaryDisplayDemo: React.FC = () => {
   const [selectedDemo, setSelectedDemo] = useState<string>("meeting1");
@@ -27,6 +27,7 @@ const SummaryDisplayDemo: React.FC = () => {
       transcriptionId: "demo-transcription-001",
       title: "Project Planning Meeting",
       description: "Sprint planning session with development team",
+      transcriptText: "Alice Johnson: Good morning everyone. Let's start our sprint planning meeting. We have several user stories to discuss for the upcoming sprint. Bob, can you give us an overview of the technical requirements? Bob Smith: Absolutely, Alice. We've reviewed the backlog and identified three main features that need to be implemented. The authentication system will require about 8 story points, and I'll take the lead on that. Carol Davis: From a QA perspective, we'll need to create comprehensive test cases for the authentication flow. I can work on that parallel to development. Alice Johnson: Great. Carol, please coordinate with Bob on the testing requirements. Let's also discuss the timeline for the mobile responsive design updates.",
       speakerMappings: [
         {
           speakerId: "Speaker 1",
@@ -52,6 +53,7 @@ const SummaryDisplayDemo: React.FC = () => {
       transcriptionId: "demo-transcription-002",
       title: "Executive Strategy Review",
       description: "Quarterly business review with C-suite",
+      transcriptText: "David Chen: Thank you all for joining today's quarterly review. Our revenue growth has exceeded expectations by 15% this quarter. Emily, can you walk us through the financial details? Emily Rodriguez: Certainly, David. Our operating margin improved to 23%, and we're ahead of our annual budget by $2.1 million. I recommend increasing our R&D investment for next quarter. Frank Wilson: From a technology standpoint, our new infrastructure investments are paying off. I propose we accelerate our cloud migration timeline and hire 3 additional engineers. David Chen: Excellent points. Frank, please prepare a detailed hiring plan. Emily, let's schedule a follow-up meeting to discuss the R&D budget allocation.",
       speakerMappings: [
         {
           speakerId: "Speaker 1",
@@ -77,6 +79,7 @@ const SummaryDisplayDemo: React.FC = () => {
       transcriptionId: "demo-transcription-003",
       title: "Client Requirements Gathering",
       description: "Discovery session with external stakeholders",
+      transcriptText: "Grace Kim: Welcome everyone to our requirements gathering session. We're here to understand the client's needs for the new customer portal. Henry, could you start by outlining your primary objectives? Henry Taylor: Thank you, Grace. We need a self-service portal where customers can track orders, update their profiles, and submit support tickets. The current system is outdated and causing customer frustration. Iris Miller: From a user experience perspective, I suggest we prioritize mobile-first design since 70% of your customers access services via mobile devices. Grace Kim: Excellent point, Iris. Henry, what's your timeline for this project? Henry Taylor: We're hoping to launch the beta version within 4 months. Grace, can you prepare a detailed project timeline? Iris, I'd like you to create wireframes for the mobile interface by next week.",
       speakerMappings: [
         {
           speakerId: "Speaker 1",
@@ -106,7 +109,7 @@ const SummaryDisplayDemo: React.FC = () => {
     setShowSummary(true);
   };
 
-  const handleSummaryGenerated = (summary: SummaryResult) => {
+  const handleSummaryGenerated = (summary: MeetingSummary) => {
     console.log("Summary generated:", summary);
     // In a real app, you might save this to state or send to a backend
   };
@@ -147,6 +150,7 @@ const SummaryDisplayDemo: React.FC = () => {
 
         <SummaryDisplay
           transcriptionId={currentDemo.transcriptionId}
+          transcriptText={currentDemo.transcriptText}
           speakerMappings={currentDemo.speakerMappings}
           onSummaryGenerated={handleSummaryGenerated}
         />

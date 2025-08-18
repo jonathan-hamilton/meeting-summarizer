@@ -18,6 +18,7 @@ import {
   Step,
   StepLabel,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -516,13 +517,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     )}
                   </Box>
                   <ListItemSecondaryAction>
-                    <IconButton
-                      edge="end"
-                      aria-label="delete"
-                      onClick={() => removeFile(uploadFile.id)}
-                    >
-                      <Delete />
-                    </IconButton>
+                    <Tooltip title="Remove file">
+                      <IconButton
+                        edge="end"
+                        aria-label="delete"
+                        onClick={() => removeFile(uploadFile.id)}
+                      >
+                        <Delete />
+                      </IconButton>
+                    </Tooltip>
                   </ListItemSecondaryAction>
                 </ListItem>
               ))}

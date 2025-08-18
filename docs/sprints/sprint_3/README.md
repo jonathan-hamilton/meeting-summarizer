@@ -19,11 +19,11 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 
 | Story ID | Title | Status | Dependencies | Story File |
 |----------|-------|--------|--------------|------------|
-| S3.0 | Foundation Test Coverage Updates | IN PROGRESS 🔄 | Sprint 2 completion, existing test infrastructure | [S3.0 Story](./s3.0_foundation_test_coverage.md) |
+| S3.0 | Foundation Test Coverage Updates | COMPLETE ✅ | Sprint 2 completion, existing test infrastructure | [S3.0 Story](./s3.0_foundation_test_coverage.md) |
 | S3.1 | Session-Based Speaker Override & Privacy Controls | COMPLETE ✅ | S2.7 - Manual Speaker Override Interface | [S3.1 Story](./s3.1_session_based_override.md) |
-| S3.2 | Speaker CRUD Operations Interface | PENDING 🔄 | S2.7 - Manual Speaker Override Interface | [S3.2 Story](./s3.2_speaker_crud_interface.md) |
+| S3.2 | Speaker CRUD Operations Interface | COMPLETE ✅ | S2.7 - Manual Speaker Override Interface | [S3.2 Story](./s3.2_speaker_crud_interface.md) |
 | S3.3 | Segment-Level Speaker Override Interface | COMPLETE ✅ | S3.2 - Speaker CRUD Operations Interface | [S3.3 Story](./s3.3_segment_level_override.md) |
-| S3.4 | AI Meeting Summary Generation & Email Sharing | PENDING 🔄 | S2.4 - Summary Display, Complete speaker workflow | [S3.4 Story](./s3.4_enhanced_export_sharing.md) |
+| S3.4 | AI Meeting Summary Generation & Email Sharing | IN PROGRESS 🔄 (Increment 2 COMPLETE ✅) | S2.4 - Summary Display, Complete speaker workflow | [S3.4 Story](./s3.4_enhanced_export_sharing.md) |
 | S3.5 | User Privacy Communication & Data Controls | PENDING 🔄 | S3.1 - Session-Based Override System | [S3.5 Story](./s3.5_privacy_communication.md) |
 | S3.6 | Performance and Security Testing Suite | PENDING 🔄 | None | [S3.6 Story](./s3.6_performance_security_testing.md) |
 
@@ -83,3 +83,43 @@ The enhanced export capabilities (S3.3) enable immediate value extraction from m
 The comprehensive testing suite (S3.5) addresses the existing testing recommendations while ensuring production readiness across performance, security, and privacy protection scenarios. This establishes confidence for privacy-conscious users and provides regression protection for future development.
 
 The progression from granular speaker control to enhanced export capabilities creates a natural evolution toward advanced AI features while maintaining the core value proposition of accurate, actionable meeting insights with complete user privacy protection and data minimization.
+
+## Critical Discovery: Speaker Diarization Accuracy Issue
+
+**Date:** August 17, 2025  
+**Status:** 🚨 **CRITICAL ISSUE IDENTIFIED**
+
+### Problem Discovered
+During Sprint 3 validation testing with real audio files, a critical limitation was discovered in the current OpenAI Whisper integration:
+
+- **Expected:** 4 distinct speakers in test audio (`sample-scrum.mp3`)
+- **Actual Result:** Only 2 speakers identified with significant misattribution
+- **Impact:** Core value proposition of "who said what" severely compromised
+
+### Root Cause Analysis
+- OpenAI Whisper is primarily a transcription model, not a dedicated speaker diarization system
+- Speaker separation capabilities are limited, especially with similar-sounding voices
+- ElevenLabs-generated test audio may have insufficient voice distinction for Whisper's algorithms
+
+### Strategic Decision: Migrate to Azure Speech Services
+Based on comprehensive research and requirements analysis:
+
+**Immediate Action Plan:**
+1. **Sprint 4 Scope Change:** Prioritize Azure Speech Services integration over new features
+2. **Service Abstraction:** Implement provider abstraction layer before migration
+3. **Fallback Strategy:** Maintain OpenAI as backup service for reliability
+4. **Validation Testing:** Test Azure diarization with same audio files for accuracy comparison
+
+**Technical Benefits:**
+- Built-in speaker diarization designed for conversation scenarios
+- Better multi-speaker handling (2-10+ speakers)
+- Cost optimization: Azure batch transcription includes free diarization
+- Azure ecosystem alignment for planned cloud deployment
+
+**Requirements Updated:** 
+- Added REQ-AZR-1 through REQ-AZR-10 for Azure Speech Services integration
+- Added REQ-ABS-1 through REQ-ABS-7 for service abstraction layer
+- Added REQ-COST-1 through REQ-COST-5 for cost management
+- Added REQ-FALL-1 through REQ-FALL-5 for fallback strategy
+
+This discovery ensures Sprint 4 will address the fundamental accuracy issue before continuing with advanced features.
