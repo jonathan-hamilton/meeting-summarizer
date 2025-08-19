@@ -51,6 +51,9 @@ builder.Services.AddScoped<ISessionSpeakerMappingService, SessionSpeakerMappingS
 // Register summarization service with automatic OpenAI/Mock fallback (S2.3)
 builder.Services.AddSummarizationService(builder.Configuration);
 
+// Register email service (S3.4 Increment 4)
+builder.Services.AddEmailServices(builder.Configuration);
+
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
 

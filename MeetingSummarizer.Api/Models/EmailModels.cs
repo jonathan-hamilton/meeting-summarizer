@@ -1,0 +1,108 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace MeetingSummarizer.Api.Models;
+
+/// <summary>
+/// Configuration options for SendGrid email service
+/// </summary>
+public class SendGridOptions
+{
+    public const string SectionName = "SendGrid";
+    
+    /// <summary>
+    /// SendGrid API Key
+    /// </summary>
+    [Required(ErrorMessage = "SendGrid API Key is required")]
+    public string ApiKey { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Default "From" email address
+    /// </summary>
+    [Required(ErrorMessage = "From email is required")]
+    [EmailAddress(ErrorMessage = "Invalid from email format")]
+    public string FromEmail { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Default "From" name for emails
+    /// </summary>
+    [Required(ErrorMessage = "From name is required")]
+    public string FromName { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Request model for sending emails via the email API
+/// </summary>
+public class SendEmailRequest
+{
+    /// <summary>
+    /// Email recipients (comma-separated or array)
+    /// </summary>
+    [Required(ErrorMessage = "Recipients are required")]
+    [MinLength(1, ErrorMessage = "At least one recipient is required")]
+    public List<string> Recipients { get; set; } = new();
+    
+    /// <summary>
+    /// Email subject line
+    /// </summary>
+    [Required(ErrorMessage = "Subject is required")]
+    [StringLength(200, ErrorMessage = "Subject cannot exceed 200 characters")]
+    public string Subject { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Email content (HTML format)
+    /// </summary>
+    [Required(ErrorMessage = "Content is required")]
+    [StringLength(500000, ErrorMessage = "Content cannot exceed 500,000 characters")]
+    public string Content { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Optional plain text version of the email
+    /// </summary>
+    public string? PlainTextContent { get; set; }
+    
+    /// <summary>
+    /// Meeting summary data for template generation
+    /// </summary>
+    public MeetingSummary? MeetingSummary { get; set; }
+    
+    /// <summary>
+    /// Speaker mappings for context
+    /// </summary>
+    public List<SpeakerMapping>? SpeakerMappings { get; set; }
+}
+
+/// <summary>
+/// Response model for email sending operations
+/// </summary>
+public class SendEmailResponse
+{
+    /// <summary>
+    /// Whether the email was sent successfully
+    /// </summary>
+    public bool Success { get; set; }
+    
+    /// <summary>
+    /// Message describing the result
+    /// </summary>
+    public string Message { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// SendGrid message ID (if successful)
+    /// </summary>
+    public string? MessageId { get; set; }
+    
+    /// <summary>
+    /// Number of recipients the email was sent to
+    /// </summary>
+    public int RecipientsCount { get; set; }
+    
+    /// <summary>
+    /// Timestamp when the email was sent
+    /// </summary>
+    public DateTime SentAt { get; set; }
+    
+    /// <summary>
+    /// Any error details if sending failed
+    /// </summary>
+    public string? ErrorDetails { get; set; }
+}

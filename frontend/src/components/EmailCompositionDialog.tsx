@@ -13,6 +13,7 @@ import {
   Chip,
   Alert,
   Paper,
+  CircularProgress,
 } from '@mui/material';
 import {
   Close,
@@ -21,9 +22,12 @@ import {
   Save,
   Preview,
   Person,
+  CheckCircle,
+  Error,
 } from '@mui/icons-material';
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import type { MeetingSummary, SpeakerMapping } from '../types';
+import { emailService } from '../services/emailService';
 
 interface EmailCompositionDialogProps {
   open: boolean;
@@ -62,6 +66,11 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   const [isPreview, setIsPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // S3.4 Increment 4: Real email sending state
+  const [isSending, setIsSending] = useState(false);
+  const [sendSuccess, setSendSuccess] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   // S3.4: Get participant emails for intelligent suggestions
   const participantEmails = useMemo(() => {
@@ -206,8 +215,14 @@ Best regards`;
     }
   };
 
-  // Handle send email
-  const handleSend = () => {
+  // Handle send email with real API call
+  const handleSend = async () => {
+    // Clear previous messages
+    setError(null);
+    setSendSuccess(null);
+    setSendError(null);
+    
+    // Validation
     if (recipients.length === 0) {
       setError('Please add at least one recipient');
       return;
@@ -223,21 +238,67 @@ Best regards`;
       return;
     }
 
-    const emailData: EmailData = {
-      subject: subject.trim(),
-      content: content.trim(),
-      recipients,
-      htmlContent: convertToHtml(content),
-    };
+    try {
+      setIsSending(true);
+      
+      // Generate professional HTML content
+      let htmlContent = '';
+      if (summary) {
+        try {
+          htmlContent = await emailService.createEmailContent(summary, speakerMappings);
+        } catch (templateError) {
+          console.warn('Failed to generate template, using basic content:', templateError);
+          htmlContent = convertToHtml(content);
+        }
+      } else {
+        htmlContent = convertToHtml(content);
+      }
 
-    onSend?.(emailData);
-    
-    // Clear draft after sending
-    if (summary) {
-      sessionStorage.removeItem(`email-draft-${summary.summaryId}`);
+      // Send email via API
+      const sendRequest = {
+        recipients,
+        subject: subject.trim(),
+        content: htmlContent,
+        plainTextContent: content.trim(),
+        meetingSummary: summary || undefined,
+        speakerMappings: speakerMappings.length > 0 ? speakerMappings : undefined,
+      };
+
+      const response = await emailService.sendEmail(sendRequest);
+
+      if (response.success) {
+        setSendSuccess(`Email sent successfully to ${response.recipientsCount} recipient(s)!`);
+        
+        // Clear draft after successful send
+        if (summary) {
+          sessionStorage.removeItem(`email-draft-${summary.summaryId}`);
+        }
+        
+        // Call legacy onSend callback if provided
+        const emailData: EmailData = {
+          subject: subject.trim(),
+          content: content.trim(),
+          recipients,
+          htmlContent,
+        };
+        onSend?.(emailData);
+        
+        // Close after a brief delay to show success message
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      } else {
+        setSendError(response.message || 'Failed to send email');
+        if (response.errorDetails) {
+          console.error('Email send error details:', response.errorDetails);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error sending email:', error);
+      setSendError(`Failed to send email: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsSending(false);
     }
-    
-    onClose();
   };
 
   // Convert plain text to HTML for email
@@ -284,13 +345,35 @@ Best regards`;
 
       <DialogContent dividers>
         <Stack spacing={3}>
-          {/* Error Alert */}
+          {/* General Error Alert */}
           {error && (
             <Alert 
               severity="error" 
               onClose={() => setError(null)}
             >
               {error}
+            </Alert>
+          )}
+
+          {/* Email Send Success Alert */}
+          {sendSuccess && (
+            <Alert 
+              severity="success" 
+              icon={<CheckCircle />}
+              onClose={() => setSendSuccess(null)}
+            >
+              {sendSuccess}
+            </Alert>
+          )}
+
+          {/* Email Send Error Alert */}
+          {sendError && (
+            <Alert 
+              severity="error" 
+              icon={<Error />}
+              onClose={() => setSendError(null)}
+            >
+              {sendError}
             </Alert>
           )}
 
@@ -447,10 +530,10 @@ Best regards`;
         <Button 
           variant="contained" 
           onClick={handleSend}
-          startIcon={<Send />}
-          disabled={recipients.length === 0 || !subject.trim() || !content.trim()}
+          startIcon={isSending ? <CircularProgress size={16} /> : <Send />}
+          disabled={recipients.length === 0 || !subject.trim() || !content.trim() || isSending}
         >
-          Send Email
+          {isSending ? 'Sending...' : 'Send Email'}
         </Button>
       </DialogActions>
     </Dialog>
