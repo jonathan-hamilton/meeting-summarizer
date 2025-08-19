@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -29,10 +29,12 @@ import {
   Assignment,
   Schedule,
   CheckCircle,
+  Email,
 } from "@mui/icons-material";
 import type { SpeakerMapping, MeetingSummary } from "../types";
 import { useSpeakerStore } from "../stores/speakerStore";
 import { useSummaryStore } from "../stores/summaryStore";
+import EmailCompositionDialog from "./EmailCompositionDialog";
 
 interface SummaryDisplayProps {
   transcriptionId: string;
@@ -48,6 +50,7 @@ interface SnackbarState {
 }
 
 const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
+  transcriptionId,
   transcriptText,
   speakerMappings,
   onSummaryGenerated,
@@ -61,8 +64,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     isGenerating, 
     error, 
     generateSummary, 
-    clearError 
+    clearError,
+    clearSummary 
   } = useSummaryStore();
+  
+  // Clear summary when transcriptionId changes (new file uploaded)
+  useEffect(() => {
+    clearSummary();
+  }, [transcriptionId, clearSummary]);
   
   // Use store mappings if available, otherwise fall back to props
   const effectiveSpeakerMappings = useMemo(() => {
@@ -75,6 +84,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     message: "",
     severity: "info",
   });
+
+  // Email dialog state
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   const handleGenerateSummary = async () => {
     if (!transcriptText) {
@@ -106,6 +118,19 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         severity: "error",
       });
     }
+  };
+
+  // Handle email sending
+  const handleSendEmail = (emailData: any) => {
+    // For now, just simulate sending and show success message
+    // In a real implementation, this would call an email service
+    console.log('Sending email:', emailData);
+    
+    setSnackbar({
+      open: true,
+      message: `Email sent successfully to ${emailData.recipients.length} recipient(s)!`,
+      severity: "success",
+    });
   };
   
   const handleCopyToClipboard = async (text: string, type: string) => {
@@ -348,6 +373,18 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                 <Box sx={{ flexGrow: 1 }} />
                 
                 {/* Action Buttons */}
+                <Tooltip title="Share via email">
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<Email />}
+                    onClick={() => setEmailDialogOpen(true)}
+                    sx={{ mr: 1 }}
+                  >
+                    Share
+                  </Button>
+                </Tooltip>
+
                 <Tooltip title="Copy full summary">
                   <IconButton
                     onClick={() => handleCopyToClipboard(formatAsText(summary), "Summary")}
@@ -516,6 +553,15 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Email Composition Dialog */}
+      <EmailCompositionDialog
+        open={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        summary={summary}
+        speakerMappings={effectiveSpeakerMappings}
+        onSend={handleSendEmail}
+      />
     </Card>
   );
 };
