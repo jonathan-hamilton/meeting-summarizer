@@ -32,7 +32,7 @@ import {
 } from "@mui/icons-material";
 import type { SpeakerMapping, MeetingSummary } from "../types";
 import { useSpeakerStore } from "../stores/speakerStore";
-import apiService from "../services/apiService";
+import { useSummaryStore } from "../stores/summaryStore";
 
 interface SummaryDisplayProps {
   transcriptionId: string;
@@ -48,7 +48,6 @@ interface SnackbarState {
 }
 
 const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
-  transcriptionId,
   transcriptText,
   speakerMappings,
   onSummaryGenerated,
@@ -56,15 +55,21 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   // Get current speaker mappings from Zustand store
   const { getAllMappings } = useSpeakerStore();
   
+  // Use summary store for state management
+  const { 
+    summary, 
+    isGenerating, 
+    error, 
+    generateSummary, 
+    clearError 
+  } = useSummaryStore();
+  
   // Use store mappings if available, otherwise fall back to props
   const effectiveSpeakerMappings = useMemo(() => {
     const storeMappings = getAllMappings();
     return storeMappings.length > 0 ? storeMappings : (speakerMappings || []);
   }, [getAllMappings, speakerMappings]);
 
-  const [summary, setSummary] = useState<MeetingSummary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
@@ -72,54 +77,37 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   });
 
   const handleGenerateSummary = async () => {
-    if (!transcriptionId || !transcriptText) {
-      setError("No transcription ID or transcript text provided");
+    if (!transcriptText) {
+      setSnackbar({
+        open: true,
+        message: "No transcript text available for summary generation",
+        severity: "error",
+      });
       return;
     }
 
-    setLoading(true);
-    setError(null);
-
     try {
-      const response = await apiService.generateMeetingSummary({
-        transcript: transcriptText,
-        speakerMappings: effectiveSpeakerMappings,
-        maxTokens: 800,
-      });
-
-      if (!response.success || !response.data) {
-        const errorMessage = response.message || "Failed to generate summary";
-        setError(errorMessage);
-        setSnackbar({
-          open: true,
-          message: errorMessage,
-          severity: "error",
-        });
-        return;
+      await generateSummary(transcriptText, effectiveSpeakerMappings);
+      
+      // Call the callback if provided
+      if (onSummaryGenerated && summary) {
+        onSummaryGenerated(summary);
       }
-
-      setSummary(response.data);
-      setError(null);
-      onSummaryGenerated?.(response.data);
       
       setSnackbar({
         open: true,
         message: "Meeting summary generated successfully!",
         severity: "success",
       });
-    } catch (err: any) {
-      const errorMessage = err?.message || "Failed to generate summary";
-      setError(errorMessage);
+    } catch (err) {
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message: "Failed to generate meeting summary",
         severity: "error",
       });
-    } finally {
-      setLoading(false);
     }
   };
-
+  
   const handleCopyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -307,14 +295,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         </Stack>
 
         {/* Generate Button */}
-        {!summary && !loading && (
+        {!summary && !isGenerating && (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Button
               variant="contained"
               size="large"
               startIcon={<Psychology />}
               onClick={handleGenerateSummary}
-              disabled={!transcriptionId || !transcriptText}
+              disabled={!transcriptText}
               sx={{ mb: 2 }}
             >
               Generate Meeting Summary
@@ -326,7 +314,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         )}
 
         {/* Loading State */}
-        {loading && (
+        {isGenerating && (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <CircularProgress size={40} sx={{ mb: 2 }} />
             <Typography variant="body1">
@@ -340,13 +328,17 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
         {/* Error State */}
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert 
+            severity="error" 
+            sx={{ mb: 3 }}
+            onClose={() => clearError()}
+          >
             <Typography variant="body2">{error}</Typography>
           </Alert>
         )}
 
         {/* Summary Content */}
-        {summary && !loading && (
+        {summary && !isGenerating && (
           <Box>
             {/* Summary Header with Metadata */}
             <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
