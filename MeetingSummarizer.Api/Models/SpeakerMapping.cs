@@ -45,6 +45,13 @@ public class SpeakerMapping
     public string Role { get; set; } = string.Empty;
 
     /// <summary>
+    /// Optional email address for the speaker (S3.4)
+    /// </summary>
+    [EmailAddress(ErrorMessage = "Invalid email format")]
+    [StringLength(100, ErrorMessage = "Email cannot exceed 100 characters")]
+    public string? Email { get; set; }
+
+    /// <summary>
     /// Associated transcription ID for context
     /// </summary>
     [Required(ErrorMessage = "Transcription ID is required")]

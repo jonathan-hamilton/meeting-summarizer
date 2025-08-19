@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -62,6 +62,24 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   const [isPreview, setIsPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // S3.4: Get participant emails for intelligent suggestions
+  const participantEmails = useMemo(() => {
+    return speakerMappings
+      .filter(mapping => mapping.email && mapping.email.trim() !== '')
+      .map(mapping => ({
+        email: mapping.email!,
+        name: mapping.name,
+        role: mapping.role
+      }));
+  }, [speakerMappings]);
+
+  // S3.4: Suggest recipients based on speaker mappings
+  const suggestedRecipients = useMemo(() => {
+    return participantEmails.filter((participant: { email: string; name: string; role: string }) => 
+      !recipients.includes(participant.email)
+    );
+  }, [participantEmails, recipients]);
 
   // Initialize content when summary changes
   useEffect(() => {
@@ -174,6 +192,20 @@ Best regards`;
     setRecipients(recipients.filter(r => r !== email));
   };
 
+  // S3.4: Add all participants as recipients
+  const handleAddAllParticipants = () => {
+    const allEmails = participantEmails.map(p => p.email);
+    const newRecipients = [...new Set([...recipients, ...allEmails])]; // Remove duplicates
+    setRecipients(newRecipients);
+  };
+
+  // S3.4: Add suggested recipient
+  const handleAddSuggestedRecipient = (email: string) => {
+    if (!recipients.includes(email)) {
+      setRecipients([...recipients, email]);
+    }
+  };
+
   // Handle send email
   const handleSend = () => {
     if (recipients.length === 0) {
@@ -267,10 +299,26 @@ Best regards`;
             <Typography variant="subtitle2" gutterBottom>
               Recipients
             </Typography>
+            {/* Display current recipients if any */}
+            {recipients.length > 0 && (
+              <TextField
+                size="small"
+                label="Current Recipients"
+                value={recipients.join(', ')}
+                variant="outlined"
+                multiline
+                maxRows={3}
+                InputProps={{
+                  readOnly: true,
+                }}
+                sx={{ mb: 1, width: '100%' }}
+              />
+            )}
+            
             <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
               <TextField
                 size="small"
-                placeholder="Enter email address"
+                placeholder="Enter email address to add"
                 value={recipientInput}
                 onChange={(e) => setRecipientInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleAddRecipient()}
@@ -284,6 +332,45 @@ Best regards`;
                 Add
               </Button>
             </Stack>
+
+            {/* S3.4: Quick Actions for Participants */}
+            {participantEmails.length > 0 && (
+              <Box sx={{ mb: 2 }}>
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  <Button 
+                    size="small"
+                    variant="outlined"
+                    onClick={handleAddAllParticipants}
+                    disabled={participantEmails.length === recipients.length}
+                  >
+                    Add All Participants ({participantEmails.length})
+                  </Button>
+                </Stack>
+                
+                {/* Suggested Recipients */}
+                {suggestedRecipients.length > 0 && (
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                      Meeting Participants:
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {suggestedRecipients.map((participant) => (
+                        <Chip
+                          key={participant.email}
+                          label={`${participant.name} <${participant.email}>`}
+                          onClick={() => handleAddSuggestedRecipient(participant.email)}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          sx={{ cursor: 'pointer' }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+              </Box>
+            )}
+
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
               {recipients.map((email) => (
                 <Chip

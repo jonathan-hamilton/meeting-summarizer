@@ -9,6 +9,7 @@ interface MappingFormData {
   speakerId: string;
   name: string;
   role: string;
+  email?: string; // S3.4: Optional email field
 }
 
 export const useSpeakerValidation = () => {

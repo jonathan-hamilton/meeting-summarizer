@@ -32,10 +32,19 @@ export const useSummaryStore = create<SummaryState>()(
         set({ isGenerating: true, error: null });
         
         try {
+          // Clean up speaker mappings to ensure valid data
+          const cleanedMappings = speakerMappings.map(mapping => ({
+            ...mapping,
+            source: mapping.source || 'AutoDetected', // Ensure source is set
+            email: mapping.email || undefined // Clean empty emails
+          }));
+
           const request: MeetingSummaryRequest = {
-            transcript: transcriptText,
-            speakerMappings: speakerMappings || []
+            Transcript: transcriptText, // S3.4: PascalCase for backend
+            SpeakerMappings: cleanedMappings // S3.4: PascalCase for backend
           };
+
+          console.log('🔄 Sending meeting summary request:', request); // Debug log
 
           const response = await apiService.generateMeetingSummary(request);
           

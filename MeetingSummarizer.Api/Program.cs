@@ -6,7 +6,12 @@ using MeetingSummarizer.Api.Configuration;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // S3.4: Configure enum serialization as strings to match frontend
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // Configure OpenAPI/Swagger
 builder.Services.AddEndpointsApiExplorer();

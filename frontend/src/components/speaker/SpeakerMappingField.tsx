@@ -20,6 +20,7 @@ interface SpeakerMappingFieldProps {
     name: string;
     role: string;
     source: SpeakerSource;
+    email?: string; // S3.4: Optional email field
   };
   index: number;
   isEditing: boolean;
@@ -29,7 +30,7 @@ interface SpeakerMappingFieldProps {
   existingMapping?: SpeakerMapping;
   onMappingChange: (
     index: number,
-    field: "name" | "role",
+    field: "name" | "role" | "email", // S3.4: Add email to field types
     value: string
   ) => void;
   onStartEdit: (speakerId: string) => void;
@@ -54,6 +55,7 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
 }) => {
   const nameError = validationErrors?.find((err) => err.field === "name");
   const roleError = validationErrors?.find((err) => err.field === "role");
+  const emailError = validationErrors?.find((err) => err.field === "email"); // S3.4: Email validation
   const hasValidationErrors = validationErrors?.length > 0;
 
   return (
@@ -199,6 +201,24 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
               : "Click edit button to modify")
           }
           variant={isEditing ? "outlined" : "filled"}
+        />
+
+        <TextField
+          label="Email (Optional)"
+          placeholder="e.g., john.smith@company.com"
+          value={mapping.email || ""}
+          onChange={(e) => onMappingChange(index, "email", e.target.value)}
+          sx={{ flex: "1 1 250px", minWidth: "200px" }}
+          disabled={isLoading || !isEditing}
+          error={!!emailError}
+          helperText={
+            emailError?.message ||
+            (isEditing
+              ? "For easy email sharing - Click save to confirm"
+              : "Click edit button to modify")
+          }
+          variant={isEditing ? "outlined" : "filled"}
+          type="email"
         />
       </Box>
     </Box>

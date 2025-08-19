@@ -188,6 +188,12 @@
 - REQ-EMAIL-10: System shall maintain session-based email composition (no persistent email storage)
 - REQ-EMAIL-11: Email content shall include speaker roles and mappings for recipient context
 - REQ-EMAIL-12: System shall integrate with SMTP services for reliable email delivery
+- REQ-EMAIL-13: System shall support multiple email service providers (SendGrid, Gmail SMTP, Office 365, Mailgun)
+- REQ-EMAIL-14: System shall provide configurable email service settings in application configuration
+- REQ-EMAIL-15: System shall handle email delivery failures gracefully with user feedback
+- REQ-EMAIL-16: System shall support real email sending for testing and production environments
+- REQ-EMAIL-17: System shall validate email addresses before attempting to send
+- REQ-EMAIL-18: System shall provide delivery confirmation to users upon successful email send
 
 ### AI-Powered Meeting Summary Generation
 

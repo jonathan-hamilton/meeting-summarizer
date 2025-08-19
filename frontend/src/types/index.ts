@@ -76,6 +76,8 @@ export interface SpeakerMapping {
   originalRole?: string; // Original role before override
   isOverridden?: boolean; // Whether this mapping has been manually overridden
   overriddenAt?: string; // ISO timestamp when override occurred
+  // S3.4: Email field for enhanced sharing
+  email?: string; // Optional email for meeting participants
 }
 
 export interface SpeakerMappingRequest {
@@ -92,7 +94,7 @@ export interface SpeakerMappingResponse {
 
 // S2.7: Validation and override types
 export interface ValidationError {
-  field: 'name' | 'role';
+  field: 'name' | 'role' | 'email'; // S3.4: Add email field validation
   message: string;
   speakerId: string;
 }
@@ -125,9 +127,9 @@ export interface RequestConfig {
 
 // S3.4: Meeting Summary Types (replacing old summary system)
 export interface MeetingSummaryRequest {
-  transcript: string;
-  speakerMappings: SpeakerMapping[];
-  maxTokens?: number;
+  Transcript: string; // S3.4: Match backend PascalCase
+  SpeakerMappings: SpeakerMapping[]; // S3.4: Match backend PascalCase
+  MaxTokens?: number; // S3.4: Match backend PascalCase
 }
 
 export interface ActionItem {

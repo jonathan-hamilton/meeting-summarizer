@@ -42,6 +42,7 @@ interface MappingFormData {
   name: string;
   role: string;
   source: SpeakerSource;
+  email?: string; // S3.4: Optional email field
 }
 
 export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
@@ -75,7 +76,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       speakerId: mapping.speakerId,
       name: mapping.name,
       role: mapping.role,
-      source: mapping.source || 'AutoDetected' as SpeakerSource
+      source: mapping.source || 'AutoDetected' as SpeakerSource,
+      email: mapping.email // S3.4: Include email field
     }));
   }, [speakerMappings]);
 
@@ -189,10 +191,11 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
           return {
             speakerId,
-            name: name,
-            role: existing?.role || "",
+            name: name || speakerId, // S3.4: Default to speakerId if no name mapped
+            role: existing?.role || "Role", // S3.4: Default to "Role" to match transcript consistency
             source: existing?.source || "AutoDetected" as SpeakerSource,
             transcriptionId: existing?.transcriptionId || transcriptionId,
+            email: existing?.email, // S3.4: Include email field from existing mappings
           };
         }
       );
@@ -306,7 +309,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   }, [deleteConfirmation, deleteSpeakerFromStore, cancelRemoveSpeaker]);
 
   const handleMappingChange = useCallback(
-    (index: number, field: "name" | "role", value: string) => {
+    (index: number, field: "name" | "role" | "email", value: string) => { // S3.4: Add email field
       const mapping = mappings[index];
       if (!mapping) return;
 
