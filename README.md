@@ -2,40 +2,53 @@
 
 A modern web application for transcribing and summarizing meeting audio using OpenAI's Whisper API and GPT models.
 
-## ✅ Current Status - Sprint 1 COMPLETE
+## ✅ Current Status - Sprint 3 IN PROGRESS
 
 ### 🚀 **Production Ready Features**
 
-- **Audio Transcription**: Real-time transcription using OpenAI Whisper API
-- **Speaker Diarization**: Automatic speaker identification and segmentation
-- **File Upload**: Drag & drop interface with progress tracking
-- **Real-time Display**: Live transcript display with speaker labels
-- **Production Configuration**: Secure API key management and error handling
+- **Audio Transcription**: Real-time transcription using OpenAI Whisper API with up to 1GB file support
+- **Speaker Diarization**: Automatic speaker identification and segmentation  
+- **Speaker Management**: Complete CRUD operations for speaker role assignment and editing
+- **Session-Based Privacy**: Automatic data cleanup with 2-hour session timeout
+- **AI-Powered Summaries**: GPT-4 meeting summarization with action item extraction
+- **Email Sharing**: Professional email delivery with SendGrid integration
+- **Advanced File Upload**: Drag & drop interface with progress tracking (supports up to 1GB files)
+- **Real-time Display**: Live transcript display with speaker labels and segment editing
+- **Privacy Controls**: Session status indicators with data size tracking and export options
 
-### 📊 **Sprint 1 Achievements**
+### 📊 **Recent Achievements**
 
-- ✅ **S1.1**: Audio Transcription Backend Service (OpenAI + Mock fallback)
-- ✅ **S1.2**: Frontend Transcript Display Component
-- ✅ **S1.3**: Integrate File Upload with Transcription Workflow
-- ✅ **S1.4**: OpenAI API Integration and Production Configuration
+- ✅ **Sprint 1**: Complete audio transcription pipeline with OpenAI integration
+- ✅ **Sprint 2**: Speaker role management and AI-powered meeting summarization  
+- ✅ **S3.1**: Session-based speaker override system with automatic cleanup
+- ✅ **S3.2**: Complete speaker CRUD interface with real-time validation
+- ✅ **S3.3**: Segment-level speaker reassignment with confidence tracking
+- ✅ **S3.4**: AI meeting summary generation with professional email sharing
+- ✅ **S3.5**: Privacy communication and data controls with session management
 
 ## 🏗️ Architecture
 
 ### Backend (.NET 9 Web API)
 
-- **OpenAI Integration**: Production-ready Whisper API integration
+- **OpenAI Integration**: Production-ready Whisper API and GPT-4 integration
+- **Email Service**: SendGrid integration for professional meeting summary delivery
+- **Session Management**: Automatic 2-hour session timeout with data cleanup
 - **Mock Fallback Service**: Automatic fallback for development/testing
 - **Enhanced Error Handling**: Retry logic with exponential backoff
+- **File Support**: Up to 1GB audio file processing with robust validation
 - **Secure Configuration**: User secrets and environment variable support
 - **Comprehensive Logging**: Detailed operation tracking and monitoring
 
 ### Frontend (React + TypeScript + Vite)
 
-- **Material-UI Components**: Professional UI with responsive design
-- **File Upload**: Advanced drag & drop with progress indicators
-- **Transcript Display**: Color-coded speakers with copy functionality
+- **Material-UI Components**: Professional UI with responsive design and dark/light themes
+- **Advanced File Upload**: Drag & drop with progress indicators (1GB file support)
+- **Speaker Management**: Complete CRUD interface for speaker role assignment
+- **Session Privacy Controls**: Real-time session status with data size tracking
+- **Transcript Display**: Color-coded speakers with copy functionality and segment editing
+- **AI Summary Interface**: Meeting summary generation with action item extraction
+- **Email Composition**: Professional email sharing with customizable recipients
 - **Demo Interface**: Comprehensive testing and validation tools
-- **Theme Support**: Dark/light mode with system preference detection
 
 ## 🚀 Quick Start
 
@@ -44,6 +57,7 @@ A modern web application for transcribing and summarizing meeting audio using Op
 - .NET 9 SDK
 - Node.js 18+ with npm
 - OpenAI API key (optional - falls back to mock service)
+- SendGrid API key (optional - for email sharing features)
 
 ### 1. Clone and Setup
 
@@ -60,6 +74,9 @@ cd MeetingSummarizer.Api
 # Configure OpenAI API key (optional)
 dotnet user-secrets init
 dotnet user-secrets set "OpenAI:ApiKey" "your-openai-api-key-here"
+
+# Configure SendGrid for email sharing (optional)
+dotnet user-secrets set "SendGrid:ApiKey" "your-sendgrid-api-key-here"
 
 # Run the API
 dotnet run
@@ -95,10 +112,24 @@ cd MeetingSummarizer.Api
 dotnet user-secrets set "OpenAI:ApiKey" "sk-your-api-key-here"
 ```
 
+### SendGrid Email Setup (Optional)
+
+For email sharing functionality:
+
+1. Create a SendGrid account at [SendGrid](https://sendgrid.com)
+2. Generate an API key with Mail Send permissions
+3. Configure using user secrets:
+
+```bash
+cd MeetingSummarizer.Api
+dotnet user-secrets set "SendGrid:ApiKey" "SG.your-sendgrid-api-key-here"
+```
+
 #### Option 2: Environment Variables
 
 ```bash
 export OpenAI__ApiKey="sk-your-api-key-here"
+export SendGrid__ApiKey="SG.your-sendgrid-api-key-here"
 ```
 
 #### Option 3: appsettings.json (Not recommended for production)
@@ -107,15 +138,20 @@ export OpenAI__ApiKey="sk-your-api-key-here"
 {
   "OpenAI": {
     "ApiKey": "sk-your-api-key-here"
+  },
+  "SendGrid": {
+    "ApiKey": "SG.your-sendgrid-api-key-here"
   }
 }
 ```
 
 ### Mock Service Fallback
 
-Without an OpenAI API key, the application automatically uses a mock transcription service that provides:
+Without API keys, the application automatically uses mock services that provide:
 
-- Realistic speaker diarization simulation
+- Realistic speaker diarization simulation (OpenAI Whisper mock)
+- Simulated meeting summary generation (GPT-4 mock)
+- Local email preview instead of sending (SendGrid mock)
 - Consistent development experience
 - Zero external dependencies
 - Complete end-to-end workflow testing
@@ -134,11 +170,13 @@ npm run test:coverage      # Run with coverage report
 
 Visit `/demo` in the frontend to access comprehensive testing tools:
 
-- **S1.2 Testing**: TranscriptDisplay component validation
-- **S1.3 Testing**: FileUpload integration testing
-- **Error Scenarios**: Failed transcription handling
-- **Loading States**: Processing indicators
-- **Copy Functionality**: Text selection and clipboard operations
+- **Transcription Testing**: Complete file upload and transcription workflow
+- **Speaker Management**: Speaker role assignment and editing validation
+- **Summary Generation**: AI-powered meeting summary testing
+- **Email Composition**: Email sharing interface validation
+- **Error Scenarios**: Failed transcription and API error handling
+- **Loading States**: Processing indicators and user feedback
+- **Session Management**: Privacy controls and timeout testing
 
 ### API Testing
 
@@ -157,29 +195,44 @@ meeting-summarizer/
 │   ├── Controllers/                # API endpoints
 │   ├── Services/                   # Business logic
 │   │   ├── OpenAIService.cs       # Production OpenAI integration
-│   │   └── MockTranscriptionService.cs # Development fallback
-│   ├── Models/                     # Data models
+│   │   ├── SendGridEmailService.cs # Email delivery service
+│   │   └── MockServices/           # Development fallback services
+│   ├── Models/                     # Data models and DTOs
 │   └── Configuration/              # Service configuration
 ├── frontend/                       # React Frontend
 │   ├── src/
 │   │   ├── components/             # React components
-│   │   │   ├── FileUpload.tsx     # File upload interface
-│   │   │   └── TranscriptDisplay.tsx # Transcript display
+│   │   │   ├── FileUpload.tsx     # Advanced file upload interface
+│   │   │   ├── TranscriptDisplay.tsx # Transcript display with editing
+│   │   │   ├── SpeakerMapping.tsx # Speaker management interface
+│   │   │   └── dialogs/            # Modal dialogs and confirmations
+│   │   ├── stores/                 # Zustand state management
+│   │   ├── services/               # API integration and session management
 │   │   ├── demo/                   # Testing and demo tools
-│   │   ├── services/               # API integration
 │   │   └── __tests__/              # Unit tests
 ├── docs/                           # Documentation
+│   ├── sprints/                    # Sprint planning and progress
+│   ├── technical-*.md              # Technical documentation
+│   └── *.md                        # Setup guides and requirements
 └── sample-audio-files/             # Test audio files
 ```
 
-## 🔮 Roadmap - Sprint 2
+## 🔮 Roadmap - Sprint 4
 
 ### Planned Features
 
-- **S2.1**: Speaker Role Assignment and Management
-- **S2.2**: AI-Powered Meeting Summarization (GPT-4)
-- **S2.3**: Summary Display and Export
-- **S2.4**: Enhanced UI/UX with Advanced Features
+- **Azure Speech Services Integration**: Enhanced speaker diarization accuracy
+- **Advanced Export Formats**: PDF, Word, and structured data exports
+- **Performance Optimization**: Large file processing and concurrent session support
+- **Security Enhancements**: Advanced authentication and audit logging
+
+## 📚 Documentation
+
+For detailed development information:
+
+- **[Sprint Documentation](docs/sprints/)**: Detailed development progress and technical decisions
+- **[Technical Improvements](docs/technical-improvements.md)**: Architecture enhancements and optimizations  
+- **[Setup Guides](docs/)**: Comprehensive configuration and deployment guides
 
 ## 💰 Cost Considerations
 
@@ -189,19 +242,27 @@ meeting-summarizer/
 - **GPT-4o-mini**: ~$0.15 per 1M input tokens, ~$0.60 per 1M output tokens
 - **Example**: 1-hour meeting ≈ $0.36 transcription + ~$0.10 summary = ~$0.46 total
 
+### SendGrid Email Pricing
+
+- **Free Tier**: 100 emails/day
+- **Paid Plans**: Starting at $19.95/month for higher volumes
+
 ### Cost Optimization
 
-- Use mock service for development (zero cost)
+- Use mock services for development (zero cost)
 - Efficient prompt engineering for summarization
 - Configurable model selection (gpt-4o-mini vs gpt-4o)
+- Session-based data management reduces storage costs
 - Request batching and caching strategies
 
-## 🛡️ Security
+## 🛡️ Security & Privacy
 
+- **Session-Based Data**: 2-hour automatic cleanup, no persistent storage
 - **API Key Management**: Secure storage using .NET User Secrets
 - **Environment Variables**: Production-ready configuration
-- **Input Validation**: Comprehensive file and request validation
+- **Input Validation**: Comprehensive file and request validation (up to 1GB files)
 - **Error Handling**: Secure error messages without sensitive data exposure
+- **Privacy Controls**: Real-time session status and data size monitoring
 
 ## 🤝 Contributing
 

@@ -32,6 +32,7 @@ import { SessionIndicator } from "./SessionIndicator";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
+import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -51,6 +52,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const [forceUpdate, setForceUpdate] = useState(0);
   const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
     useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
 
   // Zustand store state and actions
   const {
@@ -342,10 +344,21 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     URL.revokeObjectURL(url);
   }, [transcription]);
 
-  // Handle deleting transcription (this would need to be passed up to parent)
+  // Handle deleting transcription - open confirmation dialog
   const handleDeleteTranscription = useCallback(() => {
-    // For now, just show an alert - in a real app you'd pass this up to the parent
-    alert('Delete functionality would be implemented here');
+    setDeleteConfirmationOpen(true);
+  }, []);
+
+  // Handle confirmed deletion - reset page to original state
+  const handleConfirmDelete = useCallback(() => {
+    setDeleteConfirmationOpen(false);
+    // Reset the page to its original state by refreshing
+    window.location.reload();
+  }, []);
+
+  // Handle cancel deletion
+  const handleCancelDelete = useCallback(() => {
+    setDeleteConfirmationOpen(false);
   }, []);
 
   // Memoize helper function to resolve speaker display name
@@ -725,6 +738,13 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         existingMappings={getAllMappings?.() || []}
         detectedSpeakers={detectedSpeakers}
         onMappingsSaved={handleSpeakerMappingsSaved}
+      />
+
+      {/* Transcription Delete Confirmation Dialog */}
+      <ConfirmTranscriptionDeleteDialog
+        open={deleteConfirmationOpen}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </Card>
   );

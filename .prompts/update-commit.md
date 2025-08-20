@@ -24,6 +24,7 @@ This prompt handles the complete workflow for updating sprint documentation and 
 - Update implementation progress section
 - Document any technical notes or deviations from original plan
 - Update the technical-debt.md and technical-improvements.md where/if appropriate
+- Update the README.md file in the root directory
 - Present changes to user for confirmation to update documentation
 
 ### Step 3: Commit with Smart Message
