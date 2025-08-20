@@ -82,7 +82,7 @@ public class AudioFileValidatorSprint1Tests
     [TestCategory("S1.1")]
     public void ValidateAudioFile_ValidFileSize_ReturnsValid()
     {
-        // Arrange - 5MB file (well within 500MB limit)
+        // Arrange - 5MB file (well within 1GB limit)
         var audioFile = Sprint1TestDataFactory.CreateMockAudioFile("test.mp3", 5 * 1024 * 1024);
 
         // Act
@@ -97,7 +97,7 @@ public class AudioFileValidatorSprint1Tests
     [TestCategory("S1.1")]
     public void ValidateAudioFile_OversizedFile_ReturnsInvalid()
     {
-        // Arrange - 600MB file (exceeds 500MB limit)
+        // Arrange - 1.2GB file (exceeds 1GB limit)
         var oversizedFile = Sprint1TestDataFactory.CreateOversizedAudioFile();
 
         // Act
@@ -105,7 +105,7 @@ public class AudioFileValidatorSprint1Tests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Message.Should().Contain("500MB limit");
+        result.Message.Should().Contain("1GB limit");
     }
 
     [TestMethod]
@@ -158,7 +158,7 @@ public class AudioFileValidatorSprint1Tests
     [TestCategory("S1.1")]
     public void ValidateAudioFile_MaximumValidSize_ReturnsValid()
     {
-        // Arrange - File just at the 500MB limit
+        // Arrange - File just at the 1GB limit
         var maxSizeFile = Sprint1TestDataFactory.CreateMockAudioFile("max-size.mp3", AudioFileValidator.MaxFileSizeBytes);
 
         // Act
@@ -314,7 +314,7 @@ public class AudioFileValidatorSprint1Tests
     public void FileSizeConstants_HaveCorrectValues()
     {
         // Assert
-        AudioFileValidator.MaxFileSizeBytes.Should().Be(500L * 1024 * 1024); // 500MB
+        AudioFileValidator.MaxFileSizeBytes.Should().Be(1024L * 1024 * 1024); // 1GB
         AudioFileValidator.MinFileSizeBytes.Should().Be(1024); // 1KB
         AudioFileValidator.MaxFileNameLength.Should().Be(255);
     }

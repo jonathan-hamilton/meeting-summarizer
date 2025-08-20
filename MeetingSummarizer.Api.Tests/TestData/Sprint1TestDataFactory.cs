@@ -40,7 +40,7 @@ public static class Sprint1TestDataFactory
     /// </summary>
     public static IFormFile CreateOversizedAudioFile()
     {
-        const long oversizeLength = 600L * 1024 * 1024; // 600MB (exceeds 500MB limit)
+        const long oversizeLength = 1200L * 1024 * 1024; // 1.2GB (exceeds 1GB limit)
         return CreateMockAudioFile("large-file.mp3", oversizeLength);
     }
 

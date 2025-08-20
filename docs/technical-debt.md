@@ -2,6 +2,55 @@
 
 ## Recently Resolved Issues
 
+### Session Component Consolidation & State Management ✅ RESOLVED
+
+**Date Resolved**: August 19, 2025  
+**Component**: Frontend (Session Management System)  
+
+**Problem**: Duplicate session components causing code duplication and data inconsistency:
+1. Two separate components (`SessionIndicator` and `SessionStatus`) displaying identical session information
+2. Transcript file size resetting to 0 after successful transcription due to state management issues
+3. Session duration showing "0m" in dialog components due to improper re-rendering
+4. Theme settings not persisting across page refreshes
+5. File size limitations (500MB) causing user experience issues
+
+**Solution**: Comprehensive session management consolidation and enhancement:
+
+- **Component Consolidation**: Eliminated `SessionStatus.tsx` and unified to single `SessionIndicator.tsx` used in both AppBar and transcript display
+- **State Management Fix**: Enhanced Zustand `sessionStore` with proper transcript size calculation and session tracking
+- **Live Updates Implementation**: Added timer-based re-rendering for real-time session duration updates
+- **Theme Persistence**: Fixed theme initialization in `ThemeProvider.tsx` to persist across page refreshes
+- **File Size Enhancement**: Increased support from 500MB to 1GB across frontend and backend
+
+**Technical Implementation**:
+
+```tsx
+// Unified component usage
+<SessionIndicator status={privacyControls.sessionStatus} />
+
+// Enhanced state management
+const { 
+  totalTranscriptFileSize, 
+  overrideCount,
+  getSessionDurationMinutes 
+} = useSessionStore();
+
+// Timer-based live updates
+React.useEffect(() => {
+  const timer = setInterval(() => {
+    forceUpdate(prev => prev + 1);
+  }, 60000);
+  return () => clearInterval(timer);
+}, []);
+```
+
+**Impact**: 
+- ✅ Eliminated ~300 lines of duplicate code
+- ✅ Fixed session data consistency issues
+- ✅ Improved user experience with larger file support
+- ✅ Enhanced theme stability and persistence
+- ✅ Resolved session duration display problems
+
 ### Speaker Management Enhancement & Reset Functionality ✅ RESOLVED
 
 **Date Resolved**: August 17, 2025  

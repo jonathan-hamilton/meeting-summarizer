@@ -13,9 +13,9 @@ public static class AudioFileValidator
     public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm" };
 
     /// <summary>
-    /// Maximum file size in bytes (500MB)
+    /// Maximum file size in bytes (1GB)
     /// </summary>
-    public const long MaxFileSizeBytes = 500L * 1024 * 1024;
+    public const long MaxFileSizeBytes = 1024L * 1024 * 1024;
 
     /// <summary>
     /// Minimum file size in bytes (1KB to prevent empty files)
@@ -69,8 +69,11 @@ public static class AudioFileValidator
 
         if (audioFile.Length > MaxFileSizeBytes)
         {
-            var maxSizeMB = MaxFileSizeBytes / (1024 * 1024);
-            return new AudioFileValidationResult(false, $"File size exceeds {maxSizeMB}MB limit");
+            // Format the size nicely (GB for 1GB+, MB for smaller)
+            var maxSizeFormatted = MaxFileSizeBytes >= 1024L * 1024 * 1024 
+                ? $"{MaxFileSizeBytes / (1024L * 1024 * 1024)}GB"
+                : $"{MaxFileSizeBytes / (1024 * 1024)}MB";
+            return new AudioFileValidationResult(false, $"File size exceeds {maxSizeFormatted} limit");
         }
 
         // Validate file name
