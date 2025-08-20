@@ -8,14 +8,19 @@ import {
   Grid,
   Switch,
   Tooltip,
+  Link,
 } from "@mui/material";
-import { Brightness4, Brightness7, HealthAndSafety } from "@mui/icons-material";
+import { Brightness4, Brightness7, HealthAndSafety, Help as HelpIcon } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import { EnvironmentProvider, useEnvironment } from "./contexts/EnvironmentProvider";
+import { useSessionManagement } from "./hooks/useSessionManagement";
+import { useSessionStore } from "./stores/sessionStore";
 import { HealthDialog } from "./components/HealthDialog";
 import { SessionTimeoutWarningDialog } from "./components/SessionTimeoutWarningDialog";
 import { PrivacyPolicyDialog } from "./components/PrivacyPolicyDialog";
+import { HelpDialog } from "./components/HelpDialog";
+import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import apiService from "./services/apiService";
@@ -41,6 +46,8 @@ const SummaryDisplayDemo = React.lazy(
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
   const { isProductionMode, toggleEnvironmentMode } = useEnvironment();
+  const { privacyControls } = useSessionManagement();
+  const { addTranscript } = useSessionStore();
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -52,6 +59,10 @@ const AppContent: React.FC = () => {
 
   // State for forcing Privacy Policy dialog (for testing in dev mode)
   const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
+  
+  // State for manually opening privacy policy and help dialogs
+  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
 
   // Listen for session expiry events
   useEffect(() => {
@@ -69,6 +80,8 @@ const AppContent: React.FC = () => {
 
   const handleTranscriptionComplete = (result: TranscriptionResponse) => {
     setTranscriptionResults((prev) => [result, ...prev]);
+    // Also add to sessionStore for consistent session data tracking
+    addTranscript(result);
   };
 
   const checkServerHealth = async () => {
@@ -153,6 +166,15 @@ const AppContent: React.FC = () => {
     return isOpenAIEnabled ? "primary" : "warning"; // Blue for real API, Orange for mock
   };
 
+  const getAppBarSx = () => {
+    const baseColor = getAppBarColor();
+    return {
+      width: "100%",
+      backgroundColor: baseColor === "primary" ? "primary.main" : "warning.main",
+      color: "primary.contrastText"
+    };
+  };
+
   return (
     <>
       <Box
@@ -177,16 +199,12 @@ const AppContent: React.FC = () => {
         >
           <AppBar
             position="static"
-            sx={{ width: "100%" }}
-            color={getAppBarColor()}
+            sx={getAppBarSx()}
           >
-            <Toolbar sx={{ width: "100%" }}>
-              <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                Meeting Summarizer
-              </Typography>
-              {/* Only show development controls in development mode */}
+            <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
+              {/* Development controls - positioned on left */}
               {import.meta.env.DEV && (
-                <>
+                <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
                   {/* Environment Mode Toggle Switch */}
                   <Tooltip
                     title={
@@ -219,11 +237,29 @@ const AppContent: React.FC = () => {
                   >
                     <HealthAndSafety />
                   </IconButton>
-                </>
+                </Box>
               )}
-              <IconButton color="inherit" onClick={toggleTheme} sx={{ ml: 1 }}>
-                {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
+              
+              {/* Centered title */}
+              <Typography variant="h4" component="div" sx={{ 
+                textAlign: "center",
+                fontWeight: "bold"
+              }}>
+                Meeting Summarizer
+              </Typography>
+              
+              {/* Right-aligned controls */}
+              <Box sx={{ position: "absolute", right: 0, display: "flex", alignItems: "center" }}>
+                <SessionIndicator status={privacyControls.sessionStatus} />
+                <Tooltip title="Help & Privacy FAQ">
+                  <IconButton color="inherit" onClick={() => setHelpDialogOpen(true)} sx={{ ml: 1 }}>
+                    <HelpIcon />
+                  </IconButton>
+                </Tooltip>
+                <IconButton color="inherit" onClick={toggleTheme} sx={{ ml: 1 }}>
+                  {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
+                </IconButton>
+              </Box>
             </Toolbar>
           </AppBar>
 
@@ -238,10 +274,19 @@ const AppContent: React.FC = () => {
             onAccepted={() => setForceShowPrivacyPolicy(false)}
           />
 
+          {/* Manual privacy policy dialog (footer link) */}
+          <PrivacyPolicyDialog 
+            forceShow={privacyPolicyOpen}
+            onAccepted={() => setPrivacyPolicyOpen(false)}
+          />
+
+          {/* Help & FAQ dialog */}
+          <HelpDialog 
+            open={helpDialogOpen}
+            onClose={() => setHelpDialogOpen(false)}
+          />
+
           <Box sx={{ py: 4, width: "100%" }}>
-            <Typography variant="h2" component="h1" gutterBottom align="center">
-              Meeting Summarizer
-            </Typography>
             <Typography
               variant="h5"
               component="h2"
@@ -284,6 +329,21 @@ const AppContent: React.FC = () => {
                 </Grid>
               )}
             </Grid>
+          </Box>
+          
+          {/* Footer with privacy link */}
+          <Box component="footer" sx={{ mt: 4, py: 2, borderTop: 1, borderColor: 'divider' }}>
+            <Typography variant="body2" color="text.secondary" align="center">
+              <Link 
+                component="button" 
+                variant="body2" 
+                onClick={() => setPrivacyPolicyOpen(true)}
+                sx={{ mr: 1 }}
+              >
+                Privacy Policy
+              </Link>
+              • Session-based storage • Your data stays private
+            </Typography>
           </Box>
         </Box>
       </Box>

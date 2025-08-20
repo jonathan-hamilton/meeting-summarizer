@@ -283,8 +283,10 @@ class SessionManager {
     // Notify listeners
     this.notifyListeners();
     
+    // Only refresh the page if explicitly requested by user action
+    // For automatic timeouts, let the components handle the clearing
     // Refresh the page to reset the app to original state
-    window.location.reload();
+    // window.location.reload(); // COMMENTED OUT - causes sessionStore reset
   }
 
   /**

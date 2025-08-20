@@ -28,9 +28,10 @@ import { SpeakerMappingComponent } from "./SpeakerMapping";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
-import { SessionStatus } from "./SessionStatus";
+import { SessionIndicator } from "./SessionIndicator";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerStore } from "../stores/speakerStore";
+import { useSessionManagement } from "../hooks/useSessionManagement";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -59,6 +60,9 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     getAllMappings,
     clearSpeakers,
   } = useSpeakerStore();
+
+  // Session management for privacy controls
+  const { privacyControls } = useSessionManagement();
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -582,7 +586,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             )}
             
             {/* Session Status Display */}
-            <SessionStatus />
+            <SessionIndicator status={privacyControls.sessionStatus} />
           </Stack>
         </Box>
 

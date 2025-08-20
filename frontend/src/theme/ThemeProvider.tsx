@@ -13,19 +13,17 @@ interface ThemeProviderProps {
 
 // Theme provider component
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [mode, setMode] = useState<ThemeMode>('light');
-
-  // Load theme preference from localStorage on mount
-  useEffect(() => {
+  // Initialize theme from localStorage or system preference
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    // Check localStorage first
     const savedTheme = localStorage.getItem('themeMode') as ThemeMode | null;
     if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
-      setMode(savedTheme);
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setMode(prefersDark ? 'dark' : 'light');
+      return savedTheme;
     }
-  }, []);
+    // Fall back to system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return prefersDark ? 'dark' : 'light';
+  });
 
   // Save theme preference to localStorage when changed
   useEffect(() => {

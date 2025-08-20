@@ -30,6 +30,11 @@ const lightThemeOptions: ThemeOptions = {
       light: '#ff6b8a',
       dark: '#9a0036',
     },
+    warning: {
+      main: '#ed6c02',
+      light: '#ff9800',
+      dark: '#e65100',
+    },
     background: {
       default: '#fafafa',
       paper: '#ffffff',
@@ -87,6 +92,11 @@ const darkThemeOptions: ThemeOptions = {
       main: '#f48fb1',
       light: '#ffc1cc',
       dark: '#c2185b',
+    },
+    warning: {
+      main: '#ffa726',
+      light: '#ffcc02',
+      dark: '#ff8f00',
     },
     background: {
       default: '#121212',

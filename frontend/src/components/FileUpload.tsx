@@ -9,21 +9,17 @@ import {
   LinearProgress,
   Alert,
   Chip,
-  IconButton,
   List,
   ListItem,
-  ListItemSecondaryAction,
   Paper,
   Stepper,
   Step,
   StepLabel,
   CircularProgress,
-  Tooltip,
 } from "@mui/material";
 import {
   CloudUpload,
   AudioFile,
-  Delete,
   CheckCircle,
   Error as ErrorIcon,
   Upload,
@@ -35,7 +31,7 @@ import type { TranscriptionResponse } from "../types";
 
 interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
-  maxFileSize?: number; // in bytes, default 500MB
+  maxFileSize?: number; // in bytes, default 1GB
   acceptedFileTypes?: string[];
 }
 
@@ -81,7 +77,7 @@ const getWorkflowSteps = (uploadFile: UploadFile) => [
 
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
-  maxFileSize = 500 * 1024 * 1024, // 500MB
+  maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg"],
 }) => {
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
@@ -190,10 +186,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
     multiple: true,
     disabled: hasCompletedFile, // Disable dropzone if file has been processed
   });
-
-  const removeFile = (fileId: string) => {
-    setUploadFiles((prev) => prev.filter((f) => f.id !== fileId));
-  };
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes";
@@ -402,13 +394,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       />
                     </Box>
 
-                    {/* File size */}
+                    {/* Uploaded file size */}
                     <Typography
                       variant="body2"
                       color="text.secondary"
                       sx={{ mb: 1 }}
                     >
-                      {formatFileSize(uploadFile.file.size)}
+                      Uploaded file size: {formatFileSize(uploadFile.file.size)}
                     </Typography>
 
                     {/* Workflow Progress Stepper */}
@@ -516,17 +508,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       </Alert>
                     )}
                   </Box>
-                  <ListItemSecondaryAction>
-                    <Tooltip title="Remove file">
-                      <IconButton
-                        edge="end"
-                        aria-label="delete"
-                        onClick={() => removeFile(uploadFile.id)}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
-                  </ListItemSecondaryAction>
                 </ListItem>
               ))}
             </List>
