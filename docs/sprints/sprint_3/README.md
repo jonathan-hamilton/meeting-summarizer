@@ -25,7 +25,7 @@ Sprint 3 completes the comprehensive speaker management system initiated in Spri
 | S3.3 | Segment-Level Speaker Override Interface | COMPLETE ✅ | S3.2 - Speaker CRUD Operations Interface | [S3.3 Story](./s3.3_segment_level_override.md) |
 | S3.4 | AI Meeting Summary Generation & Email Sharing | COMPLETE ✅ | S2.4 - Summary Display, Complete speaker workflow | [S3.4 Story](./s3.4_enhanced_export_sharing.md) |
 | S3.5 | User Privacy Communication & Data Controls | PENDING 🔄 | S3.1 - Session-Based Override System | [S3.5 Story](./s3.5_privacy_communication.md) |
-| S3.6 | Performance and Security Testing Suite | PENDING 🔄 | None | [S3.6 Story](./s3.6_performance_security_testing.md) |
+| S3.6 | Performance, Security Testing & State Management Redesign | IN PROGRESS 🔄 | None | [S3.6 Story](./s3.6_performance_security_testing.md) |
 
 ## Technical Foundation
 

@@ -195,6 +195,19 @@
 - REQ-EMAIL-17: System shall validate email addresses before attempting to send
 - REQ-EMAIL-18: System shall provide delivery confirmation to users upon successful email send
 
+### Smart Email Send Controls
+
+- REQ-EMAIL-19: System shall track email send history including timestamps, recipients, and content
+- REQ-EMAIL-20: System shall display "Last sent: X minutes ago to Y recipients" information in email dialog
+- REQ-EMAIL-21: System shall warn users when attempting to send to recipients who previously received the same summary
+- REQ-EMAIL-22: System shall allow override of duplicate recipient warnings with explicit user confirmation
+- REQ-EMAIL-23: System shall provide "Send Again" button for exact resend to previous recipients (maximum 3 times per summary)
+- REQ-EMAIL-24: System shall provide "Compose New" button for sending different content or recipients (maximum 3 times per summary)
+- REQ-EMAIL-25: System shall enforce send limits to prevent spam and control API costs
+- REQ-EMAIL-26: System shall persist email edits within session and include modifications in sent emails
+- REQ-EMAIL-27: System shall maintain send history per meeting summary for accurate tracking
+- REQ-EMAIL-28: System shall provide clear visual indicators distinguishing between new sends and resends
+
 ### AI-Powered Meeting Summary Generation
 
 - REQ-AI-SUM-1: System shall generate comprehensive Meeting Summary containing meeting overview and role-aware action items
@@ -401,3 +414,180 @@
 - Track speaker removal actions for audit and potential recovery
 - Associate manually-added speakers with transcription sessions for proper scoping
 - Enable speaker list reconstruction for meeting history and analysis features
+
+## Monetization & User Management
+
+### Token-Based Payment System
+
+- REQ-MON-1: System shall implement a token-based payment model where each meeting consumes tokens
+- REQ-MON-2: System shall support anonymous single-token purchases with browser-based storage
+- REQ-MON-3: System shall integrate with Stripe for secure payment processing
+- REQ-MON-4: System shall calculate token consumption based on meeting length and processing complexity
+- REQ-MON-5: System shall provide transparent pricing before user commits to payment
+- REQ-MON-6: System shall support multiple token package sizes (1, 5, 10, 20 tokens)
+- REQ-MON-7: System shall track token usage and remaining balance per user session
+- REQ-MON-8: System shall prevent processing when insufficient tokens are available
+
+### Demo Mode (Anonymous)
+
+- REQ-DEM-1: System shall provide anonymous demo mode with 30-second audio limit
+- REQ-DEM-2: Demo mode shall showcase full transcription and basic summarization capabilities
+- REQ-DEM-3: Demo mode shall disable email sharing and advanced features
+- REQ-DEM-4: Demo mode shall limit speaker mapping to view-only functionality
+- REQ-DEM-5: System shall clearly indicate demo limitations and upgrade path
+- REQ-DEM-6: Demo mode shall be available without any user registration or payment
+- REQ-DEM-7: System shall track demo usage per browser session to prevent repeated abuse
+- REQ-DEM-8: Demo mode processing cost shall not exceed $0.01 per usage
+
+### Trial Mode (Email/Password Registration)
+
+- REQ-TRL-1: System shall provide trial accounts with email/password registration
+- REQ-TRL-2: Trial accounts shall receive 5 free tokens upon registration
+- REQ-TRL-3: Trial mode shall support meetings up to 30 minutes in length
+- REQ-TRL-4: Trial accounts shall expire after 7 days from registration
+- REQ-TRL-5: System shall send email notifications at trial milestones (day 3, day 6, expiration)
+- REQ-TRL-6: Trial users shall have access to all features except extended meeting length
+- REQ-TRL-7: System shall prevent multiple trial accounts per email address
+- REQ-TRL-8: Trial accounts shall automatically convert to registered user accounts upon token purchase
+- REQ-TRL-9: System shall track trial conversion rates for optimization
+
+### Anonymous Token Purchases
+
+- REQ-ANO-1: System shall allow single-token purchases without account creation
+- REQ-ANO-2: Anonymous tokens shall be stored in secure browser session storage
+- REQ-ANO-3: Anonymous tokens shall expire after 30 days from purchase
+- REQ-ANO-4: System shall provide token recovery options via email receipt
+- REQ-ANO-5: Anonymous purchases shall support meetings up to 120 minutes
+- REQ-ANO-6: System shall clearly communicate token storage limitations for anonymous users
+- REQ-ANO-7: Anonymous users shall have option to create account to preserve remaining tokens
+
+### Registered User Accounts
+
+- REQ-USR-1: System shall support user registration with email/password authentication
+- REQ-USR-2: Registered users shall purchase token packages (5, 10, 20 tokens)
+- REQ-USR-3: User tokens shall be stored server-side with persistent access across devices
+- REQ-USR-4: System shall provide user dashboard showing token balance and usage history
+- REQ-USR-5: Registered users shall receive bulk purchase discounts for larger token packages
+- REQ-USR-6: User accounts shall support password reset via email verification
+- REQ-USR-7: System shall implement secure session management with JWT tokens
+- REQ-USR-8: User data shall be encrypted and GDPR compliant
+- REQ-USR-9: Registered users shall have access to meeting history and re-download capabilities
+
+### Usage Tracking & Analytics
+
+- REQ-TRK-1: System shall track API costs per meeting for accurate token pricing
+- REQ-TRK-2: System shall monitor user behavior and conversion rates across demo/trial/paid tiers
+- REQ-TRK-3: System shall implement rate limiting to prevent abuse across all user types
+- REQ-TRK-4: System shall provide admin dashboard for monitoring costs and revenue
+- REQ-TRK-5: System shall track token package popularity for pricing optimization
+- REQ-TRK-6: System shall implement usage analytics while respecting user privacy
+- REQ-TRK-7: System shall monitor and alert on unusual usage patterns or potential abuse
+
+### Payment & Billing Integration
+
+- REQ-PAY-1: System shall integrate with Stripe for PCI-compliant payment processing
+- REQ-PAY-2: System shall support credit card payments for all token packages
+- REQ-PAY-3: System shall provide email receipts for all purchases
+- REQ-PAY-4: System shall implement webhook handling for payment confirmation
+- REQ-PAY-5: System shall support payment refunds for unused tokens within 30 days
+- REQ-PAY-6: System shall handle failed payments gracefully with user notification
+- REQ-PAY-7: System shall implement fraud detection and chargeback protection
+- REQ-PAY-8: System shall support multiple currencies for international users
+
+### Business Logic & Pricing
+
+- REQ-BIZ-1: Token pricing shall maintain minimum 200% margin over API costs
+- REQ-BIZ-2: System shall dynamically adjust token consumption based on actual processing costs
+- REQ-BIZ-3: System shall offer progressive discounts for bulk token purchases
+- REQ-BIZ-4: System shall implement A/B testing capabilities for pricing optimization
+- REQ-BIZ-5: System shall support promotional codes and discount campaigns
+- REQ-BIZ-6: System shall implement usage caps to prevent unexpected high API costs
+- REQ-BIZ-7: System shall provide clear cost estimation before meeting processing begins
+
+## User Interface Enhancements
+
+### Transcript Results Section Improvements
+
+- REQ-UI-1: System shall implement functional status chips in Transcript Results section showing accurate processing state
+- REQ-UI-2: Transcript Results chips shall display relevant metadata (duration, confidence, speaker count)
+- REQ-UI-3: System shall provide interactive chips for quick filtering and navigation within transcript results
+- REQ-UI-4: Status chips shall update in real-time to reflect current transcript processing status
+- REQ-UI-5: System shall implement chip click handlers for enhanced user interaction and transcript navigation
+
+### Speaker Management Cleanup
+
+- REQ-SPK-25: System shall automatically remove speakers that have no assigned segments and no name/role mapping
+- REQ-SPK-26: System shall perform speaker cleanup operation after manual speaker mapping changes
+- REQ-SPK-27: System shall validate speaker relevance before including in speaker mapping interface
+- REQ-SPK-28: System shall provide clear indication when speakers are removed due to lack of segments
+- REQ-SPK-29: System shall maintain speaker mapping consistency across transcript and summary sections
+
+### Bulk Speaker Assignment
+
+- REQ-BULK-1: System shall provide "Bulk Assign" button at top of Transcription Results section
+- REQ-BULK-2: Bulk Assign button shall be enabled only when one or more transcript segments are selected
+- REQ-BULK-3: System shall support multi-selection of transcript segments using Ctrl+click and Shift+click
+- REQ-BULK-4: Selected transcript segments shall have clear visual indication (highlighting, borders, or checkmarks)
+- REQ-BULK-5: Bulk assignment dialog shall allow Name/Role/Email assignment for all selected segments simultaneously
+- REQ-BULK-6: System shall apply bulk assignments to all selected segments and update transcript display immediately
+- REQ-BULK-7: Bulk assignment shall validate that assignments are applied correctly across all selected segments
+- REQ-BULK-8: System shall provide undo functionality for bulk assignment operations
+- REQ-BULK-9: Bulk assignment dialog shall show count of selected segments for user confirmation
+- REQ-BULK-10: System shall support partial bulk assignments (e.g., name only, role only) based on user input
+
+### Summary Section Enhancements
+
+- REQ-SUM-1: System shall implement functional status chips in Summary section reflecting actual generation state
+- REQ-SUM-2: Summary section buttons shall be contextually relevant and functional for current summary state
+- REQ-SUM-3: System shall provide clear action buttons for summary regeneration, editing, and sharing
+- REQ-SUM-4: Summary chips shall display generation timestamp, token usage, and confidence metrics
+- REQ-SUM-5: System shall implement summary versioning with ability to compare different generated versions
+
+### Development Environment Controls
+
+- REQ-DEV-1: System shall hide debug toggle controls in non-development environments
+- REQ-DEV-2: Server status indicators shall be visible only in local development mode
+- REQ-DEV-3: JSON download functionality shall be restricted to development and testing environments
+- REQ-DEV-4: System shall implement environment detection for feature availability
+- REQ-DEV-5: Production builds shall exclude all development-only UI elements and controls
+- REQ-DEV-6: System shall provide environment-specific feature flags for debugging tools
+- REQ-DEV-7: Development tools shall be accessible via configuration or environment variables only
+
+## Technical Implementation Requirements
+
+### Multi-Selection Interface
+
+- REQ-TECH-1: System shall implement accessible multi-selection patterns following WCAG 2.1 guidelines
+- REQ-TECH-2: Keyboard navigation shall support segment selection using arrow keys and space bar
+- REQ-TECH-3: Screen readers shall announce selection state changes for accessibility compliance
+- REQ-TECH-4: System shall provide visual feedback for selection state (colors, icons, borders)
+- REQ-TECH-5: Multi-selection shall persist during page interactions until explicitly cleared
+
+### Performance & Usability
+
+- REQ-PERF-1: Bulk operations shall complete within 2 seconds for up to 100 selected segments
+- REQ-PERF-2: UI responsiveness shall be maintained during bulk assignment operations
+- REQ-PERF-3: System shall provide progress indicators for operations affecting multiple segments
+- REQ-PERF-4: Large bulk operations (>50 segments) shall display progress feedback to users
+- REQ-PERF-5: System shall implement optimistic UI updates for immediate user feedback
+
+### Data Persistence & State Management
+
+- REQ-DATA-1: Email send history shall persist for session duration and be cleared on session end
+- REQ-DATA-2: Bulk assignment operations shall be atomic (all succeed or all fail)
+- REQ-DATA-3: Speaker assignment changes shall trigger immediate transcript display updates
+- REQ-DATA-4: System shall maintain undo/redo history for bulk operations within current session
+- REQ-DATA-5: State synchronization shall ensure consistency between transcript and summary sections
+
+### State Management Architecture (S3.6 Technical Debt Resolution)
+
+- REQ-STATE-1: System shall implement centralized state management to eliminate multiple sources of truth for speaker data
+- REQ-STATE-2: System shall use single SpeakerSessionStore for all speaker-related state (mappings, segments, active speakers)
+- REQ-STATE-3: System shall automatically compute derived state (speaker stats, filtered speakers, mapping counts) from base data
+- REQ-STATE-4: System shall eliminate duplicate filtering logic across TranscriptDisplay and SpeakerMapping components
+- REQ-STATE-5: System shall ensure speaker filtering reflects current segment assignments (speakers without segments disappear from UI)
+- REQ-STATE-6: System shall provide session isolation to prevent state bleeding between different transcriptions
+- REQ-STATE-7: System shall optimize component re-renders through efficient state selectors and memoization
+- REQ-STATE-8: System shall maintain backward compatibility during state management migration
+- REQ-STATE-9: System shall remove legacy local component state management after successful migration
+- REQ-STATE-10: System shall ensure state changes are atomic and trigger appropriate UI updates automatically

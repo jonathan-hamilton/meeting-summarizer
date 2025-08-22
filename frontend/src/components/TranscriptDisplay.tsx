@@ -85,6 +85,26 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       : allDetectedSpeakers;
   }, [storeDetectedSpeakers, allDetectedSpeakers]);
 
+  // Calculate currently active speakers from current segments (after reassignments)
+  const currentlyActiveSpeakers = useMemo(() => {
+    const activeSpeakers = speakerSegments
+      ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
+      : [];
+    console.log('🔍 currentlyActiveSpeakers:', activeSpeakers);
+    console.log('🔍 speakerSegments count:', speakerSegments?.length);
+    return activeSpeakers;
+  }, [speakerSegments]);
+
+  // Memoize detected speakers filtered by currently active speakers (speakers with segments)
+  const filteredDetectedSpeakers = useMemo(() => {
+    const result = storeDetectedSpeakers.length > 0
+      ? storeDetectedSpeakers.filter(speakerId => currentlyActiveSpeakers.includes(speakerId))
+      : currentlyActiveSpeakers;
+    console.log('🔍 filteredDetectedSpeakers:', result);
+    console.log('🔍 storeDetectedSpeakers:', storeDetectedSpeakers);
+    return result;
+  }, [storeDetectedSpeakers, currentlyActiveSpeakers]);
+
   // Memoize current active speakers (excluding deleted ones)
   const currentActiveSpeakers = useMemo(() => {
     const baseSpeakers = detectedSpeakers;
@@ -110,19 +130,26 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Initialize store when component mounts or transcription changes
   useEffect(() => {
     try {
-      // Use current store mappings if available, otherwise fall back to props/transcription mappings
-      const currentStoreMappings = getAllMappings();
-      const existingMappings = currentStoreMappings.length > 0 
-        ? currentStoreMappings 
-        : speakerMappings || transcription.speakerMappings || [];
-      
-      // Only initialize if we don't already have the correct transcription and speakers
       const currentTranscriptionId = useSpeakerStore.getState().transcriptionId;
       const currentDetectedSpeakers = useSpeakerStore.getState().detectedSpeakers;
+      const currentStoreMappings = getAllMappings();
       
-      if (currentTranscriptionId !== transcription.transcriptionId || 
-          currentDetectedSpeakers.length === 0) {
-        console.log('🔄 TranscriptDisplay: Initializing speakers for transcription:', transcription.transcriptionId);
+      // Check if this is a new transcription (different ID)
+      const isNewTranscription = currentTranscriptionId !== transcription.transcriptionId;
+      
+      if (isNewTranscription || currentDetectedSpeakers.length === 0) {
+        console.log('🔄 TranscriptDisplay: Initializing speakers for new transcription:', transcription.transcriptionId);
+        
+        // Clear session overrides for new transcriptions
+        if (isNewTranscription) {
+          sessionManager.clearSpeakerOverrides();
+        }
+        
+        // For new transcriptions, start fresh with empty mappings unless explicitly provided
+        const existingMappings = isNewTranscription 
+          ? (speakerMappings || transcription.speakerMappings || [])  // Don't use store mappings for new transcription
+          : (currentStoreMappings.length > 0 ? currentStoreMappings : speakerMappings || transcription.speakerMappings || []);
+        
         initializeSpeakers(
           transcription.transcriptionId,
           allDetectedSpeakers,
@@ -228,46 +255,22 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Memoize speaker mapping statistics
   const speakerMappingStats = useMemo(() => {
-    // Use the reactive storeSpeakerMappings instead of getAllMappings()
-    const currentMappings = storeSpeakerMappings;
+    // Use currentlyActiveSpeakers (speakers with actual segments after reassignments) as the base
+    const totalActiveSpeakers = currentlyActiveSpeakers.length;
     
-    // Get session overrides to understand which speakers actually have segments
-    const sessionOverrides = sessionManager.getOverrides();
-    
-    // Get all speakers that actually appear in segments (considering overrides)
-    const speakersInSegments = new Set<string>();
-    
-    // Use current active speakers (excludes deleted speakers)
-    currentActiveSpeakers.forEach((id: string) => speakersInSegments.add(id));
-    
-    // Add manually added speakers from mappings
-    currentMappings.forEach(m => speakersInSegments.add(m.speakerId));
-    
-    // Process session overrides to understand effective speaker assignments
-    Object.entries(sessionOverrides).forEach(([, override]) => {
-      if (override.action === 'Override' && override.newValue) {
-        // Remove the original speaker if all their segments are reassigned
-        // Note: This is a simplified approach - in reality we'd need to check if ALL segments are reassigned
-        speakersInSegments.add(override.newValue);
-      }
-    });
-    
-    const allSpeakerIds = Array.from(speakersInSegments);
-
-    // Count speakers that have names assigned
-    const mappedSpeakers = allSpeakerIds.filter((speakerId) => {
-      const mapping = currentMappings.find(
-        (m) => m.speakerId === speakerId
-      );
-      return mapping && mapping.name && mapping.name.trim() !== "";
-    });
+    // Count speakers with custom names (name different from speaker ID)
+    const mappedCount = currentlyActiveSpeakers.filter((speakerId: string) => {
+      const mapping = storeSpeakerMappings.find(m => m.speakerId === speakerId);
+      // Consider mapped only if has a custom name (different from speaker ID)
+      return mapping && mapping.name && mapping.name.trim() !== "" && mapping.name !== speakerId;
+    }).length;
 
     return {
-      mappedCount: mappedSpeakers.length,
-      totalCount: allSpeakerIds.length,
-      isFullyMapped: mappedSpeakers.length === allSpeakerIds.length,
+      mappedCount: mappedCount,
+      totalCount: totalActiveSpeakers,
+      isFullyMapped: mappedCount === totalActiveSpeakers && totalActiveSpeakers > 0,
     };
-  }, [currentActiveSpeakers, storeSpeakerMappings]);
+  }, [currentlyActiveSpeakers, storeSpeakerMappings]);
 
   // Memoize event handlers
   const handleSpeakerMappingsChanged = useCallback(() => {
@@ -606,11 +609,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         <Divider sx={{ mb: 3 }} />
 
         {/* Speaker Mapping Section */}
-        {detectedSpeakers.length > 0 && (
+        {filteredDetectedSpeakers.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <SpeakerMappingComponent
               transcriptionId={transcription.transcriptionId}
-              detectedSpeakers={detectedSpeakers}
+              detectedSpeakers={filteredDetectedSpeakers}
               onMappingsChanged={handleSpeakerMappingsChanged}
             />
           </Box>
