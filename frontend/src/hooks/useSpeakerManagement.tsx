@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useSpeakerStore } from "../stores/speakerStore";
+import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import type { SpeakerMapping, SpeakerSource } from "../types";
 
 interface MappingFormData {
@@ -17,7 +17,11 @@ interface DeleteConfirmation {
 }
 
 export const useSpeakerManagement = () => {
-  const { deleteSpeaker, detectedSpeakers, getAllMappings } = useSpeakerStore();
+  const speakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const deleteSpeakerMapping = useSpeakerSessionStore(state => state.deleteSpeakerMapping);
+  
+  // Convert speaker mappings to detected speakers (speaker IDs)
+  const detectedSpeakers = speakerMappings.map(mapping => mapping.speakerId);
 
   // Local state for delete confirmation
   const [deleteConfirmation, setDeleteConfirmation] =
@@ -50,8 +54,7 @@ export const useSpeakerManagement = () => {
 
   // Add new speaker functionality
   const handleAddSpeaker = useCallback((): MappingFormData => {
-    const existingMappings = getAllMappings();
-    const newSpeakerId = calculateNextSpeakerId(existingMappings);
+    const newSpeakerId = calculateNextSpeakerId(speakerMappings);
 
     return {
       speakerId: newSpeakerId,
@@ -59,7 +62,7 @@ export const useSpeakerManagement = () => {
       role: "",
       source: "ManuallyAdded",
     };
-  }, [getAllMappings, calculateNextSpeakerId]);
+  }, [speakerMappings, calculateNextSpeakerId]);
 
   // Check if speaker can be removed (at least one must remain)
   const canRemoveSpeaker = useCallback((totalSpeakers: number): boolean => {
@@ -105,12 +108,12 @@ export const useSpeakerManagement = () => {
       // Remove from local form state
       setMappings((prev) => prev.filter((_, i) => i !== speakerIndex));
 
-      // Remove from Zustand store
-      deleteSpeaker(speakerId);
+      // Remove from centralized store
+      deleteSpeakerMapping(speakerId);
 
       setError(null);
     },
-    [deleteConfirmation, deleteSpeaker]
+    [deleteConfirmation, deleteSpeakerMapping]
   );
 
   // Cancel speaker removal

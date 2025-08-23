@@ -20,7 +20,6 @@ import {
   CheckCircle,
   Error,
   Undo,
-  Download,
   Delete,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
@@ -30,7 +29,7 @@ import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
 import { SessionIndicator } from "./SessionIndicator";
 import { sessionManager } from "../services/sessionManager";
-import { useSpeakerStore } from "../stores/speakerStore";
+import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
 
@@ -46,22 +45,38 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   speakerMappings,
 }) => {
   const [copiedSegment, setCopiedSegment] = useState<string | null>(null);
-  const [speakerSegments, setSpeakerSegments] = useState(
-    transcription.speakerSegments || []
-  );
   const [forceUpdate, setForceUpdate] = useState(0);
   const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
     useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
 
-  // Zustand store state and actions
-  const {
-    speakerMappings: storeSpeakerMappings,
-    detectedSpeakers: storeDetectedSpeakers,
-    initializeSpeakers,
-    getAllMappings,
-    clearSpeakers,
-  } = useSpeakerStore();
+  // Centralized store state and actions
+  const storeSpeakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const storeCurrentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const storeDetectedSpeakers = storeSpeakerMappings.map(mapping => mapping.speakerId);
+  const initializeSession = useSpeakerSessionStore(state => state.initializeSession);
+  const reassignSegment = useSpeakerSessionStore(state => state.reassignSegment);
+  const resetToOriginal = useSpeakerSessionStore(state => state.resetToOriginal);
+  
+  // Use current segments from store (reflects reassignments), fallback to original transcription
+  const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
+  const clearSession = useSpeakerSessionStore(state => state.clearSession);
+  
+  // Compatibility functions to match legacy interface
+  const initializeSpeakers = (transcriptionId: string, _detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
+    initializeSession(transcriptionId, transcription.speakerSegments || [], existingMappings);
+  };
+  
+  const clearSpeakers = () => {
+    clearSession();
+  };
+  
+  const getAllMappings = () => {
+    return storeSpeakerMappings;
+  };
+
+  // Centralized store hooks
+  const activeSpeakers = useActiveSpeakers();
 
   // Session management for privacy controls
   const { privacyControls } = useSessionManagement();
@@ -86,14 +101,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   }, [storeDetectedSpeakers, allDetectedSpeakers]);
 
   // Calculate currently active speakers from current segments (after reassignments)
+  // Use the store's getActiveSpeakers method which correctly excludes "Unassigned" speakers
   const currentlyActiveSpeakers = useMemo(() => {
-    const activeSpeakers = speakerSegments
-      ? Array.from(new Set(speakerSegments.map((s) => s.speaker)))
-      : [];
-    console.log('🔍 currentlyActiveSpeakers:', activeSpeakers);
+    const storeActiveSpeakers = activeSpeakers; // Use store's method that excludes "Unassigned"
+    console.log('🔍 currentlyActiveSpeakers (from store getActiveSpeakers):', storeActiveSpeakers);
     console.log('🔍 speakerSegments count:', speakerSegments?.length);
-    return activeSpeakers;
-  }, [speakerSegments]);
+    console.log('🔍 speakerSegments speakers:', speakerSegments?.map(s => s.speaker));
+    return storeActiveSpeakers;
+  }, [activeSpeakers, speakerSegments]);
 
   // Memoize detected speakers filtered by currently active speakers (speakers with segments)
   const filteredDetectedSpeakers = useMemo(() => {
@@ -130,8 +145,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Initialize store when component mounts or transcription changes
   useEffect(() => {
     try {
-      const currentTranscriptionId = useSpeakerStore.getState().transcriptionId;
-      const currentDetectedSpeakers = useSpeakerStore.getState().detectedSpeakers;
+      const currentTranscriptionId = useSpeakerSessionStore.getState().transcriptionId;
+      const currentDetectedSpeakers = activeSpeakers; // Use activeSpeakers from centralized store
       const currentStoreMappings = getAllMappings();
       
       // Check if this is a new transcription (different ID)
@@ -284,14 +299,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   const handleSpeakerSegmentChange = useCallback(
     (segmentIndex: number, newSpeaker: string) => {
-      setSpeakerSegments((prevSegments) =>
-        prevSegments.map((segment, index) =>
-          index === segmentIndex ? { ...segment, speaker: newSpeaker } : segment
-        )
-      );
+      // Use store action for reassignment instead of local state
+      reassignSegment(segmentIndex, newSpeaker);
       setForceUpdate((prev) => prev + 1);
     },
-    []
+    [reassignSegment]
   );
 
   // Handle reverting all speakers to original auto-detected values
@@ -312,8 +324,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       initializeSpeakers(transcription.transcriptionId, allDetectedSpeakers, []);
       console.log('🔄 RESET: Re-initialized with speakers:', allDetectedSpeakers);
       
-      // Reset speaker segments to original speakers
-      setSpeakerSegments(transcription.speakerSegments || []);
+      // Reset segments to original using store action
+      resetToOriginal();
       console.log('🔄 RESET: Reset speaker segments');
       
       // Force update to reflect changes
@@ -324,28 +336,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     } catch (error) {
       console.error('Failed to revert all speakers:', error);
     }
-  }, [clearSpeakers, initializeSpeakers, transcription.transcriptionId, transcription.speakerSegments, allDetectedSpeakers]);
-
-  // Handle exporting transcription as JSON
-  const handleExportTranscription = useCallback(() => {
-    const dataToExport = {
-      ...transcription,
-      exportedAt: new Date().toISOString(),
-      exportNote: "Real Whisper transcription for testing - saved from TranscriptDisplay component"
-    };
-    
-    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `transcription-${transcription.transcriptionId}-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }, [transcription]);
+  }, [clearSpeakers, initializeSpeakers, resetToOriginal, transcription.transcriptionId, allDetectedSpeakers]);
 
   // Handle deleting transcription - open confirmation dialog
   const handleDeleteTranscription = useCallback(() => {
@@ -504,17 +495,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               />
               
               {/* Export and Delete buttons */}
-              <Tooltip title="Download transcription as JSON for reuse">
-                <IconButton
-                  size="small"
-                  onClick={handleExportTranscription}
-                  color="primary"
-                  sx={{ ml: 1 }}
-                >
-                  <Download />
-                </IconButton>
-              </Tooltip>
-              
               <Tooltip title="Remove transcription">
                 <IconButton
                   size="small"

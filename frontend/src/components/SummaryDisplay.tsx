@@ -32,7 +32,7 @@ import {
   Email,
 } from "@mui/icons-material";
 import type { SpeakerMapping, MeetingSummary } from "../types";
-import { useSpeakerStore } from "../stores/speakerStore";
+import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
 import EmailCompositionDialog from "./EmailCompositionDialog";
 
@@ -55,8 +55,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   speakerMappings,
   onSummaryGenerated,
 }) => {
-  // Get current speaker mappings from Zustand store
-  const { getAllMappings } = useSpeakerStore();
+  // Get current speaker mappings from centralized store
+  const speakerMappings_store = useSpeakerSessionStore(state => state.speakerMappings);
   
   // Use summary store for state management
   const { 
@@ -75,9 +75,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   
   // Use store mappings if available, otherwise fall back to props
   const effectiveSpeakerMappings = useMemo(() => {
-    const storeMappings = getAllMappings();
-    return storeMappings.length > 0 ? storeMappings : (speakerMappings || []);
-  }, [getAllMappings, speakerMappings]);
+    return speakerMappings_store.length > 0 ? speakerMappings_store : (speakerMappings || []);
+  }, [speakerMappings_store, speakerMappings]);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,

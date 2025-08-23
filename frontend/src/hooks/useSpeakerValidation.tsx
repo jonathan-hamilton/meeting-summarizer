@@ -2,14 +2,15 @@ import { useState, useCallback } from "react";
 import {
   validateSpeakerMapping,
   validateAllMappings,
-} from "../stores/speakerStore";
+} from "../utils/speakerValidation";
+import type { AllMappingsValidationResult } from "../utils/speakerValidation";
 import type { ValidationError } from "../types";
 
 interface MappingFormData {
   speakerId: string;
   name: string;
   role: string;
-  email?: string; // S3.4: Optional email field
+  email?: string;
 }
 
 export const useSpeakerValidation = () => {
@@ -48,7 +49,7 @@ export const useSpeakerValidation = () => {
   const validateAllSpeakerMappings = useCallback(
     (allMappings: MappingFormData[]): boolean => {
       // Use store's pure validation function
-      const validationResult = validateAllMappings(allMappings);
+      const validationResult: AllMappingsValidationResult = validateAllMappings(allMappings);
 
       // Update UI state with all errors
       setValidationErrors(validationResult.errorsBySpeaker);

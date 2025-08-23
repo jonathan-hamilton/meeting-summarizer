@@ -2,6 +2,47 @@
 
 ## Recently Resolved Issues
 
+### Speaker Management System Consolidation & Bug Fixes ✅ RESOLVED
+
+**Date Resolved**: August 22, 2025  
+**Component**: Frontend (Speaker Management System)  
+
+**Problem**: Multiple critical issues in speaker management workflow:
+1. Legacy compatibility layers causing maintenance complexity and bugs
+2. Speaker validation errors with default "Role" values triggering uniqueness violations
+3. Incorrect speaker count display after speaker deletion (showing "0/3" instead of "0/2")
+4. UI showing placeholder "(Role)" text in transcript segments when using default values
+5. Missing visual distinction for unassigned speakers after deletion
+6. Unnecessary UI elements cluttering the interface
+
+**Solution**: Complete speaker management system redesign and bug resolution:
+
+- **Legacy Code Elimination**: Removed `speakerStoreCompat.ts`, `speakerStore.ts`, and `speakerMappingStore.ts` compatibility layers
+- **Centralized State Management**: Implemented `speakerSessionStore.ts` as single source of truth
+- **Validation Logic Fix**: Modified validation to exclude default "Role" values from uniqueness checks
+- **Speaker Count Correction**: Fixed active speaker calculation to exclude "Unassigned" speakers from totals
+- **UI Enhancement**: Hide placeholder role text and show only meaningful custom roles
+- **Visual Improvements**: Added distinct grey color (#9e9e9e) for unassigned speakers
+- **Interface Cleanup**: Removed unnecessary JSON download functionality
+
+**Technical Implementation**:
+
+```typescript
+// Centralized store with proper unassigned handling
+const computeActiveSpeakers = (segments: SpeakerSegment[]): string[] => {
+  return Array.from(new Set(
+    segments
+      .map(segment => segment.speaker)
+      .filter(speaker => speaker !== "Unassigned") // Exclude from count
+  ));
+};
+
+// Enhanced validation logic
+if (mapping.role && mapping.role.trim() !== '' && mapping.role !== 'Role') {
+  // Only validate uniqueness for non-default roles
+}
+```
+
 ### Session Component Consolidation & State Management ✅ RESOLVED
 
 **Date Resolved**: August 19, 2025  

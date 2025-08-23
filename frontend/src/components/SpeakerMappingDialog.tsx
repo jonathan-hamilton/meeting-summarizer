@@ -22,7 +22,7 @@ import {
 } from "@mui/icons-material";
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import { sessionManager } from "../services/sessionManager";
-import { useSpeakerStore } from "../stores/speakerStore";
+import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor } from "../theme/speakerColors";
 import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
@@ -60,15 +60,47 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // Track the baseline mappings for change detection
   const [baselineMappings, setBaselineMappings] = useState<SpeakerMapping[]>([]);
 
-  // Use Zustand store for real-time speaker management
-  const { 
-    speakerMappings,
-    initializeSpeakers, 
-    addSpeaker: addSpeakerToStore,
-    updateSpeaker: updateSpeakerInStore,
-    deleteSpeaker: deleteSpeakerFromStore,
-    getAllMappings
-  } = useSpeakerStore();
+  // Use centralized store for real-time speaker management
+  const speakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const addSpeakerMapping = useSpeakerSessionStore(state => state.addSpeakerMapping);
+  const updateSpeakerMapping = useSpeakerSessionStore(state => state.updateSpeakerMapping);
+  const deleteSpeakerMapping = useSpeakerSessionStore(state => state.deleteSpeakerMapping);
+  
+  // Compatibility functions
+  const initializeSpeakers = (transcriptionId: string, detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
+    console.log('SpeakerMappingDialog: initializeSpeakers called', { transcriptionId, detectedSpeakers, existingMappings });
+    
+    // Only add mappings that don't already exist to avoid clearing and re-adding
+    existingMappings.forEach(mapping => {
+      const existingMapping = speakerMappings.find(m => m.speakerId === mapping.speakerId && m.transcriptionId === transcriptionId);
+      if (!existingMapping) {
+        addSpeakerMapping(mapping);
+      }
+    });
+  };
+  
+  const addSpeakerToStore = (speakerId: string, name: string, role?: string) => {
+    addSpeakerMapping({
+      speakerId,
+      name,
+      role: role || '',
+      transcriptionId,
+      source: 'ManuallyAdded',
+      email: ''
+    });
+  };
+  
+  const updateSpeakerInStore = (speakerId: string, updates: Partial<SpeakerMapping>) => {
+    updateSpeakerMapping(speakerId, updates);
+  };
+  
+  const deleteSpeakerFromStore = (speakerId: string) => {
+    deleteSpeakerMapping(speakerId);
+  };
+  
+  const getAllMappings = () => {
+    return speakerMappings;
+  };
 
   // Convert Zustand store data to local format for UI compatibility
   const mappings: MappingFormData[] = useMemo(() => {
@@ -158,7 +190,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
   // Initialize mappings when dialog opens or existing mappings change
   useEffect(() => {
-    if (!open) return;
+    if (!open || !transcriptionId || detectedSpeakers.length === 0) return;
 
     const initializeMappings = () => {
       // Get session overrides only when initializing
@@ -170,6 +202,19 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       console.log('🔄 Dialog initialization - currentStoreMappings:', currentStoreMappings);
       console.log('🔄 Dialog initialization - existingMappings:', existingMappings);
       console.log('🔄 Dialog initialization - detectedSpeakers:', detectedSpeakers);
+
+      // Check if we already have mappings for all detected speakers in this session
+      const hasAllMappings = detectedSpeakers.every(speakerId => 
+        currentStoreMappings.find(m => m.speakerId === speakerId && m.transcriptionId === transcriptionId)
+      );
+
+      if (hasAllMappings) {
+        console.log('🔄 Dialog initialization - speakers already mapped, skipping initialization');
+        // Still set baseline mappings for change detection
+        const existingForDialog = currentStoreMappings.filter(m => m.transcriptionId === transcriptionId);
+        setBaselineMappings([...existingForDialog]);
+        return;
+      }
 
       // Create mappings for detected speakers
       const initialMappings: SpeakerMapping[] = detectedSpeakers.map(
@@ -233,7 +278,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     initializeMappings();
     setError(null);
     setSuccess(false);
-  }, [open, transcriptionId]); // Simplified dependencies to prevent infinite loops
+  }, [open, transcriptionId, detectedSpeakers.join(',')]); // Use join to create stable dependency
 
   // Simple functions for speaker management
   const handleAddSpeaker = useCallback(() => {

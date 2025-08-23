@@ -31,7 +31,7 @@ import {
 } from "@mui/icons-material";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
-import { useSpeakerStore } from "../stores/speakerStore";
+import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor } from "../theme/speakerColors";
 
 interface TranscriptSpeakerSegmentProps {
@@ -65,11 +65,17 @@ export const TranscriptSpeakerSegment: React.FC<
 }) => {
   const { isLoading } = useSessionManagement();
 
-  // Use Zustand store for speaker management
-  const {
-    speakerMappings: storeMappings,
-    detectedSpeakers: storeDetectedSpeakers,
-  } = useSpeakerStore();
+  // Use centralized store for speaker management (fixed infinite loop)
+  const storeMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
+  
+  // Get ALL detected speakers from original segments for reassignment options
+  const originalDetectedSpeakers = useMemo(() => {
+    return Array.from(new Set(originalSegments.map(segment => segment.speaker)));
+  }, [originalSegments]);
+  
+  // Get detected speakers from store mappings as fallback
+  const allStoreDetectedSpeakers = storeMappings.map((mapping: SpeakerMapping) => mapping.speakerId);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [feedback, setFeedback] = useState<{
@@ -86,8 +92,14 @@ export const TranscriptSpeakerSegment: React.FC<
   }, [storeMappings, speakerMappings]);
 
   const effectiveDetectedSpeakers = useMemo(() => {
-    return storeDetectedSpeakers.length > 0 ? storeDetectedSpeakers : [];
-  }, [storeDetectedSpeakers]);
+    // Prefer original detected speakers for reassignment, fallback to store speakers
+    if (originalDetectedSpeakers.length > 0) {
+      console.log('🔍 TranscriptSpeakerSegment: Using original detected speakers:', originalDetectedSpeakers);
+      return originalDetectedSpeakers;
+    }
+    console.log('🔍 TranscriptSpeakerSegment: Using store detected speakers:', allStoreDetectedSpeakers);
+    return allStoreDetectedSpeakers.length > 0 ? allStoreDetectedSpeakers : [];
+  }, [originalDetectedSpeakers, allStoreDetectedSpeakers]);
 
   /**
    * Get all available speaker options
@@ -121,7 +133,8 @@ export const TranscriptSpeakerSegment: React.FC<
       if (mapping) {
         if (mapping.name && mapping.name.trim() !== "") {
           // Mapped speaker with name: show "Name (Role)" or just "Name"
-          displayName = mapping.role
+          // Only show role if it's not the default "Role" placeholder
+          displayName = (mapping.role && mapping.role.trim() !== "" && mapping.role.trim() !== "Role")
             ? `${mapping.name} (${mapping.role})`
             : mapping.name;
         } else {
@@ -169,25 +182,30 @@ export const TranscriptSpeakerSegment: React.FC<
       });
   }, [effectiveMappings, effectiveDetectedSpeakers, segment.speaker]);
 
-  // Get speaker mappings from the store
-  const getAllMappings = useSpeakerStore((state) => state.getAllMappings);
-
   // Memoize current speaker name and effective speaker ID
   const currentSpeakerInfo = useMemo(() => {
     // For individual segments, use the actual segment.speaker (which gets updated by parent component)
     // Session overrides are only used for global speaker-to-speaker reassignments, not individual segments
     const effectiveSpeakerId = segment.speaker;
     
+    // Handle explicitly unassigned speakers
+    if (effectiveSpeakerId === "Unassigned") {
+      return {
+        effectiveSpeakerId,
+        displayName: "Unassigned"
+      };
+    }
+    
     // Look up the assigned name and role from speaker mappings using the effective speaker ID
-    const mapping = getAllMappings().find((m: SpeakerMapping) => m.speakerId === effectiveSpeakerId);
-    const allMappings = getAllMappings();
+    const mapping = storeMappings.find((m: SpeakerMapping) => m.speakerId === effectiveSpeakerId);
     
     let displayName = effectiveSpeakerId; // Default to speaker ID
     
     if (mapping) {
       if (mapping.name && mapping.name.trim()) {
         displayName = mapping.name.trim();
-        if (mapping.role && mapping.role.trim()) {
+        // Only show role if it's not the default "Role" placeholder
+        if (mapping.role && mapping.role.trim() && mapping.role.trim() !== "Role") {
           displayName += ` (${mapping.role.trim()})`;
         }
       } else {
@@ -197,7 +215,7 @@ export const TranscriptSpeakerSegment: React.FC<
     } else {
       // No mapping found - check if this is a deleted speaker vs uninitialized
       // If there are mappings for other speakers, this one might be deleted
-      const hasAnyMappings = allMappings.length > 0;
+      const hasAnyMappings = storeMappings.length > 0;
       const isLikelyDeleted = hasAnyMappings && 
         (effectiveSpeakerId.startsWith('Speaker ') || effectiveSpeakerId.match(/^Speaker\s*\d+$/i));
       
@@ -213,7 +231,7 @@ export const TranscriptSpeakerSegment: React.FC<
       effectiveSpeakerId,
       displayName
     };
-  }, [segment.speaker, getAllMappings]);
+  }, [segment.speaker, storeMappings]);
 
   // Memoize time formatting function
   const formatTime = useCallback((seconds: number): string => {

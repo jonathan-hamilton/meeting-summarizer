@@ -28,6 +28,11 @@ export const SPEAKER_COLORS = [
  * @returns A hex color string
  */
 export const getSpeakerColor = (speakerId: string): string => {
+  // Special handling for unassigned speakers
+  if (speakerId === "Unassigned") {
+    return "#9e9e9e"; // Grey color for unassigned speakers
+  }
+  
   // Generate a consistent color based on speaker ID
   let hash = 0;
   for (let i = 0; i < speakerId.length; i++) {
