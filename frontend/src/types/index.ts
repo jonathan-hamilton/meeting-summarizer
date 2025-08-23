@@ -125,6 +125,28 @@ export interface RequestConfig {
   headers?: Record<string, string>;
 }
 
+// Legacy Summary Types (for backward compatibility with tests)
+export type SummaryStyle = 'Brief' | 'Detailed' | 'ActionItems' | 'ExecutiveSummary';
+
+export const SummaryStyle = {
+  Brief: 'Brief' as const,
+  Detailed: 'Detailed' as const,
+  ActionItems: 'ActionItems' as const,
+  ExecutiveSummary: 'ExecutiveSummary' as const
+};
+
+export interface SummaryResult {
+  summaryId: string;
+  transcriptionId: string;
+  summaryType: SummaryStyle;
+  content: string;
+  generatedAt: string;
+  processingTimeMs: number;
+  tokenCount: number;
+  wordCount?: number;
+  characterCount?: number;
+}
+
 // S3.4: Meeting Summary Types (replacing old summary system)
 export interface MeetingSummaryRequest {
   Transcript: string; // S3.4: Match backend PascalCase

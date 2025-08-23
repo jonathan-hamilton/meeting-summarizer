@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { SpeakerMappingComponent } from "../../components/SpeakerMapping";
-import { useSpeakerStore } from "../../stores/speakerStore";
+import { useSpeakerSessionStore, useActiveSpeakers } from "../../stores/speakerSessionStore";
 import { sessionManager } from "../../services/sessionManager";
 import type { SpeakerMapping } from "../../types";
 
 // Mock dependencies
-vi.mock("../../stores/speakerStore");
+vi.mock("../../stores/speakerSessionStore");
 vi.mock("../../services/sessionManager");
 vi.mock("../../components/SpeakerMappingDialog", () => ({
   SpeakerMappingDialog: vi.fn(({ open, onClose }) =>
@@ -23,9 +23,8 @@ vi.mock("../../theme/speakerColors", () => ({
   getSpeakerColor: vi.fn((speakerId: string) => `#${speakerId.slice(-6)}`),
 }));
 
-const mockUseSpeakerStore = useSpeakerStore as jest.MockedFunction<
-  typeof useSpeakerStore
->;
+const mockUseSpeakerSessionStore = useSpeakerSessionStore as unknown as ReturnType<typeof vi.fn>;
+const mockUseActiveSpeakers = useActiveSpeakers as unknown as ReturnType<typeof vi.fn>;
 const mockSessionManager = sessionManager as unknown as {
   getOverrides: ReturnType<typeof vi.fn>;
 };

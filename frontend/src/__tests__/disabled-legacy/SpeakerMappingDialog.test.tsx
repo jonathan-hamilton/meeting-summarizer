@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SpeakerMappingDialog } from "../../components/SpeakerMappingDialog";
 import { apiService } from "../../services/apiService";
-import { useSpeakerStore } from "../../stores/speakerStore";
+import { useSpeakerSessionStore } from "../../stores/speakerSessionStore";
 import { sessionManager } from "../../services/sessionManager";
 import type { SpeakerMapping } from "../../types";
 import { SpeakerSource } from "../../types";
@@ -15,15 +15,19 @@ vi.mock("../../services/apiService", () => ({
   },
 }));
 
-// Mock Zustand store
-vi.mock("../../stores/speakerStore", () => ({
-  useSpeakerStore: vi.fn(),
+// Mock validation utilities
+vi.mock("../../utils/speakerValidation", () => ({
   validateAllMappings: vi.fn((mappings) => ({
     isValid: mappings.every(
       (m: SpeakerMapping) => m.name && m.name.trim() !== ""
     ),
     errorsBySpeaker: new Map(),
   })),
+}));
+
+// Mock Zustand store
+vi.mock("../../stores/speakerSessionStore", () => ({
+  useSpeakerSessionStore: vi.fn(),
 }));
 
 // Mock session manager
@@ -129,7 +133,7 @@ const mockApiService = apiService.saveSpeakerMappings as ReturnType<
   typeof vi.fn
 >;
 
-const mockUseSpeakerStore = useSpeakerStore as unknown as ReturnType<
+const mockUseSpeakerSessionStore = useSpeakerSessionStore as unknown as ReturnType<
   typeof vi.fn
 >;
 
@@ -158,24 +162,37 @@ describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
   };
 
   const mockStoreState = {
+    // Base State
+    transcriptionId: "test-transcription-123",
+    originalSegments: [],
+    currentSegments: [],
     speakerMappings: [],
-    detectedSpeakers: ["Speaker 1", "Speaker 2"],
-    addSpeaker: vi.fn(),
-    updateSpeaker: vi.fn(),
-    deleteSpeaker: vi.fn(),
-    getMappedCount: vi.fn(() => 0),
-    getUnmappedSpeakers: vi.fn(() => ["Speaker 1", "Speaker 2"]),
-    getAllMappings: vi.fn(() => []),
-    getSpeakerMapping: vi.fn(),
-    initializeSpeakers: vi.fn(),
-    clearSpeakers: vi.fn(),
+    
+    // Cache
+    _computedCache: null,
+    
+    // Actions
+    initializeSession: vi.fn(),
+    reassignSegment: vi.fn(),
+    updateSpeakerMapping: vi.fn(),
+    addSpeakerMapping: vi.fn(),
+    deleteSpeakerMapping: vi.fn(),
+    resetToOriginal: vi.fn(),
+    clearSession: vi.fn(),
+    
+    // Selectors
+    getActiveSpeakers: vi.fn(() => ["Speaker 1", "Speaker 2"]),
+    getSpeakerStats: vi.fn(() => ({ totalCount: 2, mappedCount: 0, isFullyMapped: false })),
+    getFilteredMappings: vi.fn(() => []),
+    getStructurallyInvalidated: vi.fn(() => false),
+    getHasUnsavedChanges: vi.fn(() => false),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Mock Zustand store with default state
-    mockUseSpeakerStore.mockReturnValue(mockStoreState);
+    mockUseSpeakerSessionStore.mockReturnValue(mockStoreState);
 
     // Reset mock functions
     mockStoreState.addSpeaker.mockClear();
@@ -593,7 +610,7 @@ describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
         },
       ];
 
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         ...mockStoreState,
         speakerMappings: mockMappings,
         getMappedCount: vi.fn(() => 1),
@@ -634,7 +651,7 @@ describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
       const user = userEvent.setup();
 
       // Mock existing speaker
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         ...mockStoreState,
         speakerMappings: [
           {
@@ -671,7 +688,7 @@ describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
       const user = userEvent.setup();
 
       // Mock existing speaker
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         ...mockStoreState,
         speakerMappings: [
           {
@@ -750,7 +767,7 @@ describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
 
       // Should only interact with session-based store
       await waitFor(() => {
-        expect(mockUseSpeakerStore).toHaveBeenCalled();
+        expect(mockUseSpeakerSessionStore).toHaveBeenCalled();
       });
     });
   });

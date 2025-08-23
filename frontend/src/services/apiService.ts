@@ -312,6 +312,35 @@ class ApiService {
     });
   }
 
+  // Legacy Summary Generation Methods (S2.4 compatibility)
+  async generateSummary(request: { 
+    transcript: string; 
+    style: string; 
+    targetRole?: string; 
+    maxTokens?: number; 
+  }): Promise<ApiResponse<any>> {
+    return this.request<any>({
+      method: 'POST',
+      url: '/api/summary/generate',
+      data: request,
+      timeout: 60000, // 1 minute for AI generation
+    });
+  }
+
+  async generateTranscriptionSummary(transcriptionId: string, request: { 
+    transcriptionId: string; 
+    style: string; 
+    targetRole?: string; 
+    maxTokens?: number; 
+  }): Promise<ApiResponse<any>> {
+    return this.request<any>({
+      method: 'POST',
+      url: `/api/summary/${transcriptionId}/summarize`,
+      data: request,
+      timeout: 60000, // 1 minute for AI generation
+    });
+  }
+
   // OpenAI Toggle Methods
   async getOpenAIStatus(): Promise<ApiResponse<{ isEnabled: boolean; mode: string }>> {
     return this.request<{ isEnabled: boolean; mode: string }>({

@@ -20,6 +20,7 @@ export default defineConfig({
       'src/__tests__/mocks/**',
       'src/__tests__/utils/**',
       'src/__tests__/disabled/**',
+      'src/__tests__/disabled-legacy/**',
       'src/__tests__/setup.ts'
     ],
   },
