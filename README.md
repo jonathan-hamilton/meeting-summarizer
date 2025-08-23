@@ -1,20 +1,23 @@
 # Meeting Summarizer 🎤📝
 
-A modern web application for transcribing and summarizing meeting audio using OpenAI's Whisper API and GPT models.
+A modern web application for transcribing and summarizing meeting audio using Azure Speech Services and OpenAI's Whisper API with GPT models for enhanced accuracy and reliability.
 
-## ✅ Current Status - Sprint 3 COMPLETE ✅
+## ✅ Current Status - Sprint 4 IN PROGRESS 🔄
 
-### 🎯 **Sprint 3 Major Achievement: Test Suite Recovery**
+### 🎯 **Sprint 4 Major Achievement: Azure Speech Services Integration**
 
-**August 22, 2025**: Successfully recovered test suite from **82 failing tests to 100% success** (99 passing, 0 failing)
-- ✅ **Phase 1**: 91% improvement (82 → 9 failing tests) through infrastructure recovery
-- ✅ **Phase 2**: 100% completion (9 → 0 failing tests) with API service enhancements
-- ✅ **Legacy Preservation**: 76 legacy tests preserved in `disabled-legacy/` for historical reference
-- ✅ **Robust Foundation**: 2.60s runtime with comprehensive error handling
+**August 23, 2025**: Successfully integrated Azure Speech Services with robust fallback architecture
+- ✅ **S4.1 COMPLETE**: Azure Speech Services SDK v1.40.0 integration with composite service pattern
+- ✅ **Service Architecture**: ITranscriptionService abstraction with Azure primary + OpenAI fallback
+- ✅ **Production Ready**: Configuration management, error handling, and timeout scenarios
+- ✅ **End-to-End Validated**: Full workflow tested with real audio files (1.59MB sample-scrum.mp3)
 
 ### 🚀 **Production Ready Features**
 
-- **Audio Transcription**: Real-time transcription using OpenAI Whisper API with up to 1GB file support
+- **Dual Transcription Services**: Azure Speech Services primary with OpenAI Whisper fallback for maximum reliability
+- **Enhanced Speaker Diarization**: Improved accuracy through Azure Speech Services integration  
+- **Audio Transcription**: Real-time transcription with up to 1GB file support
+- **Intelligent Fallback**: Automatic service switching when Azure timeouts or fails
 - **Speaker Diarization**: Automatic speaker identification and segmentation  
 - **Speaker Management**: Complete CRUD operations with centralized state management
 - **Session-Based Privacy**: Automatic data cleanup with 2-hour session timeout
@@ -28,18 +31,16 @@ A modern web application for transcribing and summarizing meeting audio using Op
 
 - ✅ **Sprint 1**: Complete audio transcription pipeline with OpenAI integration
 - ✅ **Sprint 2**: Speaker role management and AI-powered meeting summarization  
-- ✅ **S3.1**: Session-based speaker override system with automatic cleanup
-- ✅ **S3.2**: Complete speaker CRUD interface with real-time validation
-- ✅ **S3.3**: Segment-level speaker reassignment with confidence tracking
-- ✅ **S3.4**: AI meeting summary generation with professional email sharing
-- ✅ **S3.5**: Privacy communication and data controls with session management
-- ✅ **S3.6**: State management redesign with comprehensive test recovery
+- ✅ **Sprint 3**: Complete speaker management system with test suite recovery (99 passing tests)
+- ✅ **S4.1**: Azure Speech Services integration with composite service architecture and fallback logic
 
 ## 🏗️ Architecture
 
 ### Backend (.NET 9 Web API)
 
-- **OpenAI Integration**: Production-ready Whisper API and GPT-4 integration
+- **Azure Speech Services**: Primary transcription service with REST API integration
+- **OpenAI Integration**: Production-ready Whisper API and GPT-4 integration with fallback support
+- **Composite Service Architecture**: Intelligent service switching with robust error handling
 - **Email Service**: SendGrid integration for professional meeting summary delivery
 - **Session Management**: Automatic 2-hour session timeout with data cleanup
 - **Mock Fallback Service**: Automatic fallback for development/testing
@@ -65,6 +66,7 @@ A modern web application for transcribing and summarizing meeting audio using Op
 
 - .NET 9 SDK
 - Node.js 18+ with npm
+- Azure Speech Services API key (optional - falls back to OpenAI)
 - OpenAI API key (optional - falls back to mock service)
 - SendGrid API key (optional - for email sharing features)
 

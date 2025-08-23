@@ -13,18 +13,18 @@ namespace MeetingSummarizer.Api.Controllers;
 public class SummaryController : ControllerBase
 {
     private readonly ILogger<SummaryController> _logger;
-    private readonly IOpenAIService _openAIService;
+    private readonly ITranscriptionService _transcriptionService;
     private readonly ISummarizationService _summarizationService;
     private readonly ISpeakerMappingService _speakerMappingService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
-        IOpenAIService openAIService,
+        ITranscriptionService transcriptionService,
         ISummarizationService summarizationService,
         ISpeakerMappingService speakerMappingService)
     {
         _logger = logger;
-        _openAIService = openAIService;
+        _transcriptionService = transcriptionService;
         _summarizationService = summarizationService;
         _speakerMappingService = speakerMappingService;
     }
@@ -65,9 +65,9 @@ public class SummaryController : ControllerBase
 
             try
             {
-                // Use OpenAI service for transcription with speaker diarization
+                // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
                 using var audioStream = request.AudioFile.OpenReadStream();
-                var transcriptionResult = await _openAIService.TranscribeAudioWithMetadataAsync(
+                var transcriptionResult = await _transcriptionService.TranscribeAudioWithMetadataAsync(
                     audioStream,
                     request.AudioFile.FileName
                 );
@@ -180,9 +180,9 @@ public class SummaryController : ControllerBase
 
             try
             {
-                // Use OpenAI service for enhanced transcription with speaker diarization
+                // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
                 using var audioStream = request.AudioFile.OpenReadStream();
-                var transcriptionResult = await _openAIService.TranscribeAudioWithMetadataAsync(
+                var transcriptionResult = await _transcriptionService.TranscribeAudioWithMetadataAsync(
                     audioStream,
                     request.AudioFile.FileName
                 );

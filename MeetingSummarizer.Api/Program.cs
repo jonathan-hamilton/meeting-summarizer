@@ -41,8 +41,12 @@ builder.Services.AddCors(options =>
 });
 
 // Add dependency injection for services
-// Configure transcription service with automatic OpenAI/Mock fallback
+// Configure Azure Speech Services (S4.1)
+builder.Services.AddAzureSpeechServices(builder.Configuration);
+
+// Configure transcription service with Azure primary and OpenAI fallback (S4.1)
 builder.Services.AddTranscriptionService(builder.Configuration);
+builder.Services.AddCompositeTranscriptionService();
 
 // Register session-based speaker mapping service (S3.1)
 builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
@@ -59,7 +63,7 @@ builder.Services.AddEmailServices(builder.Configuration);
 
 var app = builder.Build();
 
-// Validate OpenAI configuration on startup
+// Validate OpenAI and Azure configuration on startup
 using (var scope = app.Services.CreateScope())
 {
     var openAIOptions = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<OpenAIOptions>>();
@@ -75,6 +79,9 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("OpenAI configuration validated successfully. Using model: {TranscriptionModel} for transcription, {ChatModel} for chat",
             openAIOptions.Value.DefaultTranscriptionModel, openAIOptions.Value.DefaultChatModel);
     }
+
+    // Validate Azure Speech Services configuration (S4.1)
+    scope.ServiceProvider.ValidateAzureSpeechConfiguration();
 }
 
 // Configure the HTTP request pipeline.
