@@ -517,6 +517,16 @@
 - REQ-UI-4: Status chips shall update in real-time to reflect current transcript processing status (S5.1)
 - REQ-UI-5: System shall implement chip click handlers for enhanced user interaction and transcript navigation (S5.1)
 
+### Upload Progress Interface Fixes
+
+- REQ-UI-6: System shall display accurate upload progress percentage that reflects actual file upload completion (S5.1)
+- REQ-UI-7: Upload progress bar shall smoothly animate from 0% to 100% without jumping or freezing (S5.1)
+- REQ-UI-8: System shall provide clear visual feedback during each phase of processing (upload, transcription, speaker detection) (S5.1)
+- REQ-UI-9: Upload interface shall handle large file uploads gracefully with appropriate timeout and retry mechanisms (S5.1)
+- REQ-UI-10: System shall display meaningful status messages during upload progress (e.g., "Uploading audio...", "Processing transcription...", "Detecting speakers...") (S5.1)
+- REQ-UI-11: Upload progress shall persist across page refreshes until processing is complete (S5.1)
+- REQ-UI-12: System shall provide cancel functionality during upload with proper cleanup of partial uploads (S5.1)
+
 ### Speaker Management Cleanup
 
 - REQ-SPK-25: System shall automatically remove speakers that have no assigned segments and no name/role mapping (S5.2)
