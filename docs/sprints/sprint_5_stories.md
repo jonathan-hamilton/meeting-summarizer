@@ -2,7 +2,7 @@
 
 **Sprint Duration:** 2-3 weeks  
 **Sprint Goal:** Polish user interface functionality and prepare application for production deployment  
-**Total Story Points:** 16  
+**Total Story Points:** 21  
 **Sprint Status:** 🔄 PLANNED
 
 ## Sprint Overview
@@ -11,25 +11,33 @@ Sprint 5 focuses on completing the user interface polish and production readines
 
 ### Strategic Priorities
 1. **UI Functionality** - Fix non-functional interface elements and improve user interactions
-2. **Speaker Management** - Automate cleanup processes to reduce manual overhead
-3. **Production Ready** - Hide development controls and prepare clean production interface
-4. **User Experience** - Ensure all interface components work seamlessly
+2. **Upload Experience** - Resolve progress bar issues and enhance upload feedback
+3. **Speaker Management** - Automate cleanup processes to reduce manual overhead
+4. **Production Ready** - Hide development controls and prepare clean production interface
+5. **User Experience** - Ensure all interface components work seamlessly
 
 ## User Stories
 
-### S5.1: UI Status Chips & Controls Fix
+### S5.1: UI Status Chips & Upload Progress Fix
 **Priority:** High  
-**Story Points:** 5  
+**Story Points:** 8  
 **Status:** 🔄 PLANNED  
 **Dependencies:** Current UI component system
 
-**As a** user reviewing transcript results  
-**I want** functional status chips and working summary controls  
-**So that** I can easily navigate and interact with meeting results
+**As a** user reviewing transcript results and uploading files  
+**I want** functional status chips, working summary controls, and reliable upload progress feedback  
+**So that** I can easily navigate and interact with meeting results and track upload status accurately
 
 #### Acceptance Criteria
 - [ ] Status chips in transcript results are functional (REQ-UI-1 to REQ-UI-5)
 - [ ] Summary section chips and buttons work properly (REQ-SUM-1 to REQ-SUM-5)
+- [ ] Upload progress bar displays accurate progress percentages (REQ-UI-6)
+- [ ] Upload progress animates smoothly without freezing or jumping (REQ-UI-7)
+- [ ] Clear visual feedback for each processing phase (REQ-UI-8)
+- [ ] Large file upload handling with proper timeouts (REQ-UI-9)
+- [ ] Meaningful status messages during upload progress (REQ-UI-10)
+- [ ] Upload progress persistence across page refreshes (REQ-UI-11)
+- [ ] Upload cancellation functionality with cleanup (REQ-UI-12)
 - [ ] Click handlers and state management implemented
 - [ ] Visual feedback for user interactions
 - [ ] Consistent styling with Material-UI theme
@@ -39,12 +47,19 @@ Sprint 5 focuses on completing the user interface polish and production readines
 - Implement proper state management for chip selections
 - Add loading states and user feedback
 - Update summary section component functionality
+- Fix upload progress bar calculation and animation
+- Implement proper upload phase tracking
+- Add upload cancellation and cleanup mechanisms
+- Ensure upload progress state persistence
+- Implement retry logic for failed uploads
 - Ensure accessibility compliance for interactive elements
 
 #### UI Components Affected
 - Transcript results status chips
 - Summary section navigation chips
 - Action buttons in summary interface
+- Upload progress bar and status indicators
+- Upload phase messaging and feedback
 - State indicators and loading feedback
 
 ---
@@ -113,11 +128,11 @@ Sprint 5 focuses on completing the user interface polish and production readines
 
 ## Sprint Progress Tracker
 
-### Overall Progress: 0% Complete (0/3 stories) - 0/16 Story Points Complete
+### Overall Progress: 0% Complete (0/3 stories) - 0/21 Story Points Complete
 
 | Story | Title | Story Points | Status | Progress |
 |-------|--------|-------------|---------|----------|
-| S5.1 | UI Status Chips & Controls Fix | 5 | 🔄 PLANNED | 0% |
+| S5.1 | UI Status Chips & Upload Progress Fix | 8 | 🔄 PLANNED | 0% |
 | S5.2 | Speaker Management Cleanup Automation | 8 | 🔄 PLANNED | 0% |
 | S5.3 | Development Controls Production Hiding | 3 | 🔄 PLANNED | 0% |
 
