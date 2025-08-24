@@ -21,6 +21,9 @@
 - REQ-TRN-8: System shall handle overlapping speech and identify primary speaker per segment
 - REQ-TRN-9: System shall use Azure batch transcription mode for cost optimization and free diarization
 - REQ-TRN-10: System shall fall back to OpenAI Whisper when Azure Speech Services fails
+- REQ-TRN-11: System shall support long-duration meetings up to 60 minutes using Azure Batch Transcription API for files exceeding 5 minutes or showing truncation issues with real-time API (S4.2)
+- REQ-TRN-12: System shall automatically detect when audio files require batch processing based on duration estimation and file size thresholds (S4.3)
+- REQ-TRN-13: System shall provide appropriate user feedback and estimated processing times for batch transcription operations (S4.4)
 
 ### Speaker Identification Enhancement
 
@@ -508,19 +511,19 @@
 
 ### Transcript Results Section Improvements
 
-- REQ-UI-1: System shall implement functional status chips in Transcript Results section showing accurate processing state
-- REQ-UI-2: Transcript Results chips shall display relevant metadata (duration, confidence, speaker count)
-- REQ-UI-3: System shall provide interactive chips for quick filtering and navigation within transcript results
-- REQ-UI-4: Status chips shall update in real-time to reflect current transcript processing status
-- REQ-UI-5: System shall implement chip click handlers for enhanced user interaction and transcript navigation
+- REQ-UI-1: System shall implement functional status chips in Transcript Results section showing accurate processing state (S5.1)
+- REQ-UI-2: Transcript Results chips shall display relevant metadata (duration, confidence, speaker count) (S5.1)
+- REQ-UI-3: System shall provide interactive chips for quick filtering and navigation within transcript results (S5.1)
+- REQ-UI-4: Status chips shall update in real-time to reflect current transcript processing status (S5.1)
+- REQ-UI-5: System shall implement chip click handlers for enhanced user interaction and transcript navigation (S5.1)
 
 ### Speaker Management Cleanup
 
-- REQ-SPK-25: System shall automatically remove speakers that have no assigned segments and no name/role mapping
-- REQ-SPK-26: System shall perform speaker cleanup operation after manual speaker mapping changes
-- REQ-SPK-27: System shall validate speaker relevance before including in speaker mapping interface
-- REQ-SPK-28: System shall provide clear indication when speakers are removed due to lack of segments
-- REQ-SPK-29: System shall maintain speaker mapping consistency across transcript and summary sections
+- REQ-SPK-25: System shall automatically remove speakers that have no assigned segments and no name/role mapping (S5.2)
+- REQ-SPK-26: System shall perform speaker cleanup operation after manual speaker mapping changes (S5.2)
+- REQ-SPK-27: System shall validate speaker relevance before including in speaker mapping interface (S5.2)
+- REQ-SPK-28: System shall provide clear indication when speakers are removed due to lack of segments (S5.2)
+- REQ-SPK-29: System shall maintain speaker mapping consistency across transcript and summary sections (S5.2)
 
 ### Bulk Speaker Assignment
 
@@ -537,21 +540,21 @@
 
 ### Summary Section Enhancements
 
-- REQ-SUM-1: System shall implement functional status chips in Summary section reflecting actual generation state
-- REQ-SUM-2: Summary section buttons shall be contextually relevant and functional for current summary state
-- REQ-SUM-3: System shall provide clear action buttons for summary regeneration, editing, and sharing
-- REQ-SUM-4: Summary chips shall display generation timestamp, token usage, and confidence metrics
-- REQ-SUM-5: System shall implement summary versioning with ability to compare different generated versions
+- REQ-SUM-1: System shall implement functional status chips in Summary section reflecting actual generation state (S5.1)
+- REQ-SUM-2: Summary section buttons shall be contextually relevant and functional for current summary state (S5.1)
+- REQ-SUM-3: System shall provide clear action buttons for summary regeneration, editing, and sharing (S5.1)
+- REQ-SUM-4: Summary chips shall display generation timestamp, token usage, and confidence metrics (S5.1)
+- REQ-SUM-5: System shall implement summary versioning with ability to compare different generated versions (S5.1)
 
 ### Development Environment Controls
 
-- REQ-DEV-1: System shall hide debug toggle controls in non-development environments
-- REQ-DEV-2: Server status indicators shall be visible only in local development mode
-- REQ-DEV-3: JSON download functionality shall be restricted to development and testing environments
-- REQ-DEV-4: System shall implement environment detection for feature availability
-- REQ-DEV-5: Production builds shall exclude all development-only UI elements and controls
-- REQ-DEV-6: System shall provide environment-specific feature flags for debugging tools
-- REQ-DEV-7: Development tools shall be accessible via configuration or environment variables only
+- REQ-DEV-1: System shall hide debug toggle controls in non-development environments (S5.3)
+- REQ-DEV-2: Server status indicators shall be visible only in local development mode (S5.3)
+- REQ-DEV-3: JSON download functionality shall be restricted to development and testing environments (S5.3)
+- REQ-DEV-4: System shall implement environment detection for feature availability (S5.3)
+- REQ-DEV-5: Production builds shall exclude all development-only UI elements and controls (S5.3)
+- REQ-DEV-6: System shall provide environment-specific feature flags for debugging tools (S5.3)
+- REQ-DEV-7: Development tools shall be accessible via configuration or environment variables only (S5.3)
 
 ## Technical Implementation Requirements
 

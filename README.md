@@ -4,48 +4,48 @@ A modern web application for transcribing and summarizing meeting audio using Az
 
 ## ✅ Current Status - Sprint 4 IN PROGRESS 🔄
 
-### 🎯 **Sprint 4 Major Achievement: Azure Speech Services Integration**
+### 🎯 **Sprint 4: Azure Migration & Core Fixes (37% Complete)**
 
-**August 23, 2025**: Successfully integrated Azure Speech Services with robust fallback architecture
+**August 23, 2025**: Azure Speech Services integration complete, batch transcription ready to implement
 - ✅ **S4.1 COMPLETE**: Azure Speech Services SDK v1.40.0 integration with composite service pattern
-- ✅ **Service Architecture**: ITranscriptionService abstraction with Azure primary + OpenAI fallback
-- ✅ **Production Ready**: Configuration management, error handling, and timeout scenarios
-- ✅ **End-to-End Validated**: Full workflow tested with real audio files (1.59MB sample-scrum.mp3)
+- ✅ **Sprint Preparation**: Azure-only transcription configured, OpenAI disabled for transcription
+- 🔄 **S4.2 READY**: Azure Batch Transcription API implementation (addresses 96.5-second truncation)
+- 🔄 **S4.3 PLANNED**: Audio duration detection and intelligent processing mode selection
+- 🔄 **S4.4 PLANNED**: Batch processing user experience enhancements
 
 ### 🚀 **Production Ready Features**
 
-- **Dual Transcription Services**: Azure Speech Services primary with OpenAI Whisper fallback for maximum reliability
+- **Azure Speech Services**: Primary transcription service with real-time API (batch API coming in S4.2)
 - **Enhanced Speaker Diarization**: Improved accuracy through Azure Speech Services integration  
-- **Audio Transcription**: Real-time transcription with up to 1GB file support
-- **Intelligent Fallback**: Automatic service switching when Azure timeouts or fails
-- **Speaker Diarization**: Automatic speaker identification and segmentation  
+- **Audio Transcription**: Real-time transcription with files up to ~90 seconds (batch mode for longer files in S4.2)
+- **OpenAI Summarization**: GPT-4 meeting summarization with action item extraction (transcription via Azure only)
 - **Speaker Management**: Complete CRUD operations with centralized state management
 - **Session-Based Privacy**: Automatic data cleanup with 2-hour session timeout
-- **AI-Powered Summaries**: GPT-4 meeting summarization with action item extraction
 - **Email Sharing**: Professional email delivery with SendGrid integration
-- **Advanced File Upload**: Drag & drop interface with progress tracking (supports up to 1GB files)
+- **Advanced File Upload**: Drag & drop interface with progress tracking
 - **Real-time Display**: Live transcript display with speaker labels and segment editing
 - **Privacy Controls**: Session status indicators with data size tracking and export options
 
-### 📊 **Recent Achievements**
+### 📊 **Sprint Progress**
 
 - ✅ **Sprint 1**: Complete audio transcription pipeline with OpenAI integration
 - ✅ **Sprint 2**: Speaker role management and AI-powered meeting summarization  
 - ✅ **Sprint 3**: Complete speaker management system with test suite recovery (99 passing tests)
-- ✅ **S4.1**: Azure Speech Services integration with composite service architecture and fallback logic
+- ✅ **S4.1**: Azure Speech Services integration with real-time API and service architecture
+- 🔄 **S4.2-S4.4**: Azure Batch Transcription API implementation (resolves truncation issues for meeting-length recordings)
 
 ## 🏗️ Architecture
 
 ### Backend (.NET 9 Web API)
 
-- **Azure Speech Services**: Primary transcription service with REST API integration
-- **OpenAI Integration**: Production-ready Whisper API and GPT-4 integration with fallback support
-- **Composite Service Architecture**: Intelligent service switching with robust error handling
+- **Azure Speech Services**: Primary transcription service with real-time API (batch API implementation in S4.2)
+- **OpenAI Integration**: GPT-4 summarization only (transcription handled by Azure Speech Services)
+- **Service Architecture**: Clean Azure-only transcription with ITranscriptionService abstraction
 - **Email Service**: SendGrid integration for professional meeting summary delivery
 - **Session Management**: Automatic 2-hour session timeout with data cleanup
-- **Mock Fallback Service**: Automatic fallback for development/testing
+- **Mock Fallback Service**: Automatic fallback for development/testing (summarization only)
 - **Enhanced Error Handling**: Retry logic with exponential backoff
-- **File Support**: Up to 1GB audio file processing with robust validation
+- **File Support**: Currently ~90 seconds (real-time API), expanding to 60 minutes with batch API (S4.2)
 - **Secure Configuration**: User secrets and environment variable support
 - **Comprehensive Logging**: Detailed operation tracking and monitoring
 

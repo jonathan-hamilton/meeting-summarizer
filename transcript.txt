@@ -1,0 +1,31 @@
+Speaker 1: Speaker One, Scrum Master.
+
+Speaker 2: Good morning, everyone.
+
+Speaker 3: Let's get started with our Sprint stand up.
+
+Speaker 1: I'll go first.
+
+Speaker 2: Yesterday, I finalized the API integration plan and synched with product on the new requirements.
+
+Speaker 3: Today, I'll be working on refining the Sprint backlog and reviewing open pull requests.
+
+Speaker 1: No blockers on my side.
+
+Speaker 2: Speaker 2, back end developer.
+
+Speaker 3: Thanks.
+
+Speaker 1: Yesterday, I completed the database migration script and tested it against our staging environment.
+
+Speaker 2: Today, I'll focus on optimizing.
+
+Speaker 3: Query performance and helping QA with data validation.
+
+Speaker 1: I'll also take ownership of documenting the migration steps for production.
+
+Speaker 2: I might need DevOps support later with connection pooling speaker 3 front end developer.
+
+Speaker 3: Yesterday I wrapped up the new dashboard layout and merged the styling changes.
+
+Speaker 1: Today I'll connect the dashboard to the API endpoints and start working on the login flow bug.

@@ -24,7 +24,7 @@ public class CompositeTranscriptionService : ITranscriptionService
 
     public async Task<TranscriptionResult> TranscribeAudioWithMetadataAsync(Stream audioStream, string fileName, CancellationToken cancellationToken = default)
     {
-        // Try Azure Speech Services first
+        // Try Azure Speech Services (OpenAI fallback temporarily disabled for debugging)
         try
         {
             if (await _azureService.IsServiceAvailableAsync(cancellationToken))
@@ -39,42 +39,20 @@ public class CompositeTranscriptionService : ITranscriptionService
 
                 var result = await _azureService.TranscribeAudioWithMetadataAsync(audioStream, fileName, cancellationToken);
                 
-                _logger.LogInformation("Azure Speech Services transcription completed successfully for {FileName}", fileName);
+                _logger.LogInformation("Azure Speech Services transcription completed for {FileName}", fileName);
                 return result;
             }
             else
             {
-                _logger.LogWarning("Azure Speech Services is not available, falling back to OpenAI Whisper");
+                _logger.LogError("Azure Speech Services is not available");
+                throw new InvalidOperationException("Azure Speech Services is not available and OpenAI fallback is disabled for debugging");
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Azure Speech Services transcription failed for {FileName}, falling back to OpenAI Whisper: {Message}", 
+            _logger.LogError(ex, "Azure Speech Services transcription failed for {FileName}: {Message}", 
                 fileName, ex.Message);
-        }
-
-        // Fallback to OpenAI Whisper
-        try
-        {
-            _logger.LogInformation("Using OpenAI Whisper fallback for transcription of {FileName}", fileName);
-            
-            // Reset stream position for OpenAI
-            if (audioStream.CanSeek)
-            {
-                audioStream.Seek(0, SeekOrigin.Begin);
-            }
-
-            var result = await _openAIService.TranscribeAudioWithMetadataAsync(audioStream, fileName, cancellationToken);
-            
-            _logger.LogInformation("OpenAI Whisper fallback transcription completed for {FileName}", fileName);
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Both Azure and OpenAI transcription services failed for {FileName}: {Message}", 
-                fileName, ex.Message);
-            throw new InvalidOperationException(
-                $"All transcription services failed for {fileName}. Azure: unavailable or failed, OpenAI: {ex.Message}", ex);
+            throw; // OpenAI fallback disabled - Azure must work
         }
     }
 

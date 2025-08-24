@@ -90,7 +90,7 @@ public class SummaryController : ControllerBase
             catch (InvalidOperationException ex)
             {
                 stopwatch.Stop();
-                _logger.LogError(ex, "OpenAI service error during transcription for file: {FileName}", request.AudioFile.FileName);
+                _logger.LogError(ex, "Transcription service error during transcription for file: {FileName}", request.AudioFile.FileName);
 
                 var errorResponse = TranscriptionResponse.FromError(
                     request.AudioFile.FileName,

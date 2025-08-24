@@ -2,6 +2,47 @@
 
 ## Recently Resolved Issues
 
+### Azure-Only Transcription Configuration & Sprint Reorganization ✅ RESOLVED
+
+**Date Resolved**: August 23, 2025  
+**Component**: Backend (Transcription Service Configuration) & Project Management  
+
+**Problem**: Multiple configuration and organizational issues:
+1. OpenAI fallback for transcription causing complexity while focusing on Azure batch solution
+2. Sprint story organization didn't logically group related Azure work together
+3. Real-time API troubleshooting changes cluttering codebase for batch implementation
+4. Frontend API field name mismatch ('audioFile' vs 'AudioFile')
+5. Requirements documentation lacking story traceability
+
+**Solution**: Streamlined Azure-only approach and logical sprint reorganization:
+
+- **Azure-Only Transcription**: Disabled OpenAI fallback for transcription, configured direct AzureSpeechService registration
+- **Sprint Reorganization**: Moved batch transcription stories (S5.1-S5.3) to Sprint 4 (S4.2-S4.4) to group all Azure work
+- **UI Stories Moved**: Relocated UI polish stories to Sprint 5 for better thematic grouping
+- **Codebase Cleanup**: Removed real-time API troubleshooting changes not needed for batch implementation
+- **Frontend Fix**: Corrected API field name from 'audioFile' to 'AudioFile' for proper integration
+- **Documentation Update**: Added story references to all requirements (REQ-TRN-11-13, REQ-UI-1-5, etc.)
+
+**Technical Implementation**:
+- Modified `Program.cs` to use `AddScoped<ITranscriptionService, AzureSpeechService>()` directly
+- Updated error logging to remove OpenAI-specific references in transcription failures
+- Cleaned up `CompositeTranscriptionService.cs` and `AzureSpeechServiceExtensions.cs` 
+- Fixed `apiService.ts` FormData field name for proper backend integration
+- Updated all sprint documentation and requirements with correct story mappings
+
+**Business Impact**: 
+- Clearer focus on Azure batch transcription solution for truncation issues
+- Better sprint organization aligns technical work with business objectives
+- Simplified service configuration reduces maintenance complexity
+- Improved requirements traceability for development and testing
+
+**Next Steps**: 
+- Ready to implement S4.2 (Azure Batch Transcription API) with clean codebase
+- Sprint 4 now logically groups all Azure Speech Services work (real-time + batch)
+- Sprint 5 focuses on UI polish and production readiness
+
+---
+
 ### Speaker Management System Consolidation & Bug Fixes ✅ RESOLVED
 
 **Date Resolved**: August 22, 2025  

@@ -44,9 +44,8 @@ builder.Services.AddCors(options =>
 // Configure Azure Speech Services (S4.1)
 builder.Services.AddAzureSpeechServices(builder.Configuration);
 
-// Configure transcription service with Azure primary and OpenAI fallback (S4.1)
-builder.Services.AddTranscriptionService(builder.Configuration);
-builder.Services.AddCompositeTranscriptionService();
+// Configure Azure-only transcription service (OpenAI disabled for transcription)
+builder.Services.AddScoped<ITranscriptionService, AzureSpeechService>();
 
 // Register session-based speaker mapping service (S3.1)
 builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
@@ -71,13 +70,14 @@ using (var scope = app.Services.CreateScope())
 
     if (!openAIOptions.Value.IsValid())
     {
-        logger.LogWarning("OpenAI API key is not configured. The application will start but OpenAI features will not be available. " +
+        logger.LogWarning("OpenAI API key is not configured. Summarization features will not be available. " +
+                         "Transcription will use Azure Speech Services. " +
                          "Configure the OpenAI:ApiKey setting in appsettings.json or set the OPENAI_API_KEY environment variable.");
     }
     else
     {
-        logger.LogInformation("OpenAI configuration validated successfully. Using model: {TranscriptionModel} for transcription, {ChatModel} for chat",
-            openAIOptions.Value.DefaultTranscriptionModel, openAIOptions.Value.DefaultChatModel);
+        logger.LogInformation("OpenAI configuration validated successfully. Using model: {ChatModel} for summarization (transcription handled by Azure Speech Services)",
+            openAIOptions.Value.DefaultChatModel);
     }
 
     // Validate Azure Speech Services configuration (S4.1)

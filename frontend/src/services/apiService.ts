@@ -115,7 +115,7 @@ class ApiService {
   // File upload and transcription endpoints
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<TranscriptionResponse>> {
     const formData = new FormData();
-    formData.append('audioFile', file);
+    formData.append('AudioFile', file);
 
     const config: AxiosRequestConfig = {
       headers: {

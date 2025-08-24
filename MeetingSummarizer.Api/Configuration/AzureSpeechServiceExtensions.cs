@@ -23,9 +23,12 @@ public static class AzureSpeechServiceExtensions
         return services;
     }
 
+
+
     /// <summary>
     /// Add the composite transcription service that handles Azure + OpenAI fallback
     /// This replaces the direct IOpenAIService registration for transcription
+    /// Note: Requires OpenAI services to be registered separately
     /// </summary>
     public static IServiceCollection AddCompositeTranscriptionService(this IServiceCollection services)
     {
