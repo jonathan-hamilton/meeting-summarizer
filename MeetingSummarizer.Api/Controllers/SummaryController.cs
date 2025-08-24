@@ -44,6 +44,10 @@ public class SummaryController : ControllerBase
     [ProducesResponseType(500)]
     public async Task<IActionResult> TranscribeAudio([FromForm] TranscribeRequest request)
     {
+        // CONTROLLER DEBUG: Track the request path
+        Console.WriteLine("🎯 [CONTROLLER DEBUG] TranscribeAudio called!");
+        Console.WriteLine($"🎯 [CONTROLLER DEBUG] File: {request.AudioFile?.FileName}, Size: {request.AudioFile?.Length}");
+
         try
         {
             _logger.LogInformation("Received transcription request for file: {FileName}, Size: {FileSize}",
@@ -65,12 +69,18 @@ public class SummaryController : ControllerBase
 
             try
             {
+                Console.WriteLine("🎯 [CONTROLLER DEBUG] About to call _transcriptionService.TranscribeAudioWithMetadataAsync");
+                Console.WriteLine($"🎯 [CONTROLLER DEBUG] Service type: {_transcriptionService.GetType().Name}");
+                
                 // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
                 using var audioStream = request.AudioFile.OpenReadStream();
                 var transcriptionResult = await _transcriptionService.TranscribeAudioWithMetadataAsync(
                     audioStream,
                     request.AudioFile.FileName
                 );
+
+                Console.WriteLine("🎯 [CONTROLLER DEBUG] Transcription completed successfully!");
+                Console.WriteLine($"🎯 [CONTROLLER DEBUG] Result duration: {transcriptionResult.Duration} seconds");
 
                 stopwatch.Stop();
 

@@ -29,7 +29,7 @@ import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
 import { SessionIndicator } from "./SessionIndicator";
 import { sessionManager } from "../services/sessionManager";
-import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
+import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
 
@@ -62,6 +62,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
   const clearSession = useSpeakerSessionStore(state => state.clearSession);
   
+  // Debug: Log the entire transcription object to see what we're receiving
+  console.log('🔍 DEBUG: Full transcription object:', JSON.stringify(transcription, null, 2));
+  console.log('🔍 DEBUG: transcription.speakerSegments:', transcription.speakerSegments);
+  
   // Compatibility functions to match legacy interface
   const initializeSpeakers = (transcriptionId: string, _detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
     initializeSession(transcriptionId, transcription.speakerSegments || [], existingMappings);
@@ -76,7 +80,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   };
 
   // Centralized store hooks
-  const activeSpeakers = useActiveSpeakers();
+  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const activeSpeakers = useMemo(() => {
+    return Array.from(new Set(currentSegments.map(s => s.speaker)));
+  }, [currentSegments]);
 
   // Session management for privacy controls
   const { privacyControls } = useSessionManagement();
@@ -588,8 +595,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
         <Divider sx={{ mb: 3 }} />
 
-        {/* Speaker Mapping Section */}
-        {filteredDetectedSpeakers.length > 0 && (
+        {/* Speaker Mapping Section - TEMPORARILY DISABLED */}
+        {/* {filteredDetectedSpeakers.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <SpeakerMappingComponent
               transcriptionId={transcription.transcriptionId}
@@ -597,7 +604,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               onMappingsChanged={handleSpeakerMappingsChanged}
             />
           </Box>
-        )}
+        )} */}
 
         {/* Speaker segments display */}
         {speakerSegments && speakerSegments.length > 0 ? (

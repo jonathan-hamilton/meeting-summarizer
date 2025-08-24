@@ -14,13 +14,21 @@ public class AzureSpeechService : ITranscriptionService
 {
     private readonly AzureSpeechOptions _options;
     private readonly ILogger<AzureSpeechService> _logger;
+    private readonly AzureBatchTranscriptionService? _batchTranscriptionService;
     private readonly TimeSpan _requestTimeout;
 
-    public AzureSpeechService(IOptions<AzureSpeechOptions> options, ILogger<AzureSpeechService> logger)
+    public AzureSpeechService(
+        IOptions<AzureSpeechOptions> options, 
+        ILogger<AzureSpeechService> logger,
+        AzureBatchTranscriptionService? batchTranscriptionService)
     {
         _options = options.Value;
         _logger = logger;
+        _batchTranscriptionService = batchTranscriptionService;
         _requestTimeout = TimeSpan.FromSeconds(_options.RequestTimeoutSeconds);
+
+        // DEBUG: Check if batch service is available at startup
+        Console.WriteLine($"[DEBUG STARTUP] AzureSpeechService created. Batch service available: {_batchTranscriptionService != null}");
 
         if (!_options.IsValid())
         {
@@ -31,126 +39,43 @@ public class AzureSpeechService : ITranscriptionService
 
     public async Task<TranscriptionResult> TranscribeAudioWithMetadataAsync(Stream audioStream, string fileName, CancellationToken cancellationToken = default)
     {
+        // CRITICAL: Use WARNING level logging to ensure it appears in logs
+        _logger.LogWarning("TRANSCRIPTION START - AzureSpeechService.TranscribeAudioWithMetadataAsync called for {FileName}, Size: {Size} bytes", fileName, audioStream.Length);
+
         if (!_options.IsValid())
         {
             throw new InvalidOperationException("Azure Speech Services is not properly configured. Please check your API key and region.");
         }
 
+        if (_batchTranscriptionService == null)
+        {
+            throw new InvalidOperationException("Batch transcription service is not available. Only batch processing is supported.");
+        }
+
         return await ExecuteWithRetryAsync(async () =>
         {
-            _logger.LogInformation("Starting Azure Speech Services transcription for file: {FileName} (Size: {Size} bytes)",
-                fileName, audioStream.Length);
-
+            _logger.LogInformation("Starting Azure Batch transcription for file: {FileName} (Size: {Size} bytes)", fileName, audioStream.Length);
+            
             // Ensure stream is at the beginning
             if (audioStream.CanSeek)
             {
                 audioStream.Seek(0, SeekOrigin.Begin);
             }
 
-            // Use REST API approach which has better audio format support
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _options.Key);
-
-            // Convert stream to byte array
-            byte[] audioData;
-            using (var memoryStream = new MemoryStream())
-            {
-                await audioStream.CopyToAsync(memoryStream, cancellationToken);
-                audioData = memoryStream.ToArray();
-            }
-
-            _logger.LogDebug("Audio data size: {Size} bytes", audioData.Length);
-            Console.WriteLine($"[DEBUG] Audio data size: {audioData.Length} bytes");
-
-            // Create the REST API request
-            var requestUri = $"https://{_options.Region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language={_options.Language}&format=detailed";
-            
-            _logger.LogDebug("Azure Speech API request URI: {RequestUri}", requestUri);
-            Console.WriteLine($"[DEBUG] Azure Speech API request URI: {requestUri}");
-            
-            using var content = new ByteArrayContent(audioData);
-            content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/mpeg");
+            // Always use batch transcription - no real-time API
+            _logger.LogWarning("ROUTING DECISION - Using BATCH transcription for {FileName}, BatchAvailable: {BatchAvailable}", fileName, _batchTranscriptionService != null);
 
             try
             {
-                using var timeoutCts = new CancellationTokenSource(_requestTimeout);
-                using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
-
-                _logger.LogDebug("Sending request to Azure Speech Services...");
-                Console.WriteLine($"[DEBUG] Sending request to Azure Speech Services...");
-                var response = await httpClient.PostAsync(requestUri, content, combinedCts.Token);
-                var responseContent = await response.Content.ReadAsStringAsync(combinedCts.Token);
-
-                _logger.LogInformation("Azure Speech API response: Status={StatusCode}, Content={Response}", response.StatusCode, responseContent);
-                Console.WriteLine($"[DEBUG] Azure Speech API response: Status={response.StatusCode}, Content={responseContent}");
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError("Azure Speech Services API error: {StatusCode} {Content}", response.StatusCode, responseContent);
-                    throw new HttpRequestException($"Azure Speech Services API returned {response.StatusCode}: {responseContent}");
-                }
-
-                // Parse the JSON response
-                using var document = System.Text.Json.JsonDocument.Parse(responseContent);
-                var root = document.RootElement;
-
-                // Check recognition status first
-                string recognitionStatus = "";
-                if (root.TryGetProperty("RecognitionStatus", out var statusElement))
-                {
-                    recognitionStatus = statusElement.GetString() ?? "";
-                }
-
-                // Handle different recognition statuses
-                if (recognitionStatus == "InitialSilenceTimeout")
-                {
-                    _logger.LogWarning("Azure Speech Services timed out waiting for speech to begin. Audio may have leading silence or low volume.");
-                    throw new InvalidOperationException("Azure Speech Services: Initial silence timeout - audio may be unclear");
-                }
-                else if (recognitionStatus != "Success")
-                {
-                    _logger.LogWarning("Azure Speech Services returned status: {Status}", recognitionStatus);
-                    throw new InvalidOperationException($"Azure Speech Services returned status: {recognitionStatus}");
-                }
-
-                string recognizedText = "";
-                if (root.TryGetProperty("DisplayText", out var displayTextElement))
-                {
-                    recognizedText = displayTextElement.GetString() ?? "";
-                }
-                else if (root.TryGetProperty("NBest", out var nbestElement) && nbestElement.GetArrayLength() > 0)
-                {
-                    var firstResult = nbestElement[0];
-                    if (firstResult.TryGetProperty("Display", out var displayElement))
-                    {
-                        recognizedText = displayElement.GetString() ?? "";
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(recognizedText))
-                {
-                    _logger.LogWarning("Azure Speech Services returned empty transcription for file: {FileName}", fileName);
-                    throw new InvalidOperationException("Azure Speech Services returned empty transcription - audio may be unclear");
-                }
-
-                // Create speaker segments from the transcribed text
-                var segments = CreateSimpleSpeakerSegments(recognizedText);
-
-                _logger.LogInformation("Azure Speech Services transcription completed for file: {FileName}. Text length: {Length} characters",
-                    fileName, recognizedText.Length);
-
-                return new TranscriptionResult
-                {
-                    Text = recognizedText,
-                    Segments = segments,
-                    DetectedLanguage = _options.Language,
-                    Duration = segments.LastOrDefault()?.End ?? 0
-                };
+                _logger.LogInformation("Processing batch transcription for file: {FileName}", fileName);
+                var result = await _batchTranscriptionService!.ProcessBatchTranscriptionAsync(audioStream, fileName, cancellationToken);
+                _logger.LogInformation("Batch transcription completed successfully for file: {FileName}", fileName);
+                return result;
             }
-            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            catch (Exception ex)
             {
-                _logger.LogError("Azure Speech Services request timed out for file: {FileName}", fileName);
-                throw new TimeoutException($"Azure Speech Services request timed out after {_requestTimeout.TotalSeconds} seconds", ex);
+                _logger.LogError(ex, "Batch transcription failed for {FileName}", fileName);
+                throw; // Re-throw the exception since we don't have fallback
             }
 
         }, cancellationToken);
@@ -249,40 +174,5 @@ public class AzureSpeechService : ITranscriptionService
                (ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase)) ||
                (ex.Message.Contains("throttle", StringComparison.OrdinalIgnoreCase)) ||
                (ex.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase));
-    }
-
-    /// <summary>
-    /// Create simple speaker segments from transcribed text
-    /// </summary>
-    private static List<SpeakerSegment> CreateSimpleSpeakerSegments(string text)
-    {
-        var segments = new List<SpeakerSegment>();
-        if (string.IsNullOrWhiteSpace(text)) return segments;
-
-        var sentences = text.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-        var currentTime = 0.0;
-        var speakerIndex = 1;
-
-        foreach (var sentence in sentences)
-        {
-            if (string.IsNullOrWhiteSpace(sentence)) continue;
-
-            var trimmedSentence = sentence.Trim() + ".";
-            var duration = Math.Max(2.0, trimmedSentence.Length * 0.1);
-
-            segments.Add(new SpeakerSegment
-            {
-                Speaker = $"Speaker {speakerIndex}",
-                Text = trimmedSentence,
-                Start = currentTime,
-                End = currentTime + duration,
-                Confidence = 0.9
-            });
-
-            currentTime += duration + 0.5;
-            speakerIndex = speakerIndex % 3 + 1; // Rotate between 3 speakers
-        }
-
-        return segments;
     }
 }
