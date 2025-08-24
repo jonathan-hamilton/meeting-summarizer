@@ -1,5 +1,51 @@
 # Technical Debt & Known Issues
 
+## Current Technical Debt
+
+### Frontend SpeakerMapping Component Infinite Loop Issues ⚠️ ACTIVE
+
+**Date Identified**: August 24, 2025  
+**Component**: Frontend (SpeakerMapping Component)  
+**Priority**: Medium (Functional workaround implemented)
+
+**Problem**: 
+The `SpeakerMapping.tsx` component experiences React infinite render loops causing frontend crashes and preventing transcript display. Multiple memoization attempts have been made but the core issue persists.
+
+**Root Cause Analysis**:
+- React re-render cycles triggered by unstable object references
+- Store selector dependencies causing component re-mounting
+- Complex state interdependencies between speaker mapping and transcript display
+
+**Current Workaround**:
+- Component temporarily disabled in `TranscriptDisplay.tsx` via comments
+- Backend hybrid speaker detection working perfectly (4 speakers, 27 segments identified)
+- Transcript display functional without speaker mapping interface
+
+**Impact Assessment**:
+- **User Experience**: No speaker mapping UI currently available
+- **Functionality**: Backend speaker detection fully operational
+- **Data Quality**: Transcript data includes correct speaker assignments
+- **System Stability**: Frontend stable with component disabled
+
+**Resolution Plan**:
+1. **Component Redesign**: Implement new SpeakerMapping component with stable React patterns
+2. **State Management Review**: Simplify store interactions and dependencies
+3. **Memoization Strategy**: Proper use of useMemo, useCallback with stable dependencies
+4. **Testing Framework**: Add comprehensive React component testing to prevent regressions
+
+**Technical Notes**:
+- Backend `ApplyTextBasedSpeakerDetection` working flawlessly
+- Speaker data structure is correct and well-formed
+- Issue is purely React component lifecycle management
+- Several memoization attempts made but fundamental architecture needs addressing
+
+**Next Actions**: 
+- Schedule component redesign in upcoming sprint
+- Focus on backend completion first (S4.3-S4.4)
+- Return to frontend stability once core transcription features complete
+
+---
+
 ## Recently Resolved Issues
 
 ### Azure-Only Transcription Configuration & Sprint Reorganization ✅ RESOLVED

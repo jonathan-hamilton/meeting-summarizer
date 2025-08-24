@@ -24,12 +24,17 @@ public class CompositeTranscriptionService : ITranscriptionService
 
     public async Task<TranscriptionResult> TranscribeAudioWithMetadataAsync(Stream audioStream, string fileName, CancellationToken cancellationToken = default)
     {
+        // CRITICAL DEBUG: Track composite service calls
+        Console.WriteLine("🔥 [COMPOSITE DEBUG] CompositeTranscriptionService called!");
+        Console.WriteLine($"🔥 [COMPOSITE DEBUG] File: {fileName}, Size: {audioStream.Length} bytes");
+        
         // Try Azure Speech Services (OpenAI fallback temporarily disabled for debugging)
         try
         {
             if (await _azureService.IsServiceAvailableAsync(cancellationToken))
             {
                 _logger.LogInformation("Using Azure Speech Services for transcription of {FileName}", fileName);
+                Console.WriteLine("🔥 [COMPOSITE DEBUG] Azure service available, calling Azure...");
                 
                 // Reset stream position for Azure
                 if (audioStream.CanSeek)
@@ -40,6 +45,7 @@ public class CompositeTranscriptionService : ITranscriptionService
                 var result = await _azureService.TranscribeAudioWithMetadataAsync(audioStream, fileName, cancellationToken);
                 
                 _logger.LogInformation("Azure Speech Services transcription completed for {FileName}", fileName);
+                Console.WriteLine("🔥 [COMPOSITE DEBUG] Azure service completed successfully!");
                 return result;
             }
             else

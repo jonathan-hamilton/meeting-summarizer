@@ -8,6 +8,10 @@ obj/
 [Dd]ebug/
 [Rr]elease/
 x64/
+
+# Debug logs (temporary, auto-cleaned)
+api-debug.log
+console-logs.txt
 x86/
 build/
 [Bb]in/

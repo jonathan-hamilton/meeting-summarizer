@@ -17,7 +17,17 @@ public static class AzureSpeechServiceExtensions
         // Configure Azure Speech options
         services.Configure<AzureSpeechOptions>(configuration.GetSection(AzureSpeechOptions.SectionName));
 
-        // Register Azure Speech Service
+        // Configure Azure Storage options
+        services.Configure<AzureStorageOptions>(configuration.GetSection(AzureStorageOptions.SectionName));
+
+        // Register HTTP client for batch transcription
+        services.AddHttpClient<AzureBatchTranscriptionClient>();
+
+        // Register batch transcription services
+        services.AddScoped<AzureBatchTranscriptionClient>();
+        services.AddScoped<AzureBatchTranscriptionService>();
+
+        // Register Azure Speech Services
         services.AddScoped<AzureSpeechService>();
 
         return services;
