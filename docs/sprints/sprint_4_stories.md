@@ -1,19 +1,19 @@
 # Sprint 4: Azure Migration & Core Fixes
 
 **Sprint Duration:** 3-4 weeks  
-**Sprint Goal:** Complete Azure Speech Services migration with both real-time and batch transcription capabilities to solve truncation and accuracy issues  
-**Total Story Points:** 35  
+**Sprint Goal:** Complete Azure Speech Services migration, implement comprehensive system reliability improvements, and deliver optimized user experience with clear feedback and performance  
+**Total Story Points:** 36  
 **Sprint Status:** 🔄 IN PROGRESS
 
 ## Sprint Overview
 
-Sprint 4 focuses on completing the Azure Speech Services migration by implementing both real-time and batch transcription capabilities. This sprint addresses the critical truncation issues discovered at 96.5 seconds and ensures robust handling of meeting-length audio files up to 60 minutes.
+Sprint 4 completes the Azure Speech Services migration with both real-time and batch transcription capabilities while implementing comprehensive system reliability improvements. With core transcription functionality now working, this sprint addresses technical debt, system validation, and user experience optimization to deliver a production-ready application.
 
 ### Strategic Priorities
-1. **Complete Azure Migration** - Implement both real-time and batch transcription APIs
-2. **Solve Truncation Issues** - Batch API for longer meetings (>5 minutes)
-3. **Intelligent Processing** - Automatic duration detection and mode selection
-4. **Enhanced UX** - Proper feedback for batch processing operations
+1. **Complete Azure Migration** - Both real-time and batch transcription APIs working ✅
+2. **System Reliability** - Configuration validation, resource management, error handling
+3. **User Experience** - Intelligent processing mode selection with clear feedback
+4. **Technical Debt** - File processing optimization, development tooling, cleanup processes
 
 ## User Stories
 
@@ -132,68 +132,134 @@ Sprint 4 focuses on completing the Azure Speech Services migration by implementi
 
 ---
 
-### S4.3: Audio Duration Detection & Processing Mode Selection
-**Priority:** Medium  
-**Story Points:** 5  
+### S4.3: Configuration Validation & System Reliability Improvements
+**Priority:** High  
+**Story Points:** 8  
 **Status:** 🔄 PLANNED  
-**Dependencies:** S4.2 (Batch API Implementation)
+**Dependencies:** S4.2 (Azure Batch Transcription API Implementation) ✅ COMPLETE
 
-**As a** system administrator  
-**I want** automatic detection of audio file duration and intelligent processing mode selection  
-**So that** the system optimally processes files using real-time or batch APIs based on content
+**As a** system administrator and developer  
+**I want** robust configuration validation, file processing optimization, and resource management  
+**So that** the system is reliable, efficient, and provides clear feedback when issues occur
 
 #### Acceptance Criteria
-- [ ] Audio file duration estimation without full transcription
-- [ ] Intelligent routing: real-time API (<5 min) vs batch API (≥5 min)
-- [ ] File size and format considerations in routing decisions
-- [ ] Override mechanism for manual mode selection
-- [ ] Proper logging of processing mode decisions
 
-#### Technical Implementation Notes
-- Implement audio metadata analysis for duration estimation
-- Create processing mode decision logic
-- Add configuration for duration thresholds
-- Implement manual override capabilities
-- Add comprehensive logging for mode selection decisions
+**Configuration & Validation (REQ-CFG-1 to REQ-CFG-7):**
+- [ ] Frontend and backend file type consistency validation at startup
+- [ ] Azure Storage connection and container access validation during startup
+- [ ] Clear error messages for Azure service misconfigurations
+- [ ] Graceful degradation when batch processing services are unavailable
+- [ ] Configuration validation tools for development environments
+- [ ] Detailed configuration validation logging
 
-#### Processing Logic Rules
-- Files <5 minutes → Real-time API (faster response)
-- Files ≥5 minutes → Batch API (no truncation risk)
-- Large files (>50MB) → Always batch API
-- User override option available for all files
+**File Processing & Optimization (REQ-FPO-1 to REQ-FPO-6):**
+- [ ] Audio file content validation beyond extension checking
+- [ ] Memory-efficient processing for large files (>100MB)
+- [ ] Corrupted/malformed audio file handling with clear error messages
+- [ ] Progress feedback for operations exceeding normal timeouts
+
+**Resource Management & Cleanup (REQ-RMC-1 to REQ-RMC-6):**
+- [ ] Automatic cleanup of temporary blob storage files after processing
+- [ ] Scheduled cleanup of abandoned transcription job artifacts
+- [ ] Optimized memory usage during concurrent large file operations
+- [ ] Enhanced timeout handling with user-friendly feedback
+- [ ] Automatic retry mechanisms with exponential backoff for Azure failures
+
+**Development Experience (REQ-DEV-8 to REQ-DEV-12):**
+- [ ] Enhanced debug logging for Azure service interactions
+- [ ] Configuration validation scripts for local development
+- [ ] Diagnostic endpoints for health checking Azure connectivity
+- [ ] Request tracing and correlation IDs for multi-service operations
+
+#### Technical Implementation Areas
+
+**1. Startup Validation Framework**
+- Azure Storage connection string validation
+- Container access permission checking
+- Service endpoint connectivity verification
+- Frontend/backend file type synchronization validation
+
+**2. File Processing Pipeline Enhancement**
+- Audio file content analysis and validation
+- Memory streaming for large file uploads
+- Progress tracking for long-running operations
+- Error handling with detailed user feedback
+
+**3. Resource Management System**
+- Blob storage lifecycle management
+- Temporary file cleanup scheduling
+- Memory optimization for concurrent operations
+- Connection pooling and resource limits
+
+**4. Development & Monitoring Tools**
+- Configuration validation CLI tools
+- Health check endpoints (/health/azure, /health/storage)
+- Request correlation tracking
+- Enhanced error logging with context
+
+#### Success Metrics
+- Zero configuration-related deployment failures
+- 95% reduction in blob storage orphaned files
+- <30 second startup time with full validation
+- Clear error messages for all failure scenarios
+- Memory usage <500MB for 100MB file uploads
 
 ---
 
-### S4.4: Batch Processing User Experience Enhancements
+### S4.4: User Experience & Performance Optimization
 **Priority:** Medium  
-**Story Points:** 4  
+**Story Points:** 3  
 **Status:** 🔄 PLANNED  
-**Dependencies:** S4.2 (Batch API), S4.3 (Duration Detection)
+**Dependencies:** S4.3 (Configuration & System Reliability)
 
-**As a** user uploading longer meeting recordings  
-**I want** clear feedback and progress indicators for batch processing  
-**So that** I understand processing status and estimated completion times
+**As a** user of the meeting summarizer system  
+**I want** optimal performance and clear feedback during processing  
+**So that** I have a smooth, efficient experience with transparency about system operations
 
 #### Acceptance Criteria
-- [ ] Progress indicators for batch transcription jobs
-- [ ] Estimated processing time display based on audio duration
-- [ ] Clear messaging about processing mode (real-time vs batch)
-- [ ] Polling status updates with user-friendly messages
-- [ ] Proper error messaging for batch processing failures
 
-#### Technical Implementation Notes
-- Implement progress tracking UI components
-- Add estimated time calculations based on audio duration
-- Create user-friendly status messaging system
-- Add proper error handling and user feedback
-- Implement polling mechanism for batch job status
+**User Feedback & Status:**
+- [ ] Progress indicators for batch transcription jobs with estimated completion times
+- [ ] Real-time status updates during batch processing operations
+- [ ] User-friendly error messages with actionable guidance
+- [ ] Clear completion notifications and result presentation
 
-#### User Experience Flow
-- Upload indication of processing mode selection
-- Progress bar with estimated completion time
-- Status updates during batch processing
-- Clear completion or error notifications
-- Seamless integration with existing transcript display
+**Performance Optimization:**
+- [ ] Optimized upload progress tracking for large files
+- [ ] Memory-efficient client-side file handling
+- [ ] Reduced API response latency where possible
+
+**User Interface Enhancements:**
+- [ ] Enhanced error display with troubleshooting suggestions
+- [ ] Improved loading states and progress visualization
+- [ ] Consistent status messaging across all operations
+
+#### Technical Implementation Areas
+
+**1. Enhanced User Feedback System**
+- Real-time progress tracking for batch operations
+- Estimated completion time calculations
+- Detailed error messages with recovery suggestions
+- Professional status messaging throughout workflows
+
+**2. Performance Optimizations**
+- Client-side file validation before upload
+- Streaming upload for large files
+- Optimized progress polling intervals
+- Background job status monitoring
+
+**3. User Experience Polish**
+- Enhanced status indicators and messaging
+- Improved error handling and recovery flows
+- Performance metrics display for transparency
+- Consistent visual feedback patterns
+
+#### Success Metrics
+- Accurate progress indication within 10% for batch operations
+- 90% user satisfaction with error message clarity
+- Zero user confusion about processing status
+- <1% failed uploads due to client-side issues
+- <3 second response time for status updates
 
 ## Sprint Progress Tracker
 

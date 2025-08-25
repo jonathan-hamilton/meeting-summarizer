@@ -99,6 +99,42 @@
 - REQ-FALL-4: System shall clearly indicate which service was used for each transcription in UI and logs
 - REQ-FALL-5: System shall log fallback occurrences for service reliability monitoring and debugging
 
+### Configuration & Validation
+
+- REQ-CFG-1: System shall validate frontend and backend supported file types for consistency at startup
+- REQ-CFG-2: System shall validate Azure Storage connection string and container access during application startup
+- REQ-CFG-3: System shall provide clear error messages when Azure services are misconfigured or unavailable
+- REQ-CFG-4: System shall implement graceful degradation when batch processing services are unavailable
+- REQ-CFG-5: System shall validate configuration completeness for all required Azure service dependencies
+- REQ-CFG-6: System shall provide configuration validation tools for development and deployment environments
+- REQ-CFG-7: System shall log detailed configuration validation results for troubleshooting and monitoring
+
+### File Processing & Optimization
+
+- REQ-FPO-1: System shall perform audio file format validation beyond extension checking using content analysis
+- REQ-FPO-2: System shall optimize audio files for Azure Speech Services processing when format conversion is beneficial
+- REQ-FPO-3: System shall handle corrupted or malformed audio files with appropriate error messages
+- REQ-FPO-4: System shall detect and handle edge cases in audio file metadata and format variations
+- REQ-FPO-5: System shall implement memory-efficient processing for large audio file uploads (>100MB)
+- REQ-FPO-6: System shall provide progress feedback for file processing operations that exceed normal timeouts
+
+### Resource Management & Cleanup
+
+- REQ-RMC-1: System shall automatically cleanup temporary blob storage files after successful transcription processing
+- REQ-RMC-2: System shall implement scheduled cleanup of abandoned or failed transcription job artifacts
+- REQ-RMC-3: System shall optimize memory usage during concurrent large file uploads and processing
+- REQ-RMC-4: System shall implement proper timeout handling for batch operations with user-friendly feedback
+- REQ-RMC-5: System shall monitor and log resource usage metrics for performance optimization
+- REQ-RMC-6: System shall implement automatic retry mechanisms with exponential backoff for transient Azure service failures
+
+### Development Experience & Debugging
+
+- REQ-DEV-8: System shall provide enhanced debug logging for Azure service interactions and batch processing workflows
+- REQ-DEV-9: System shall implement configuration validation scripts for local development environment setup
+- REQ-DEV-10: System shall provide diagnostic endpoints for health checking Azure service connectivity and configuration
+- REQ-DEV-11: System shall include detailed error context and troubleshooting guidance in development error messages
+- REQ-DEV-12: System shall implement request tracing and correlation IDs for complex multi-service operations
+
 ### Speaker Deletion Operations
 
 - REQ-SPK-DEL-1: System shall allow users to delete speaker mappings from the mapping interface

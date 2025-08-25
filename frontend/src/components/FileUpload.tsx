@@ -78,7 +78,7 @@ const getWorkflowSteps = (uploadFile: UploadFile) => [
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
   maxFileSize = 1024 * 1024 * 1024, // 1GB
-  acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg"],
+  acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
 }) => {
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
