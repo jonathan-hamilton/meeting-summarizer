@@ -57,6 +57,9 @@ builder.Services.AddSummarizationService(builder.Configuration);
 // Register email service (S3.4 Increment 4)
 builder.Services.AddEmailServices(builder.Configuration);
 
+// Register configuration validation service (S4.3)
+builder.Services.AddScoped<IConfigurationValidationService, ConfigurationValidationService>();
+
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
 
@@ -82,6 +85,45 @@ using (var scope = app.Services.CreateScope())
 
     // Validate Azure Speech Services configuration (S4.1)
     scope.ServiceProvider.ValidateAzureSpeechConfiguration();
+
+    // Perform comprehensive startup validation (S4.3)
+    var validationService = scope.ServiceProvider.GetService<IConfigurationValidationService>();
+    if (validationService != null)
+    {
+        try
+        {
+            var validationResult = await validationService.ValidateStartupConfigurationAsync();
+            
+            if (validationResult.IsValid)
+            {
+                logger.LogInformation("✅ Startup configuration validation passed - {Summary} (Duration: {Duration}ms)",
+                    validationResult.Summary, validationResult.ValidationDuration.TotalMilliseconds);
+                
+                if (validationResult.GetAllWarnings().Any())
+                {
+                    logger.LogWarning("⚠️ Configuration warnings: {Warnings}",
+                        string.Join("; ", validationResult.GetAllWarnings()));
+                }
+            }
+            else
+            {
+                logger.LogError("❌ Startup configuration validation failed - {Summary}", validationResult.Summary);
+                logger.LogError("Configuration errors: {Errors}", 
+                    string.Join("; ", validationResult.GetAllErrors()));
+                
+                // Continue startup but log the failures for monitoring
+                logger.LogWarning("Application will start with configuration issues. Check health endpoints for details.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to perform startup configuration validation");
+        }
+    }
+    else
+    {
+        logger.LogWarning("Configuration validation service not available");
+    }
 }
 
 // Configure the HTTP request pipeline.

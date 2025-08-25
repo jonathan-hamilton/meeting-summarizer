@@ -1,20 +1,26 @@
 using Microsoft.AspNetCore.Mvc;
+using MeetingSummarizer.Api.Services;
 
 namespace MeetingSummarizer.Api.Controllers;
 
 /// <summary>
-/// Health check controller for monitoring API status
+/// Health check controller for monitoring API status and Azure services
+/// Enhanced for S4.3: Configuration Validation & System Reliability Improvements
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {
     private readonly IWebHostEnvironment _environment;
+    private readonly IConfigurationValidationService? _validationService;
     private static bool _isOpenAIEnabled = true; // Static toggle for OpenAI service
 
-    public HealthController(IWebHostEnvironment environment)
+    public HealthController(
+        IWebHostEnvironment environment,
+        IConfigurationValidationService? validationService = null)
     {
         _environment = environment;
+        _validationService = validationService;
     }
 
     /// <summary>
@@ -62,6 +68,166 @@ public class HealthController : ControllerBase
         };
 
         return Ok(detailedHealth);
+    }
+
+    /// <summary>
+    /// Get comprehensive Azure services health status (S4.3)
+    /// </summary>
+    /// <returns>Complete Azure services validation results</returns>
+    [HttpGet("azure")]
+    public async Task<IActionResult> GetAzureServicesHealth()
+    {
+        if (_validationService == null)
+        {
+            return StatusCode(501, new
+            {
+                Status = "Not Implemented",
+                Message = "Configuration validation service not available",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+        try
+        {
+            var validationResult = await _validationService.ValidateStartupConfigurationAsync();
+
+            var healthStatus = new
+            {
+                Status = validationResult.IsValid ? "Healthy" : "Unhealthy",
+                Timestamp = DateTime.UtcNow,
+                CorrelationId = correlationId,
+                ValidationDuration = validationResult.ValidationDuration.TotalMilliseconds,
+                Services = validationResult.ServiceResults.Select(s => new
+                {
+                    Name = s.ServiceName,
+                    Status = s.IsValid ? "Healthy" : "Unhealthy",
+                    Message = s.Message,
+                    ValidationTime = s.ValidationTime.TotalMilliseconds,
+                    WarningCount = s.Warnings.Count,
+                    ErrorCount = s.Errors.Count
+                }),
+                Summary = validationResult.Summary
+            };
+
+            return validationResult.IsValid ? Ok(healthStatus) : StatusCode(503, healthStatus);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                Status = "Error",
+                Message = "Azure services health check failed",
+                CorrelationId = correlationId,
+                Timestamp = DateTime.UtcNow,
+                Error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get Azure Speech Services health status (S4.3)
+    /// </summary>
+    /// <returns>Azure Speech Services validation details</returns>
+    [HttpGet("azure/speech")]
+    public async Task<IActionResult> GetAzureSpeechHealth()
+    {
+        if (_validationService == null)
+        {
+            return StatusCode(501, new
+            {
+                Status = "Not Implemented",
+                Message = "Configuration validation service not available",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+        try
+        {
+            var result = await _validationService.ValidateAzureSpeechServicesAsync();
+
+            var healthStatus = new
+            {
+                ServiceName = result.ServiceName,
+                Status = result.IsValid ? "Healthy" : "Unhealthy",
+                Message = result.Message,
+                Timestamp = DateTime.UtcNow,
+                CorrelationId = correlationId,
+                ValidationTime = result.ValidationTime.TotalMilliseconds,
+                Details = result.Details,
+                Warnings = result.Warnings,
+                Errors = result.Errors
+            };
+
+            return result.IsValid ? Ok(healthStatus) : StatusCode(503, healthStatus);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                ServiceName = "Azure Speech Services",
+                Status = "Error",
+                Message = "Health check failed",
+                CorrelationId = correlationId,
+                Timestamp = DateTime.UtcNow,
+                Error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get Azure Blob Storage health status (S4.3)
+    /// </summary>
+    /// <returns>Azure Blob Storage validation details</returns>
+    [HttpGet("azure/storage")]
+    public async Task<IActionResult> GetAzureStorageHealth()
+    {
+        if (_validationService == null)
+        {
+            return StatusCode(501, new
+            {
+                Status = "Not Implemented",
+                Message = "Configuration validation service not available",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+        try
+        {
+            var result = await _validationService.ValidateAzureBlobStorageAsync();
+
+            var healthStatus = new
+            {
+                ServiceName = result.ServiceName,
+                Status = result.IsValid ? "Healthy" : "Unhealthy",
+                Message = result.Message,
+                Timestamp = DateTime.UtcNow,
+                CorrelationId = correlationId,
+                ValidationTime = result.ValidationTime.TotalMilliseconds,
+                Details = result.Details,
+                Warnings = result.Warnings,
+                Errors = result.Errors
+            };
+
+            return result.IsValid ? Ok(healthStatus) : StatusCode(503, healthStatus);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                ServiceName = "Azure Blob Storage",
+                Status = "Error",
+                Message = "Health check failed",
+                CorrelationId = correlationId,
+                Timestamp = DateTime.UtcNow,
+                Error = ex.Message
+            });
+        }
     }
 
     /// <summary>
