@@ -44,8 +44,11 @@ builder.Services.AddCors(options =>
 // Configure Azure Speech Services (S4.1)
 builder.Services.AddAzureSpeechServices(builder.Configuration);
 
-// Configure Azure-only transcription service (OpenAI disabled for transcription)
-builder.Services.AddScoped<ITranscriptionService, AzureSpeechService>();
+// Configure Azure Real-time transcription as the ONLY transcription service
+builder.Services.AddScoped<ITranscriptionService, AzureRealTimeTranscriptionService>();
+
+// Register Azure Portal transcription service for testing portal configuration
+builder.Services.AddScoped<AzurePortalTranscriptionService>();
 
 // Register session-based speaker mapping service (S3.1)
 builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
@@ -60,8 +63,10 @@ builder.Services.AddEmailServices(builder.Configuration);
 // Register configuration validation service (S4.3)
 builder.Services.AddScoped<IConfigurationValidationService, ConfigurationValidationService>();
 
-// Note: Additional service registrations will be added in future increments
-// builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
+// Register enhanced file processing service (S4.3)
+builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+
+// Note: Only Azure Real-time transcription is supported - no batch, no OpenAI transcription
 
 var app = builder.Build();
 

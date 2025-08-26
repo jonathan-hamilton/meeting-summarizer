@@ -428,6 +428,17 @@
 - **Manual Override Interface**: Provide intuitive editing capabilities for correcting speaker assignments
 - **Override Indicators**: Visual cues to distinguish manually-overridden mappings from auto-detected ones
 - **Validation Feedback**: Real-time validation to prevent conflicts in speaker assignments
+
+**Demo Mode Interface Requirements:**
+
+- **Demo Toggle**: Prominent but non-intrusive toggle in upper-left navigation area
+- **Tooltip Integration**: Informative tooltip explaining Demo Mode benefits and functionality
+- **Visual Indicators**: Clear visual indication when Demo Mode is active throughout the application
+- **Sample File Integration**: Drag/drop zone should accept and recognize demo sample audio file
+- **Guided Workflow**: Step-by-step prompts and guidance throughout demo experience
+- **Contextual Help**: Interactive tooltips explaining features during demo workflow progression
+- **Processing Simulation**: Realistic timing and animations for upload, transcription, and summarization steps
+- **Demo Data Display**: High-quality presentation of sample transcript and summary content
 - **Revert Functionality**: One-click option to restore original auto-detected mappings
 - **Segment Speaker Override**: Click-to-edit functionality for reassigning individual transcript segments to different speakers
 - **Confidence Score Invalidation**: Visual indicators showing when confidence scores are no longer relevant due to manual overrides
@@ -469,14 +480,19 @@
 
 ### Demo Mode (Anonymous)
 
-- REQ-DEM-1: System shall provide anonymous demo mode with 30-second audio limit
-- REQ-DEM-2: Demo mode shall showcase full transcription and basic summarization capabilities
-- REQ-DEM-3: Demo mode shall disable email sharing and advanced features
-- REQ-DEM-4: Demo mode shall limit speaker mapping to view-only functionality
-- REQ-DEM-5: System shall clearly indicate demo limitations and upgrade path
-- REQ-DEM-6: Demo mode shall be available without any user registration or payment
-- REQ-DEM-7: System shall track demo usage per browser session to prevent repeated abuse
-- REQ-DEM-8: Demo mode processing cost shall not exceed $0.01 per usage
+- REQ-DEM-1: System shall provide comprehensive demo mode showcasing end-to-end workflow with sample content
+- REQ-DEM-2: Demo mode shall include step-by-step guided process from upload through transcription to summary
+- REQ-DEM-3: Demo mode toggle shall be located in upper-left nav/menu bar with tooltip explanation
+- REQ-DEM-4: Demo mode shall provide sample audio file for drag/drop upload demonstration
+- REQ-DEM-5: Demo mode shall use frontend-only implementation with no API calls to backend services
+- REQ-DEM-6: Demo mode shall display pre-generated high-quality transcript with 4-speaker diarization
+- REQ-DEM-7: Demo mode shall showcase example summary with action items, decisions, and key points
+- REQ-DEM-8: Demo mode shall include contextual tooltips explaining each feature during workflow
+- REQ-DEM-9: Demo mode shall simulate realistic processing timing and animations
+- REQ-DEM-10: Demo mode shall clearly indicate when active with visual indicators
+- REQ-DEM-11: Demo mode shall isolate demo data from live application state
+- REQ-DEM-12: Demo mode shall be available without any user registration or payment
+- REQ-DEM-13: Demo mode shall provide clear explanation of file format requirements and limitations
 
 ### Trial Mode (Email/Password Registration)
 
