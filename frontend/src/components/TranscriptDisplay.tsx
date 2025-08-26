@@ -29,7 +29,7 @@ import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
 import { SessionIndicator } from "./SessionIndicator";
 import { sessionManager } from "../services/sessionManager";
-import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
+import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
 
@@ -62,10 +62,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
   const clearSession = useSpeakerSessionStore(state => state.clearSession);
   
-  // Debug: Log the entire transcription object to see what we're receiving
-  console.log('🔍 DEBUG: Full transcription object:', JSON.stringify(transcription, null, 2));
-  console.log('🔍 DEBUG: transcription.speakerSegments:', transcription.speakerSegments);
-  
   // Compatibility functions to match legacy interface
   const initializeSpeakers = (transcriptionId: string, _detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
     initializeSession(transcriptionId, transcription.speakerSegments || [], existingMappings);
@@ -80,10 +76,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   };
 
   // Centralized store hooks
-  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
-  const activeSpeakers = useMemo(() => {
-    return Array.from(new Set(currentSegments.map(s => s.speaker)));
-  }, [currentSegments]);
+  const activeSpeakers = useActiveSpeakers();
 
   // Session management for privacy controls
   const { privacyControls } = useSessionManagement();
@@ -391,6 +384,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const formatTime = useCallback((seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
+    
+    if (minutes < 1) {
+      return `${remainingSeconds}s`;
+    }
+    
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   }, []);
 
@@ -487,55 +485,17 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       <CardContent>
         {/* Header with file info and metadata */}
         <Box sx={{ mb: 3 }}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-            <VolumeUp color="primary" />
-            <Typography variant="h5" component="h3" sx={{ flexGrow: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+            <Typography variant="h5" component="h3">
               {transcription.fileName}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Chip
-                icon={<CheckCircle />}
-                label={transcription.status}
-                color="success"
-                variant="outlined"
-                size="small"
-              />
-              
-              {/* Export and Delete buttons */}
-              <Tooltip title="Remove transcription">
-                <IconButton
-                  size="small"
-                  onClick={handleDeleteTranscription}
-                  color="error"
-                  sx={{ ml: 0.5 }}
-                >
-                  <Delete />
-                </IconButton>
-              </Tooltip>
-              
-              {/* Reset button - show when there are any modifications */}
-              {(hasModifiedSpeakers || hasSpeakerReassignments) && (
-                <Tooltip title="Reset all changes and revert to original transcript">
-                  <Chip
-                    icon={<Undo />}
-                    label="RESET TRANSCRIPT"
-                    size="small"
-                    variant="outlined"
-                    color="error"
-                    onClick={handleRevertAllSpeakers}
-                    clickable
-                    sx={{ fontWeight: 'bold' }}
-                  />
-                </Tooltip>
-              )}
-            </Box>
-          </Stack>
+          </Box>
 
           {/* Metadata chips */}
           <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
             <Chip
               icon={<Schedule />}
-              label={`${transcription.processingTimeMs}ms`}
+              label={formatTime(Math.round(transcription.processingTimeMs / 1000))}
               size="small"
               variant="outlined"
             />
@@ -595,8 +555,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
         <Divider sx={{ mb: 3 }} />
 
-        {/* Speaker Mapping Section - TEMPORARILY DISABLED */}
-        {/* {filteredDetectedSpeakers.length > 0 && (
+        {/* Speaker Mapping Section */}
+        {filteredDetectedSpeakers.length > 0 && (
           <Box sx={{ mb: 3 }}>
             <SpeakerMappingComponent
               transcriptionId={transcription.transcriptionId}
@@ -604,7 +564,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               onMappingsChanged={handleSpeakerMappingsChanged}
             />
           </Box>
-        )} */}
+        )}
 
         {/* Speaker segments display */}
         {speakerSegments && speakerSegments.length > 0 ? (

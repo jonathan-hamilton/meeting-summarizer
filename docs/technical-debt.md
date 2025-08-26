@@ -1,38 +1,5 @@
 # Technical Debt & Known Issues
 
-## Recently Resolved Issues
-
-### Azure Service Architecture Consolidation ✅ RESOLVED
-
-**Date Resolved**: August 26, 2025  
-**Sprint**: S4.3  
-**Priority**: High
-
-**Problem Resolved**: 
-Complex multi-service transcription architecture with Azure Batch, Real-time, and OpenAI transcription services causing configuration complexity, cost inefficiencies, and maintenance overhead.
-
-**Solution Implemented**:
-- **Service Consolidation**: Removed Azure Batch and OpenAI transcription services
-- **Single Service Architecture**: Consolidated to AzureRealTimeTranscriptionService only
-- **Azure Storage Cleanup**: Removed Azure Blob Storage dependencies (batch processing only)
-- **Cost Optimization**: Enhanced validation prevents expensive Azure calls for invalid files
-- **Configuration Simplification**: Streamlined configuration validation and health checks
-
-**Technical Changes**:
-- Deleted: `AzureBatchTranscriptionService`, `CompositeTranscriptionService`, `OpenAITranscriptionAdapter`
-- Deleted: `AzureStorageOptions`, Azure.Storage.Blobs package references
-- Enhanced: `FileProcessingService` integration with cost-saving validation
-- Updated: Configuration validation removes failing Azure Storage checks
-
-**Benefits Achieved**:
-- **Simplified Architecture**: Single transcription service reduces complexity
-- **Cost Efficiency**: Validation prevents expensive Azure calls for invalid files  
-- **Proven Reliability**: Real-time transcription tested with 4-speaker diarization
-- **Enhanced Maintainability**: Focused codebase with clear service boundaries
-- **Better Error Handling**: Clear messaging about 45-minute/200MB limitations
-
----
-
 ## Current Technical Debt
 
 ### Frontend SpeakerMapping Component Infinite Loop Issues ⚠️ ACTIVE

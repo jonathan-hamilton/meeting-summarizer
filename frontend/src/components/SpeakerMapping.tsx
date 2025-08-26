@@ -34,17 +34,18 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   // Get ALL mappings (not filtered) to include manually added speakers without segments
   const allMappings = useSpeakerSessionStore(state => state.speakerMappings);
 
-  // Temporarily disable session overrides to prevent infinite loops
-  const sessionOverrides = useMemo(() => ({}), []);
+  // Memoize session overrides - use empty object as fallback to avoid infinite loops
+  const sessionOverrides = useMemo(() => {
+    try {
+      return sessionManager.getOverrides() || {};
+    } catch (error) {
+      console.warn('Error getting session overrides:', error);
+      return {};
+    }
+  }, []);
 
   // Use proper store selector instead of direct getState() access
   const currentTranscriptionId = useSpeakerSessionStore(state => state.transcriptionId);
-
-  // Memoize active speakers array to prevent unnecessary re-renders
-  const memoizedActiveSpeakers = useMemo(() => activeSpeakers, [JSON.stringify(activeSpeakers)]);
-  
-  // Memoize mappings array to prevent unnecessary re-renders
-  const memoizedMappings = useMemo(() => allMappings, [JSON.stringify(allMappings)]);
 
   // Initialize speakers in store when component mounts or transcriptionId changes
   useEffect(() => {
@@ -100,25 +101,25 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   const effectiveData = useMemo(
     () => {
       // Get all speakers: active speakers + manually added speakers (even without segments)
-      const manuallyAddedSpeakers = memoizedMappings
+      const manuallyAddedSpeakers = allMappings
         .filter((mapping: SpeakerMapping) => mapping.source === 'ManuallyAdded')
         .map((mapping: SpeakerMapping) => mapping.speakerId);
       
       // Combine active speakers with manually added speakers (remove duplicates)
       const allRelevantSpeakers = Array.from(new Set([
-        ...memoizedActiveSpeakers,  // Speakers with current segments
+        ...activeSpeakers,  // Speakers with current segments
         ...manuallyAddedSpeakers  // Manually added speakers (even without segments)
       ]));
       
       const data = {
-        mappings: memoizedMappings,
+        mappings: allMappings,
         speakers: allRelevantSpeakers,
       };
       
       console.log('🔄 effectiveData (includes manually added):', {
         mappingsCount: data.mappings.length,
         speakersCount: data.speakers.length,
-        activeSpeakersCount: memoizedActiveSpeakers.length,
+        activeSpeakersCount: activeSpeakers.length,
         manuallyAddedCount: manuallyAddedSpeakers.length,
         mappings: data.mappings.map((m: SpeakerMapping) => ({ id: m.speakerId, name: m.name, role: m.role, source: m.source })),
         speakers: data.speakers
@@ -126,38 +127,47 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       
       return data;
     },
-    [memoizedMappings, memoizedActiveSpeakers]
+    [allMappings, activeSpeakers]
   );
 
   // Memoize computed speaker data (Replace expensive calculations)
   const computedSpeakerData = useMemo(() => {
-    // Use memoized values directly to avoid dependency chain issues
-    const uniqueSpeakers = memoizedActiveSpeakers;
+    console.log('🔍 SpeakerMapping: effectiveData.speakers:', effectiveData.speakers);
+    console.log('🔍 SpeakerMapping: effectiveData.mappings:', effectiveData.mappings);
     
-    // Get unmapped speakers - speakers without custom names
+    // Use effectiveData.speakers directly - it already contains the filtered list of speakers with segments
+    const uniqueSpeakers = effectiveData.speakers;
+    console.log('🔍 SpeakerMapping: uniqueSpeakers:', uniqueSpeakers);
+
+    // Get unmapped speakers - speakers without custom names (either no mapping or name equals speaker ID)
     const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
-      const mapping = memoizedMappings.find((m: any) => m.speakerId === speakerId);
+      const mapping = effectiveData.mappings.find((m: any) => m.speakerId === speakerId);
+      // Consider unmapped if: no mapping, no name, empty name, or name equals speaker ID (default)
       return !mapping || !mapping.name || mapping.name.trim() === "" || mapping.name === speakerId;
     });
+    console.log('🔍 SpeakerMapping: unmappedSpeakers:', unmappedSpeakers);
 
     return {
       allSpeakers: uniqueSpeakers,
       uniqueSpeakers,
       totalSpeakerCount: uniqueSpeakers.length,
-      mappedDetectedCount: uniqueSpeakers.length - unmappedSpeakers.length,
+      mappedDetectedCount: effectiveData.speakers.length - unmappedSpeakers.filter(id => effectiveData.speakers.includes(id)).length,
       unmappedSpeakers,
     };
-  }, [memoizedActiveSpeakers, memoizedMappings]);
+  }, [effectiveData]);
 
   // Memoize rendered speaker lists (Replace inline filtering/mapping)
   const mappedTraditionalSpeakers = useMemo(() => {
-    return memoizedMappings.filter((mapping: SpeakerMapping) => {
+    const mapped = effectiveData.mappings.filter((mapping: SpeakerMapping) => {
       const hasName = mapping.name && mapping.name.trim() !== "";
-      const isCustomName = hasName && mapping.name !== mapping.speakerId;
-      const isActiveSpeaker = memoizedActiveSpeakers.includes(mapping.speakerId);
-      return isCustomName && isActiveSpeaker;
+      const isCustomName = hasName && mapping.name !== mapping.speakerId; // Only count as named if name is different from speaker ID
+      const isActiveSpeaker = effectiveData.speakers.includes(mapping.speakerId);
+      console.log(`🔍 Checking mapping: ${mapping.speakerId} -> name: "${mapping.name}" -> hasName: ${hasName} -> isCustomName: ${isCustomName} -> isActive: ${isActiveSpeaker} -> source: ${mapping.source}`);
+      return isCustomName && isActiveSpeaker; // Only include mappings for speakers that have custom names and are in allRelevantSpeakers
     });
-  }, [memoizedMappings, memoizedActiveSpeakers]);
+    console.log('🔄 mappedTraditionalSpeakers:', mapped);
+    return mapped;
+  }, [effectiveData.mappings, effectiveData.speakers]);
 
   const sessionOverrideSpeakers = useMemo(() => {
     return Object.entries(sessionOverrides)
@@ -166,12 +176,12 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         const typedOverride = override as SessionOverrideAction;
         
         // Don't show session overrides if the speaker already has a proper mapping with a name
-        const hasMapping = memoizedMappings.find(
+        const hasMapping = effectiveData.mappings.find(
           (m) => m.speakerId === speakerId && m.name && m.name.trim() !== ""
         );
         
         // Also don't show overrides where the newValue (target speaker) has a proper mapping
-        const targetHasMapping = typedOverride.newValue && memoizedMappings.find(
+        const targetHasMapping = typedOverride.newValue && effectiveData.mappings.find(
           (m) => m.speakerId === typedOverride.newValue && m.name && m.name.trim() !== ""
         );
         
@@ -186,7 +196,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         return null;
       })
       .filter(Boolean);
-  }, [sessionOverrides, memoizedMappings]);
+  }, [sessionOverrides, effectiveData.mappings]);
 
   // Memoize mapped speakers chips
   const mappedSpeakersChips = useMemo(() => {

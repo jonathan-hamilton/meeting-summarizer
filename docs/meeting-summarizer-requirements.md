@@ -11,7 +11,7 @@
 
 ### Transcription & Speaker Diarization
 
-- REQ-TRN-1: System shall convert audio to text using Azure Real-time Speech Services as primary provider
+- REQ-TRN-1: System shall convert audio to text using Azure Speech Services as primary provider
 - REQ-TRN-2: System shall support multiple languages for transcription (initially English, expandable)
 - REQ-TRN-3: System shall identify and label different speakers in the audio with minimum 85% accuracy for 2-10 speakers
 - REQ-TRN-4: System shall timestamp transcribed text segments with millisecond precision
@@ -19,24 +19,11 @@
 - REQ-TRN-6: System shall provide speaker confidence scores for each identified speaker segment
 - REQ-TRN-7: System shall detect speaker count automatically without requiring user input
 - REQ-TRN-8: System shall handle overlapping speech and identify primary speaker per segment
-- REQ-TRN-9: System shall enforce 200MB file size limits for Real-time transcription (approximately 45 minutes)
-- REQ-TRN-10: System shall provide enhanced file validation before expensive Azure Real-time transcription calls
-- REQ-TRN-11: System shall detect files exceeding Real-time transcription capabilities (>200MB or >45 minutes estimated)
-- REQ-TRN-12: System shall provide clear messaging when files exceed Real-time transcription limitations
-- REQ-TRN-13: System shall offer alternative processing options for files exceeding 45-minute duration limits
-
-### Long-Duration File Handling
-
-- REQ-LONG-1: System shall detect when uploaded audio files exceed 45-minute estimated duration
-- REQ-LONG-2: System shall provide clear user guidance when files exceed Real-time transcription capabilities
-- REQ-LONG-3: System shall offer file segmentation options for meetings longer than 45 minutes
-- REQ-LONG-4: System shall support manual file splitting with user-defined segment boundaries
-- REQ-LONG-5: System shall provide alternative transcription service integration for long-duration files
-- REQ-LONG-6: System shall maintain speaker consistency across segmented file processing
-- REQ-LONG-7: System shall offer batch processing mode for files exceeding Real-time limitations (future implementation)
-- REQ-LONG-8: System shall provide estimated processing times for alternative long-file processing methods
-- REQ-LONG-9: System shall enable users to choose processing approach for borderline-duration files (40-50 minutes)
-- REQ-LONG-10: System shall gracefully handle Real-time transcription timeouts with fallback processing options
+- REQ-TRN-9: System shall use Azure batch transcription mode for cost optimization and free diarization
+- REQ-TRN-10: System shall fall back to OpenAI Whisper when Azure Speech Services fails
+- REQ-TRN-11: System shall support long-duration meetings up to 60 minutes using Azure Batch Transcription API for files exceeding 5 minutes or showing truncation issues with real-time API (S4.2)
+- REQ-TRN-12: System shall automatically detect when audio files require batch processing based on duration estimation and file size thresholds (S4.3)
+- REQ-TRN-13: System shall provide appropriate user feedback and estimated processing times for batch transcription operations (S4.4)
 
 ### Speaker Identification Enhancement
 
@@ -106,13 +93,11 @@
 
 ### Fallback Strategy
 
-- REQ-FALL-1: System shall use Azure Real-time Speech Services as the primary and only transcription service
-- REQ-FALL-2: When Azure Real-time transcription fails due to file size/duration limits, system shall offer alternative processing options
-- REQ-FALL-3: When Azure Real-time transcription fails due to service unavailability, system shall provide clear error messaging and retry options
-- REQ-FALL-4: System shall detect files exceeding Real-time capabilities and offer file segmentation or alternative approaches
-- REQ-FALL-5: System shall preserve failed transcription attempts for retry when service becomes available
-- REQ-FALL-6: System shall clearly indicate transcription service status and any limitations in UI and logs
-- REQ-FALL-7: System shall log transcription failures and service availability for reliability monitoring
+- REQ-FALL-1: System shall attempt Azure Speech Services as primary transcription service
+- REQ-FALL-2: When Azure fails, system shall automatically fall back to OpenAI Whisper service
+- REQ-FALL-3: When both services fail, system shall enable "manual-only" mode with bulk segment reassignment tools
+- REQ-FALL-4: System shall clearly indicate which service was used for each transcription in UI and logs
+- REQ-FALL-5: System shall log fallback occurrences for service reliability monitoring and debugging
 
 ### Configuration & Validation
 
@@ -206,6 +191,73 @@
 - REQ-SPK-DELETE-6: System shall prevent deletion of speakers if it would result in no speakers remaining
 - REQ-SPK-DELETE-7: Deleted speaker mappings shall not be recoverable within the same session
 - REQ-SPK-DELETE-8: System shall cascade speaker deletion updates to all dependent components
+
+### Multi-Language Support
+
+#### Language Detection & Configuration
+
+- REQ-LANG-1: System shall support automatic language detection for audio files using Azure Speech Services
+- REQ-LANG-2: System shall allow users to manually specify the primary language before transcription when auto-detection is insufficient
+- REQ-LANG-3: System shall support at minimum: English (en-US), Spanish (es-ES), French (fr-FR), German (de-DE), Portuguese (pt-BR), Italian (it-IT), Japanese (ja-JP), Korean (ko-KR), Mandarin Chinese (zh-CN)
+- REQ-LANG-4: System shall provide language selection interface in the file upload component with common languages prioritized
+- REQ-LANG-5: System shall display detected language confidence scores to users when auto-detection is used
+- REQ-LANG-6: System shall fall back to user-specified language when auto-detection confidence is below 70%
+- REQ-LANG-7: System shall remember user's language preference for subsequent uploads within the same session
+
+#### Transcription Language Handling
+
+- REQ-LANG-8: System shall configure Azure Speech Services with appropriate language models based on detected/selected language
+- REQ-LANG-9: System shall handle mixed-language audio by detecting the primary language and noting code-switching occurrences
+- REQ-LANG-10: System shall provide language-specific transcription accuracy metrics and confidence scoring
+- REQ-LANG-11: System shall maintain language-specific speaker diarization models when available in Azure Speech Services
+- REQ-LANG-12: System shall adapt processing timeouts based on language complexity (e.g., longer for logographic languages)
+- REQ-LANG-13: System shall validate that selected language is supported by current Azure Speech Services configuration
+
+#### User Interface Localization
+
+- REQ-LANG-14: System shall display transcription results with proper character encoding for all supported languages
+- REQ-LANG-15: System shall format timestamps and duration displays according to language-specific conventions
+- REQ-LANG-16: System shall handle right-to-left (RTL) text display for Arabic and Hebrew languages when supported
+- REQ-LANG-17: System shall provide appropriate fonts and text rendering for non-Latin scripts (Chinese, Japanese, Korean, Arabic)
+- REQ-LANG-18: System shall maintain consistent UI language (English) while supporting content in multiple languages
+
+#### Speaker Name & Role Detection
+
+- REQ-LANG-19: System shall adapt speaker name detection patterns for language-specific introduction formats
+- REQ-LANG-20: System shall recognize common role/title patterns in each supported language ("Chef de projet" for French, "プロジェクトマネージャー" for Japanese)
+- REQ-LANG-21: System shall handle different name order conventions (Family name first in East Asian languages, etc.)
+- REQ-LANG-22: System shall provide fallback speaker identification when language-specific patterns are not available
+- REQ-LANG-23: System shall allow manual speaker name entry in native language scripts
+
+#### Summarization & Content Processing
+
+- REQ-LANG-24: System shall generate summaries in the same language as the original transcription
+- REQ-LANG-25: System shall adapt key topic extraction to language-specific linguistic patterns
+- REQ-LANG-26: System shall handle language-specific meeting vocabulary and business terminology
+- REQ-LANG-27: System shall provide option to generate summaries in English regardless of source language
+- REQ-LANG-28: System shall detect and preserve technical terms, proper nouns, and code snippets regardless of meeting language
+
+#### Error Handling & Fallbacks
+
+- REQ-LANG-29: System shall provide clear error messages when requested language is not supported by current Azure Speech configuration
+- REQ-LANG-30: System shall fall back to English transcription with warning when specified language fails
+- REQ-LANG-31: System shall log language detection accuracy for monitoring and service improvement
+- REQ-LANG-32: System shall handle partial language support gracefully (e.g., transcription available but not summarization)
+- REQ-LANG-33: System shall provide troubleshooting guidance for common multi-language configuration issues
+
+#### Performance & Resource Management
+
+- REQ-LANG-34: System shall optimize processing times for language-specific models and character sets
+- REQ-LANG-35: System shall manage memory efficiently when processing large files in languages with complex character encoding
+- REQ-LANG-36: System shall implement appropriate timeouts for different languages based on processing complexity
+- REQ-LANG-37: System shall cache language model configurations to reduce initialization overhead for repeat languages
+
+#### Monitoring & Analytics
+
+- REQ-LANG-38: System shall track usage statistics per language for capacity planning and service optimization
+- REQ-LANG-39: System shall monitor transcription accuracy metrics across different languages
+- REQ-LANG-40: System shall log language detection and processing performance for service improvement
+- REQ-LANG-41: System shall provide diagnostic information for multi-language transcription troubleshooting
 
 ### Summarization
 
@@ -443,17 +495,6 @@
 - **Manual Override Interface**: Provide intuitive editing capabilities for correcting speaker assignments
 - **Override Indicators**: Visual cues to distinguish manually-overridden mappings from auto-detected ones
 - **Validation Feedback**: Real-time validation to prevent conflicts in speaker assignments
-
-**Demo Mode Interface Requirements:**
-
-- **Demo Toggle**: Prominent but non-intrusive toggle in upper-left navigation area
-- **Tooltip Integration**: Informative tooltip explaining Demo Mode benefits and functionality
-- **Visual Indicators**: Clear visual indication when Demo Mode is active throughout the application
-- **Sample File Integration**: Drag/drop zone should accept and recognize demo sample audio file
-- **Guided Workflow**: Step-by-step prompts and guidance throughout demo experience
-- **Contextual Help**: Interactive tooltips explaining features during demo workflow progression
-- **Processing Simulation**: Realistic timing and animations for upload, transcription, and summarization steps
-- **Demo Data Display**: High-quality presentation of sample transcript and summary content
 - **Revert Functionality**: One-click option to restore original auto-detected mappings
 - **Segment Speaker Override**: Click-to-edit functionality for reassigning individual transcript segments to different speakers
 - **Confidence Score Invalidation**: Visual indicators showing when confidence scores are no longer relevant due to manual overrides
@@ -495,19 +536,14 @@
 
 ### Demo Mode (Anonymous)
 
-- REQ-DEM-1: System shall provide comprehensive demo mode showcasing end-to-end workflow with sample content
-- REQ-DEM-2: Demo mode shall include step-by-step guided process from upload through transcription to summary
-- REQ-DEM-3: Demo mode toggle shall be located in upper-left nav/menu bar with tooltip explanation
-- REQ-DEM-4: Demo mode shall provide sample audio file for drag/drop upload demonstration
-- REQ-DEM-5: Demo mode shall use frontend-only implementation with no API calls to backend services
-- REQ-DEM-6: Demo mode shall display pre-generated high-quality transcript with 4-speaker diarization
-- REQ-DEM-7: Demo mode shall showcase example summary with action items, decisions, and key points
-- REQ-DEM-8: Demo mode shall include contextual tooltips explaining each feature during workflow
-- REQ-DEM-9: Demo mode shall simulate realistic processing timing and animations
-- REQ-DEM-10: Demo mode shall clearly indicate when active with visual indicators
-- REQ-DEM-11: Demo mode shall isolate demo data from live application state
-- REQ-DEM-12: Demo mode shall be available without any user registration or payment
-- REQ-DEM-13: Demo mode shall provide clear explanation of file format requirements and limitations
+- REQ-DEM-1: System shall provide anonymous demo mode with 30-second audio limit
+- REQ-DEM-2: Demo mode shall showcase full transcription and basic summarization capabilities
+- REQ-DEM-3: Demo mode shall disable email sharing and advanced features
+- REQ-DEM-4: Demo mode shall limit speaker mapping to view-only functionality
+- REQ-DEM-5: System shall clearly indicate demo limitations and upgrade path
+- REQ-DEM-6: Demo mode shall be available without any user registration or payment
+- REQ-DEM-7: System shall track demo usage per browser session to prevent repeated abuse
+- REQ-DEM-8: Demo mode processing cost shall not exceed $0.01 per usage
 
 ### Trial Mode (Email/Password Registration)
 

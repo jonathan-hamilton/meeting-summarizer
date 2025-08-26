@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using Microsoft.CognitiveServices.Speech;
 using System.Diagnostics;
@@ -14,15 +15,18 @@ public class ConfigurationValidationService : IConfigurationValidationService
 {
     private readonly ILogger<ConfigurationValidationService> _logger;
     private readonly IOptions<AzureSpeechOptions> _speechOptions;
+    private readonly IOptions<AzureStorageOptions> _storageOptions;
     private readonly IWebHostEnvironment _environment;
 
     public ConfigurationValidationService(
         ILogger<ConfigurationValidationService> logger,
         IOptions<AzureSpeechOptions> speechOptions,
+        IOptions<AzureStorageOptions> storageOptions,
         IWebHostEnvironment environment)
     {
         _logger = logger;
         _speechOptions = speechOptions;
+        _storageOptions = storageOptions;
         _environment = environment;
     }
 
@@ -39,6 +43,7 @@ public class ConfigurationValidationService : IConfigurationValidationService
         var validationTasks = new List<Task<ServiceValidationResult>>
         {
             ValidateAzureSpeechServicesAsync(),
+            ValidateAzureBlobStorageAsync(),
             ValidateFileTypeConsistencyAsync(),
             ValidateAzureDependenciesAsync()
         };
@@ -120,6 +125,79 @@ public class ConfigurationValidationService : IConfigurationValidationService
                 new List<string> { $"Configuration error: {ex.Message}" },
                 null,
                 stopwatch.Elapsed));
+        }
+    }
+
+    /// <summary>
+    /// Validates Azure Blob Storage connectivity and access permissions (REQ-CFG-2, REQ-CFG-3)
+    /// </summary>
+    public async Task<ServiceValidationResult> ValidateAzureBlobStorageAsync()
+    {
+        var stopwatch = Stopwatch.StartNew();
+        const string serviceName = "Azure Blob Storage";
+
+        try
+        {
+            var options = _storageOptions.Value;
+
+            // Basic configuration validation
+            if (!options.IsValid())
+            {
+                var errors = new List<string>();
+                if (string.IsNullOrWhiteSpace(options.ConnectionString))
+                    errors.Add("Azure Storage connection string is not configured");
+                if (string.IsNullOrWhiteSpace(options.ContainerName))
+                    errors.Add("Azure Storage container name is not configured");
+
+                return ServiceValidationResult.Failure(serviceName,
+                    "Azure Blob Storage configuration is incomplete", errors, null, stopwatch.Elapsed);
+            }
+
+            // Test connectivity and container access
+            var blobServiceClient = new BlobServiceClient(options.ConnectionString);
+            var containerClient = blobServiceClient.GetBlobContainerClient(options.ContainerName);
+
+            // Test container access (this will throw if connection/permissions are invalid)
+            var containerExists = await containerClient.ExistsAsync();
+            
+            var details = new Dictionary<string, object>
+            {
+                ["ContainerName"] = options.ContainerName,
+                ["ContainerExists"] = containerExists.Value,
+                ["SasExpirationHours"] = options.SasExpirationHours,
+                ["ConnectionStringMasked"] = options.GetMaskedConnectionString()
+            };
+
+            var warnings = new List<string>();
+            if (!containerExists.Value)
+            {
+                warnings.Add($"Container '{options.ContainerName}' does not exist but connection is valid");
+            }
+
+            stopwatch.Stop();
+
+            _logger.LogInformation("Azure Blob Storage validation passed - Container: {Container}, Exists: {Exists}",
+                options.ContainerName, containerExists.Value);
+
+            if (warnings.Any())
+            {
+                return ServiceValidationResult.Warning(serviceName,
+                    "Azure Blob Storage configuration validated with warnings", warnings, details, stopwatch.Elapsed);
+            }
+
+            return ServiceValidationResult.Success(serviceName,
+                "Azure Blob Storage configuration validated successfully", details, stopwatch.Elapsed);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, "Azure Blob Storage validation failed");
+
+            return ServiceValidationResult.Failure(serviceName,
+                "Azure Blob Storage validation failed",
+                new List<string> { $"Connection error: {ex.Message}" },
+                null,
+                stopwatch.Elapsed);
         }
     }
 
@@ -212,16 +290,23 @@ public class ConfigurationValidationService : IConfigurationValidationService
         try
         {
             var speechOptions = _speechOptions.Value;
+            var storageOptions = _storageOptions.Value;
 
             var errors = new List<string>();
             var warnings = new List<string>();
 
-            // Check if Speech Services is configured
+            // Check if both Speech and Storage are configured
             var speechConfigured = speechOptions.IsValid();
+            var storageConfigured = storageOptions.IsValid();
 
             if (!speechConfigured)
             {
                 errors.Add("Azure Speech Services is not properly configured");
+            }
+
+            if (!storageConfigured)
+            {
+                errors.Add("Azure Blob Storage is not properly configured");
             }
 
             // Check for environment-specific requirements
@@ -231,13 +316,19 @@ public class ConfigurationValidationService : IConfigurationValidationService
                 {
                     warnings.Add("Azure Speech Services timeout is less than 60 seconds in production environment");
                 }
+
+                if (storageConfigured && storageOptions.SasExpirationHours < 1)
+                {
+                    warnings.Add("Azure Storage SAS expiration is less than 1 hour in production environment");
+                }
             }
 
             var details = new Dictionary<string, object>
             {
                 ["SpeechServicesConfigured"] = speechConfigured,
+                ["BlobStorageConfigured"] = storageConfigured,
                 ["Environment"] = _environment.EnvironmentName,
-                ["RealTimeTranscriptionSupported"] = speechConfigured
+                ["BatchTranscriptionSupported"] = speechConfigured && storageConfigured
             };
 
             stopwatch.Stop();
@@ -249,8 +340,8 @@ public class ConfigurationValidationService : IConfigurationValidationService
                     "Azure dependencies validation failed", errors, warnings, stopwatch.Elapsed));
             }
 
-            _logger.LogInformation("Azure dependencies validation passed - Speech: {Speech}",
-                speechConfigured);
+            _logger.LogInformation("Azure dependencies validation passed - Speech: {Speech}, Storage: {Storage}",
+                speechConfigured, storageConfigured);
 
             if (warnings.Any())
             {
