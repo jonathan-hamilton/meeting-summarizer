@@ -11,7 +11,7 @@
 
 ### Transcription & Speaker Diarization
 
-- REQ-TRN-1: System shall convert audio to text using Azure Speech Services as primary provider
+- REQ-TRN-1: System shall convert audio to text using Azure Real-time Speech Services as primary provider
 - REQ-TRN-2: System shall support multiple languages for transcription (initially English, expandable)
 - REQ-TRN-3: System shall identify and label different speakers in the audio with minimum 85% accuracy for 2-10 speakers
 - REQ-TRN-4: System shall timestamp transcribed text segments with millisecond precision
@@ -19,11 +19,24 @@
 - REQ-TRN-6: System shall provide speaker confidence scores for each identified speaker segment
 - REQ-TRN-7: System shall detect speaker count automatically without requiring user input
 - REQ-TRN-8: System shall handle overlapping speech and identify primary speaker per segment
-- REQ-TRN-9: System shall use Azure batch transcription mode for cost optimization and free diarization
-- REQ-TRN-10: System shall fall back to OpenAI Whisper when Azure Speech Services fails
-- REQ-TRN-11: System shall support long-duration meetings up to 60 minutes using Azure Batch Transcription API for files exceeding 5 minutes or showing truncation issues with real-time API (S4.2)
-- REQ-TRN-12: System shall automatically detect when audio files require batch processing based on duration estimation and file size thresholds (S4.3)
-- REQ-TRN-13: System shall provide appropriate user feedback and estimated processing times for batch transcription operations (S4.4)
+- REQ-TRN-9: System shall enforce 200MB file size limits for Real-time transcription (approximately 45 minutes)
+- REQ-TRN-10: System shall provide enhanced file validation before expensive Azure Real-time transcription calls
+- REQ-TRN-11: System shall detect files exceeding Real-time transcription capabilities (>200MB or >45 minutes estimated)
+- REQ-TRN-12: System shall provide clear messaging when files exceed Real-time transcription limitations
+- REQ-TRN-13: System shall offer alternative processing options for files exceeding 45-minute duration limits
+
+### Long-Duration File Handling
+
+- REQ-LONG-1: System shall detect when uploaded audio files exceed 45-minute estimated duration
+- REQ-LONG-2: System shall provide clear user guidance when files exceed Real-time transcription capabilities
+- REQ-LONG-3: System shall offer file segmentation options for meetings longer than 45 minutes
+- REQ-LONG-4: System shall support manual file splitting with user-defined segment boundaries
+- REQ-LONG-5: System shall provide alternative transcription service integration for long-duration files
+- REQ-LONG-6: System shall maintain speaker consistency across segmented file processing
+- REQ-LONG-7: System shall offer batch processing mode for files exceeding Real-time limitations (future implementation)
+- REQ-LONG-8: System shall provide estimated processing times for alternative long-file processing methods
+- REQ-LONG-9: System shall enable users to choose processing approach for borderline-duration files (40-50 minutes)
+- REQ-LONG-10: System shall gracefully handle Real-time transcription timeouts with fallback processing options
 
 ### Speaker Identification Enhancement
 
@@ -93,11 +106,13 @@
 
 ### Fallback Strategy
 
-- REQ-FALL-1: System shall attempt Azure Speech Services as primary transcription service
-- REQ-FALL-2: When Azure fails, system shall automatically fall back to OpenAI Whisper service
-- REQ-FALL-3: When both services fail, system shall enable "manual-only" mode with bulk segment reassignment tools
-- REQ-FALL-4: System shall clearly indicate which service was used for each transcription in UI and logs
-- REQ-FALL-5: System shall log fallback occurrences for service reliability monitoring and debugging
+- REQ-FALL-1: System shall use Azure Real-time Speech Services as the primary and only transcription service
+- REQ-FALL-2: When Azure Real-time transcription fails due to file size/duration limits, system shall offer alternative processing options
+- REQ-FALL-3: When Azure Real-time transcription fails due to service unavailability, system shall provide clear error messaging and retry options
+- REQ-FALL-4: System shall detect files exceeding Real-time capabilities and offer file segmentation or alternative approaches
+- REQ-FALL-5: System shall preserve failed transcription attempts for retry when service becomes available
+- REQ-FALL-6: System shall clearly indicate transcription service status and any limitations in UI and logs
+- REQ-FALL-7: System shall log transcription failures and service availability for reliability monitoring
 
 ### Configuration & Validation
 
