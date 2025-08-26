@@ -21,6 +21,12 @@ public interface IConfigurationValidationService
     Task<ServiceValidationResult> ValidateAzureSpeechServicesAsync();
 
     /// <summary>
+    /// Validates Azure Blob Storage connectivity and access permissions
+    /// </summary>
+    /// <returns>Azure Storage validation result</returns>
+    Task<ServiceValidationResult> ValidateAzureBlobStorageAsync();
+
+    /// <summary>
     /// Validates consistency between frontend and backend supported file types
     /// </summary>
     /// <returns>File type consistency validation result</returns>

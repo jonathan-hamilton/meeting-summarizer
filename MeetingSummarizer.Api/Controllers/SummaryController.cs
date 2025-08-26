@@ -16,20 +16,17 @@ public class SummaryController : ControllerBase
     private readonly ITranscriptionService _transcriptionService;
     private readonly ISummarizationService _summarizationService;
     private readonly ISpeakerMappingService _speakerMappingService;
-    private readonly IFileProcessingService _fileProcessingService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
         ITranscriptionService transcriptionService,
         ISummarizationService summarizationService,
-        ISpeakerMappingService speakerMappingService,
-        IFileProcessingService fileProcessingService)
+        ISpeakerMappingService speakerMappingService)
     {
         _logger = logger;
         _transcriptionService = transcriptionService;
         _summarizationService = summarizationService;
         _speakerMappingService = speakerMappingService;
-        _fileProcessingService = fileProcessingService;
     }
 
     /// <summary>
@@ -56,53 +53,17 @@ public class SummaryController : ControllerBase
             _logger.LogInformation("Received transcription request for file: {FileName}, Size: {FileSize}",
                 request.AudioFile?.FileName, request.AudioFile?.Length);
 
-            // Basic null check first
-            if (request.AudioFile == null || request.AudioFile.Length == 0)
+            // Enhanced file validation
+            var validationResult = AudioFileValidator.ValidateAudioFile(request.AudioFile);
+            if (!validationResult.IsValid)
             {
-                return BadRequest(new { error = "Audio file is required and cannot be empty" });
+                _logger.LogWarning("File validation failed for {FileName}: {ValidationMessage}",
+                    request.AudioFile?.FileName, validationResult.Message);
+                return BadRequest(new { error = validationResult.Message });
             }
 
-            // Enhanced file validation using FileProcessingService (S4.3)
-            // This prevents expensive Azure calls for invalid/corrupted files
-            _logger.LogInformation("Starting enhanced file validation for {FileName}", request.AudioFile.FileName);
-            var enhancedValidation = await _fileProcessingService.ValidateAudioFileAsync(request.AudioFile);
-            
-            if (!enhancedValidation.IsValid)
-            {
-                _logger.LogWarning("Enhanced file validation failed for {FileName}: {ValidationMessage}",
-                    request.AudioFile.FileName, enhancedValidation.Message);
-                    
-                return BadRequest(new { 
-                    error = enhancedValidation.Message,
-                    validationDetails = new {
-                        errors = enhancedValidation.Errors,
-                        warnings = enhancedValidation.Warnings,
-                        isSecure = enhancedValidation.ValidationDetails?.Security?.IsSecure,
-                        azureCompatible = enhancedValidation.ValidationDetails?.Compatibility?.AzureCompatible
-                    }
-                });
-            }
-
-            // Check file size limits for Real-time transcription
-            const long maxRealTimeFileSize = 200 * 1024 * 1024; // 200MB limit for Real-time
-            if (request.AudioFile.Length > maxRealTimeFileSize)
-            {
-                return BadRequest(new { 
-                    error = $"File too large for Real-time transcription. Maximum size: {maxRealTimeFileSize / (1024 * 1024)}MB. " +
-                           "Real-time transcription supports up to ~45 minutes of audio.",
-                    fileSizeMB = Math.Round(request.AudioFile.Length / (1024.0 * 1024), 2),
-                    maxSizeMB = maxRealTimeFileSize / (1024 * 1024)
-                });
-            }
-
-            _logger.LogInformation("Enhanced validation passed for {FileName} - File is secure and Azure-compatible", 
-                request.AudioFile.FileName);
-
-            if (enhancedValidation.Warnings?.Any() == true)
-            {
-                _logger.LogInformation("File validation warnings for {FileName}: {Warnings}", 
-                    request.AudioFile.FileName, string.Join(", ", enhancedValidation.Warnings));
-            }
+            _logger.LogInformation("File validation passed for {FileName} ({FileSize})",
+                request.AudioFile!.FileName, AudioFileValidator.FormatFileSize(request.AudioFile.Length));
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -111,7 +72,7 @@ public class SummaryController : ControllerBase
                 Console.WriteLine("🎯 [CONTROLLER DEBUG] About to call _transcriptionService.TranscribeAudioWithMetadataAsync");
                 Console.WriteLine($"🎯 [CONTROLLER DEBUG] Service type: {_transcriptionService.GetType().Name}");
                 
-                // Use Azure Real-time transcription service with speaker diarization
+                // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
                 using var audioStream = request.AudioFile.OpenReadStream();
                 var transcriptionResult = await _transcriptionService.TranscribeAudioWithMetadataAsync(
                     audioStream,

@@ -6,7 +6,6 @@ import {
   CardContent,
   Typography,
   Button,
-  LinearProgress,
   Alert,
   Chip,
   List,
@@ -24,7 +23,7 @@ import {
   Error as ErrorIcon,
   Upload,
   Psychology,
-  Done,
+  RadioButtonUnchecked,
 } from "@mui/icons-material";
 import { apiService } from "../services/apiService";
 import type { TranscriptionResponse } from "../types";
@@ -55,8 +54,8 @@ const getWorkflowSteps = (uploadFile: UploadFile) => [
   {
     label: "Uploading",
     icon: <Upload />,
-    completed: uploadFile.status === "completed",
-    active: uploadFile.status === "uploading",
+    completed: uploadFile.status === "completed" || (uploadFile.status === "uploading" && uploadFile.progress > 90),
+    active: uploadFile.status === "uploading" && uploadFile.progress <= 90,
     error: uploadFile.status === "error",
   },
   {
@@ -68,7 +67,7 @@ const getWorkflowSteps = (uploadFile: UploadFile) => [
   },
   {
     label: "Complete",
-    icon: <Done />,
+    icon: <RadioButtonUnchecked />,
     completed: uploadFile.status === "completed",
     active: false,
     error: uploadFile.status === "error",
@@ -85,6 +84,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // Check if there's a completed file to disable upload
   const hasCompletedFile = uploadFiles.some(file => file.status === "completed");
+
+  // Format time from seconds to mm:ss or ss format
+  const formatTime = useCallback((seconds: number): string => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    
+    if (minutes < 1) {
+      return `${remainingSeconds}s`;
+    }
+    
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  }, []);
 
   const uploadFileToServer = useCallback(
     async (uploadFile: UploadFile) => {
@@ -206,21 +217,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         return <AudioFile color="primary" />;
       default:
         return <AudioFile />;
-    }
-  };
-
-  const getStatusColor = (status: UploadFile["status"]) => {
-    switch (status) {
-      case "completed":
-        return "success";
-      case "error":
-        return "error";
-      case "uploading":
-        return "warning";
-      case "pending":
-        return "info";
-      default:
-        return "default";
     }
   };
 
@@ -380,18 +376,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       <Typography variant="body1">
                         {uploadFile.file.name}
                       </Typography>
-                      <Chip
-                        label={uploadFile.status}
-                        size="small"
-                        color={
-                          getStatusColor(uploadFile.status) as
-                            | "success"
-                            | "error"
-                            | "warning"
-                            | "info"
-                            | "default"
-                        }
-                      />
                     </Box>
 
                     {/* Uploaded file size */}
@@ -464,26 +448,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       </Stepper>
                     </Box>
 
-                    {/* Upload Progress Bar */}
-                    {uploadFile.status === "uploading" && (
-                      <Box sx={{ mt: 2 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={uploadFile.progress}
-                          sx={{ height: 8, borderRadius: 4 }}
-                        />
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{ mt: 0.5, display: "block" }}
-                        >
-                          {uploadFile.progress < 90
-                            ? `Uploading... ${uploadFile.progress}%`
-                            : "Processing transcription..."}
-                        </Typography>
-                      </Box>
-                    )}
-
                     {/* Error Display */}
                     {uploadFile.error && (
                       <Alert severity="error" sx={{ mt: 1 }}>
@@ -496,7 +460,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       <Alert severity="success" sx={{ mt: 1 }}>
                         <Typography variant="body2">
                           ✅ Transcription completed in{" "}
-                          {uploadFile.result.processingTimeMs}ms
+                          {formatTime(Math.round(uploadFile.result.processingTimeMs / 1000))}
                         </Typography>
                         {uploadFile.result.speakerCount &&
                           uploadFile.result.speakerCount > 1 && (

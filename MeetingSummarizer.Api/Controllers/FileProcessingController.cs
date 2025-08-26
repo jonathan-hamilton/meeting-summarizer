@@ -120,12 +120,10 @@ public class FileProcessingController : ControllerBase
     }
 
     /// <summary>
-    /// Large file processing endpoint (STUBBED - REQ-FPO-2)
-    /// Note: Azure Real-time transcription has limits (~45 min max, ~200MB)
-    /// Large file processing would require batch transcription which is not implemented
+    /// Process a large audio file with streaming (REQ-FPO-2, REQ-FPO-4)
     /// </summary>
     /// <param name="audioFile">The large audio file to process</param>
-    /// <returns>Stubbed response explaining limitations</returns>
+    /// <returns>Processing results with progress information</returns>
     [HttpPost("process-large")]
     public async Task<IActionResult> ProcessLargeFile([FromForm] IFormFile audioFile)
     {
@@ -143,32 +141,66 @@ public class FileProcessingController : ControllerBase
             });
         }
 
-        // Real-time transcription limitations
-        const long maxRealTimeFileSize = 200 * 1024 * 1024; // 200MB
-        const double maxRealTimeDurationMinutes = 45; // ~45 minutes
-
-        await Task.CompletedTask; // Placeholder for async pattern
-
-        return BadRequest(new
+        if (audioFile.Length < 50 * 1024 * 1024) // 50MB threshold
         {
-            Status = "NotSupported",
-            Message = "Large file processing is not supported with Real-time transcription",
-            CorrelationId = correlationId,
-            Timestamp = DateTime.UtcNow,
-            Limitations = new
+            return BadRequest(new
             {
-                MaxFileSizeMB = maxRealTimeFileSize / (1024 * 1024),
-                MaxDurationMinutes = maxRealTimeDurationMinutes,
-                CurrentFileSizeMB = Math.Round(audioFile.Length / (1024.0 * 1024), 2),
-                Recommendation = "For files larger than 200MB or longer than 45 minutes, " +
-                               "consider using audio editing software to split the file into smaller segments"
-            },
-            AlternativeEndpoints = new
+                Status = "Invalid",
+                Message = "File size below large file threshold (50MB). Use /validate endpoint instead.",
+                CorrelationId = correlationId,
+                FileSizeMB = Math.Round(audioFile.Length / (1024.0 * 1024), 2)
+            });
+        }
+
+        try
+        {
+            var progressList = new List<ProcessingProgress>();
+            var progress = new Progress<ProcessingProgress>(p => progressList.Add(p));
+
+            var result = await _fileProcessingService.ProcessLargeFileStreamingAsync(audioFile, progress);
+
+            var response = new
             {
-                Validation = "/api/FileProcessing/validate - For comprehensive file validation",
-                Transcription = "/api/Summary/audio - For files under 200MB"
-            }
-        });
+                Status = result.IsValid ? "Success" : "Failed",
+                Message = result.Message,
+                CorrelationId = correlationId,
+                Timestamp = DateTime.UtcNow,
+                ProcessingDetails = new
+                {
+                    ChunksProcessed = result.Metrics.ChunksProcessed,
+                    TotalProcessingTimeMs = result.Metrics.TotalProcessingTime.TotalMilliseconds,
+                    PeakMemoryUsageMB = Math.Round(result.Metrics.PeakMemoryUsageBytes / (1024.0 * 1024), 2),
+                    ThroughputMBps = Math.Round(result.Metrics.ThroughputBytesPerSecond / (1024.0 * 1024), 2),
+                    FileSizeMB = Math.Round(audioFile.Length / (1024.0 * 1024), 2)
+                },
+                ProgressHistory = progressList.Select(p => new
+                {
+                    Stage = p.Stage.ToString(),
+                    ProgressPercentage = Math.Round(p.ProgressPercentage, 1),
+                    p.CurrentOperation,
+                    BytesProcessedMB = Math.Round(p.BytesProcessed / (1024.0 * 1024), 2),
+                    TotalBytesMB = Math.Round(p.TotalBytes / (1024.0 * 1024), 2),
+                    EstimatedTimeRemainingSeconds = p.EstimatedTimeRemaining?.TotalSeconds
+                }).ToList(),
+                result.Errors,
+                result.Warnings
+            };
+
+            return result.IsValid ? Ok(response) : BadRequest(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Large file processing failed [CorrelationId: {CorrelationId}]", correlationId);
+
+            return StatusCode(500, new
+            {
+                Status = "Error",
+                Message = "Processing failed due to internal error",
+                CorrelationId = correlationId,
+                Timestamp = DateTime.UtcNow,
+                Error = ex.Message
+            });
+        }
     }
 
     /// <summary>

@@ -237,6 +237,11 @@ export const TranscriptSpeakerSegment: React.FC<
   const formatTime = useCallback((seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
+    
+    if (mins < 1) {
+      return `${secs}s`;
+    }
+    
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   }, []);
 

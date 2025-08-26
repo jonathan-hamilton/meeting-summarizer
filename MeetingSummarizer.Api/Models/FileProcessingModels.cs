@@ -406,6 +406,11 @@ public enum ProcessingStage
     SecurityValidation,
 
     /// <summary>
+    /// Upload to Azure Blob Storage
+    /// </summary>
+    BlobStorageUpload,
+
+    /// <summary>
     /// Final processing
     /// </summary>
     Finalizing,

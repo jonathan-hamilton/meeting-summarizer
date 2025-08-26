@@ -14,6 +14,15 @@ export interface SpeakerStats {
   isFullyMapped: boolean;  // All speakers have names
 }
 
+// Cached computed values to prevent infinite loops
+interface ComputedCache {
+  activeSpeakers: string[];
+  speakerStats: SpeakerStats;
+  filteredMappings: SpeakerMapping[];
+  structurallyInvalidated: boolean;
+  hasUnsavedChanges: boolean;
+}
+
 // Main store state interface
 interface SpeakerSessionState {
   // Base State (Single Source of Truth)
@@ -21,6 +30,9 @@ interface SpeakerSessionState {
   originalSegments: SpeakerSegment[];
   currentSegments: SpeakerSegment[];
   speakerMappings: SpeakerMapping[];
+  
+  // Cached computed values (internal)
+  _computedCache: ComputedCache | null;
   
   // Actions
   initializeSession: (transcriptionId: string, segments: SpeakerSegment[], mappings?: SpeakerMapping[]) => void;
@@ -30,6 +42,13 @@ interface SpeakerSessionState {
   deleteSpeakerMapping: (speakerId: string) => void;
   resetToOriginal: () => void;
   clearSession: () => void;
+  
+  // Selectors (Computed Values) - now cached
+  getActiveSpeakers: () => string[];
+  getSpeakerStats: () => SpeakerStats;
+  getFilteredMappings: () => SpeakerMapping[];
+  getStructurallyInvalidated: () => boolean;
+  hasUnsavedChanges: () => boolean;
 }
 
 // Compute functions that create new data only when needed
@@ -94,9 +113,30 @@ const hasUnsavedChangesComputation = (
   return hasSegmentChanges || hasMappings;
 };
 
+// Function to recompute cache when state changes
+const recomputeCache = (state: SpeakerSessionState): ComputedCache => {
+  const activeSpeakers = computeActiveSpeakers(state.currentSegments);
+  const speakerStats = computeSpeakerStats(activeSpeakers, state.speakerMappings);
+  const filteredMappings = computeFilteredMappings(activeSpeakers, state.speakerMappings);
+  const structurallyInvalidated = computeStructurallyInvalidated(state.originalSegments, state.currentSegments);
+  const hasUnsavedChanges = hasUnsavedChangesComputation(
+    state.originalSegments,
+    state.currentSegments,
+    state.speakerMappings
+  );
+
+  return {
+    activeSpeakers,
+    speakerStats,
+    filteredMappings,
+    structurallyInvalidated,
+    hasUnsavedChanges,
+  };
+};
+
 /**
  * Centralized Speaker Session Store
- * Manages all speaker and segment state in one place
+ * Manages all speaker and segment state in one place with caching to prevent infinite loops
  */
 export const useSpeakerSessionStore = create<SpeakerSessionState>()(
   devtools(
@@ -106,6 +146,7 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
       originalSegments: [],
       currentSegments: [],
       speakerMappings: [],
+      _computedCache: null,
 
       // Initialize a new session
       initializeSession: (transcriptionId, segments, mappings = []) => {
@@ -126,6 +167,7 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           originalSegments: [...segments],
           currentSegments: [...segments],
           speakerMappings: [...mappings],
+          _computedCache: null, // Will be computed on first access
         };
         
         set(newState);
@@ -148,6 +190,7 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
         
         set({
           currentSegments: updatedSegments,
+          _computedCache: null, // Invalidate cache
         });
       },
 
@@ -165,6 +208,7 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
         
         set({
           speakerMappings: updatedMappings,
+          _computedCache: null, // Invalidate cache
         });
       },
 
@@ -183,11 +227,13 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           
           set({
             speakerMappings: updatedMappings,
+            _computedCache: null, // Invalidate cache
           });
         } else {
           // Add new mapping
           set({
             speakerMappings: [...state.speakerMappings, mapping],
+            _computedCache: null, // Invalidate cache
           });
         }
 
@@ -214,6 +260,7 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
         set({
           speakerMappings: filteredMappings,
           currentSegments: updatedSegments,
+          _computedCache: null, // Invalidate cache
         });
       },
 
@@ -226,6 +273,7 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
         set({
           currentSegments: [...state.originalSegments],
           speakerMappings: [], // Also clear mappings on reset
+          _computedCache: null, // Invalidate cache
         });
       },
 
@@ -246,7 +294,79 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           originalSegments: [],
           currentSegments: [],
           speakerMappings: [],
+          _computedCache: null,
         });
+      },
+
+      // Cached computed selectors
+      getActiveSpeakers: () => {
+        const state = get();
+        
+        // Return cached value if available
+        if (state._computedCache) {
+          return state._computedCache.activeSpeakers;
+        }
+        
+        // Compute and cache
+        const cache = recomputeCache(state);
+        set({ _computedCache: cache });
+        return cache.activeSpeakers;
+      },
+
+      getSpeakerStats: () => {
+        const state = get();
+        
+        // Return cached value if available
+        if (state._computedCache) {
+          return state._computedCache.speakerStats;
+        }
+        
+        // Compute and cache
+        const cache = recomputeCache(state);
+        set({ _computedCache: cache });
+        return cache.speakerStats;
+      },
+
+      getFilteredMappings: () => {
+        const state = get();
+        
+        // Return cached value if available
+        if (state._computedCache) {
+          return state._computedCache.filteredMappings;
+        }
+        
+        // Compute and cache
+        const cache = recomputeCache(state);
+        set({ _computedCache: cache });
+        return cache.filteredMappings;
+      },
+
+      getStructurallyInvalidated: () => {
+        const state = get();
+        
+        // Return cached value if available
+        if (state._computedCache) {
+          return state._computedCache.structurallyInvalidated;
+        }
+        
+        // Compute and cache
+        const cache = recomputeCache(state);
+        set({ _computedCache: cache });
+        return cache.structurallyInvalidated;
+      },
+
+      hasUnsavedChanges: () => {
+        const state = get();
+        
+        // Return cached value if available
+        if (state._computedCache) {
+          return state._computedCache.hasUnsavedChanges;
+        }
+        
+        // Compute and cache
+        const cache = recomputeCache(state);
+        set({ _computedCache: cache });
+        return cache.hasUnsavedChanges;
       },
     }),
     {
@@ -255,46 +375,21 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
   )
 );
 
-// Updated convenience hooks - use direct state selectors to avoid infinite loops
+// Updated convenience hooks - now use cached store methods
 export const useActiveSpeakers = () => 
-  useSpeakerSessionStore(
-    state => computeActiveSpeakers(state.currentSegments),
-    (a, b) => JSON.stringify(a) === JSON.stringify(b)
-  );
+  useSpeakerSessionStore(state => state.getActiveSpeakers());
 
 export const useSpeakerStats = () => 
-  useSpeakerSessionStore(
-    state => {
-      const activeSpeakers = computeActiveSpeakers(state.currentSegments);
-      return computeSpeakerStats(activeSpeakers, state.speakerMappings);
-    },
-    (a, b) => JSON.stringify(a) === JSON.stringify(b)
-  );
+  useSpeakerSessionStore(state => state.getSpeakerStats());
 
 export const useFilteredMappings = () => 
-  useSpeakerSessionStore(
-    state => {
-      const activeSpeakers = computeActiveSpeakers(state.currentSegments);
-      return computeFilteredMappings(activeSpeakers, state.speakerMappings);
-    },
-    (a, b) => JSON.stringify(a) === JSON.stringify(b)
-  );
+  useSpeakerSessionStore(state => state.getFilteredMappings());
 
 export const useStructurallyInvalidated = () => 
-  useSpeakerSessionStore(
-    state => computeStructurallyInvalidated(state.originalSegments, state.currentSegments),
-    (a, b) => a === b
-  );
+  useSpeakerSessionStore(state => state.getStructurallyInvalidated());
 
 export const useHasUnsavedChanges = () => 
-  useSpeakerSessionStore(
-    state => hasUnsavedChangesComputation(
-      state.originalSegments,
-      state.currentSegments,
-      state.speakerMappings
-    ),
-    (a, b) => a === b
-  );
+  useSpeakerSessionStore(state => state.hasUnsavedChanges());
 
 // Direct state access hooks (use sparingly to avoid unnecessary re-renders)
 export const useCurrentSegments = () => 

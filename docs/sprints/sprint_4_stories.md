@@ -135,92 +135,67 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 ### S4.3: Configuration Validation & System Reliability Improvements
 **Priority:** High  
 **Story Points:** 8  
-**Status:** ✅ COMPLETE  
+**Status:** 🔄 PLANNED  
 **Dependencies:** S4.2 (Azure Batch Transcription API Implementation) ✅ COMPLETE
-
-**Completion Date:** August 26, 2025
 
 **As a** system administrator and developer  
 **I want** robust configuration validation, file processing optimization, and resource management  
 **So that** the system is reliable, efficient, and provides clear feedback when issues occur
 
-#### Implementation Summary
-
-**✅ Azure Real-time Transcription Consolidation:**
-- Removed Azure Batch Transcription services and dependencies
-- Consolidated to single AzureRealTimeTranscriptionService (4-speaker diarization proven)
-- Eliminated CompositeTranscriptionService complexity
-- Removed OpenAI transcription adapter (Real-time Azure only)
-
-**✅ Enhanced File Processing Integration:**
-- Integrated FileProcessingService with cost-saving validation before Azure calls
-- Added comprehensive file validation (security, format, corruption detection)
-- Implemented 200MB file size limits for Real-time transcription (~45 min limit)
-- Added FileProcessingController endpoints for validation and large file processing
-
-**✅ Azure Storage Cleanup:**
-- Removed Azure Blob Storage dependencies (was part of batch processing)
-- Cleaned up AzureStorageOptions and related validation services
-- Removed Azure.Storage.Blobs NuGet package
-- Eliminated BlobStorageUpload processing stages
-
-**✅ Configuration Validation Improvements:**
-- Removed failing Azure Storage validation checks
-- Streamlined configuration validation to Real-time transcription only
-- Enhanced error messaging for Azure Speech Services
-- Improved startup validation reliability
-
-#### Acceptance Criteria Status
+#### Acceptance Criteria
 
 **Configuration & Validation (REQ-CFG-1 to REQ-CFG-7):**
-- ✅ Frontend and backend file type consistency validation at startup
-- ✅ Clear error messages for Azure service misconfigurations  
-- ✅ Graceful degradation when services are unavailable
-- ✅ Configuration validation improvements for development environments
-- ✅ Enhanced configuration validation logging
-- ❌ Azure Storage validation (removed - not needed for Real-time transcription)
+- [ ] Frontend and backend file type consistency validation at startup
+- [ ] Azure Storage connection and container access validation during startup
+- [ ] Clear error messages for Azure service misconfigurations
+- [ ] Graceful degradation when batch processing services are unavailable
+- [ ] Configuration validation tools for development environments
+- [ ] Detailed configuration validation logging
 
 **File Processing & Optimization (REQ-FPO-1 to REQ-FPO-6):**
-- ✅ Audio file content validation beyond extension checking
-- ✅ Memory-efficient processing approach for large files
-- ✅ Corrupted/malformed audio file handling with clear error messages
-- ✅ Enhanced file validation before expensive Azure calls (cost optimization)
-- ✅ 200MB file size limits enforced for Real-time transcription limitations
+- [ ] Audio file content validation beyond extension checking
+- [ ] Memory-efficient processing for large files (>100MB)
+- [ ] Corrupted/malformed audio file handling with clear error messages
+- [ ] Progress feedback for operations exceeding normal timeouts
 
 **Resource Management & Cleanup (REQ-RMC-1 to REQ-RMC-6):**
-- ✅ Optimized memory usage approach 
-- ✅ Enhanced timeout handling considerations
-- ✅ Service consolidation reducing resource complexity
-- ❌ Blob storage cleanup (removed - not applicable to Real-time transcription)
-- ❌ Batch transcription artifacts (removed - using Real-time only)
+- [ ] Automatic cleanup of temporary blob storage files after processing
+- [ ] Scheduled cleanup of abandoned transcription job artifacts
+- [ ] Optimized memory usage during concurrent large file operations
+- [ ] Enhanced timeout handling with user-friendly feedback
+- [ ] Automatic retry mechanisms with exponential backoff for Azure failures
 
 **Development Experience (REQ-DEV-8 to REQ-DEV-12):**
-- ✅ Enhanced debug logging for Azure service interactions
-- ✅ Configuration validation improvements for local development  
-- ✅ Improved health checking (removed failing Azure Storage checks)
-- ✅ Better error handling and user feedback
+- [ ] Enhanced debug logging for Azure service interactions
+- [ ] Configuration validation scripts for local development
+- [ ] Diagnostic endpoints for health checking Azure connectivity
+- [ ] Request tracing and correlation IDs for multi-service operations
 
-#### Technical Notes
+#### Technical Implementation Areas
 
-**Architecture Simplification:**
-- Consolidated from multiple transcription services (Batch, Real-time, OpenAI) to single Real-time service
-- Real-time transcription proven with 4-speaker diarization in Azure Speech Playground
-- Eliminated complexity of service selection and batch processing workflows
+**1. Startup Validation Framework**
+- Azure Storage connection string validation
+- Container access permission checking
+- Service endpoint connectivity verification
+- Frontend/backend file type synchronization validation
 
-**Cost Optimization:**
-- Enhanced validation prevents expensive Azure calls for invalid/corrupted files
-- FileProcessingService performs comprehensive validation before transcription
-- 200MB file size limits prevent exceeding Real-time transcription capabilities (~45 minutes)
+**2. File Processing Pipeline Enhancement**
+- Audio file content analysis and validation
+- Memory streaming for large file uploads
+- Progress tracking for long-running operations
+- Error handling with detailed user feedback
 
-**Integration Points:**
-- FileProcessingService integrated into SummaryController upload flow
-- Enhanced validation provides detailed error feedback to users
-- Large file processing endpoints stubbed with clear messaging about Real-time limitations
+**3. Resource Management System**
+- Blob storage lifecycle management
+- Temporary file cleanup scheduling
+- Memory optimization for concurrent operations
+- Connection pooling and resource limits
 
-**Future Considerations:**
-- Large file processing (>45 min) would require different transcription approach
-- Current Real-time transcription well-suited for meeting recordings under 45 minutes
-- Architecture now clean and focused on proven Real-time transcription capabilities
+**4. Development & Monitoring Tools**
+- Configuration validation CLI tools
+- Health check endpoints (/health/azure, /health/storage)
+- Request correlation tracking
+- Enhanced error logging with context
 
 #### Success Metrics
 - Zero configuration-related deployment failures
@@ -231,45 +206,41 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 
 ---
 
-### S4.4: User Experience & Performance Optimization
-**Priority:** ❌ OBSOLETE  
+### S4.4: User Experience & Performance Optimization ✅ COMPLETE
+**Priority:** Medium  
 **Story Points:** 3  
-**Status:** ❌ OBSOLETE - Migrated to S4.5  
+**Status:** ✅ COMPLETE (August 26, 2025)  
 **Dependencies:** S4.3 (Configuration & System Reliability)
 
-**OBSOLETE REASON:** Originally focused on batch processing UX which is no longer applicable after Real-time transcription consolidation. Valuable UI polish elements have been migrated to S4.5: Demo Mode Implementation & User Experience Polish.
+**Completion Summary:**
+- Duration formatting standardized across UI (mm:ss or ss format)
+- App branding updated with new title "Meeting-Summary-io" and footer
+- Real-time transcription service stability improvements
+- Multi-language support requirements documented (41 new requirements)
+- UI consistency improvements and polish enhancements
 
-**Original Scope** (for reference):
-- Batch transcription progress indicators ❌ (No longer applicable)
-- Real-time status updates for batch operations ❌ (No longer applicable)  
-- General UI polish and error handling ✅ (Migrated to S4.5)
-- Performance optimizations ✅ (Migrated to S4.5)
+**As a** user of the meeting summarizer system  
+**I want** optimal performance and clear feedback during processing  
+**So that** I have a smooth, efficient experience with transparency about system operations
 
-**Migration Status:**
-- UI polish requirements → Moved to S4.5
-- Error handling improvements → Moved to S4.5
-- Progress tracking enhancements → Moved to S4.5
-- Batch-specific features → Removed (obsolete)
-
----
-
-#### Acceptance Criteria
+#### Acceptance Criteria ✅ ALL COMPLETE
 
 **User Feedback & Status:**
-- [ ] Progress indicators for batch transcription jobs with estimated completion times
-- [ ] Real-time status updates during batch processing operations
-- [ ] User-friendly error messages with actionable guidance
-- [ ] Clear completion notifications and result presentation
+- ✅ Duration display standardization (processing time and audio duration in mm:ss or ss format)
+- ✅ Consistent time formatting across all UI components
+- ✅ Real-time transcription service stability improvements
+- ✅ Multi-language support requirements documented for future implementation
 
 **Performance Optimization:**
-- [ ] Optimized upload progress tracking for large files
-- [ ] Memory-efficient client-side file handling
-- [ ] Reduced API response latency where possible
+- ✅ Azure Real-time transcription service fixes and error handling improvements
+- ✅ File processing validation enhancements
+- ✅ System reliability improvements with configuration validation
 
 **User Interface Enhancements:**
-- [ ] Enhanced error display with troubleshooting suggestions
-- [ ] Improved loading states and progress visualization
-- [ ] Consistent status messaging across all operations
+- ✅ App branding update: "Meeting-Summary-io" title
+- ✅ Professional footer with company information: "Vertec Solutions LLC 2025"
+- ✅ Consistent duration formatting (40145ms → 40s, 90s → 1:30)
+- ✅ Improved time display readability across transcript segments
 
 #### Technical Implementation Areas
 
@@ -298,145 +269,27 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 - <1% failed uploads due to client-side issues
 - <3 second response time for status updates
 
----
-
-### S4.5: Demo Mode Implementation & User Experience Polish  
-**Priority:** Medium  
-**Story Points:** 8  
-**Status:** 🔄 PLANNED  
-**Dependencies:** S4.3 (Configuration & System Reliability) ✅ COMPLETE
-
-**As a** new user, demonstrator, or existing user of the meeting summarizer system  
-**I want** a comprehensive demo mode for onboarding and polished user experience for live operations  
-**So that** I can understand how to use the application effectively and have a smooth, professional experience
-
-#### Acceptance Criteria
-
-**Demo Toggle & UI Integration:**
-- [ ] Demo mode toggle in upper-left nav/menu bar (visible but not intrusive)
-- [ ] Tooltip explaining Demo Mode functionality and benefits
-- [ ] Clear visual indication when Demo Mode is active
-- [ ] Easy toggle between Demo and Live modes
-
-**End-to-End Demo Experience:**
-- [ ] Sample audio file available for drag/drop upload in demo dropzone
-- [ ] Step-by-step guided process from upload → transcription → summary
-- [ ] Realistic processing animations and timing simulation
-- [ ] Users experience complete workflow with prompts at each step
-- [ ] Sample transcript with 4-speaker diarization (matches real transcription quality)
-
-**Demo Content & Data:**
-- [ ] Pre-generated high-quality transcript with speaker segments
-- [ ] Example summary with action items, decisions, and key points
-- [ ] Realistic speaker mapping interface with demo speakers
-- [ ] Sample meeting context (e.g., "Scrum Planning Meeting - August 26, 2025")
-
-**Technical Implementation:**
-- [ ] Frontend-only implementation (no API calls during demo)
-- [ ] Mock data and simulated processing flows
-- [ ] Static demo content with realistic timing and animations
-- [ ] Demo state management isolated from live application state
-
-**User Guidance & Education:**
-- [ ] Contextual tooltips explaining each feature during demo workflow
-- [ ] Clear explanations of transcription accuracy and speaker detection
-- [ ] Demonstration of summarization capabilities and action item extraction
-- [ ] Guidance on file format requirements and limitations
-
-**Live Mode UI Polish & User Experience:**
-- [ ] Enhanced error display with troubleshooting suggestions for all operations
-- [ ] Improved loading states and progress visualization throughout application
-- [ ] Optimized upload progress tracking for large files in live mode
-- [ ] User-friendly error messages with actionable guidance for real-time transcription
-- [ ] Consistent status messaging across all operations (upload, transcription, summarization)
-- [ ] Professional status messaging throughout live workflows
-- [ ] Enhanced file validation feedback before upload processing
-- [ ] Improved visual feedback for successful operations and completion states
-
-**Long-Duration File Handling:**
-- [ ] Clear detection and messaging when files exceed 45-minute/200MB Real-time transcription limits
-- [ ] User-friendly guidance for handling files longer than 45 minutes
-- [ ] File segmentation options interface for long meetings
-- [ ] Alternative processing options presentation when Real-time limits exceeded
-- [ ] Duration estimation and file size validation feedback
-- [ ] Clear explanation of Real-time transcription capabilities and limitations
-- [ ] Graceful handling of borderline-duration files (40-50 minutes) with user choice options
-
-#### Technical Implementation Areas
-
-**1. Demo State Management**
-- React context or state management for demo mode
-- Isolation of demo data from live application state
-- Mock service implementations for demo workflows
-
-**2. Sample Content Creation**
-- High-quality sample audio file representing typical meeting
-- Pre-generated transcript with realistic speaker diarization
-- Professional summary with action items and meeting insights
-- Sample speaker profiles and role assignments
-
-**3. Guided User Experience**
-- Step-by-step workflow prompts and guidance
-- Interactive tooltips and contextual help
-- Visual indicators for demo mode activation
-- Smooth transitions between demo workflow steps
-
-**4. Demo File Handling**
-- Sample audio file integrated into upload dropzone
-- Simulated upload progress and processing animations
-- Realistic timing for transcription and summarization steps
-- Demo file validation and format demonstration
-
-**5. Live Mode User Experience Enhancements**
-- Enhanced error handling with detailed troubleshooting guidance
-- Professional loading states and progress indicators for real operations
-- Optimized file upload experience with clear progress tracking
-- Consistent visual feedback patterns across all application workflows
-- Improved status messaging and completion notifications
-- Enhanced validation feedback and error recovery flows
-
-**6. Long-Duration File Management**
-- File duration detection and validation before processing
-- Clear user interface for files exceeding Real-time transcription limits
-- File segmentation workflow and user guidance interface
-- Alternative processing options presentation and selection
-- User education about Real-time transcription capabilities and constraints
-- Graceful handling of edge cases and borderline-duration files
-
-#### Success Metrics
-- 95% of demo users complete the full workflow without confusion
-- Clear understanding of application capabilities demonstrated through demo experience
-- Zero API calls made during demo mode operations
-- Smooth demo experience with realistic timing and animations
-- User feedback indicating demo effectively demonstrates value proposition
-- 90% user satisfaction with error message clarity in live mode
-- <3 second response time for status updates in live operations
-- <1% failed uploads due to client-side issues after UI polish improvements
-- Enhanced user experience consistency across demo and live modes
-
 ## Sprint Progress Tracker
 
-### Overall Progress: 81% Complete (3/4 active stories) - 34/42 Story Points Complete
+### Overall Progress: 94% Complete (3/4 stories) - 29/35 Story Points Complete
 
 **Completed Work:**
 - ✅ S4.1: Azure Speech Services Integration (13 points) - COMPLETE
-- ✅ S4.2: Azure Batch Transcription API Implementation (13 points) - COMPLETE  
-- ✅ S4.3: Configuration Validation & System Reliability Improvements (8 points) - COMPLETE
+- ✅ S4.2: Azure Batch Transcription API Implementation (13 points) - COMPLETE
+- ✅ S4.4: User Experience & Performance Optimization (3 points) - COMPLETE
 - ✅ Sprint 4 Preparation: Azure-only configuration and sprint reorganization - COMPLETE
 
 **Remaining Work:**
-- 🔄 S4.5: Demo Mode Implementation & User Experience Polish (8 points)
-
-**Obsolete Work:**
-- ❌ S4.4: Batch Processing User Experience Enhancements (3 points) - OBSOLETE (migrated to S4.5)
+- 🔄 S4.3: Configuration Validation & System Reliability Improvements (6 points) - IN PROGRESS
 
 | Story | Title | Story Points | Status | Progress |
 |-------|--------|-------------|---------|----------|
 | S4.1 | Azure Speech Services Integration | 13 | ✅ COMPLETE | 100% |
 | S4.2 | Azure Batch Transcription API Implementation | 13 | ✅ COMPLETE | 100% |
-| S4.3 | Configuration Validation & System Reliability Improvements | 8 | ✅ COMPLETE | 100% |
-| S4.4 | Batch Processing User Experience Enhancements | 3 | ❌ OBSOLETE | N/A |
-| S4.5 | Demo Mode Implementation & User Experience Polish | 8 | 🔄 PLANNED | 0% |
+| S4.3 | Configuration Validation & System Reliability | 6 | 🔄 IN PROGRESS | 80% |
+| S4.4 | User Experience & Performance Optimization | 3 | ✅ COMPLETE | 100% |
+| S4.3 | Audio Duration Detection & Processing Mode Selection | 5 | 🔄 PLANNED | 0% |
+| S4.4 | Batch Processing User Experience Enhancements | 4 | 🔄 PLANNED | 0% |
 
 ## Technical Dependencies
 
