@@ -1,9 +1,11 @@
 ﻿using System.Reflection;
-using MeetingSummarizer.Api.Services;
+// using MeetingSummarizer.Api.Services;
 
 // S4.2 Azure Batch Transcription - Duration Estimation Validation
 Console.WriteLine("=== S4.2 Azure Batch Transcription - Duration Estimation Validation ===\n");
+Console.WriteLine("Note: This test has been disabled as AzureSpeechService was removed in favor of AzureConversationTranscriptionService");
 
+/*
 // Get the private EstimateAudioDuration method via reflection
 var method = typeof(AzureSpeechService).GetMethod("EstimateAudioDuration", 
     BindingFlags.NonPublic | BindingFlags.Static);
@@ -89,4 +91,5 @@ Console.WriteLine($"Long audio: {longDuration.TotalSeconds:F1}s → {(longDurati
 
 bool routingWorks = shortDuration.TotalSeconds < threshold && longDuration.TotalSeconds >= threshold;
 Console.WriteLine($"Routing Logic: {(routingWorks ? "WORKING" : "BROKEN")}");
+*/
 Console.WriteLine("\n=== S4.2 VALIDATION COMPLETE ===");

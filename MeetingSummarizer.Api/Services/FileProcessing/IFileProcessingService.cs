@@ -1,6 +1,6 @@
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.FileProcessing;
 
 /// <summary>
 /// Enhanced file processing service for audio files with content validation and streaming support

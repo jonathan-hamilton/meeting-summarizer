@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Validation;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -169,6 +169,58 @@ public class HealthController : ControllerBase
             return StatusCode(500, new
             {
                 ServiceName = "Azure Speech Services",
+                Status = "Error",
+                Message = "Health check failed",
+                CorrelationId = correlationId,
+                Timestamp = DateTime.UtcNow,
+                Error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get Azure Blob Storage health status (S4.3)
+    /// </summary>
+    /// <returns>Azure Blob Storage validation details</returns>
+    [HttpGet("azure/storage")]
+    public async Task<IActionResult> GetAzureStorageHealth()
+    {
+        if (_validationService == null)
+        {
+            return StatusCode(501, new
+            {
+                Status = "Not Implemented",
+                Message = "Configuration validation service not available",
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
+        var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+        try
+        {
+            var result = await _validationService.ValidateAzureSpeechServicesAsync();
+
+            var healthStatus = new
+            {
+                ServiceName = result.ServiceName,
+                Status = result.IsValid ? "Healthy" : "Unhealthy",
+                Message = result.Message,
+                Timestamp = DateTime.UtcNow,
+                CorrelationId = correlationId,
+                ValidationTime = result.ValidationTime.TotalMilliseconds,
+                Details = result.Details,
+                Warnings = result.Warnings,
+                Errors = result.Errors
+            };
+
+            return result.IsValid ? Ok(healthStatus) : StatusCode(503, healthStatus);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                ServiceName = "Azure Blob Storage",
                 Status = "Error",
                 Message = "Health check failed",
                 CorrelationId = correlationId,

@@ -1,6 +1,6 @@
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Summarization;
 
 /// <summary>
 /// Service interface for AI-powered meeting summarization
@@ -29,7 +29,7 @@ public interface ISummarizationService
     /// <returns>Generated role-aware summary result</returns>
     Task<SummaryResult> GenerateRoleAwareSummaryAsync(
         string transcript,
-        List<SpeakerMapping> speakerMappings,
+        List<Models.SpeakerMapping> speakerMappings,
         SummaryOptions options,
         CancellationToken cancellationToken = default);
 
@@ -43,7 +43,7 @@ public interface ISummarizationService
     /// <returns>Meeting summary with role-grouped action items</returns>
     Task<MeetingSummary> GenerateMeetingSummaryAsync(
         string transcript,
-        List<SpeakerMapping> speakerMappings,
+        List<Models.SpeakerMapping> speakerMappings,
         int maxTokens = 800,
         CancellationToken cancellationToken = default);
 

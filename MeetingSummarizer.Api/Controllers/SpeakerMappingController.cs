@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Services.SpeakerMapping;
 
 namespace MeetingSummarizer.Api.Controllers;
 

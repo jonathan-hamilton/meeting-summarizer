@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Options;
 using SendGrid;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Email;
 
 namespace MeetingSummarizer.Api.Configuration;
 

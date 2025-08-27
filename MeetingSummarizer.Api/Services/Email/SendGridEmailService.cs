@@ -7,7 +7,7 @@ using SendGrid;
 using SendGrid.Helpers.Mail;
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Email;
 
 /// <summary>
 /// SendGrid implementation of the email service
@@ -122,7 +122,7 @@ public class SendGridEmailService : IEmailService
     /// <summary>
     /// Generate a professional HTML email template for meeting summaries
     /// </summary>
-    public string GenerateMeetingSummaryTemplate(MeetingSummary summary, List<SpeakerMapping>? speakerMappings = null)
+    public string GenerateMeetingSummaryTemplate(MeetingSummary summary, List<Models.SpeakerMapping>? speakerMappings = null)
     {
         var sb = new StringBuilder();
         

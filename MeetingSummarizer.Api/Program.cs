@@ -1,6 +1,9 @@
 using MeetingSummarizer.Api.Helpers;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Transcription;
+using MeetingSummarizer.Api.Services.SpeakerMapping;
+using MeetingSummarizer.Api.Services.Validation;
+using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,6 +47,9 @@ builder.Services.AddCors(options =>
 // Configure Azure Speech Services (S4.1)
 builder.Services.AddAzureSpeechServices(builder.Configuration);
 
+// Configure Azure-only transcription service using conversation transcription
+builder.Services.AddScoped<ITranscriptionService, AzureConversationTranscriptionService>();
+
 // Register session-based speaker mapping service (S3.1)
 builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
 builder.Services.AddScoped<ISessionSpeakerMappingService, SessionSpeakerMappingService>();
@@ -82,6 +88,9 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("OpenAI configuration validated successfully. Using model: {ChatModel} for summarization (transcription handled by Azure Speech Services)",
             openAIOptions.Value.DefaultChatModel);
     }
+
+    // Validate Azure Speech Services configuration (S4.1)
+    scope.ServiceProvider.ValidateAzureSpeechConfiguration();
 
     // Perform comprehensive startup validation (S4.3)
     var validationService = scope.ServiceProvider.GetService<IConfigurationValidationService>();

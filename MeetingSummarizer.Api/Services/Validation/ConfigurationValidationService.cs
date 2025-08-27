@@ -1,11 +1,10 @@
-using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using Microsoft.CognitiveServices.Speech;
 using System.Diagnostics;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Helpers;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Validation;
 
 /// <summary>
 /// Implementation of configuration validation service
@@ -125,6 +124,9 @@ public class ConfigurationValidationService : IConfigurationValidationService
     }
 
     /// <summary>
+    /// Validates Azure Blob Storage connectivity and access permissions (REQ-CFG-2, REQ-CFG-3)
+    /// </summary>
+    /// <summary>
     /// Validates consistency between frontend and backend supported file types (REQ-CFG-1)
     /// </summary>
     public Task<ServiceValidationResult> ValidateFileTypeConsistencyAsync()
@@ -217,7 +219,7 @@ public class ConfigurationValidationService : IConfigurationValidationService
             var errors = new List<string>();
             var warnings = new List<string>();
 
-            // Check if Speech Services are configured
+            // Check if Speech Services is configured
             var speechConfigured = speechOptions.IsValid();
 
             if (!speechConfigured)

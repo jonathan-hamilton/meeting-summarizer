@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Email;
 
 namespace MeetingSummarizer.Api.Controllers;
 

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Options;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Transcription;
 
 namespace MeetingSummarizer.Api.Configuration;
 
@@ -17,10 +17,28 @@ public static class AzureSpeechServiceExtensions
         // Configure Azure Speech options
         services.Configure<AzureSpeechOptions>(configuration.GetSection(AzureSpeechOptions.SectionName));
 
-        // Register Azure Conversation Transcription Service as the ITranscriptionService implementation
+        // Register Azure Conversation Transcription Service
         services.AddScoped<AzureConversationTranscriptionService>();
-        services.AddScoped<ITranscriptionService>(provider => provider.GetRequiredService<AzureConversationTranscriptionService>());
 
         return services;
+    }
+
+    /// <summary>
+    /// Validate Azure Speech Services configuration at startup
+    /// </summary>
+    public static void ValidateAzureSpeechConfiguration(this IServiceProvider serviceProvider)
+    {
+        var logger = serviceProvider.GetRequiredService<ILogger<AzureConversationTranscriptionService>>();
+        var options = serviceProvider.GetRequiredService<IOptions<AzureSpeechOptions>>();
+
+        if (options.Value.IsValid())
+        {
+            logger.LogInformation("Azure Speech Services configured successfully - Region: {Region}, Key: {MaskedKey}",
+                options.Value.Region, options.Value.GetMaskedKey());
+        }
+        else
+        {
+            logger.LogWarning("Azure Speech Services configuration incomplete");
+        }
     }
 }
