@@ -1,6 +1,5 @@
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services;
-using MeetingSummarizer.Api.Controllers;
 
 namespace MeetingSummarizer.Api.Configuration;
 
@@ -17,35 +16,30 @@ public static class SummarizationServiceExtensions
         // Configure OpenAI options for summarization
         services.Configure<OpenAIOptions>(configuration.GetSection("OpenAI"));
 
-        // Register OpenAI service implementations
-        services.AddScoped<OpenAIService>();
-        services.AddScoped<MockTranscriptionService>(); // Used as mock for IOpenAIService fallback
+        // Register HTTP client for OpenAI
+        services.AddHttpClient<OpenAISummarizationService>();
 
-        // Register IOpenAIService with fallback logic for summarization
-        services.AddScoped<IOpenAIService>(serviceProvider =>
+        // Register OpenAI summarization service
+        services.AddScoped<OpenAISummarizationService>();
+
+        // Register the summarization service interface with fallback logic
+        services.AddScoped<IOpenAISummarizationService>(serviceProvider =>
         {
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
             var logger = loggerFactory.CreateLogger("SummarizationServiceConfiguration");
             var openAIOptions = configuration.GetSection("OpenAI").Get<OpenAIOptions>();
 
-            // Check if OpenAI is manually disabled via toggle
-            if (!OpenAIController.IsOpenAIEnabled)
-            {
-                logger.LogInformation("OpenAI is manually disabled, using mock service for summarization");
-                return serviceProvider.GetRequiredService<MockTranscriptionService>();
-            }
-
             if (openAIOptions?.IsValid() == true)
             {
                 try
                 {
-                    var openAIService = serviceProvider.GetRequiredService<OpenAIService>();
-                    logger.LogInformation("OpenAI service configured and available for summarization");
+                    var openAIService = serviceProvider.GetRequiredService<OpenAISummarizationService>();
+                    logger.LogInformation("OpenAI summarization service configured successfully");
                     return openAIService;
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "OpenAI service configuration failed, falling back to mock service");
+                    logger.LogWarning(ex, "OpenAI summarization service configuration failed, using mock service");
                 }
             }
             else
@@ -53,47 +47,12 @@ public static class SummarizationServiceExtensions
                 logger.LogWarning("OpenAI configuration not valid, using mock service for summarization");
             }
 
-            return serviceProvider.GetRequiredService<MockTranscriptionService>();
+            // Return a mock implementation if OpenAI is not available
+            return new MockOpenAISummarizationService(logger);
         });
 
-        // Register both summarization services
-        services.AddScoped<SummarizationService>();
-        services.AddScoped<MockSummarizationService>();
-
-        // Register the appropriate summarization service based on OpenAI configuration and toggle
-        services.AddScoped<ISummarizationService>(serviceProvider =>
-        {
-            var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger("SummarizationServiceConfiguration");
-            var openAIOptions = configuration.GetSection("OpenAI").Get<OpenAIOptions>();
-
-            // Check if OpenAI is manually disabled via toggle
-            if (!OpenAIController.IsOpenAIEnabled)
-            {
-                logger.LogInformation("OpenAI is manually disabled, using mock summarization service");
-                return serviceProvider.GetRequiredService<MockSummarizationService>();
-            }
-
-            if (openAIOptions?.IsValid() == true)
-            {
-                try
-                {
-                    var summarizationService = serviceProvider.GetRequiredService<SummarizationService>();
-                    logger.LogInformation("AI Summarization service configured and available");
-                    return summarizationService;
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex, "AI Summarization service configuration failed, falling back to mock service");
-                }
-            }
-            else
-            {
-                logger.LogWarning("OpenAI configuration not valid, using mock summarization service");
-            }
-
-            return serviceProvider.GetRequiredService<MockSummarizationService>();
-        });
+        // Register the main summarization service
+        services.AddScoped<ISummarizationService, SummarizationService>();
 
         return services;
     }
@@ -105,7 +64,7 @@ public static class SummarizationServiceExtensions
     {
         try
         {
-            var summarizationService = serviceProvider.GetService<SummarizationService>();
+            var summarizationService = serviceProvider.GetService<ISummarizationService>();
             if (summarizationService == null) return false;
 
             return await summarizationService.IsServiceAvailableAsync();

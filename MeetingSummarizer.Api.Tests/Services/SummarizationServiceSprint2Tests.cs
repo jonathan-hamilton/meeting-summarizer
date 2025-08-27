@@ -14,16 +14,16 @@ namespace MeetingSummarizer.Api.Tests.Services;
 [TestClass]
 public class SummarizationServiceSprint2Tests
 {
-    private Mock<IOpenAIService> _mockOpenAIService = null!;
+    private Mock<IOpenAISummarizationService> _mockOpenAISummarizationService = null!;
     private Mock<ILogger<SummarizationService>> _mockLogger = null!;
     private SummarizationService _service = null!;
 
     [TestInitialize]
     public void Setup()
     {
-        _mockOpenAIService = new Mock<IOpenAIService>();
+        _mockOpenAISummarizationService = new Mock<IOpenAISummarizationService>();
         _mockLogger = new Mock<ILogger<SummarizationService>>();
-        _service = new SummarizationService(_mockOpenAIService.Object, _mockLogger.Object);
+        _service = new SummarizationService(_mockOpenAISummarizationService.Object, _mockLogger.Object);
     }
 
     #region S2.3 Core Summarization Tests
@@ -44,7 +44,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "**Meeting Summary**\n\nBrief team meeting to discuss project status. Participants expressed readiness to proceed with updates.";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -59,7 +59,7 @@ public class SummarizationServiceSprint2Tests
         result.ProcessingTimeMs.Should().BeGreaterThan(0);
         result.TokenCount.Should().BeGreaterThan(0);
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt => prompt.Contains(transcript) && prompt.Contains("brief")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -79,7 +79,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "### Meeting Summary\n\n- Complete documentation discussed\n- User guide delivery by Friday\n\n**Action Items:**\n- Finalize documentation\n- Deliver user guide";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -93,7 +93,7 @@ public class SummarizationServiceSprint2Tests
         result.ActionItems!.Should().HaveCountGreaterThan(0);
         result.Content.Should().Contain("documentation");
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt => prompt.Contains("comprehensive summary") || prompt.Contains("detailed")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -113,7 +113,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "Action Items:\n- Complete API testing by Wednesday\n- Assign remaining tasks to team members";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -126,7 +126,7 @@ public class SummarizationServiceSprint2Tests
         result.ActionItems.Should().NotBeNull();
         result.ActionItems!.Should().Contain(item => item.Contains("API testing"));
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt => prompt.Contains("action items")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -146,7 +146,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "Key Decisions:\n- Decided to implement microservices architecture\n- Architecture choice approved by team";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -159,7 +159,7 @@ public class SummarizationServiceSprint2Tests
         result.KeyDecisions.Should().NotBeNull();
         result.KeyDecisions!.Should().Contain(decision => decision.Contains("microservices"));
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt => prompt.Contains("decisions")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -179,7 +179,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "Executive Summary: Q3 performance exceeded expectations with 20% revenue growth above targets.";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -191,7 +191,7 @@ public class SummarizationServiceSprint2Tests
         result.SummaryType.Should().Be(SummaryStyle.ExecutiveSummary);
         result.Content.Should().Contain("Executive Summary");
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt => prompt.Contains("executive")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -220,7 +220,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "Meeting between John Smith (Financial Manager) and Sarah Wilson (Technical Lead). Budget approved and technical progress confirmed.";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -233,7 +233,7 @@ public class SummarizationServiceSprint2Tests
         result.Content.Should().Contain("John Smith (Financial Manager)");
         result.Content.Should().Contain("Sarah Wilson (Technical Lead)");
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt =>
                 prompt.Contains("John Smith (Financial Manager)") &&
                 prompt.Contains("Sarah Wilson (Technical Lead)")),
@@ -261,7 +261,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "Engineering Summary: Security concerns raised by Alice Johnson require attention. Performance improvements by Bob Chen completed successfully.";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -273,7 +273,7 @@ public class SummarizationServiceSprint2Tests
         result.GeneratedFor.Should().Be("Engineering Manager");
         result.UsedSpeakerMappings.Should().BeTrue();
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt => prompt.Contains("Engineering Manager")),
             It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -294,7 +294,7 @@ public class SummarizationServiceSprint2Tests
 
         var mockOpenAIResponse = "Summary of meeting with proper names.";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockOpenAIResponse);
 
@@ -305,7 +305,7 @@ public class SummarizationServiceSprint2Tests
         result.Should().NotBeNull();
 
         // Verify that the transcript was enhanced with real names before sending to OpenAI
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt =>
                 prompt.Contains("Mike Davis (Project Manager):") &&
                 prompt.Contains("Lisa Brown (Resource Manager):")),
@@ -329,7 +329,7 @@ public class SummarizationServiceSprint2Tests
         await Assert.ThrowsExceptionAsync<ArgumentException>(
             () => _service.GenerateSummaryAsync(nullTranscript!, options));
 
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -388,7 +388,7 @@ public class SummarizationServiceSprint2Tests
         var transcript = "Valid transcript content";
         var options = new SummaryOptions { Style = SummaryStyle.Brief };
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("OpenAI service unavailable"));
 
@@ -424,7 +424,7 @@ public class SummarizationServiceSprint2Tests
     public async Task IsServiceAvailableAsync_OpenAIServiceAvailable_ReturnsTrue()
     {
         // Arrange
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
@@ -433,7 +433,7 @@ public class SummarizationServiceSprint2Tests
 
         // Assert
         result.Should().BeTrue();
-        _mockOpenAIService.Verify(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _mockOpenAISummarizationService.Verify(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
@@ -442,7 +442,7 @@ public class SummarizationServiceSprint2Tests
     public async Task IsServiceAvailableAsync_OpenAIServiceUnavailable_ReturnsFalse()
     {
         // Arrange
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
@@ -459,7 +459,7 @@ public class SummarizationServiceSprint2Tests
     public async Task IsServiceAvailableAsync_OpenAIServiceThrows_ReturnsFalse()
     {
         // Arrange
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Connection failed"));
 
@@ -477,7 +477,7 @@ public class SummarizationServiceSprint2Tests
     {
         // Arrange
         var mockOpenAIStatus = "{\n  \"Configured\": true,\n  \"Available\": true\n}";
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.GetServiceStatus())
             .Returns(mockOpenAIStatus);
 
@@ -490,7 +490,7 @@ public class SummarizationServiceSprint2Tests
         result.Should().Contain("Brief");
         result.Should().Contain("Detailed");
         result.Should().Contain("ActionItems");
-        _mockOpenAIService.Verify(x => x.GetServiceStatus(), Times.Once);
+        _mockOpenAISummarizationService.Verify(x => x.GetServiceStatus(), Times.Once);
     }
 
     #endregion
@@ -511,7 +511,7 @@ public class SummarizationServiceSprint2Tests
         };
 
         var mockResponse = "Brief summary";
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResponse);
 
@@ -519,7 +519,7 @@ public class SummarizationServiceSprint2Tests
         await _service.GenerateSummaryAsync(transcript, options);
 
         // Assert
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt =>
                 prompt.Contains("brief") &&
                 prompt.Contains("high-level") &&
@@ -543,7 +543,7 @@ public class SummarizationServiceSprint2Tests
         var options = new SummaryOptions { Style = SummaryStyle.Brief };
 
         var mockResponse = "Role-aware summary";
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResponse);
 
@@ -551,7 +551,7 @@ public class SummarizationServiceSprint2Tests
         await _service.GenerateRoleAwareSummaryAsync(transcript, speakerMappings, options);
 
         // Assert
-        _mockOpenAIService.Verify(x => x.SummarizeTextAsync(
+        _mockOpenAISummarizationService.Verify(x => x.SummarizeTextAsync(
             It.Is<string>(prompt =>
                 prompt.Contains("Meeting participants:") &&
                 prompt.Contains("John (Developer)") &&
@@ -572,7 +572,7 @@ public class SummarizationServiceSprint2Tests
         var transcript = "Test transcript";
         var options = new SummaryOptions { Style = SummaryStyle.Brief };
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (string prompt, CancellationToken ct) =>
             {
@@ -598,7 +598,7 @@ public class SummarizationServiceSprint2Tests
         var options = new SummaryOptions { Style = SummaryStyle.Brief };
         var mockResponse = "This is a test summary with multiple words to estimate token count properly.";
 
-        _mockOpenAIService
+        _mockOpenAISummarizationService
             .Setup(x => x.SummarizeTextAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResponse);
 

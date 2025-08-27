@@ -19,14 +19,14 @@ public class Sprint1IntegrationTests
 {
     private Sprint1TestWebApplicationFactory _factory = null!;
     private HttpClient _client = null!;
-    private Mock<IOpenAIService> _mockOpenAIService = null!;
+    private Mock<ITranscriptionService> _mockTranscriptionService = null!;
 
     [TestInitialize]
     public void Setup()
     {
         _factory = new Sprint1TestWebApplicationFactory();
         _client = _factory.CreateClient();
-        _mockOpenAIService = _factory.MockOpenAIService;
+        _mockTranscriptionService = _factory.MockTranscriptionService;
     }
 
     [TestCleanup]
@@ -46,7 +46,7 @@ public class Sprint1IntegrationTests
     {
         // Arrange - Setup complete end-to-end test scenario
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string fileName, CancellationToken token) =>
             {
@@ -108,7 +108,7 @@ public class Sprint1IntegrationTests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateSingleSpeakerTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 
@@ -148,7 +148,7 @@ public class Sprint1IntegrationTests
     public async Task CompleteWorkflow_ServiceFailure_FallbackAndErrorHandling()
     {
         // Arrange - Setup service failure scenario
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string fileName, CancellationToken token) =>
             {
@@ -185,7 +185,7 @@ public class Sprint1IntegrationTests
     {
         // Arrange - Test with large but valid file (100MB)
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 
@@ -214,7 +214,7 @@ public class Sprint1IntegrationTests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string fileName, CancellationToken token) =>
             {
@@ -257,7 +257,7 @@ public class Sprint1IntegrationTests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 
@@ -302,7 +302,7 @@ public class Sprint1IntegrationTests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 
@@ -342,7 +342,7 @@ public class Sprint1IntegrationTests
     public async Task ProductionReadiness_ErrorScenarios_LoggingAndMonitoring()
     {
         // Arrange - Test error scenarios for production monitoring
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string fileName, CancellationToken token) =>
             {
