@@ -1,12 +1,13 @@
 using MeetingSummarizer.Api.Models;
 
+
 namespace MeetingSummarizer.Api.Services.FileProcessing;
 
 /// <summary>
-/// Enhanced file processing service for audio files with content validation and streaming support
+/// Enhanced file pre-processing service for audio files with content validation and streaming support
 /// Implements S4.3: Enhanced File Processing (REQ-FPO-1 to REQ-FPO-6)
 /// </summary>
-public interface IFileProcessingService
+public interface IFilePreProcessingService
 {
     /// <summary>
     /// Performs basic validation of an uploaded audio file (size, name, extension, MIME type)

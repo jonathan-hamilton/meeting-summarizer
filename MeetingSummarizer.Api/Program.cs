@@ -64,7 +64,7 @@ builder.Services.AddEmailServices(builder.Configuration);
 builder.Services.AddScoped<IConfigurationValidationService, ConfigurationValidationService>();
 
 // Register enhanced file processing service (S4.3)
-builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+builder.Services.AddScoped<IFilePreProcessingService, FilePreProcessingService>();
 
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();

@@ -2,15 +2,18 @@ using System.Diagnostics;
 using System.Text;
 using MeetingSummarizer.Api.Models;
 
+
 namespace MeetingSummarizer.Api.Services.FileProcessing;
 
 /// <summary>
-/// Enhanced file processing service implementation
+/// Enhanced file pre-processing service implementation
 /// Implements S4.3: Enhanced File Processing (REQ-FPO-1 to REQ-FPO-6)
 /// </summary>
-public class FileProcessingService : IFileProcessingService
+public class FilePreProcessingService : IFilePreProcessingService
 {
-    public FileProcessingService(ILogger<FileProcessingService> logger)
+    // Maximum allowed duration in minutes
+    public const int MaxDurationMinutes = 60;
+    public FilePreProcessingService(ILogger<FilePreProcessingService> logger)
     {
         _logger = logger;
         _concurrentOperationsSemaphore = new SemaphoreSlim(MaxConcurrentOperations);
@@ -85,7 +88,7 @@ public class FileProcessingService : IFileProcessingService
         var dangerousChars = new[] { "..", "\\", "/", ":", "*", "?", "\"", "<", ">", "|" };
         return dangerousChars.Any(fileName.Contains);
     }
-    private readonly ILogger<FileProcessingService> _logger;
+    private readonly ILogger<FilePreProcessingService> _logger;
     private readonly SemaphoreSlim _concurrentOperationsSemaphore;
     private readonly MemoryMonitor _memoryMonitor;
 
@@ -130,6 +133,15 @@ public class FileProcessingService : IFileProcessingService
                 contentAnalysis = await AnalyzeAudioContentAsync(stream, audioFile.FileName, cancellationToken);
             }
             contentValidationStopwatch.Stop();
+
+            // Enforce maximum duration
+            if (contentAnalysis.EstimatedDuration.HasValue && contentAnalysis.EstimatedDuration.Value.TotalMinutes > MaxDurationMinutes)
+            {
+                var msg = $"Audio file duration exceeds the maximum allowed length of {MaxDurationMinutes} minutes.";
+                progressCallback?.Report(new ProcessingProgress(
+                    ProcessingStage.Completed, 100, msg, audioFile.Length, audioFile.Length));
+                return FileProcessingResult.Failure(msg, new List<string> { msg });
+            }
 
             // Security validation
             var securityStopwatch = Stopwatch.StartNew();

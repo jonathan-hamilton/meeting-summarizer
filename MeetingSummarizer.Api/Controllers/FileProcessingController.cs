@@ -13,14 +13,14 @@ namespace MeetingSummarizer.Api.Controllers;
 public class FileProcessingController : ControllerBase
 {
     private readonly ILogger<FileProcessingController> _logger;
-    private readonly IFileProcessingService _fileProcessingService;
+    private readonly IFilePreProcessingService _filePreProcessingService;
 
     public FileProcessingController(
         ILogger<FileProcessingController> logger,
-        IFileProcessingService fileProcessingService)
+        IFilePreProcessingService filePreProcessingService)
     {
         _logger = logger;
-        _fileProcessingService = fileProcessingService;
+        _filePreProcessingService = filePreProcessingService;
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public class FileProcessingController : ControllerBase
 
         try
         {
-            var result = await _fileProcessingService.ValidateAudioFileAsync(audioFile);
+            var result = await _filePreProcessingService.ValidateAudioFileAsync(audioFile);
 
             var response = new
             {
@@ -157,7 +157,7 @@ public class FileProcessingController : ControllerBase
             var progressList = new List<ProcessingProgress>();
             var progress = new Progress<ProcessingProgress>(p => progressList.Add(p));
 
-            var result = await _fileProcessingService.ProcessLargeFileStreamingAsync(audioFile, progress);
+            var result = await _filePreProcessingService.ProcessLargeFileStreamingAsync(audioFile, progress);
 
             var response = new
             {
@@ -212,7 +212,7 @@ public class FileProcessingController : ControllerBase
     {
         try
         {
-            var memoryInfo = _fileProcessingService.GetMemoryUsageInfo();
+            var memoryInfo = _filePreProcessingService.GetMemoryUsageInfo();
 
             var response = new
             {
@@ -267,7 +267,7 @@ public class FileProcessingController : ControllerBase
             }
 
             var fileSizeBytes = (long)(fileSizeMB * 1024 * 1024);
-            var estimatedTime = _fileProcessingService.EstimateProcessingTime(fileSizeBytes, opType);
+            var estimatedTime = _filePreProcessingService.EstimateProcessingTime(fileSizeBytes, opType);
 
             var response = new
             {
