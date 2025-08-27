@@ -2,23 +2,31 @@ using Microsoft.Extensions.Options;
 using MeetingSummarizer.Api.Models;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Summarization;
 
 /// <summary>
-/// AI-powered meeting summarization service using OpenAI GPT-4
+/// OpenAI-powered meeting summarization service using GPT-4
 /// </summary>
-public class SummarizationService : ISummarizationService
+public class OpenAISummarizationService : ISummarizationService
 {
-    private readonly IOpenAIService _openAIService;
-    private readonly ILogger<SummarizationService> _logger;
+    private readonly OpenAIOptions _options;
+    private readonly ILogger<OpenAISummarizationService> _logger;
+    private readonly HttpClient _httpClient;
 
-    public SummarizationService(
-        IOpenAIService openAIService,
-        ILogger<SummarizationService> logger)
+    public OpenAISummarizationService(
+        IOptions<OpenAIOptions> options,
+        ILogger<OpenAISummarizationService> logger,
+        HttpClient httpClient)
     {
-        _openAIService = openAIService;
+        _options = options.Value;
         _logger = logger;
+        _httpClient = httpClient;
+        
+        // Configure HttpClient for OpenAI API
+        _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_options.ApiKey}");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "MeetingSummarizer/1.0");
     }
 
     public async Task<SummaryResult> GenerateSummaryAsync(
@@ -38,8 +46,8 @@ public class SummarizationService : ISummarizationService
             // Build the prompt based on summary style
             var prompt = BuildSummaryPrompt(transcript, options);
 
-            // Use the existing OpenAI service for summarization
-            var summaryText = await _openAIService.SummarizeTextAsync(prompt, cancellationToken);
+            // Call OpenAI API directly
+            var summaryText = await CallOpenAIAsync(prompt, cancellationToken);
 
             stopwatch.Stop();
 
@@ -66,7 +74,7 @@ public class SummarizationService : ISummarizationService
 
     public async Task<SummaryResult> GenerateRoleAwareSummaryAsync(
         string transcript,
-        List<SpeakerMapping> speakerMappings,
+        List<Models.SpeakerMapping> speakerMappings,
         SummaryOptions options,
         CancellationToken cancellationToken = default)
     {
@@ -85,8 +93,8 @@ public class SummarizationService : ISummarizationService
             // Build role-aware prompt
             var prompt = BuildRoleAwarePrompt(enhancedTranscript, speakerMappings, options);
 
-            // Use the existing OpenAI service for summarization
-            var summaryText = await _openAIService.SummarizeTextAsync(prompt, cancellationToken);
+            // Call OpenAI API directly
+            var summaryText = await CallOpenAIAsync(prompt, cancellationToken);
 
             stopwatch.Stop();
 
@@ -119,7 +127,7 @@ public class SummarizationService : ISummarizationService
     /// </summary>
     public async Task<MeetingSummary> GenerateMeetingSummaryAsync(
         string transcript,
-        List<SpeakerMapping> speakerMappings,
+        List<Models.SpeakerMapping> speakerMappings,
         int maxTokens = 800,
         CancellationToken cancellationToken = default)
     {
@@ -138,8 +146,8 @@ public class SummarizationService : ISummarizationService
             // Build specialized prompt for meeting summary with action items
             var prompt = BuildMeetingSummaryPrompt(enhancedTranscript, speakerMappings, maxTokens);
 
-            // Use the existing OpenAI service for summarization
-            var summaryText = await _openAIService.SummarizeTextAsync(prompt, cancellationToken);
+            // Call OpenAI API directly
+            var summaryText = await CallOpenAIAsync(prompt, cancellationToken);
 
             stopwatch.Stop();
 
@@ -178,25 +186,39 @@ public class SummarizationService : ISummarizationService
     {
         try
         {
-            _logger.LogDebug("Checking summarization service availability");
-            return await _openAIService.IsServiceAvailableAsync(cancellationToken);
+            _logger.LogDebug("Checking OpenAI summarization service availability");
+            
+            // Simple API test call
+            var testRequest = new
+            {
+                model = _options.Model,
+                messages = new[]
+                {
+                    new { role = "user", content = "Test" }
+                },
+                max_tokens = 5
+            };
+
+            var content = new StringContent(JsonSerializer.Serialize(testRequest), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content, cancellationToken);
+            
+            return response.IsSuccessStatusCode;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Summarization service availability check failed");
+            _logger.LogWarning(ex, "OpenAI summarization service availability check failed");
             return false;
         }
     }
 
     public string GetServiceStatus()
     {
-        var openAIStatus = _openAIService.GetServiceStatus();
-
         var status = new
         {
-            ServiceName = "AI Summarization Service",
+            ServiceName = "OpenAI Summarization Service",
             Available = true,
-            OpenAIService = openAIStatus,
+            Model = _options.Model,
+            MaxTokens = _options.MaxTokens,
             SupportedStyles = Enum.GetNames<SummaryStyle>(),
             Features = new[]
             {
@@ -209,6 +231,41 @@ public class SummarizationService : ISummarizationService
         };
 
         return JsonSerializer.Serialize(status, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    /// <summary>
+    /// Calls OpenAI API directly for text generation
+    /// </summary>
+    private async Task<string> CallOpenAIAsync(string prompt, CancellationToken cancellationToken)
+    {
+        var request = new
+        {
+            model = _options.Model,
+            messages = new[]
+            {
+                new { role = "user", content = prompt }
+            },
+            max_tokens = _options.MaxTokens,
+            temperature = 0.7
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+        var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"OpenAI API call failed: {response.StatusCode} - {errorContent}");
+        }
+
+        var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
+        var responseJson = JsonDocument.Parse(responseContent);
+        
+        return responseJson.RootElement
+            .GetProperty("choices")[0]
+            .GetProperty("message")
+            .GetProperty("content")
+            .GetString() ?? string.Empty;
     }
 
     /// <summary>
@@ -300,7 +357,7 @@ public class SummarizationService : ISummarizationService
     /// <summary>
     /// Builds a role-aware prompt using speaker mappings
     /// </summary>
-    private string BuildRoleAwarePrompt(string enhancedTranscript, List<SpeakerMapping> speakerMappings, SummaryOptions options)
+    private string BuildRoleAwarePrompt(string enhancedTranscript, List<Models.SpeakerMapping> speakerMappings, SummaryOptions options)
     {
         var promptBuilder = new StringBuilder();
 
@@ -367,7 +424,7 @@ public class SummarizationService : ISummarizationService
     /// <summary>
     /// Applies speaker mappings to replace generic labels with real names
     /// </summary>
-    private string ApplySpeakerMappings(string transcript, List<SpeakerMapping> speakerMappings)
+    private string ApplySpeakerMappings(string transcript, List<Models.SpeakerMapping> speakerMappings)
     {
         var result = transcript;
 
@@ -478,7 +535,7 @@ public class SummarizationService : ISummarizationService
     /// <summary>
     /// S3.4: Validates input parameters for meeting summary generation
     /// </summary>
-    private static void ValidateMeetingSummaryInput(string transcript, List<SpeakerMapping> speakerMappings, int maxTokens)
+    private static void ValidateMeetingSummaryInput(string transcript, List<Models.SpeakerMapping> speakerMappings, int maxTokens)
     {
         if (string.IsNullOrWhiteSpace(transcript))
         {
@@ -504,7 +561,7 @@ public class SummarizationService : ISummarizationService
     /// <summary>
     /// S3.4: Builds a specialized prompt for meeting summary with role-aware action items
     /// </summary>
-    private string BuildMeetingSummaryPrompt(string enhancedTranscript, List<SpeakerMapping> speakerMappings, int maxTokens)
+    private string BuildMeetingSummaryPrompt(string enhancedTranscript, List<Models.SpeakerMapping> speakerMappings, int maxTokens)
     {
         var promptBuilder = new StringBuilder();
 
@@ -565,7 +622,7 @@ public class SummarizationService : ISummarizationService
     /// <summary>
     /// S3.4: Parses the meeting summary result from OpenAI response
     /// </summary>
-    private MeetingSummary ParseMeetingSummaryResult(string summaryText, string originalTranscript, List<SpeakerMapping> speakerMappings, long processingTime, int maxTokens)
+    private MeetingSummary ParseMeetingSummaryResult(string summaryText, string originalTranscript, List<Models.SpeakerMapping> speakerMappings, long processingTime, int maxTokens)
     {
         try
         {

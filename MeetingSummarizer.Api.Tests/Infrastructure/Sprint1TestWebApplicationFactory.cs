@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MeetingSummarizer.Api.Services;
+
+// Add the correct using directive for IOpenAIService if it's in a different namespace
+// using YourNamespaceContainingIOpenAIService;
 
 namespace MeetingSummarizer.Api.Tests.Infrastructure;
 

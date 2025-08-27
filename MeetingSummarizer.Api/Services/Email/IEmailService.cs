@@ -1,6 +1,6 @@
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Email;
 
 /// <summary>
 /// Interface for email service operations
@@ -20,7 +20,7 @@ public interface IEmailService
     /// <param name="summary">Meeting summary data</param>
     /// <param name="speakerMappings">Speaker mapping information</param>
     /// <returns>HTML email content</returns>
-    string GenerateMeetingSummaryTemplate(MeetingSummary summary, List<SpeakerMapping>? speakerMappings = null);
+    string GenerateMeetingSummaryTemplate(MeetingSummary summary, List<Models.SpeakerMapping>? speakerMappings = null);
     
     /// <summary>
     /// Convert HTML content to plain text for email clients that don't support HTML

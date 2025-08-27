@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Models;
 
 namespace MeetingSummarizer.Api.Controllers;

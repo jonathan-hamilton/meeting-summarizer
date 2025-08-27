@@ -45,7 +45,7 @@ public class SummaryControllerSprint1Tests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string fileName, CancellationToken token) =>
             {
@@ -83,7 +83,7 @@ public class SummaryControllerSprint1Tests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 
@@ -125,7 +125,7 @@ public class SummaryControllerSprint1Tests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateSingleSpeakerTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 
@@ -152,7 +152,7 @@ public class SummaryControllerSprint1Tests
     public async Task TranscribeAudio_OpenAIServiceFailure_ReturnsServiceUnavailable()
     {
         // Arrange
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(async (Stream stream, string fileName, CancellationToken token) =>
             {
@@ -184,7 +184,7 @@ public class SummaryControllerSprint1Tests
     public async Task TranscribeAudio_AuthenticationFailure_ReturnsUnauthorized()
     {
         // Arrange
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UnauthorizedAccessException("Invalid OpenAI API key"));
 
@@ -211,7 +211,7 @@ public class SummaryControllerSprint1Tests
     public async Task TranscribeAudio_TimeoutFailure_ReturnsRequestTimeout()
     {
         // Arrange
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new TaskCanceledException("Request timed out"));
 
@@ -238,7 +238,7 @@ public class SummaryControllerSprint1Tests
     public async Task TranscribeAudio_FileIOError_ReturnsBadRequest()
     {
         // Arrange
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("Cannot read file stream"));
 
@@ -268,7 +268,7 @@ public class SummaryControllerSprint1Tests
     {
         // Arrange
         var mockResult = Sprint1TestDataFactory.CreateMockTranscriptionResult();
-        _mockOpenAIService
+        _mockTranscriptionService
             .Setup(x => x.TranscribeAudioWithMetadataAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockResult);
 

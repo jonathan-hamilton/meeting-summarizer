@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text;
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.FileProcessing;
 
 /// <summary>
 /// Enhanced file processing service implementation

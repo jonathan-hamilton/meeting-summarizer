@@ -1,6 +1,6 @@
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Transcription;
 
 /// <summary>
 /// Common interface for transcription services

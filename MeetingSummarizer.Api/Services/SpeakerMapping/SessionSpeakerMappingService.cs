@@ -1,6 +1,6 @@
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.SpeakerMapping;
 
 /// <summary>
 /// Session-based implementation of speaker mapping service with privacy-first approach (S3.1)
@@ -82,9 +82,9 @@ public class SessionSpeakerMappingService : ISessionSpeakerMappingService
             existingResponse = new SpeakerMappingResponse
             {
                 TranscriptionId = transcriptionId,
-                Mappings = new List<SpeakerMapping>
+                Mappings = new List<Models.SpeakerMapping>
                 {
-                    new SpeakerMapping
+                    new Models.SpeakerMapping
                     {
                         SpeakerId = speakerId,
                         Name = $"Speaker {speakerId}",
@@ -105,7 +105,7 @@ public class SessionSpeakerMappingService : ISessionSpeakerMappingService
         if (speakerToOverride == null)
         {
             // Create a new speaker mapping if it doesn't exist
-            speakerToOverride = new SpeakerMapping
+            speakerToOverride = new Models.SpeakerMapping
             {
                 SpeakerId = speakerId,
                 Name = $"Speaker {speakerId}",
@@ -189,7 +189,7 @@ public class SessionSpeakerMappingService : ISessionSpeakerMappingService
         if (overriddenSpeaker is SessionSpeakerMappingWithOverride sessionSpeaker && sessionSpeaker.IsOverridden)
         {
             // Revert to original values
-            var revertedMapping = new SpeakerMapping
+            var revertedMapping = new Models.SpeakerMapping
             {
                 SpeakerId = sessionSpeaker.SpeakerId,
                 Name = sessionSpeaker.OriginalName ?? sessionSpeaker.Name,

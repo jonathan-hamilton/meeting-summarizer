@@ -1,6 +1,6 @@
 using MeetingSummarizer.Api.Models;
 
-namespace MeetingSummarizer.Api.Services;
+namespace MeetingSummarizer.Api.Services.Validation;
 
 /// <summary>
 /// Service for validating application configuration at startup and runtime

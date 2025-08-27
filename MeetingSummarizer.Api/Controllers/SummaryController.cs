@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Transcription;
+using MeetingSummarizer.Api.Services.Summarization;
+using SpeakerServices = MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Helpers;
+using SpeakerMappingModel = MeetingSummarizer.Api.Models.SpeakerMapping;
 
 namespace MeetingSummarizer.Api.Controllers;
 
