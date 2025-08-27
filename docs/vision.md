@@ -1,4 +1,4 @@
-# Meeting Summarizer - Vision Statement
+# Meeting-Summary.io - Vision Statement
 
 We are building **MeetingSummarizer**, a modern web application that automates the transcription and summarization of meeting audio. The goal is to help users extract **clear summaries and actionable takeaways**, without replaying or reviewing full meeting recordings.
 

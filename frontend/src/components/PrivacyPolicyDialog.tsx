@@ -123,7 +123,7 @@ export const PrivacyPolicyDialog: React.FC<PrivacyPolicyDialogProps> = ({
               <strong>Your Privacy is Protected</strong>
             </Typography>
             <Typography variant="body2">
-              Meeting Summarizer uses a privacy-first approach with session-only data storage. 
+              Meeting-Summary.io uses a privacy-first approach with session-only data storage. 
               Your meeting data never leaves your browser and is automatically deleted when you close the tab.
             </Typography>
           </Alert>

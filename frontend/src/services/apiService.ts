@@ -345,14 +345,14 @@ class ApiService {
   async getOpenAIStatus(): Promise<ApiResponse<{ isEnabled: boolean; mode: string }>> {
     return this.request<{ isEnabled: boolean; mode: string }>({
       method: 'GET',
-      url: '/api/openai/status',
+      url: '/api/health/openai-status',
     });
   }
 
   async toggleOpenAI(enabled: boolean): Promise<ApiResponse<{ isEnabled: boolean; mode: string; message: string }>> {
     return this.request<{ isEnabled: boolean; mode: string; message: string }>({
       method: 'POST',
-      url: '/api/openai/toggle',
+      url: '/api/health/toggle-openai',
       data: enabled,
     });
   }

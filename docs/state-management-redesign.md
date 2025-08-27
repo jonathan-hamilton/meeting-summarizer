@@ -1,4 +1,4 @@
-# Meeting Summarizer: State Management Redesign
+# Meeting-Summary.io: State Management Redesign
 
 ## Current Problems
 1. **Multiple Sources of Truth**: Zustand store, sessionManager, local component state

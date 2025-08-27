@@ -1,5 +1,17 @@
 # Technical Improvements Log
 
+## 2025-08-26: S5.4 Demo Mode Implementation (PLANNED)
+
+### Overview
+
+Planned and designed Demo Mode to allow anonymous users to try the application with a 30-second audio file, providing full transcription and basic summarization while restricting advanced features. This supports onboarding and user evaluation without registration or payment.
+
+### Technical Notes
+- Demo mode entry point and toggle in UI
+- Backend and frontend enforce audio duration and feature restrictions
+- Session-based tracking to prevent repeated abuse
+- Demo mode is isolated from user accounts and persistent data
+
 This document tracks ongoing technical improvements, UI/UX enhancements, development workflow optimizations, and code quality improvements that don't fit into specific user stories but contribute to the overall system quality and developer experience.
 
 ## 2025-08-26: S4.4 UI Polish & User Experience Enhancements (COMPLETE)
@@ -35,7 +47,7 @@ const formatTime = useCallback((seconds: number): string => {
 #### 2. App Branding & Professional Polish
 
 **Brand Identity Updates:**
-- **App Title**: Updated from "Meeting Summarizer" to "Meeting-Summary-io"
+- **App Title**: Updated from "Meeting Summarizer" to "Meeting-Summary.io"
 - **Footer Addition**: Added "Vertec Solutions LLC 2025" company branding
 - **Consistent Styling**: Maintained Material-UI design system consistency
 - **Professional Appearance**: Enhanced overall application presentation
@@ -359,7 +371,7 @@ public class SendGridEmailService : IEmailService
 #### 2. Professional Email Template System
 
 **Template Features:**
-- **Company Branding**: Professional HTML email templates with Meeting Summarizer branding
+- **Company Branding**: Professional HTML email templates with Meeting-Summary.io branding
 - **Meeting Summary Integration**: AI-generated summaries formatted for email context
 - **Action Items Display**: Role-aware action item organization in email format
 - **Responsive Design**: Professional appearance across email clients
@@ -368,7 +380,7 @@ public class SendGridEmailService : IEmailService
 
 **Production-Ready Configuration:**
 - **Domain Verification**: vertec.solutions authenticated via DNS CNAME/TXT records
-- **Sender Identity**: "Meeting Summarizer <info@vertec.solutions>" verified and operational
+- **Sender Identity**: "Meeting-Summary.io <info@vertec.solutions>" verified and operational
 - **API Security**: Restricted SendGrid API key with Mail Send permissions only
 - **Privacy Protection**: Session-based email composition with immediate send-and-discard
 

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This comprehensive test suite validates all Sprint 1 API functionality for the Meeting Summarizer application, covering the complete audio transcription pipeline from file upload to speaker diarization results.
+This comprehensive test suite validates all Sprint 1 API functionality for the Meeting-Summary.io application, covering the complete audio transcription pipeline from file upload to speaker diarization results.
 
 ## Sprint 1 Test Coverage
 

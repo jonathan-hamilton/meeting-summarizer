@@ -222,7 +222,7 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 - Multi-language support requirements documented (41 new requirements)
 - UI consistency improvements and polish enhancements
 
-**As a** user of the meeting summarizer system  
+**As a** user of the Meeting-Summary.io system  
 **I want** optimal performance and clear feedback during processing  
 **So that** I have a smooth, efficient experience with transparency about system operations
 

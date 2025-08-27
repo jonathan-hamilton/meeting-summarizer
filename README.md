@@ -1,4 +1,4 @@
-# Meeting Summarizer 🎤📝
+# Meeting-Summary.io 🎤📝
 
 A modern web application for transcribing and summarizing meeting audio using Azure Speech Services with hybrid speaker detection and OpenAI's GPT models for enhanced accuracy and reliability.
 
@@ -27,6 +27,7 @@ A modern web application for transcribing and summarizing meeting audio using Az
 - **Privacy Controls**: Session status indicators with data size tracking and export options
 - **Professional UI**: Standardized duration formatting (mm:ss/ss), branded "Meeting-Summary-io" interface
 - **User Experience**: Consistent time displays, professional branding, enhanced reliability
+- **Demo Mode**: Anonymous demo mode with 30-second audio limit, basic summarization, and feature restrictions for onboarding
 
 ### 📊 **Sprint Progress**
 
@@ -241,6 +242,7 @@ meeting-summarizer/
 - **Advanced Export Formats**: PDF, Word, and structured data exports
 - **Performance Optimization**: Large file processing and concurrent session support
 - **Security Enhancements**: Advanced authentication and audit logging
+- **Demo Mode**: Try the app with a 30-second audio file, no registration required, limited features for demo users
 
 ## 📚 Documentation
 

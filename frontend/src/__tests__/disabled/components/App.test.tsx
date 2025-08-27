@@ -69,7 +69,7 @@ describe("App Component - Critical Test Coverage - S2.1", () => {
     it("should render the app with all main components", () => {
       render(<App />);
 
-      expect(screen.getByText("Meeting Summarizer")).toBeInTheDocument();
+      expect(screen.getByText("Meeting-Summary.io")).toBeInTheDocument();
       expect(
         screen.getByText("AI-Powered Meeting Transcription and Summarization")
       ).toBeInTheDocument();
@@ -81,7 +81,7 @@ describe("App Component - Critical Test Coverage - S2.1", () => {
       render(<App />);
 
       // Check for the app bar title
-      const titles = screen.getAllByText("Meeting Summarizer");
+      const titles = screen.getAllByText("Meeting-Summary.io");
       expect(titles.length).toBeGreaterThan(0);
 
       // Check for theme toggle button (brightness icon)
@@ -107,7 +107,7 @@ describe("App Component - Critical Test Coverage - S2.1", () => {
       fireEvent.click(themeToggle);
 
       // The component should still be rendered after theme toggle
-      expect(screen.getByText("Meeting Summarizer")).toBeInTheDocument();
+      expect(screen.getByText("Meeting-Summary.io")).toBeInTheDocument();
     });
   });
 
@@ -162,7 +162,7 @@ describe("App Component - Critical Test Coverage - S2.1", () => {
       fireEvent.click(uploadButton);
 
       // Both should still work
-      expect(screen.getByText("Meeting Summarizer")).toBeInTheDocument();
+      expect(screen.getByText("Meeting-Summary.io")).toBeInTheDocument();
       expect(screen.getByText("Transcription Results")).toBeInTheDocument();
     });
   });

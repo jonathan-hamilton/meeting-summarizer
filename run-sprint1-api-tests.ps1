@@ -1,7 +1,7 @@
 # Sprint 1 API Test Runner
-# Comprehensive test suite for Meeting Summarizer API Sprint 1 features
+# Comprehensive test suite for Meeting-Summary.io API Sprint 1 features
 
-Write-Host "🧪 Meeting Summarizer API - Sprint 1 Test Suite" -ForegroundColor Cyan
+Write-Host "🧪 Meeting-Summary.io API - Sprint 1 Test Suite" -ForegroundColor Cyan
 Write-Host "=================================================" -ForegroundColor Cyan
 Write-Host ""
 
