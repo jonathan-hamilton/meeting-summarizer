@@ -19,11 +19,7 @@
 - REQ-TRN-6: System shall provide speaker confidence scores for each identified speaker segment
 - REQ-TRN-7: System shall detect speaker count automatically without requiring user input
 - REQ-TRN-8: System shall handle overlapping speech and identify primary speaker per segment
-- REQ-TRN-9: System shall use Azure batch transcription mode for cost optimization and free diarization
 - REQ-TRN-10: System shall fall back to OpenAI Whisper when Azure Speech Services fails
-- REQ-TRN-11: System shall support long-duration meetings up to 60 minutes using Azure Batch Transcription API for files exceeding 5 minutes or showing truncation issues with real-time API (S4.2)
-- REQ-TRN-12: System shall automatically detect when audio files require batch processing based on duration estimation and file size thresholds (S4.3)
-- REQ-TRN-13: System shall provide appropriate user feedback and estimated processing times for batch transcription operations (S4.4)
 
 ### Speaker Identification Enhancement
 
@@ -64,7 +60,6 @@
 
 - REQ-AZR-1: System shall create Azure AI Speech resource in West Coast US region (westus2)
 - REQ-AZR-2: System shall configure authentication using API key for development, Managed Identity for production
-- REQ-AZR-3: System shall use Azure batch transcription API for single-file processing with free diarization
 - REQ-AZR-4: System shall implement Azure-specific error handling and retry logic
 - REQ-AZR-5: System shall monitor usage against Free tier limits (5 hours/month) with usage alerts
 - REQ-AZR-6: System shall transform Azure Speech Services JSON response to match existing frontend data contracts
@@ -102,9 +97,7 @@
 ### Configuration & Validation
 
 - REQ-CFG-1: System shall validate frontend and backend supported file types for consistency at startup
-- REQ-CFG-2: System shall validate Azure Storage connection string and container access during application startup
 - REQ-CFG-3: System shall provide clear error messages when Azure services are misconfigured or unavailable
-- REQ-CFG-4: System shall implement graceful degradation when batch processing services are unavailable
 - REQ-CFG-5: System shall validate configuration completeness for all required Azure service dependencies
 - REQ-CFG-6: System shall provide configuration validation tools for development and deployment environments
 - REQ-CFG-7: System shall log detailed configuration validation results for troubleshooting and monitoring
@@ -112,7 +105,6 @@
 ### File Processing & Optimization
 
 - REQ-FPO-1: System shall perform audio file format validation beyond extension checking using content analysis
-- REQ-FPO-2: System shall optimize audio files for Azure Speech Services processing when format conversion is beneficial
 - REQ-FPO-3: System shall handle corrupted or malformed audio files with appropriate error messages
 - REQ-FPO-4: System shall detect and handle edge cases in audio file metadata and format variations
 - REQ-FPO-5: System shall implement memory-efficient processing for large audio file uploads (>100MB)
@@ -120,10 +112,6 @@
 
 ### Resource Management & Cleanup
 
-- REQ-RMC-1: System shall automatically cleanup temporary blob storage files after successful transcription processing
-- REQ-RMC-2: System shall implement scheduled cleanup of abandoned or failed transcription job artifacts
-- REQ-RMC-3: System shall optimize memory usage during concurrent large file uploads and processing
-- REQ-RMC-4: System shall implement proper timeout handling for batch operations with user-friendly feedback
 - REQ-RMC-5: System shall monitor and log resource usage metrics for performance optimization
 - REQ-RMC-6: System shall implement automatic retry mechanisms with exponential backoff for transient Azure service failures
 

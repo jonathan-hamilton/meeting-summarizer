@@ -7,10 +7,10 @@
 
 ## Sprint Overview
 
-Sprint 4 completes the Azure Speech Services migration with both real-time and batch transcription capabilities while implementing comprehensive system reliability improvements. With core transcription functionality now working, this sprint addresses technical debt, system validation, and user experience optimization to deliver a production-ready application.
+Sprint 4 completes the Azure Speech Services migration with comprehensive system reliability improvements. With core transcription functionality now working, this sprint addresses technical debt, system validation, and user experience optimization to deliver a production-ready application.
 
 ### Strategic Priorities
-1. **Complete Azure Migration** - Both real-time and batch transcription APIs working ✅
+1. **Complete Azure Migration** - Real-time transcription API working ✅
 2. **System Reliability** - Configuration validation, resource management, error handling
 3. **User Experience** - Intelligent processing mode selection with clear feedback
 4. **Technical Debt** - File processing optimization, development tooling, cleanup processes
@@ -38,7 +38,6 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 - ✅ Azure Speech Services API integration implemented
 - ✅ Speaker diarization accuracy improved over OpenAI Whisper baseline (fallback working)
 - ✅ Fallback mechanism to OpenAI when Azure fails
-- ✅ Cost monitoring and batch processing optimization (Free tier configured)
 - ✅ Comprehensive testing with sample audio files
 
 #### Technical Implementation Completed
@@ -74,69 +73,17 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 - ✅ Requirements documentation updated with correct story references (S4.2-S4.4, S5.1-S5.3)
 
 **Technical Debt Addressed:**
-- Removed OpenAI fallback dependency for transcription to focus on Azure batch solution
-- Cleaned up real-time API troubleshooting changes that won't be needed for batch implementation
-- Simplified service registration for cleaner batch API integration
+- Removed OpenAI fallback dependency for transcription
+- Cleaned up real-time API troubleshooting changes
 
 ---
 
-### S4.2: Azure Batch Transcription API Implementation ✅ COMPLETE
-**Priority:** High  
-**Story Points:** 13  
-**Status:** ✅ COMPLETE (August 24, 2025)  
-**Dependencies:** S4.1 (Azure Speech Services Integration)
-
-**Completion Summary:**
-- Azure Batch Transcription API v3.2 fully implemented with advanced capabilities
-- Hybrid speaker detection system combining Azure acoustic analysis with intelligent text parsing
-- Successfully processes long-duration audio files (99.36-second test → 27 segments, 4 speakers)
-- Robust error handling and graceful fallback mechanisms implemented
-- Integration with Azure Blob Storage for secure audio file handling
-
-**As a** meeting organizer  
-**I want** long-duration meetings transcribed without truncation using Azure Batch Transcription API  
-**So that** I can reliably process meetings up to 60 minutes regardless of duration
-
-#### Acceptance Criteria ✅ ALL COMPLETE
-- ✅ Azure Batch Transcription API v3.2 integration implemented (upgraded from v3.1)
-- ✅ Support for audio files up to 60 minutes duration
-- ✅ Batch job submission, monitoring, and result retrieval
-- ✅ Proper error handling for batch processing failures
-- ✅ Hybrid speaker detection when Azure acoustic diarization limitations encountered
-
-#### Technical Implementation Completed
-- ✅ **AzureBatchTranscriptionClient.cs** - Complete REST API client for Azure Batch Transcription v3.2
-- ✅ **AzureBatchTranscriptionService.cs** - High-level orchestration service with hybrid speaker detection
-- ✅ **BatchTranscriptionModels.cs** - Complete data models for v3.2 API requests/responses
-- ✅ **AzureStorageOptions.cs** - Configuration for Azure Blob Storage integration
-- ✅ **Hybrid Speaker Detection Algorithm** - Combines Azure acoustic + regex text parsing
-- ✅ Job submission, polling, and completion detection with exponential backoff
-- ✅ Azure Blob Storage integration for secure audio file uploads
-- ✅ SAS URL generation for Azure Speech Services access
-- ✅ Comprehensive error handling and logging throughout the pipeline
-
-#### Key Innovation: Hybrid Speaker Detection
-- **Problem Solved:** Azure's acoustic diarization can fail to detect multiple speakers in some audio
-- **Solution:** Intelligent text parsing using regex patterns to identify speaker mentions in transcript
-- **Results:** Successfully identified 4 distinct speakers from text patterns when Azure detected only 1
-- **Patterns Detected:** "Speaker One (Scrum Master)", "Speaker Two (back end developer)", etc.
-- **Fallback Strategy:** Azure acoustic analysis primary, text parsing secondary when needed
-
-#### Testing Validated
-- ✅ 99.36-second audio file successfully processed via batch API
-- ✅ 27 transcript segments generated with accurate timestamps
-- ✅ 4 speakers correctly identified through hybrid detection
-- ✅ Speaker names extracted: "Speaker 1 (Scrum Master)", "Speaker 2 (back end developer)", etc.
-- ✅ Azure Blob Storage upload and SAS URL generation working
-- ✅ End-to-end batch transcription pipeline functional
-
----
 
 ### S4.3: Configuration Validation & System Reliability Improvements
 **Priority:** High  
 **Story Points:** 8  
 **Status:** 🔄 PLANNED  
-**Dependencies:** S4.2 (Azure Batch Transcription API Implementation) ✅ COMPLETE
+**Dependencies:** S4.1 (Azure Speech Services Integration) ✅ COMPLETE
 
 **As a** system administrator and developer  
 **I want** robust configuration validation, file processing optimization, and resource management  
@@ -144,11 +91,9 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 
 #### Acceptance Criteria
 
-**Configuration & Validation (REQ-CFG-1 to REQ-CFG-7):**
+**Configuration & Validation (REQ-CFG-1, REQ-CFG-3, REQ-CFG-5, REQ-CFG-6, REQ-CFG-7):**
 - [ ] Frontend and backend file type consistency validation at startup
-- [ ] Azure Storage connection and container access validation during startup
 - [ ] Clear error messages for Azure service misconfigurations
-- [ ] Graceful degradation when batch processing services are unavailable
 - [ ] Configuration validation tools for development environments
 - [ ] Detailed configuration validation logging
 
@@ -158,10 +103,7 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 - [ ] Corrupted/malformed audio file handling with clear error messages
 - [ ] Progress feedback for operations exceeding normal timeouts
 
-**Resource Management & Cleanup (REQ-RMC-1 to REQ-RMC-6):**
-- [ ] Automatic cleanup of temporary blob storage files after processing
-- [ ] Scheduled cleanup of abandoned transcription job artifacts
-- [ ] Optimized memory usage during concurrent large file operations
+**Resource Management & Cleanup (REQ-RMC-4, REQ-RMC-5, REQ-RMC-6):**
 - [ ] Enhanced timeout handling with user-friendly feedback
 - [ ] Automatic retry mechanisms with exponential backoff for Azure failures
 
@@ -174,8 +116,6 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 #### Technical Implementation Areas
 
 **1. Startup Validation Framework**
-- Azure Storage connection string validation
-- Container access permission checking
 - Service endpoint connectivity verification
 - Frontend/backend file type synchronization validation
 
@@ -186,9 +126,6 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 - Error handling with detailed user feedback
 
 **3. Resource Management System**
-- Blob storage lifecycle management
-- Temporary file cleanup scheduling
-- Memory optimization for concurrent operations
 - Connection pooling and resource limits
 
 **4. Development & Monitoring Tools**
@@ -199,7 +136,6 @@ Sprint 4 completes the Azure Speech Services migration with both real-time and b
 
 #### Success Metrics
 - Zero configuration-related deployment failures
-- 95% reduction in blob storage orphaned files
 - <30 second startup time with full validation
 - Clear error messages for all failure scenarios
 - Memory usage <500MB for 100MB file uploads
