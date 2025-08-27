@@ -1,4 +1,6 @@
 # Meeting-Summary.io - Monetization Analysis
+#
+**Note:** All plans are limited to a maximum of 60 minutes per meeting. This is enforced automatically during file upload preprocessing. Any file exceeding 60 minutes in estimated duration will be rejected.
 
 ## Cost Structure Analysis
 
@@ -13,7 +15,7 @@
 | 15 minutes     | $0.09             | $0.05        | $0.14      |
 | 30 minutes     | $0.18             | $0.08        | $0.26      |
 | 60 minutes     | $0.36             | $0.10        | $0.46      |
-| 120 minutes    | $0.72             | $0.15        | $0.87      |
+| **(Not allowed: >60 min)** | - | - | - |
 
 ## Monetization Strategy Options
 
@@ -21,34 +23,34 @@
 
 #### Free Tier
 - **Meetings**: 5 per month
-- **Max Length**: 30 minutes
+- **Max Length**: 30 minutes (hard limit enforced)
 - **Features**: Basic transcription, standard summary, 3 email recipients
 - **Support**: Community/FAQ only
 
 #### Starter Plan ($9.99/month)
 - **Meetings**: 50 per month
-- **Max Length**: 60 minutes  
+- **Max Length**: 60 minutes (hard limit enforced)
 - **Features**: All free features + custom templates, 10 email recipients
 - **Support**: Email support
 - **Break-even**: ~22 meetings at $0.46 cost = $10.12
 
 #### Professional Plan ($24.99/month)
 - **Meetings**: 200 per month
-- **Max Length**: 120 minutes
+- **Max Length**: 60 minutes (hard limit enforced)
 - **Features**: All starter features + team sharing, advanced analytics, priority support
 - **Support**: Priority email + chat
 - **Break-even**: ~54 meetings at $0.46 cost = $24.84
 
 #### Enterprise Plan ($49.99/month)
 - **Meetings**: Unlimited
-- **Max Length**: Unlimited
+- **Max Length**: 60 minutes (hard limit enforced)
 - **Features**: All professional features + API access, white-labeling, dedicated support
 - **Support**: Phone + dedicated account manager
 
 ### Option 2: Pay-Per-Use Credits
 
 #### Credit Pricing
-- **1 Credit** = 1 meeting (up to 60 minutes) = $1.00 (117% markup)
+- **1 Credit** = 1 meeting (up to 60 minutes, hard limit enforced) = $1.00 (117% markup)
 - **10 Credits** = $8.50 (15% bulk discount)
 - **25 Credits** = $20.00 (20% bulk discount)
 - **50 Credits** = $37.50 (25% bulk discount)
