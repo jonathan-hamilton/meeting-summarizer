@@ -20,7 +20,7 @@ namespace MeetingSummarizer.Api.Tests.Controllers;
 public class SummaryControllerSprint2Tests
 {
     private Mock<ILogger<SummaryController>> _mockLogger = null!;
-    private Mock<IOpenAIService> _mockOpenAIService = null!;
+    private Mock<ITranscriptionService> _mockTranscriptionService = null!;
     private Mock<ISummarizationService> _mockSummarizationService = null!;
     private Mock<ISpeakerMappingService> _mockSpeakerMappingService = null!;
     private SummaryController _controller = null!;
@@ -29,13 +29,13 @@ public class SummaryControllerSprint2Tests
     public void Setup()
     {
         _mockLogger = new Mock<ILogger<SummaryController>>();
-        _mockOpenAIService = new Mock<IOpenAIService>();
+        _mockTranscriptionService = new Mock<ITranscriptionService>();
         _mockSummarizationService = new Mock<ISummarizationService>();
         _mockSpeakerMappingService = new Mock<ISpeakerMappingService>();
 
         _controller = new SummaryController(
             _mockLogger.Object,
-            _mockOpenAIService.Object,
+            _mockTranscriptionService.Object,
             _mockSummarizationService.Object,
             _mockSpeakerMappingService.Object);
     }

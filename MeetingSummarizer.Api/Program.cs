@@ -44,9 +44,6 @@ builder.Services.AddCors(options =>
 // Configure Azure Speech Services (S4.1)
 builder.Services.AddAzureSpeechServices(builder.Configuration);
 
-// Configure Azure-only transcription service (OpenAI disabled for transcription)
-builder.Services.AddScoped<ITranscriptionService, AzureSpeechService>();
-
 // Register session-based speaker mapping service (S3.1)
 builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
 builder.Services.AddScoped<ISessionSpeakerMappingService, SessionSpeakerMappingService>();
@@ -85,9 +82,6 @@ using (var scope = app.Services.CreateScope())
         logger.LogInformation("OpenAI configuration validated successfully. Using model: {ChatModel} for summarization (transcription handled by Azure Speech Services)",
             openAIOptions.Value.DefaultChatModel);
     }
-
-    // Validate Azure Speech Services configuration (S4.1)
-    scope.ServiceProvider.ValidateAzureSpeechConfiguration();
 
     // Perform comprehensive startup validation (S4.3)
     var validationService = scope.ServiceProvider.GetService<IConfigurationValidationService>();

@@ -245,7 +245,7 @@ const AppContent: React.FC = () => {
                 textAlign: "center",
                 fontWeight: "bold"
               }}>
-                Meeting-Summary-io
+                Meeting-Summary.io
               </Typography>
               
               {/* Right-aligned controls */}
