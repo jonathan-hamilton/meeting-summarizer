@@ -10,6 +10,81 @@ namespace MeetingSummarizer.Api.Services.FileProcessing;
 /// </summary>
 public class FileProcessingService : IFileProcessingService
 {
+    public FileProcessingService(ILogger<FileProcessingService> logger)
+    {
+        _logger = logger;
+        _concurrentOperationsSemaphore = new SemaphoreSlim(MaxConcurrentOperations);
+        _memoryMonitor = new MemoryMonitor();
+    }
+    // Basic validation constants (from AudioFileValidator)
+    public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm" };
+    public const long MaxFileSizeBytes = 1024L * 1024 * 1024;
+    public const long MinFileSizeBytes = 1024;
+    public const int MaxFileNameLength = 255;
+    public static readonly string[] ValidMimeTypes = {
+        "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav", "audio/mp4", "audio/x-m4a",
+        "audio/flac", "audio/x-flac", "audio/ogg", "audio/webm"
+    };
+
+    /// <summary>
+    /// Performs basic validation of an uploaded audio file (size, name, extension, MIME type)
+    /// </summary>
+    public AudioFileValidationResult BasicValidateAudioFile(IFormFile? audioFile)
+    {
+        if (audioFile == null)
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, "Audio file is required");
+        if (audioFile.Length == 0)
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, "Audio file cannot be empty");
+        if (audioFile.Length < MinFileSizeBytes)
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, $"File is too small. Minimum size: {MinFileSizeBytes / 1024}KB");
+        if (audioFile.Length > MaxFileSizeBytes)
+        {
+            var maxSizeFormatted = MaxFileSizeBytes >= 1024L * 1024 * 1024
+                ? $"{MaxFileSizeBytes / (1024L * 1024 * 1024)}GB"
+                : $"{MaxFileSizeBytes / (1024 * 1024)}MB";
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, $"File size exceeds {maxSizeFormatted} limit");
+        }
+        if (string.IsNullOrWhiteSpace(audioFile.FileName))
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, "File name is required");
+        if (audioFile.FileName.Length > MaxFileNameLength)
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, $"File name is too long. Maximum length: {MaxFileNameLength} characters");
+        if (ContainsDangerousCharacters(audioFile.FileName))
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, "File name contains invalid characters");
+        var fileExtension = Path.GetExtension(audioFile.FileName).ToLowerInvariant();
+        if (string.IsNullOrEmpty(fileExtension))
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, "File must have a valid extension");
+        if (!SupportedExtensions.Contains(fileExtension))
+            return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, $"Unsupported file format '{fileExtension}'. Supported formats: {string.Join(", ", SupportedExtensions)}");
+        if (!string.IsNullOrWhiteSpace(audioFile.ContentType))
+        {
+            var mimeType = audioFile.ContentType.ToLowerInvariant();
+            if (!ValidMimeTypes.Contains(mimeType) && !mimeType.StartsWith("audio/"))
+                return new MeetingSummarizer.Api.Models.AudioFileValidationResult(false, $"Invalid MIME type '{audioFile.ContentType}'. Expected audio format");
+        }
+        return new MeetingSummarizer.Api.Models.AudioFileValidationResult(true, "File validation successful");
+    }
+
+    /// <summary>
+    /// Gets a user-friendly file size string
+    /// </summary>
+    public string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private static bool ContainsDangerousCharacters(string fileName)
+    {
+        var dangerousChars = new[] { "..", "\\", "/", ":", "*", "?", "\"", "<", ">", "|" };
+        return dangerousChars.Any(fileName.Contains);
+    }
     private readonly ILogger<FileProcessingService> _logger;
     private readonly SemaphoreSlim _concurrentOperationsSemaphore;
     private readonly MemoryMonitor _memoryMonitor;
@@ -20,15 +95,8 @@ public class FileProcessingService : IFileProcessingService
     private const long LargeFileThresholdBytes = 50 * 1024 * 1024; // 50MB
     private const double MaxMemoryUsagePercentage = 70.0; // 70% of available memory
 
-    public FileProcessingService(ILogger<FileProcessingService> logger)
-    {
-        _logger = logger;
-        _concurrentOperationsSemaphore = new SemaphoreSlim(MaxConcurrentOperations, MaxConcurrentOperations);
-        _memoryMonitor = new MemoryMonitor();
-    }
-
     /// <summary>
-    /// Performs comprehensive validation of an audio file including content analysis (REQ-FPO-1)
+    /// Validates an audio file with advanced checks (merging all validation logic)
     /// </summary>
     public async Task<FileProcessingResult> ValidateAudioFileAsync(
         IFormFile audioFile,
@@ -37,125 +105,107 @@ public class FileProcessingService : IFileProcessingService
     {
         var correlationId = Guid.NewGuid().ToString("N")[..8];
         var stopwatch = Stopwatch.StartNew();
-
-        _logger.LogInformation("Starting comprehensive audio file validation [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {Size}",
-            correlationId, audioFile.FileName, audioFile.Length);
-
+        await _concurrentOperationsSemaphore.WaitAsync(cancellationToken);
+        var memoryBefore = GC.GetTotalMemory(false);
         try
         {
-            // Determine if this should use streaming processing
-            if (audioFile.Length > LargeFileThresholdBytes)
-            {
-                _logger.LogInformation("Large file detected, using streaming processing [CorrelationId: {CorrelationId}]", correlationId);
-                return await ProcessLargeFileStreamingAsync(audioFile, progressCallback!, cancellationToken);
-            }
-
-            await _concurrentOperationsSemaphore.WaitAsync(cancellationToken);
-            var memoryBefore = GC.GetTotalMemory(false);
-
-            try
+            // Basic validation
+            var basicResult = BasicValidateAudioFile(audioFile);
+            if (!basicResult.IsValid)
             {
                 progressCallback?.Report(new ProcessingProgress(
-                    ProcessingStage.InitialValidation, 0, "Starting validation", 0, audioFile.Length));
-
-                // Step 1: Basic file info
-                var fileInfo = new Models.FileInfo(
-                    audioFile.FileName,
-                    audioFile.Length,
-                    Path.GetExtension(audioFile.FileName).ToLowerInvariant(),
-                    audioFile.ContentType);
-
-                var contentValidationStopwatch = Stopwatch.StartNew();
-
-                // Step 2: Content analysis
-                progressCallback?.Report(new ProcessingProgress(
-                    ProcessingStage.ContentAnalysis, 25, "Analyzing audio content", 0, audioFile.Length));
-
-                using var stream = audioFile.OpenReadStream();
-                var contentAnalysis = await AnalyzeAudioContentAsync(stream, audioFile.FileName, cancellationToken);
-                contentValidationStopwatch.Stop();
-
-                // Step 3: Security validation
-                progressCallback?.Report(new ProcessingProgress(
-                    ProcessingStage.SecurityValidation, 50, "Validating file security", 0, audioFile.Length));
-
-                var securityStopwatch = Stopwatch.StartNew();
-                stream.Position = 0; // Reset stream
-                var securityValidation = await ValidateFileSecurityAsync(stream, audioFile.FileName, cancellationToken);
-                securityStopwatch.Stop();
-
-                // Step 4: Format compatibility
-                progressCallback?.Report(new ProcessingProgress(
-                    ProcessingStage.Finalizing, 75, "Checking format compatibility", 0, audioFile.Length));
-
-                var compatibility = await CheckFormatCompatibilityAsync(audioFile, contentAnalysis);
-
-                // Step 5: Final validation
-                progressCallback?.Report(new ProcessingProgress(
-                    ProcessingStage.Completed, 100, "Validation complete", audioFile.Length, audioFile.Length));
-
-                stopwatch.Stop();
-                var memoryAfter = GC.GetTotalMemory(false);
-
-                var validationDetails = new FileValidationDetails(fileInfo, contentAnalysis, securityValidation, compatibility);
-                var metrics = new ProcessingMetrics(
-                    stopwatch.Elapsed,
-                    contentValidationStopwatch.Elapsed,
-                    securityStopwatch.Elapsed,
-                    Math.Max(0, memoryAfter - memoryBefore),
-                    1, // Single chunk for small files
-                    audioFile.Length / stopwatch.Elapsed.TotalSeconds);
-
-                // Determine overall result
-                var errors = new List<string>();
-                var warnings = new List<string>();
-
-                if (!contentAnalysis.HasValidHeaders)
-                {
-                    errors.Add("Invalid audio file headers detected");
-                }
-
-                if (contentAnalysis.IsCorrupted)
-                {
-                    errors.Add($"Audio file appears corrupted: {contentAnalysis.CorruptionDetails}");
-                }
-
-                if (!securityValidation.IsSecure)
-                {
-                    errors.AddRange(securityValidation.ThreatIndicators);
-                }
-
-                if (!compatibility.AzureCompatible)
-                {
-                    warnings.Add($"Format may not be optimal for Azure Speech Services. {compatibility.RecommendedFormat}");
-                }
-
-                _logger.LogInformation("Audio file validation completed [CorrelationId: {CorrelationId}] - " +
-                    "Valid: {IsValid}, Duration: {Duration}ms, Memory: {Memory}",
-                    correlationId, errors.Count == 0, stopwatch.ElapsedMilliseconds, metrics.PeakMemoryUsageBytes);
-
-                if (errors.Any())
-                {
-                    return FileProcessingResult.Failure(
-                        "Audio file validation failed", errors, validationDetails, metrics, warnings);
-                }
-
-                return FileProcessingResult.Success(
-                    "Audio file validation passed", validationDetails, metrics, warnings.Any() ? warnings : null);
+                    ProcessingStage.Completed, 100, basicResult.Message, audioFile.Length, audioFile.Length));
+                return FileProcessingResult.Failure(basicResult.Message, new List<string> { basicResult.Message });
             }
-            finally
+
+            // File info
+            var fileInfo = new Models.FileInfo(audioFile.FileName, audioFile.Length,
+                Path.GetExtension(audioFile.FileName).ToLowerInvariant(), audioFile.ContentType);
+
+            // Content analysis
+            var contentValidationStopwatch = Stopwatch.StartNew();
+            AudioContentAnalysis contentAnalysis;
+            using (var stream = audioFile.OpenReadStream())
             {
-                _concurrentOperationsSemaphore.Release();
+                contentAnalysis = await AnalyzeAudioContentAsync(stream, audioFile.FileName, cancellationToken);
             }
+            contentValidationStopwatch.Stop();
+
+            // Security validation
+            var securityStopwatch = Stopwatch.StartNew();
+            SecurityValidation securityValidation;
+            using (var stream = audioFile.OpenReadStream())
+            {
+                securityValidation = await ValidateFileSecurityAsync(stream, audioFile.FileName, cancellationToken);
+            }
+            securityStopwatch.Stop();
+
+            // Format compatibility
+            var compatibility = await CheckFormatCompatibilityAsync(audioFile, contentAnalysis);
+
+            progressCallback?.Report(new ProcessingProgress(
+                ProcessingStage.Completed, 100, "Validation complete", audioFile.Length, audioFile.Length));
+
+            stopwatch.Stop();
+            var memoryAfter = GC.GetTotalMemory(false);
+
+            var validationDetails = new FileValidationDetails(fileInfo, contentAnalysis, securityValidation, compatibility);
+            var metrics = new ProcessingMetrics(
+                stopwatch.Elapsed,
+                contentValidationStopwatch.Elapsed,
+                securityStopwatch.Elapsed,
+                Math.Max(0, memoryAfter - memoryBefore),
+                1, // Single chunk for small files
+                audioFile.Length / (stopwatch.Elapsed.TotalSeconds > 0 ? stopwatch.Elapsed.TotalSeconds : 1));
+
+            // Determine overall result
+            var errors = new List<string>();
+            var warnings = new List<string>();
+
+            if (!contentAnalysis.HasValidHeaders)
+            {
+                errors.Add("Invalid audio file headers detected");
+            }
+
+            if (contentAnalysis.IsCorrupted)
+            {
+                errors.Add($"Audio file appears corrupted: {contentAnalysis.CorruptionDetails}");
+            }
+
+            if (!securityValidation.IsSecure)
+            {
+                errors.AddRange(securityValidation.ThreatIndicators);
+            }
+
+            if (!compatibility.AzureCompatible)
+            {
+                warnings.Add($"Format may not be optimal for Azure Speech Services. {compatibility.RecommendedFormat}");
+            }
+
+            _logger.LogInformation("Audio file validation completed [CorrelationId: {CorrelationId}] - " +
+                "Valid: {IsValid}, Duration: {Duration}ms, Memory: {Memory}",
+                correlationId, errors.Count == 0, stopwatch.ElapsedMilliseconds, metrics.PeakMemoryUsageBytes);
+
+            if (errors.Any())
+            {
+                return FileProcessingResult.Failure(
+                    "Audio file validation failed", errors, validationDetails, metrics, warnings);
+            }
+
+            return FileProcessingResult.Success(
+                "Audio file validation passed", validationDetails, metrics, warnings.Any() ? warnings : null);
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
             _logger.LogError(ex, "Audio file validation failed [CorrelationId: {CorrelationId}]", correlationId);
-            
             return FileProcessingResult.Failure(
                 "Validation failed due to unexpected error",
                 new List<string> { ex.Message });
+        }
+        finally
+        {
+            _concurrentOperationsSemaphore.Release();
         }
     }
 

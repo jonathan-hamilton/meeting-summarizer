@@ -48,6 +48,30 @@ The `SpeakerMapping.tsx` component experiences React infinite render loops causi
 
 ## Recently Resolved Issues
 
+### S4.3 File Validation Refactor & Obsolete Service Cleanup ✅ RESOLVED
+
+**Date Resolved**: August 26, 2025  
+**Sprint**: Sprint 4.3  
+**Priority**: High (Major architectural and technical debt improvement)
+
+**Problem Resolved**: 
+- Validation logic was split between multiple classes (`AudioFileValidator`, `FileProcessingService`), causing duplication and maintenance issues.
+- Obsolete Azure/OpenAI service files and redundant validation code cluttered the codebase.
+
+**Solution Implemented**:
+- All validation logic (basic and advanced) merged into `FileProcessingService`.
+- `AudioFileValidator` deleted; `AudioFileValidationResult` moved to Models for shared use.
+- Obsolete Azure/OpenAI service files deleted as part of technical debt cleanup.
+- Interface and controller references updated for new validation flow.
+- Full structural repair of `FileProcessingService.cs` to ensure maintainability.
+
+**Business Impact**:
+- Centralized validation logic for easier maintenance and future enhancements.
+- Reduced code duplication and improved reliability.
+- Cleaner codebase with obsolete files removed.
+
+**Technical Note**: Some advanced validation and memory management features were implemented beyond the original sprint doc requirements, as discovered in the codebase.
+
 ### Services Architecture Reorganization ✅ RESOLVED
 
 **Date Resolved**: August 26, 2025  

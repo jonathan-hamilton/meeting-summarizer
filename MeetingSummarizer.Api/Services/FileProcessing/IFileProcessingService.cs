@@ -9,6 +9,20 @@ namespace MeetingSummarizer.Api.Services.FileProcessing;
 public interface IFileProcessingService
 {
     /// <summary>
+    /// Performs basic validation of an uploaded audio file (size, name, extension, MIME type)
+    /// </summary>
+    /// <param name="audioFile">The uploaded file</param>
+    /// <returns>Validation result</returns>
+    AudioFileValidationResult BasicValidateAudioFile(IFormFile? audioFile);
+
+    /// <summary>
+    /// Gets a user-friendly file size string
+    /// </summary>
+    /// <param name="bytes">Size in bytes</param>
+    /// <returns>Formatted size string</returns>
+    string FormatFileSize(long bytes);
+
+    /// <summary>
     /// Performs comprehensive validation of an audio file including content analysis (REQ-FPO-1)
     /// </summary>
     /// <param name="audioFile">The uploaded audio file</param>
