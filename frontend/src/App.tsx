@@ -344,9 +344,6 @@ const AppContent: React.FC = () => {
               </Link>
               • Session-based storage • Your data stays private
             </Typography>
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
-              Vertec Solutions LLC 2025
-            </Typography>
           </Box>
         </Box>
       </Box>

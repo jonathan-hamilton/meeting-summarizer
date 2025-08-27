@@ -1,4 +1,4 @@
-# Meeting Summarizer - Requirements Analysis & Sprint Roadmap
+# Meeting-Summary.io - Requirements Analysis & Sprint Roadmap
 
 ## Current State Analysis (August 19, 2025)
 

@@ -4,7 +4,7 @@
 
 ## Summary
 
-Successfully recovered the Meeting Summarizer test suite from 82 failing tests to **100% test success** (99 passing, 0 failing). This comprehensive recovery established a robust testing foundation for continued Sprint 3 development while preserving all legacy test assets.
+Successfully recovered the Meeting-Summary.io test suite from 82 failing tests to **100% test success** (99 passing, 0 failing). This comprehensive recovery established a robust testing foundation for continued Sprint 3 development while preserving all legacy test assets.
 
 ## Recovery Results
 

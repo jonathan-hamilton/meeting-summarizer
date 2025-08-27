@@ -4,7 +4,7 @@
 
 **Status**: All scaffolding stories (SC-001 through SC-004) have been completed successfully.
 
-**Summary**: The foundational infrastructure for the Meeting Summarizer application has been established, including:
+**Summary**: The foundational infrastructure for the Meeting-Summary.io application has been established, including:
 
 - .NET 9 Web API backend with Swagger documentation
 - React + TypeScript + Material-UI frontend

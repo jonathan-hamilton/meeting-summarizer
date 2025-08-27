@@ -2,7 +2,7 @@
 
 ## Sprint Overview
 
-Sprint 1 establishes the foundation of the Meeting Summarizer by implementing a complete end-to-end transcription pipeline. This sprint transforms the application from basic scaffolding into a fully functional transcription service with production-ready OpenAI integration, speaker diarization capabilities, and comprehensive fallback mechanisms.
+Sprint 1 establishes the foundation of the Meeting-Summary.io by implementing a complete end-to-end transcription pipeline. This sprint transforms the application from basic scaffolding into a fully functional transcription service with production-ready OpenAI integration, speaker diarization capabilities, and comprehensive fallback mechanisms.
 
 ## Sprint 1 Goals
 

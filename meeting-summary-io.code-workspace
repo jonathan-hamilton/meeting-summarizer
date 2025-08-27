@@ -1,0 +1,11 @@
+{
+  "folders": [
+    {
+      "name": "Meeting-Summary.io",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "workbench.name": "Meeting-Summary.io"
+  }
+}

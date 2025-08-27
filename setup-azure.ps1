@@ -1,5 +1,5 @@
 # Azure Speech Services Setup Script
-# This script configures Azure Speech Services for the Meeting Summarizer application
+# This script configures Azure Speech Services for the Meeting-Summary.io application
 
 Write-Host "Azure Speech Services Setup" -ForegroundColor Green
 Write-Host "================================" -ForegroundColor Green

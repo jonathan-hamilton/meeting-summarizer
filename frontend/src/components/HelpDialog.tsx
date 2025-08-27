@@ -63,7 +63,7 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ open, onClose }) => {
             <strong>Your Privacy is Protected</strong>
           </Typography>
           <Typography variant="body2">
-            Meeting Summarizer uses a privacy-first approach with session-only data storage. 
+            Meeting-Summary.io uses a privacy-first approach with session-only data storage. 
             Your meeting data is never permanently stored and is automatically cleared when you close your browser.
           </Typography>
         </Alert>

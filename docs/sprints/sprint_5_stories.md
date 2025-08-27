@@ -68,6 +68,45 @@ Sprint 5 focuses on completing the user interface polish and production readines
 **Priority:** Medium  
 **Story Points:** 8  
 **Status:** 🔄 PLANNED  
+
+---
+
+### S5.4: Demo Mode Implementation
+**Priority:** High  
+**Story Points:** 5  
+**Status:** 🔄 PLANNED  
+**Dependencies:** Backend transcription and summarization services
+
+**As a** new or anonymous user  
+**I want** to try the application in demo mode with a short audio file  
+**So that** I can experience the core features before registering or purchasing
+
+#### Acceptance Criteria
+- [ ] Demo mode is available without registration or payment (REQ-DEM-1, REQ-DEM-6)
+- [ ] Demo mode enforces a 30-second audio limit (REQ-DEM-1)
+- [ ] Full transcription and basic summarization are available in demo mode (REQ-DEM-2)
+- [ ] Email sharing and advanced features are disabled in demo mode (REQ-DEM-3)
+- [ ] Speaker mapping is view-only in demo mode (REQ-DEM-4)
+- [ ] UI clearly indicates demo limitations and upgrade path (REQ-DEM-5)
+- [ ] Session-based tracking prevents repeated demo abuse (REQ-DEM-7)
+- [ ] Demo mode processing cost does not exceed $0.01 per usage (REQ-DEM-8)
+
+#### Technical Implementation Notes
+- Add a demo mode toggle and entry point on the landing page
+- Enforce audio duration and feature restrictions in backend and frontend
+- Display clear messaging about demo limitations and upgrade options
+- Track demo usage in session storage and block repeated abuse
+- Ensure demo mode is isolated from user accounts and persistent data
+
+#### UI Components Affected
+- Landing page (demo entry point)
+- File upload (duration validation)
+- Transcript and summary display (feature restrictions)
+- Speaker mapping (view-only mode)
+- Email sharing (disabled in demo)
+- Demo mode banners and notifications
+
+---
 **Dependencies:** S5.1 (UI improvements for notifications)
 
 **As a** user managing speaker assignments  

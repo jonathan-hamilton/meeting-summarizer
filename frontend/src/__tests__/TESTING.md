@@ -1,4 +1,4 @@
-# Testing Strategy for Meeting Summarizer Frontend
+# Testing Strategy for Meeting-Summary.io Frontend
 
 ## Test Organization Structure
 

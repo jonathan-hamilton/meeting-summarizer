@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide covers setting up OpenAI API integration for the Meeting Summarizer application, including configuration, environment variables, and deployment considerations.
+This guide covers setting up OpenAI API integration for the Meeting-Summary.io application, including configuration, environment variables, and deployment considerations.
 
 ## Prerequisites
 

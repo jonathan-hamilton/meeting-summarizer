@@ -1,4 +1,4 @@
-# Meeting Summarizer - Monetization Analysis
+# Meeting-Summary.io - Monetization Analysis
 
 ## Cost Structure Analysis
 
