@@ -1,3 +1,42 @@
+### Payment Processing & Token Management
+
+- REQ-PAY-1: The system shall integrate with a PCI-compliant payment provider (e.g., Stripe) for secure credit card and digital wallet transactions.
+- REQ-PAY-2: Users shall be able to purchase tokens/credits in configurable packages via a secure payment flow.
+- REQ-PAY-3: The payment process shall use HTTPS and never expose sensitive payment data to the client or store it on MeetingSummarizer servers.
+- REQ-PAY-4: Upon successful payment, purchased tokens/credits shall be atomically assigned to the user's account and reflected in their balance.
+- REQ-PAY-5: The system shall provide users with a transaction history, including purchase date, amount, payment method, and receipt download.
+- REQ-PAY-6: Users shall receive email notifications for successful payments, failed transactions, and refunds.
+- REQ-PAY-7: The system shall support refunds and chargebacks in accordance with payment provider policies, with admin review and audit logging.
+- REQ-PAY-8: Token/credit consumption shall be tracked per meeting, with real-time balance updates and error handling for insufficient funds.
+- REQ-PAY-9: The system shall prevent duplicate charges and handle payment errors gracefully, providing clear user feedback.
+- REQ-PAY-10: Admins shall have a secure dashboard to view, manage, and audit all payment transactions and user balances.
+- REQ-PAY-11: All payment and user data shall comply with PCI DSS, GDPR, and other relevant regulations, with clear privacy and data retention policies.
+### User Modes & Data Persistence
+
+- REQ-USER-1: The system shall provide two user modes: Demo/Public (anonymous) and Paid (account-based).
+- REQ-USER-2: In Demo/Public mode, the application shall serve only static/demo content. No actual uploads, file processing, or progress tracking shall occur in this mode. All upload and meeting features are simulated with static examples.
+- REQ-USER-3: In Paid mode, authenticated users shall have upload progress, meeting history, and related data persist across browser refreshes and sessions.
+- REQ-USER-4: The system shall clearly communicate data retention and privacy policies for each mode.
+
+### Azure Storage & Persistent Data Setup
+
+- REQ-AZURE-1: The system shall use Azure Blob Storage for persistent storage of user-uploaded audio files and meeting artifacts in Paid mode.
+- REQ-AZURE-2: Each paid user shall have a logically isolated storage container or folder for their uploads and meeting data.
+- REQ-AZURE-3: The system shall use Azure SQL Database or Cosmos DB for persistent storage of user metadata, meeting history, and token balances.
+- REQ-AZURE-4: All storage operations shall use secure, authenticated access (e.g., Azure AD, SAS tokens) and follow least-privilege principles.
+- REQ-AZURE-5: Storage retention and cleanup policies shall be configurable and clearly communicated to users.
+
+### Payment & Token System Setup
+
+- REQ-PAY-SETUP-1: The system shall require a PCI-compliant payment provider account (e.g., Stripe) to be configured with API keys and webhook endpoints for payment events.
+- REQ-PAY-SETUP-2: The payment provider shall be configured to support token/credit package products, with pricing and package sizes managed via the provider dashboard.
+- REQ-PAY-SETUP-3: The backend shall implement secure webhook endpoints to receive payment confirmation, handle refunds, and update user token balances atomically.
+- REQ-PAY-SETUP-4: The system shall provide admin tools to reconcile payment transactions, manage token packages, and audit payment/token events.
+- REQ-PAY-SETUP-5: All payment and token operations shall be logged for audit and compliance purposes.
+### Accessibility Compliance
+
+- REQ-ACC-1: All interactive UI components (chips, buttons, progress bars, dialogs, etc.) shall include consistent accessibility attributes (e.g., ARIA labels, roles, tabIndex) to support screen readers and keyboard navigation.
+- REQ-ACC-2: The system shall follow WCAG 2.1 guidelines for color contrast, focus indicators, and semantic HTML structure.
 # Core Requirements for MeetingSummarizer API
 
 ## Functional Requirements
