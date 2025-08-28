@@ -1,240 +1,103 @@
-# Sprint 5: UI Polish & Production Ready
 
-**Sprint Duration:** 2-3 weeks  
-**Sprint Goal:** Polish user interface functionality and prepare application for production deployment  
-**Total Story Points:** 21  
-**Sprint Status:** 🔄 PLANNED
+# Sprint 5: User Accounts, Monetization, and Accessibility
 
 ## Sprint Overview
 
-Sprint 5 focuses on completing the user interface polish and production readiness features that were deferred from Sprint 4 to prioritize Azure batch transcription implementation. This sprint ensures a professional, fully-functional user experience ready for production deployment.
+Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implementing persistent upload progress and meeting history for paid users, integrating payment processing and token management, and ensuring accessibility compliance across the UI. This sprint lays the foundation for monetization and production readiness.
 
-### Strategic Priorities
-1. **UI Functionality** - Fix non-functional interface elements and improve user interactions
-2. **Upload Experience** - Resolve progress bar issues and enhance upload feedback
-3. **Speaker Management** - Automate cleanup processes to reduce manual overhead
-4. **Production Ready** - Hide development controls and prepare clean production interface
-5. **User Experience** - Ensure all interface components work seamlessly
+## Sprint Goals
+
+- Implement user mode selection and data persistence logic
+- Integrate secure payment processing and token/credit management
+- Provide persistent upload progress and meeting history for paid users
+- Ensure accessibility compliance for all interactive UI components
+
+## Progress Tracker
+
+| Story ID | Title                                              | Status        | Dependencies         |
+|----------|----------------------------------------------------|---------------|----------------------|
+| S5.1     | User Mode Selection & Data Persistence             | PENDING 🔄    | None                 |
+| S5.2     | Payment Processing & Token Management Integration  | PENDING 🔄    | S5.1                 |
+| S5.3     | Persistent Upload Progress & Meeting History (Paid)| PENDING 🔄    | S5.1, S5.2           |
+| S5.4     | Accessibility Compliance Enhancements              | PENDING 🔄    | None                 |
 
 ## User Stories
 
-### S5.1: UI Status Chips & Upload Progress Fix
-**Priority:** High  
-**Story Points:** 8  
-**Status:** 🔄 PLANNED  
-**Dependencies:** Current UI component system
+### Story S5.1: User Mode Selection & Data Persistence
+As a user, I want to choose between Demo/Public (static demo) and Paid (account-based) modes so that my experience matches my privacy and persistence needs.
 
-**As a** user reviewing transcript results and uploading files  
-**I want** functional status chips, working summary controls, and reliable upload progress feedback  
-**So that** I can easily navigate and interact with meeting results and track upload status accurately
+Acceptance Criteria:
+- System provides clear option to select Demo/Public or Paid mode at entry or sign-in
+- Demo/Public mode: application serves only static/demo content; no uploads, file processing, or progress tracking occurs
+- All upload and meeting features in Demo/Public mode are simulated with static examples
+- Paid mode: authenticated users have access to upload and meeting features, with persistent data
+- Data retention and privacy policies are clearly communicated for each mode
 
-#### Acceptance Criteria
-- [ ] Status chips in transcript results are functional (REQ-UI-1 to REQ-UI-5)
-- [ ] Summary section chips and buttons work properly (REQ-SUM-1 to REQ-SUM-5)
-- [ ] Upload progress bar displays accurate progress percentages (REQ-UI-6)
-- [ ] Upload progress animates smoothly without freezing or jumping (REQ-UI-7)
-- [ ] Clear visual feedback for each processing phase (REQ-UI-8)
-- [ ] Large file upload handling with proper timeouts (REQ-UI-9)
-- [ ] Meaningful status messages during upload progress (REQ-UI-10)
-- [ ] Upload progress persistence across page refreshes (REQ-UI-11)
-- [ ] Upload cancellation functionality with cleanup (REQ-UI-12)
-- [ ] Click handlers and state management implemented
-- [ ] Visual feedback for user interactions
-- [ ] Consistent styling with Material-UI theme
-
-#### Technical Implementation Notes
-- Fix click handlers in transcript result components
-- Implement proper state management for chip selections
-- Add loading states and user feedback
-- Update summary section component functionality
-- Fix upload progress bar calculation and animation
-- Implement proper upload phase tracking
-- Add upload cancellation and cleanup mechanisms
-- Ensure upload progress state persistence
-- Implement retry logic for failed uploads
-- Ensure accessibility compliance for interactive elements
-
-#### UI Components Affected
-- Transcript results status chips
-- Summary section navigation chips
-- Action buttons in summary interface
-- Upload progress bar and status indicators
-- Upload phase messaging and feedback
-- State indicators and loading feedback
+Dependencies: None
 
 ---
 
-### S5.2: Speaker Management Cleanup Automation
-**Priority:** Medium  
-**Story Points:** 8  
-**Status:** 🔄 PLANNED  
+### Story S5.2: Payment Processing & Token Management Integration
+As a paid user, I want to securely purchase and manage tokens/credits so that I can process meetings beyond the demo limits.
+
+Acceptance Criteria:
+- Integration with PCI-compliant payment provider (e.g., Stripe) for secure transactions
+- Users can purchase token/credit packages via secure payment flow
+- Payment process uses HTTPS and never exposes sensitive data to client
+- Purchased tokens/credits are atomically assigned to user account and reflected in balance
+- Users can view transaction history and download receipts
+- Email notifications for successful payments, failures, and refunds
+- Admin dashboard for payment and user balance management
+
+Dependencies: S5.1
 
 ---
 
-### S5.4: Demo Mode Implementation
-**Priority:** High  
-**Story Points:** 5  
-**Status:** 🔄 PLANNED  
-**Dependencies:** Backend transcription and summarization services
+### Story S5.3: Persistent Upload Progress & Meeting History (Paid Users)
+As a paid user, I want my upload progress and meeting history to persist across browser refreshes and sessions so that I can resume work and access past meetings.
 
-**As a** new or anonymous user  
-**I want** to try the application in demo mode with a short audio file  
-**So that** I can experience the core features before registering or purchasing
+Acceptance Criteria:
+- Upload progress and meeting history are saved to user account in backend (Paid mode only)
+- Data is restored on login or page refresh for paid users
+- Real-time updates to progress and history
+- Error handling for data sync failures
 
-#### Acceptance Criteria
-- [ ] Demo mode is available without registration or payment (REQ-DEM-1, REQ-DEM-6)
-- [ ] Demo mode enforces a 30-second audio limit (REQ-DEM-1)
-- [ ] Full transcription and basic summarization are available in demo mode (REQ-DEM-2)
-- [ ] Email sharing and advanced features are disabled in demo mode (REQ-DEM-3)
-- [ ] Speaker mapping is view-only in demo mode (REQ-DEM-4)
-- [ ] UI clearly indicates demo limitations and upgrade path (REQ-DEM-5)
-- [ ] Session-based tracking prevents repeated demo abuse (REQ-DEM-7)
-- [ ] Demo mode processing cost does not exceed $0.01 per usage (REQ-DEM-8)
-
-#### Technical Implementation Notes
-- Add a demo mode toggle and entry point on the landing page
-- Enforce audio duration and feature restrictions in backend and frontend
-- Display clear messaging about demo limitations and upgrade options
-- Track demo usage in session storage and block repeated abuse
-- Ensure demo mode is isolated from user accounts and persistent data
-
-#### UI Components Affected
-- Landing page (demo entry point)
-- File upload (duration validation)
-- Transcript and summary display (feature restrictions)
-- Speaker mapping (view-only mode)
-- Email sharing (disabled in demo)
-- Demo mode banners and notifications
-
----
-**Dependencies:** S5.1 (UI improvements for notifications)
-
-**As a** user managing speaker assignments  
-**I want** automatic cleanup of unassigned speakers  
-**So that** my speaker list stays relevant and uncluttered
-
-#### Acceptance Criteria
-- [ ] Automatic removal of speakers with zero assignments (REQ-SPK-25)
-- [ ] Speaker relevance validation after mapping changes (REQ-SPK-26)
-- [ ] Cleanup operations triggered after speaker reassignments (REQ-SPK-27)
-- [ ] User notification of cleanup actions (REQ-SPK-28)
-- [ ] Option to undo automatic cleanup within session (REQ-SPK-29)
-
-#### Technical Implementation Notes
-- Implement cleanup service in speaker management system
-- Add cleanup triggers to speaker assignment operations
-- Create undo mechanism with session-based tracking
-- Add user notifications for cleanup actions
-- Maintain audit trail of cleanup operations
-
-#### Business Logic Rules
-- Remove speakers with zero transcript segments assigned
-- Validate speaker relevance after any mapping change
-- Preserve speakers that were manually created by user
-- Allow undo within current session only
+Dependencies: S5.1, S5.2
 
 ---
 
-### S5.3: Development Controls Production Hiding
-**Priority:** Medium  
-**Story Points:** 3  
-**Status:** 🔄 PLANNED  
-**Dependencies:** None (configuration-based)
+### Story S5.4: Accessibility Compliance Enhancements
+As a user with accessibility needs, I want all interactive UI components to be fully accessible so that I can use the application with assistive technologies.
 
-**As a** production user  
-**I want** development-only controls hidden from the interface  
-**So that** I have a clean, professional user experience
+Acceptance Criteria:
+- All UI components (chips, buttons, progress bars, dialogs, etc.) include ARIA labels, roles, and tabIndex
+- UI follows WCAG 2.1 guidelines for color contrast, focus indicators, and semantic HTML
+- Keyboard navigation is supported throughout the app
 
-#### Acceptance Criteria
-- [ ] Development debug panels hidden in production (REQ-DEV-1)
-- [ ] Test data generators removed from production UI (REQ-DEV-2)
-- [ ] Console logging reduced to errors only in production (REQ-DEV-3)
-- [ ] Development-only routes blocked in production (REQ-DEV-4)
-- [ ] Environment-based feature toggles implemented (REQ-DEV-5 to REQ-DEV-7)
+Dependencies: None
 
-#### Technical Implementation Notes
-- Implement environment-based conditional rendering
-- Create production build configuration
-- Add feature toggle system for development tools
-- Update build process to exclude development components
-- Configure logging levels by environment
+---
 
-#### Environment Controls
-- Hide debug panels in production builds
-- Remove test data generation buttons
-- Block development-only API endpoints
-- Implement clean error handling for production users
+## Integration Notes
 
-## Sprint Progress Tracker
-
-### Overall Progress: 0% Complete (0/3 stories) - 0/21 Story Points Complete
-
-| Story | Title | Story Points | Status | Progress |
-|-------|--------|-------------|---------|----------|
-| S5.1 | UI Status Chips & Upload Progress Fix | 8 | 🔄 PLANNED | 0% |
-| S5.2 | Speaker Management Cleanup Automation | 8 | 🔄 PLANNED | 0% |
-| S5.3 | Development Controls Production Hiding | 3 | 🔄 PLANNED | 0% |
-
-## Technical Dependencies
-
-### Internal Dependencies
-- Sprint 4 Azure transcription functionality (for stable backend)
-- Current UI component architecture
-- Session-based speaker management system
-- React/TypeScript frontend components
-- Material-UI design system
-
-### External Dependencies
-- Production deployment environment configuration
-- Build system for environment-based feature toggles
-
-## Definition of Done
-
-Each story must meet the following criteria:
-- [ ] All acceptance criteria completed
-- [ ] Unit tests written and passing
-- [ ] Integration tests passing
-- [ ] Code reviewed and approved
-- [ ] Documentation updated
-- [ ] Deployed to staging environment
-- [ ] User acceptance testing completed
-
-## Risk Assessment
-
-### Medium Risk
-- **UI State Management** - Complex interactions with existing components
-- **Speaker Cleanup Logic** - Risk of unintended data loss
-
-### Low Risk
-- **Environment Configuration** - Well-understood deployment patterns
-- **Production Hiding** - Simple conditional rendering implementation
+- Azure AD B2C setup required for Paid mode authentication
+- Stripe (or equivalent) integration for payment processing
+- Backend API endpoints for token management, upload progress, and meeting history
+- Accessibility improvements may require updates to frontend component library usage
 
 ## Success Metrics
 
-### Primary Metrics
-- **UI Functionality** - Zero non-functional interface elements
-- **Speaker Management Efficiency** - Reduced manual cleanup actions required
-- **Production Experience** - Clean interface with no development artifacts
+- User mode selection and data persistence work as specified for both modes
+- Payment processing is secure, reliable, and user-friendly
+- Paid users see persistent upload progress and meeting history
+- Accessibility audits pass with no critical issues
 
-### Secondary Metrics
-- **User Satisfaction** - Improved interaction feedback and responsiveness
-- **Deployment Readiness** - Successful production environment preparation
-- **Code Quality** - Clean separation of development and production features
+## Foundation for Next Sprint
 
-## Sprint Retrospective (To be completed)
+- Enables advanced meeting features for paid users
+- Provides infrastructure for future monetization and reporting
+- Establishes accessibility baseline for all future UI work
 
-### What Went Well
-- TBD after sprint completion
+## Technical Rationale
 
-### What Could Be Improved
-- TBD after sprint completion
-
-### Action Items for Next Sprint
-- TBD after sprint completion
-
----
-
-**Sprint 5 Created:** August 23, 2025  
-**Sprint Dependencies:** Sprint 4 completion (Azure batch transcription)  
-**Next Sprint Planning:** TBD after Sprint 5 completion  
-**Roadmap Reference:** Requirements Analysis Roadmap - Phase 1: Foundation Stability
+These stories are chosen to enable monetization, user account management, and accessibility, which are critical for production launch and compliance. Dependencies are minimized to allow parallel work on accessibility while core account/payment features are implemented.
