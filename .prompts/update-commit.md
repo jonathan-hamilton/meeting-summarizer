@@ -11,11 +11,12 @@ This prompt handles the complete workflow for updating sprint documentation and 
 - Before executing any git operations, Step 1 needs to be complete
 - Run `git status` to show current changes
 
-### Step 2: Update Sprint Documentation
+
+### Step 2: Update Sprint Documentation and Requirements Roadmap
 
 - Use results of git changes and any changed files
 - Identify the current story being worked on from context
-- Before making updates to documentation, present propsed changes to the User for confirmation
+- Before making updates to documentation, present proposed changes to the User for confirmation
 - Update technical-debt.md if applicable
 - Update the appropriate `docs/sprint_*_stories.md` file
 - Update technical-improvement.md if applicable
@@ -25,6 +26,7 @@ This prompt handles the complete workflow for updating sprint documentation and 
 - Document any technical notes or deviations from original plan
 - Update the technical-debt.md and technical-improvements.md where/if appropriate
 - Update the README.md file in the root directory
+- Update `docs/requirements/requirements-roadmap.md` to reflect any changes to requirements (implemented or planned)
 - Present changes to user for confirmation to update documentation
 
 ### Step 3: Commit with Smart Message
