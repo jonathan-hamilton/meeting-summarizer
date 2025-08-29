@@ -39,7 +39,7 @@ As a user, I want to experience the app in Demo mode with a guided tour and simu
 - In Demo mode, the AppBar is visually distinct (different color) and displays "Demo" next to the title. The AppBar color and label must be clearly different from Paid mode.
 - A prominent "Sign In" button is present in the AppBar, replacing the previous toggle. In Paid mode, this becomes a "Sign Out" button.
 - Clicking "Sign In" opens a sign-in dialog for Paid mode. Signing in transitions the user to Paid mode, enabling real uploads and persistent data. The demo session is not preserved after sign-in.
-- Demo mode provides a step-by-step interactive Tour using tooltips, popovers, or dialogs, guiding users through the main features and workflow. The Tour always starts automatically when the user lands on the /demo page.
+- Demo mode provides a step-by-step interactive Tour using Material-UI components (Popovers, Dialogs, Tooltips), guiding users through the main features and workflow. The Tour always starts automatically when the user lands on the /demo page.
 - The Tour is closable at any time, and users can navigate forward/backward through Tour steps. All demo features are only available through the guided tour.
 - Demo mode simulates the full workflow: upload (via a button, not file picker), progress, speaker mapping, transcript editing, summary generation, and email sharing, all using static/mock data only.
 - All features are interactive: users can edit speaker mappings, reassign transcript segments, edit the summary, and use the email dialog, but all actions are simulated and operate on static/mock data.
@@ -78,11 +78,12 @@ As a user, I want to experience the app in Demo mode with a guided tour and simu
 - React Router DOM shall be used for client-side routing between demo and production modes
 
 **Guided Tour Implementation:**
-- Tour system shall use React Joyride or equivalent library for tooltip-based guided experience
+- Tour system shall use custom Material-UI components (Popovers, Dialogs, Tooltips) for guided experience
+- Tour state shall be managed by Zustand demo store with configurable steps
 - Tour shall have configurable steps covering: file upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing
 - Tour progress shall be tracked in demo state but not persisted between sessions
-- Tour shall include skip, previous, next, and close functionality
-- Tour steps shall highlight specific UI elements and provide contextual information
+- Tour shall include skip, previous, next, and close functionality implemented with Material-UI buttons
+- Tour steps shall highlight specific UI elements using Material-UI Backdrop, Popovers, and positioning
 - Tour completion shall be tracked for analytics (when implemented)
 
 Dependencies: None
