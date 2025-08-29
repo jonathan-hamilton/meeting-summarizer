@@ -395,8 +395,13 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const formatFileSize = useCallback((bytes: number): string => {
     const sizes = ["Bytes", "KB", "MB", "GB"];
     if (bytes === 0) return "0 Bytes";
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
+    const i = Math.floor(Math.log(bytes) / Math.log(1000));
+    let value = bytes / Math.pow(1000, i);
+    // Always show two decimals for MB
+    if (sizes[i] === "MB") {
+      return value.toFixed(2) + " MB";
+    }
+    return Math.round(value * 100) / 100 + " " + sizes[i];
   }, []);
 
   const copyToClipboard = useCallback(
@@ -548,8 +553,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               />
             )}
             
-            {/* Session Status Display */}
-            <SessionIndicator status={privacyControls.sessionStatus} />
           </Stack>
         </Box>
 

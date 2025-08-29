@@ -25,7 +25,9 @@ import {
   Psychology,
   RadioButtonUnchecked,
 } from "@mui/icons-material";
-import { apiService } from "../services/apiService";
+import realApiService from "../services/apiService";
+import mockApiService from "../services/apiService.mock";
+import { useEnvironment } from "../contexts/EnvironmentProvider";
 import type { TranscriptionResponse } from "../types";
 
 interface FileUploadProps {
@@ -79,6 +81,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
 }) => {
+  const { isProductionMode } = useEnvironment();
+  const apiService = isProductionMode ? realApiService : mockApiService;
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -89,11 +93,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const formatTime = useCallback((seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    
     if (minutes < 1) {
       return `${remainingSeconds}s`;
     }
-    
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   }, []);
 
@@ -106,7 +108,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
             : f
         )
       );
-
       try {
         const response = await apiService.uploadFile(
           uploadFile.file,
@@ -116,7 +117,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
             );
           }
         );
-
         setUploadFiles((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id
@@ -129,14 +129,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
               : f
           )
         );
-
         if (onTranscriptionComplete && response.data) {
           onTranscriptionComplete(response.data);
         }
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error ? error.message : "Upload failed";
-
         setUploadFiles((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id
@@ -150,7 +148,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         );
       }
     },
-    [onTranscriptionComplete]
+    [onTranscriptionComplete, apiService]
   );
 
   const onDrop = useCallback(
@@ -379,13 +377,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     </Box>
 
                     {/* Uploaded file size */}
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 1 }}
-                    >
-                      Uploaded file size: {formatFileSize(uploadFile.file.size)}
-                    </Typography>
 
                     {/* Workflow Progress Stepper */}
                     <Box sx={{ mt: 2 }}>
