@@ -24,50 +24,121 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 | S5.2     | Payment Processing & Token Management Integration  | PENDING 🔄    | S5.1                 |
 | S5.3     | Persistent Upload Progress & Meeting History (Paid)| PENDING 🔄    | S5.1, S5.2           |
 | S5.4     | Accessibility Compliance Enhancements              | PENDING 🔄    | None                 |
+| S5.5     | Automatic WAV Conversion for Audio Uploads         | TESTING 🧪    | None                 |
 
 ## User Stories
 
 
 ### Story S5.1: User Mode Selection, Sign-In, and Demo Mode
+
 As a user, I want to experience the app in Demo mode with a guided tour and simulated workflow, and be able to sign in to access Paid mode with real uploads and persistent data.
 
 Acceptance Criteria:
-- The application defaults to Demo mode for users who have not signed in
-- In Demo mode, the AppBar is visually distinct and displays "Demo" in the title
-- A prominent "Sign In" button is present in the AppBar, replacing the previous toggle
-- Clicking "Sign In" opens a sign-in dialog for Paid mode
-- Demo mode provides a step-by-step interactive Tour using tooltips, guiding users through the main features and workflow
-- The Tour is closable at any time, and users can navigate forward/backward through Tour steps
-- Demo mode simulates the full workflow: upload (via a button), progress, speaker mapping, transcript editing, summary generation, and email sharing
-- All features are interactive: users can edit speaker mappings, reassign transcript segments, edit the summary, and use the email dialog
-- All actions in Demo mode operate on static/mock data; no real uploads, API calls, or emails are performed
-- Tooltips and UI messaging clearly indicate that all actions are simulated and no real data is processed or sent
-- Upload is simulated: clicking "Upload" triggers a mock upload/progress sequence
-- Speaker mapping and transcript editing are fully enabled for demonstration
-- Summary generation and email sharing are simulated; sending an email shows a mock confirmation
-- No limits are imposed on Demo mode usage per session
-- The "Sign In" button is always visible in Demo mode
-- Signing in transitions the user to Paid mode, enabling real uploads and persistent data
-- The Tour and UI make the distinction between Demo and Paid modes clear; no banners or forced prompts are required
-- Demo mode usage, Tour start/completion, and "Sign In" button clicks are tracked with a privacy-friendly analytics tool
-- Demo mode meets all accessibility and mobile-responsiveness standards of the main app
-- Demo mode content and workflow are implemented in client code, using static/mock data
-- Demo mode is available in all environments (dev, staging, prod)
+- The application defaults to Demo mode for users who have not signed in.
+- Demo mode is always accessible at /demo, even if the user is signed in.
+- In Demo mode, the AppBar is visually distinct (different color) and displays "Demo" next to the title. The AppBar color and label must be clearly different from Paid mode.
+- A prominent "Sign In" button is present in the AppBar, replacing the previous toggle. In Paid mode, this becomes a "Sign Out" button.
+- Clicking "Sign In" opens a sign-in dialog for Paid mode. Signing in transitions the user to Paid mode, enabling real uploads and persistent data. The demo session is not preserved after sign-in.
+- Demo mode provides a step-by-step interactive Tour using tooltips, popovers, or dialogs, guiding users through the main features and workflow. The Tour always starts automatically when the user lands on the /demo page.
+- The Tour is closable at any time, and users can navigate forward/backward through Tour steps. All demo features are only available through the guided tour.
+- Demo mode simulates the full workflow: upload (via a button, not file picker), progress, speaker mapping, transcript editing, summary generation, and email sharing, all using static/mock data only.
+- All features are interactive: users can edit speaker mappings, reassign transcript segments, edit the summary, and use the email dialog, but all actions are simulated and operate on static/mock data.
+- No real uploads, API calls, or emails are performed in Demo mode. Demo mode is strictly static and does not persist any data or interact with the backend.
+- Tooltips and UI messaging clearly indicate that all actions are simulated and no real data is processed or sent.
+- Upload is simulated: clicking "Upload" triggers a mock upload/progress sequence. No file picker or real upload is available in Demo mode.
+- Speaker mapping and transcript editing are fully enabled for demonstration, but only affect static/mock data.
+- Summary generation and email sharing are simulated; sending an email shows a mock confirmation dialog only.
+- No limits are imposed on Demo mode usage per session.
+- The "Sign In" button is always visible in Demo mode. Clicking it opens a dialog to sign in and switch to Paid mode.
+- The Tour and UI make the distinction between Demo and Paid modes clear; no banners or forced prompts are required, but visual cues (AppBar color, label, tooltips) must be present.
+- Demo mode usage, Tour start/completion, and "Sign In" button clicks are tracked with a privacy-friendly analytics tool. Analytics implementation may be deferred until after initial launch.
+- Demo mode meets all accessibility and mobile-responsiveness standards of the main app.
+- Demo mode content and workflow are implemented in client code, using static/mock data. Demo and Paid modes must have completely separate state management (e.g., Zustand stores), and demo logic must not leak into paid mode. Duplication is preferred over conditional logic for demo/paid separation.
+- Demo mode is available in all environments (dev, staging, prod).
 
 Dependencies: None
 
 ---
 
 ### Story S5.5: Automatic WAV Conversion for Audio Uploads
+
+**Status: TESTING 🧪 (Implementation Complete - Testing Required)**
+
 As a user uploading audio files, I want the system to automatically convert any non-WAV audio file to WAV format before transcription, so that my files are always compatible and transcription quality is maximized.
 
-Acceptance Criteria:
+**Acceptance Criteria:**
 - All uploaded audio files in non-WAV formats (e.g., MP3, M4A, FLAC, OGG, WEBM) are automatically converted to WAV format before being sent to the transcription service.
 - Conversion uses a reliable tool (e.g., FFmpeg or equivalent library) and produces WAV files compatible with Azure Speech Services (PCM, 16kHz, mono preferred).
 - If conversion fails, the user receives a clear error message and guidance for supported formats.
 - Conversion operations and errors are logged for monitoring and debugging.
 - No unnecessary conversion is performed if the file is already a valid WAV.
 - The system handles conversion efficiently, even for large files, without excessive memory usage.
+
+**Implementation Status:**
+✅ **Backend Audio Conversion Logic** - Implemented in `AzureConversationTranscriptionService`
+- FFmpeg integration for M4A, MP3, FLAC, OGG, WEBM → WAV conversion
+- Automatic format detection and conditional conversion
+- Error handling and logging for conversion failures
+- Memory-efficient temporary file management
+- Azure Speech Services compatible output (PCM 16kHz mono)
+
+✅ **M4A File Support** - Successfully tested and working
+- M4A files now convert properly to WAV format
+- Fixed previous `SPXERR_INVALID_HEADER` errors
+- Proper cleanup of temporary files
+
+🧪 **Testing Required - All Audio Formats**
+The following comprehensive testing must be completed before marking story as COMPLETE:
+
+**Required Test Cases:**
+
+1. **Format Support Testing:**
+   - [ ] MP3 files (various bitrates: 128kbps, 192kbps, 320kbps)
+   - [x] M4A files (AAC encoded) - ✅ TESTED AND WORKING
+   - [ ] FLAC files (lossless compression)
+   - [ ] OGG files (Vorbis encoded)
+   - [ ] WEBM files (WebM audio)
+   - [ ] WAV files (should pass through without conversion)
+
+2. **Error Handling Testing:**
+   - [ ] Corrupted audio files
+   - [ ] Unsupported audio formats
+   - [ ] Empty files
+   - [ ] Very large files (>500MB)
+   - [ ] Files with special characters in names
+
+3. **Performance Testing:**
+   - [ ] Conversion time measurement for each format
+   - [ ] Memory usage during conversion
+   - [ ] Concurrent upload handling
+   - [ ] Large file streaming conversion
+
+4. **Quality Testing:**
+   - [ ] Audio quality preservation after conversion
+   - [ ] Speaker separation maintained
+   - [ ] Transcription accuracy comparison (original vs converted)
+
+5. **Integration Testing:**
+   - [ ] End-to-end workflow: Upload → Convert → Transcribe → Display
+   - [ ] Error messages displayed properly in UI
+   - [ ] Progress indicators during conversion
+   - [ ] Log file verification for all operations
+
+**Testing Approach:**
+- Use sample audio files from `sample-audio-files/` directory
+- Create test files for each format if not available
+- Test with both short (30s) and longer (5-10min) audio files
+- Verify Azure Speech Services compatibility for all converted files
+- Monitor `api-debug.log` for proper logging and error handling
+
+**Completion Criteria:**
+- All 6 audio formats successfully convert and transcribe
+- Error handling works properly for edge cases
+- Performance is acceptable for production use
+- No memory leaks or resource issues
+- All logs show proper conversion tracking
+
+Dependencies: None
 
 
 ### Story S5.2: Payment Processing & Token Management Integration

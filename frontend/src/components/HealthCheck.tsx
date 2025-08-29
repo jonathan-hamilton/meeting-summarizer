@@ -11,7 +11,9 @@ import {
   Stack,
 } from "@mui/material";
 import { Refresh, CheckCircle, Error } from "@mui/icons-material";
-import apiService from "../services/apiService";
+import realApiService from "../services/apiService";
+import mockApiService from "../services/apiService.mock";
+import { useEnvironment } from "../contexts/EnvironmentProvider";
 import type {
   HealthStatus,
   DetailedHealthStatus,
@@ -27,11 +29,12 @@ export const HealthCheck: React.FC = () => {
     error: null,
   });
 
+  const { isProductionMode } = useEnvironment();
+  const apiService = isProductionMode ? realApiService : mockApiService;
+
   const fetchHealthData = async () => {
     setLoading({ isLoading: true, error: null });
-
     try {
-      // Fetch basic health
       const basicResponse = await apiService.getHealth();
       if (basicResponse.success) {
         setBasicHealth(basicResponse.data || null);
@@ -39,8 +42,6 @@ export const HealthCheck: React.FC = () => {
         const message = basicResponse.message || "Failed to fetch basic health";
         throw new globalThis.Error(message);
       }
-
-      // Fetch detailed health
       const detailedResponse = await apiService.getDetailedHealth();
       if (detailedResponse.success) {
         setDetailedHealth(detailedResponse.data || null);
@@ -58,7 +59,6 @@ export const HealthCheck: React.FC = () => {
       setLoading({ isLoading: false, error: errorMessage });
       return;
     }
-
     setLoading({ isLoading: false, error: null });
   };
 
@@ -109,7 +109,7 @@ export const HealthCheck: React.FC = () => {
               <strong>Connection Error:</strong> {loading.error}
             </Typography>
             <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-              Make sure the API is running at: {apiService.getBaseURL()}
+              {`Make sure the API is running at: ${apiService.getBaseURL()}`}
             </Typography>
           </Alert>
         )}

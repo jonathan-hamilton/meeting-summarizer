@@ -1,34 +1,12 @@
 /**
- * Transcript Simport {
-  Person,
-  Check,
-  Schedule,
-  SwapHoriz,
-} from "@mui/icons-material";egment Component with Reassignment Capability (S3.1)
+ * Transcript Speaker Segment Component with Reassignment Capability (S3.1)
  * Allows users to reassign transcript segments to different speakers
  */
 
 import React, { useState, useMemo, useCallback } from "react";
-import {
-  Box,
-  Chip,
-  IconButton,
-  Typography,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Tooltip,
-  Alert,
-  Snackbar,
-  Stack,
-} from "@mui/material";
-import {
-  Person,
-  Check,
-  Schedule,
-  SwapHoriz,
-} from "@mui/icons-material";
+import { Box, Chip, IconButton, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Alert, Snackbar, Stack } from "@mui/material";
+import { Person, Check, Schedule, SwapHoriz } from "@mui/icons-material";
+import { useEnvironment } from "../contexts/EnvironmentProvider";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
@@ -64,10 +42,10 @@ export const TranscriptSpeakerSegment: React.FC<
   isTranscriptStructureInvalidated = false,
 }) => {
   const { isLoading } = useSessionManagement();
-
   // Use centralized store for speaker management (fixed infinite loop)
   const storeMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
+  const { isProductionMode } = useEnvironment();
   
   // Get ALL detected speakers from original segments for reassignment options
   const originalDetectedSpeakers = useMemo(() => {
@@ -101,9 +79,6 @@ export const TranscriptSpeakerSegment: React.FC<
     return allStoreDetectedSpeakers.length > 0 ? allStoreDetectedSpeakers : [];
   }, [originalDetectedSpeakers, allStoreDetectedSpeakers]);
 
-  /**
-   * Get all available speaker options
-   */
   const getSpeakerOptions = useMemo((): SpeakerOption[] => {
     const options: SpeakerOption[] = [];
 
@@ -148,7 +123,7 @@ export const TranscriptSpeakerSegment: React.FC<
           (speakerId.startsWith('Speaker ') || speakerId.match(/^Speaker\s*\d+$/i));
         
         if (isLikelyDeleted) {
-          displayName = "Unassigned";
+          displayName = isProductionMode ? "Unassigned" : speakerId;
         } else {
           // Probably just not initialized yet, show the speaker ID
           displayName = speakerId;
@@ -182,7 +157,6 @@ export const TranscriptSpeakerSegment: React.FC<
       });
   }, [effectiveMappings, effectiveDetectedSpeakers, segment.speaker]);
 
-  // Memoize current speaker name and effective speaker ID
   const currentSpeakerInfo = useMemo(() => {
     // For individual segments, use the actual segment.speaker (which gets updated by parent component)
     // Session overrides are only used for global speaker-to-speaker reassignments, not individual segments
@@ -220,7 +194,7 @@ export const TranscriptSpeakerSegment: React.FC<
         (effectiveSpeakerId.startsWith('Speaker ') || effectiveSpeakerId.match(/^Speaker\s*\d+$/i));
       
       if (isLikelyDeleted) {
-        displayName = "Unassigned";
+  displayName = isProductionMode ? "Unassigned" : effectiveSpeakerId;
       } else {
         // Probably just not initialized yet, show the speaker ID
         displayName = effectiveSpeakerId;

@@ -23,7 +23,8 @@ import { HelpDialog } from "./components/HelpDialog";
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
-import apiService from "./services/apiService";
+import realApiService from "./services/apiService";
+import mockApiService from "./services/apiService.mock";
 import { sessionManager } from "./services/sessionManager";
 
 import type { TranscriptionResponse } from "./types";
@@ -56,6 +57,8 @@ const AppContent: React.FC = () => {
 
   // Update OpenAI state based on environment mode
   const [isOpenAIEnabled, setIsOpenAIEnabled] = useState<boolean | null>(null);
+  // Use mock or real API service based on environment toggle
+  const apiService = isProductionMode ? realApiService : mockApiService;
 
   // State for forcing Privacy Policy dialog (for testing in dev mode)
   const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
@@ -109,15 +112,13 @@ const AppContent: React.FC = () => {
   // Sync OpenAI state with environment mode
   useEffect(() => {
     if (isProductionMode) {
-      // In production mode, try to enable real API calls
       setIsOpenAIEnabled(true);
-      apiService.toggleOpenAI(true).catch(() => {
+      realApiService.toggleOpenAI(true).catch(() => {
         console.warn('Failed to enable real API calls in production mode');
       });
     } else {
-      // In development mode, use mocked API calls
       setIsOpenAIEnabled(false);
-      apiService.toggleOpenAI(false).catch(() => {
+      mockApiService.toggleOpenAI(false).catch(() => {
         console.warn('Failed to enable mock API calls in development mode');
       });
     }

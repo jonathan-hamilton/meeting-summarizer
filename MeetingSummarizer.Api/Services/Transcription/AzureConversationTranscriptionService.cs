@@ -3,6 +3,8 @@ using Microsoft.CognitiveServices.Speech.Audio;
 using Microsoft.CognitiveServices.Speech.Transcription;
 using Microsoft.Extensions.Options;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Services.FileProcessing;
+using System.Diagnostics;
 
 namespace MeetingSummarizer.Api.Services.Transcription;
 
@@ -14,14 +16,17 @@ public class AzureConversationTranscriptionService : ITranscriptionService
 {
     private readonly AzureSpeechOptions _options;
     private readonly ILogger<AzureConversationTranscriptionService> _logger;
+    private readonly IFilePreProcessingService _filePreProcessingService;
     private readonly SpeechConfig _speechConfig;
 
     public AzureConversationTranscriptionService(
         IOptions<AzureSpeechOptions> options,
-        ILogger<AzureConversationTranscriptionService> logger)
+        ILogger<AzureConversationTranscriptionService> logger,
+        IFilePreProcessingService filePreProcessingService)
     {
         _options = options.Value;
         _logger = logger;
+        _filePreProcessingService = filePreProcessingService;
 
         if (!_options.IsValid())
         {
@@ -69,6 +74,99 @@ public class AzureConversationTranscriptionService : ITranscriptionService
     {
         var result = await TranscribeAudioWithMetadataAsync(audioStream, fileName, cancellationToken);
         return result.Text;
+    }
+
+    /// <summary>
+    /// Convert audio stream to WAV format compatible with Azure Speech Services
+    /// </summary>
+    private async Task<string> ConvertAudioToWavAsync(
+        Stream audioStream, 
+        string fileName, 
+        string correlationId, 
+        CancellationToken cancellationToken)
+    {
+        var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
+        
+        // If already WAV, just save it directly
+        if (fileExtension == ".wav")
+        {
+            var tempWavPath = Path.GetTempFileName() + ".wav";
+            audioStream.Position = 0;
+            using (var fileStream = new FileStream(tempWavPath, FileMode.Create))
+            {
+                await audioStream.CopyToAsync(fileStream, cancellationToken);
+            }
+            
+            _logger.LogInformation("Using existing WAV file [CorrelationId: {CorrelationId}]", correlationId);
+            
+            return tempWavPath;
+        }
+        
+        // Convert non-WAV files using FFmpeg
+        string? tempInputPath = null;
+        string? tempOutputPath = null;
+        
+        try
+        {
+            // Save original file
+            tempInputPath = Path.Combine(Path.GetTempPath(), $"msio_input_{Guid.NewGuid()}{fileExtension}");
+            audioStream.Position = 0;
+            using (var fs = new FileStream(tempInputPath, FileMode.Create, FileAccess.Write))
+            {
+                await audioStream.CopyToAsync(fs, cancellationToken);
+            }
+            
+            // Prepare output path
+            tempOutputPath = Path.Combine(Path.GetTempPath(), $"msio_output_{Guid.NewGuid()}.wav");
+            
+            // Run FFmpeg to convert to WAV (PCM 16kHz mono)
+            var ffmpegArgs = $"-y -i \"{tempInputPath}\" -ar 16000 -ac 1 -acodec pcm_s16le -f wav -map_metadata -1 \"{tempOutputPath}\"";
+            
+            _logger.LogInformation("Converting audio to WAV [CorrelationId: {CorrelationId}] - From: {Extension}",
+                correlationId, fileExtension);
+            
+            var proc = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "ffmpeg",
+                    Arguments = ffmpegArgs,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            
+            proc.Start();
+            string stdOut = await proc.StandardOutput.ReadToEndAsync();
+            string stdErr = await proc.StandardError.ReadToEndAsync();
+            proc.WaitForExit();
+            
+            if (proc.ExitCode != 0)
+            {
+                _logger.LogError("FFmpeg conversion failed [CorrelationId: {CorrelationId}] - Error: {Error}",
+                    correlationId, stdErr);
+                throw new InvalidOperationException($"Audio conversion failed: {stdErr}");
+            }
+            
+            if (!File.Exists(tempOutputPath))
+            {
+                throw new InvalidOperationException("Converted WAV file was not created");
+            }
+            
+            _logger.LogInformation("Audio conversion successful [CorrelationId: {CorrelationId}]", correlationId);
+            
+            return tempOutputPath;
+        }
+        finally
+        {
+            // Clean up input file
+            if (tempInputPath != null && File.Exists(tempInputPath))
+            {
+                try { File.Delete(tempInputPath); } catch { }
+            }
+        }
     }
 
     /// <summary>
@@ -121,19 +219,12 @@ public class AzureConversationTranscriptionService : ITranscriptionService
 
         try
         {
-            // Save stream to temporary file for Azure Speech SDK
-            var tempFilePath = Path.GetTempFileName() + ".wav";
+            // Convert audio to WAV format if needed
+            var tempFilePath = await ConvertAudioToWavAsync(audioStream, fileName, correlationId, cancellationToken);
             
             try
             {
-                // Write stream to temporary file
-                audioStream.Position = 0;
-                using (var fileStream = new FileStream(tempFilePath, FileMode.Create))
-                {
-                    await audioStream.CopyToAsync(fileStream, cancellationToken);
-                }
-
-                _logger.LogInformation("Created temporary audio file [CorrelationId: {CorrelationId}] - Path: {TempPath}",
+                _logger.LogInformation("Using converted audio file [CorrelationId: {CorrelationId}] - Path: {TempPath}",
                     correlationId, tempFilePath);
 
                 // Configure audio input from file
@@ -173,14 +264,12 @@ public class AzureConversationTranscriptionService : ITranscriptionService
 
                 conversationTranscriber.SessionStarted += (s, e) =>
                 {
-                    _logger.LogInformation("Conversation transcription session started [CorrelationId: {CorrelationId}] - SessionId: {SessionId}",
-                        correlationId, e.SessionId);
+                    _logger.LogDebug("Conversation transcription session started [CorrelationId: {CorrelationId}]", correlationId);
                 };
 
                 conversationTranscriber.SessionStopped += (s, e) =>
                 {
-                    _logger.LogInformation("Conversation transcription session stopped [CorrelationId: {CorrelationId}] - SessionId: {SessionId}",
-                        correlationId, e.SessionId);
+                    _logger.LogDebug("Conversation transcription session stopped [CorrelationId: {CorrelationId}]", correlationId);
                     transcriptionComplete.TrySetResult(true);
                 };
 

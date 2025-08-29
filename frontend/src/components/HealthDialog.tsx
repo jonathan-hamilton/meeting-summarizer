@@ -24,7 +24,9 @@ import {
   Timer,
   Storage,
 } from "@mui/icons-material";
-import apiService from "../services/apiService";
+import realApiService from "../services/apiService";
+import mockApiService from "../services/apiService.mock";
+import { useEnvironment } from "../contexts/EnvironmentProvider";
 import type {
   HealthStatus,
   DetailedHealthStatus,
@@ -48,11 +50,12 @@ export const HealthDialog: React.FC<HealthDialogProps> = ({
     error: null,
   });
 
+  const { isProductionMode } = useEnvironment();
+  const apiService = isProductionMode ? realApiService : mockApiService;
+
   const fetchHealthData = async () => {
     setLoading({ isLoading: true, error: null });
-
     try {
-      // Fetch basic health
       const basicResponse = await apiService.getHealth();
       if (basicResponse.success) {
         setBasicHealth(basicResponse.data || null);
@@ -60,8 +63,6 @@ export const HealthDialog: React.FC<HealthDialogProps> = ({
         const message = basicResponse.message || "Failed to fetch basic health";
         throw new globalThis.Error(message);
       }
-
-      // Fetch detailed health
       const detailedResponse = await apiService.getDetailedHealth();
       if (detailedResponse.success) {
         setDetailedHealth(detailedResponse.data || null);
