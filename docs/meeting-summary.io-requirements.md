@@ -80,11 +80,11 @@
 
 ### Guided Tour System
 
-- REQ-TOUR-1: Tour system shall use React Joyride or equivalent library for tooltip-based guided experience.
+- REQ-TOUR-1: Tour system shall use custom Material-UI components (Popovers, Dialogs, Tooltips) for guided experience.
 - REQ-TOUR-2: Tour shall have configurable steps covering: file upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing.
 - REQ-TOUR-3: Tour progress shall be tracked in demo state but not persisted between sessions.
-- REQ-TOUR-4: Tour shall include skip, previous, next, and close functionality.
-- REQ-TOUR-5: Tour steps shall highlight specific UI elements and provide contextual information.
+- REQ-TOUR-4: Tour shall include skip, previous, next, and close functionality implemented with Material-UI buttons.
+- REQ-TOUR-5: Tour steps shall highlight specific UI elements using Material-UI Backdrop, Popovers, and positioning.
 - REQ-TOUR-6: Tour completion shall be tracked for analytics (when implemented).
 
 - REQ-USER-1: The system shall provide two user modes: Demo/Public (anonymous) and Paid (account-based).
