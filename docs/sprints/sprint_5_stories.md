@@ -33,7 +33,7 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 
 As a user, I want to experience the app in Demo mode with a guided tour and simulated workflow, and be able to sign in to access Paid mode with real uploads and persistent data.
 
-Acceptance Criteria:
+**Acceptance Criteria:**
 - The application defaults to Demo mode for users who have not signed in.
 - Demo mode is always accessible at /demo, even if the user is signed in.
 - In Demo mode, the AppBar is visually distinct (different color) and displays "Demo" next to the title. The AppBar color and label must be clearly different from Paid mode.
@@ -55,6 +55,35 @@ Acceptance Criteria:
 - Demo mode meets all accessibility and mobile-responsiveness standards of the main app.
 - Demo mode content and workflow are implemented in client code, using static/mock data. Demo and Paid modes must have completely separate state management (e.g., Zustand stores), and demo logic must not leak into paid mode. Duplication is preferred over conditional logic for demo/paid separation.
 - Demo mode is available in all environments (dev, staging, prod).
+
+**Development Environment Support:**
+- In local development environments (`import.meta.env.DEV === true`), a development/production toggle shall remain available for developers to test both mock and real API calls
+- The development toggle shall be hidden in deployed environments (staging/production)
+- Demo mode shall be available in all environments (dev, staging, prod) independent of the development toggle
+- The development toggle only affects API behavior (mock vs real), while demo/production modes affect the entire user experience and routing
+
+**Routing & Navigation:**
+- Default route `/` shall redirect users to `/demo` for the demo experience
+- Demo mode shall be accessible at `/demo` with complete application functionality using static data
+- Production mode shall be accessible at `/app` after successful authentication
+- Demo mode users shall transition to `/app` after successful sign-in authentication
+- All routes shall support direct navigation and browser refresh without loss of state
+
+**Technical Architecture:**
+- Demo and Production modes shall use completely separate component trees (DemoApp vs ProductionApp)
+- Demo components shall be duplicated rather than shared with conditional logic to ensure clean separation
+- State management shall use separate Zustand stores for demo vs production (demoStore vs productionStore)
+- API services shall be completely separate (demoApiService vs realApiService) with no shared conditional logic
+- Shared utilities shall be limited to types, constants, and pure utility functions only
+- React Router DOM shall be used for client-side routing between demo and production modes
+
+**Guided Tour Implementation:**
+- Tour system shall use React Joyride or equivalent library for tooltip-based guided experience
+- Tour shall have configurable steps covering: file upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing
+- Tour progress shall be tracked in demo state but not persisted between sessions
+- Tour shall include skip, previous, next, and close functionality
+- Tour steps shall highlight specific UI elements and provide contextual information
+- Tour completion shall be tracked for analytics (when implemented)
 
 Dependencies: None
 
