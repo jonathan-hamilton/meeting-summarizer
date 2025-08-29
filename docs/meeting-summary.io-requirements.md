@@ -54,6 +54,39 @@
 - REQ-DEMO-20: Demo mode content and workflow shall be implemented in client code, using static/mock data. Demo and Paid modes must have completely separate state management (e.g., Zustand stores), and demo logic must not leak into paid mode. Duplication is preferred over conditional logic for demo/paid separation.
 - REQ-DEMO-21: Demo mode shall be available in all environments (dev, staging, prod) and always accessible at /demo, even if the user is signed in.
 
+### Development Environment Support
+
+- REQ-DEV-TOGGLE-1: In local development environments (`import.meta.env.DEV === true`), a development/production toggle shall remain available for developers to test both mock and real API calls.
+- REQ-DEV-TOGGLE-2: The development toggle shall be hidden in deployed environments (staging/production).
+- REQ-DEV-TOGGLE-3: Demo mode shall be available in all environments independent of the development toggle.
+- REQ-DEV-TOGGLE-4: The development toggle shall only affect API behavior (mock vs real), while demo/production modes affect the entire user experience and routing.
+
+### Routing & Navigation Architecture
+
+- REQ-ROUTE-1: Default route `/` shall redirect users to `/demo` for the demo experience.
+- REQ-ROUTE-2: Demo mode shall be accessible at `/demo` with complete application functionality using static data.
+- REQ-ROUTE-3: Production mode shall be accessible at `/app` after successful authentication.
+- REQ-ROUTE-4: Demo mode users shall transition to `/app` after successful sign-in authentication.
+- REQ-ROUTE-5: All routes shall support direct navigation and browser refresh without loss of state.
+- REQ-ROUTE-6: React Router DOM shall be used for client-side routing between demo and production modes.
+
+### Technical Architecture & Component Separation
+
+- REQ-ARCH-1: Demo and Production modes shall use completely separate component trees (DemoApp vs ProductionApp).
+- REQ-ARCH-2: Demo components shall be duplicated rather than shared with conditional logic to ensure clean separation.
+- REQ-ARCH-3: State management shall use separate Zustand stores for demo vs production (demoStore vs productionStore).
+- REQ-ARCH-4: API services shall be completely separate (demoApiService vs realApiService) with no shared conditional logic.
+- REQ-ARCH-5: Shared utilities shall be limited to types, constants, and pure utility functions only.
+
+### Guided Tour System
+
+- REQ-TOUR-1: Tour system shall use React Joyride or equivalent library for tooltip-based guided experience.
+- REQ-TOUR-2: Tour shall have configurable steps covering: file upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing.
+- REQ-TOUR-3: Tour progress shall be tracked in demo state but not persisted between sessions.
+- REQ-TOUR-4: Tour shall include skip, previous, next, and close functionality.
+- REQ-TOUR-5: Tour steps shall highlight specific UI elements and provide contextual information.
+- REQ-TOUR-6: Tour completion shall be tracked for analytics (when implemented).
+
 - REQ-USER-1: The system shall provide two user modes: Demo/Public (anonymous) and Paid (account-based).
 - REQ-USER-2: In Demo/Public mode, the application shall serve only static/demo content. No actual uploads, file processing, or progress tracking shall occur in this mode. All upload and meeting features are simulated with static examples.
 - REQ-USER-3: In Paid mode, authenticated users shall have upload progress, meeting history, and related data persist across browser refreshes and sessions.
