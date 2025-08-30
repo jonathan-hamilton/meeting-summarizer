@@ -104,9 +104,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Use the store's getActiveSpeakers method which correctly excludes "Unassigned" speakers
   const currentlyActiveSpeakers = useMemo(() => {
     const storeActiveSpeakers = activeSpeakers; // Use store's method that excludes "Unassigned"
-    console.log('🔍 currentlyActiveSpeakers (from store getActiveSpeakers):', storeActiveSpeakers);
-    console.log('🔍 speakerSegments count:', speakerSegments?.length);
-    console.log('🔍 speakerSegments speakers:', speakerSegments?.map(s => s.speaker));
     return storeActiveSpeakers;
   }, [activeSpeakers, speakerSegments]);
 
@@ -115,8 +112,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     const result = storeDetectedSpeakers.length > 0
       ? storeDetectedSpeakers.filter(speakerId => currentlyActiveSpeakers.includes(speakerId))
       : currentlyActiveSpeakers;
-    console.log('🔍 filteredDetectedSpeakers:', result);
-    console.log('🔍 storeDetectedSpeakers:', storeDetectedSpeakers);
     return result;
   }, [storeDetectedSpeakers, currentlyActiveSpeakers]);
 
@@ -153,8 +148,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       const isNewTranscription = currentTranscriptionId !== transcription.transcriptionId;
       
       if (isNewTranscription || currentDetectedSpeakers.length === 0) {
-        console.log('🔄 TranscriptDisplay: Initializing speakers for new transcription:', transcription.transcriptionId);
-        
         // Clear session overrides for new transcriptions
         if (isNewTranscription) {
           sessionManager.clearSpeakerOverrides();

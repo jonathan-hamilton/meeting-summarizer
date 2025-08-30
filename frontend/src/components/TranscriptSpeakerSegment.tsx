@@ -72,10 +72,8 @@ export const TranscriptSpeakerSegment: React.FC<
   const effectiveDetectedSpeakers = useMemo(() => {
     // Prefer original detected speakers for reassignment, fallback to store speakers
     if (originalDetectedSpeakers.length > 0) {
-      console.log('🔍 TranscriptSpeakerSegment: Using original detected speakers:', originalDetectedSpeakers);
       return originalDetectedSpeakers;
     }
-    console.log('🔍 TranscriptSpeakerSegment: Using store detected speakers:', allStoreDetectedSpeakers);
     return allStoreDetectedSpeakers.length > 0 ? allStoreDetectedSpeakers : [];
   }, [originalDetectedSpeakers, allStoreDetectedSpeakers]);
 

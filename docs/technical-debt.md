@@ -2,6 +2,46 @@
 
 ## Current Technical Debt
 
+### S5.1 Demo Mode Incomplete Implementation 🔄 ACTIVE
+
+**Date Identified**: August 29, 2025  
+**Sprint**: S5.1 User Mode Selection, Sign-In, and Demo Mode  
+**Priority**: High (Core feature incomplete)
+
+**Problem**: 
+S5.1 implementation is ~40% complete with foundational architecture established but missing critical user-facing components for guided tour and complete demo workflow.
+
+**Missing Components**:
+- Interactive guided tour system with Material-UI Popovers/Dialogs
+- Sign-In/Sign-Out button replacing development toggle in AppBar
+- Summary generation and email sharing UI integration for demo workflow
+- Tour auto-start functionality and navigation controls
+- Complete end-to-end demo experience
+
+**Current Status**:
+- ✅ React Router DOM integration with `/demo` and `/app` routes
+- ✅ AppModeContext with tour state foundation
+- ✅ Enhanced Zustand store with mode-aware architecture
+- ✅ Demo API service with comprehensive mock responses
+- ✅ Demo-aware FileUpload component and AppBar color differentiation
+- ❌ Tour system UI components (TourPopover.tsx is empty)
+- ❌ Sign-in authentication flow
+- ❌ Demo workflow beyond transcript display
+
+**Impact Assessment**:
+- **User Experience**: Demo mode functional but lacks guided experience
+- **Business Value**: Missing showcase capability for potential users
+- **Architecture**: Foundation solid, ready for remaining implementation
+- **Dependencies**: Blocks S5.2 and S5.3 completion
+
+**Resolution Plan**:
+1. Complete TourPopover component with Material-UI implementation
+2. Replace environment toggle with Sign-In/Sign-Out button
+3. Integrate summary generation and email sharing in demo UI
+4. Implement tour navigation and auto-start functionality
+
+---
+
 ### Frontend SpeakerMapping Component Infinite Loop Issues ⚠️ ACTIVE
 
 **Date Identified**: August 24, 2025  
