@@ -2,9 +2,26 @@
 
 A modern web application for transcribing and summarizing meeting audio using Azure Speech Services with hybrid speaker detection and OpenAI's GPT models for enhanced accuracy and reliability.
 
-## ✅ Current Status - Sprint 5 Audio Format Testing 🧪
+## ✅ Current Status - Sprint 5 Demo Mode & Audio Format Support
 
-### 🔧 **S5.5: Automatic WAV Conversion - TESTING PHASE**
+### 🔄 **S5.1: Demo Mode Architecture - IN PROGRESS (~40% Complete)**
+
+**August 29, 2025**: Foundational architecture implemented, core user experience features pending
+- ✅ **React Router Integration**: Client-side routing with `/demo` and `/app` modes, automatic redirect
+- ✅ **AppModeContext**: Complete context provider with tour state management foundation
+- ✅ **Enhanced Store Architecture**: Unified Zustand store with mode-aware sections (demo/production)
+- ✅ **Demo API Service**: Comprehensive mock service with realistic delays and workflow simulation
+- ✅ **Visual Differentiation**: Purple AppBar for demo mode, distinct from production orange/blue colors
+- ✅ **Component Mode Awareness**: FileUpload and core components support demo/production switching
+- ❌ **Interactive Guided Tour**: Step-by-step tour with Material-UI Popovers/Dialogs not implemented
+- ❌ **Sign-In Flow**: Sign-In/Sign-Out button and authentication dialog not implemented
+- ❌ **Complete Demo Workflow**: Summary generation and email sharing UI missing from demo
+- ❌ **Tour Navigation**: Auto-start, forward/backward controls, and step highlighting not implemented
+
+**Architecture Ready For**: Tour system integration, authentication flow, complete demo workflow
+**Next Sprint Tasks**: Complete tour UI components, sign-in button replacement, demo workflow integration
+
+### 🧪 **S5.5: Automatic WAV Conversion - TESTING PHASE**
 
 **August 29, 2025**: Audio format conversion implementation complete, comprehensive testing in progress
 - ✅ **Implementation Complete**: FFmpeg-based automatic conversion for all non-WAV audio formats

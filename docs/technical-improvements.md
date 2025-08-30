@@ -1,3 +1,80 @@
+# 2025-08-29: S5.1 Demo Mode Architecture Foundation (PARTIAL IMPLEMENTATION)
+
+### Overview
+
+Implemented foundational architecture for Sprint 5.1 "User Mode Selection, Sign-In, and Demo Mode" including routing infrastructure, context management, demo API services, and mode-aware components. This establishes ~40% completion of S5.1 requirements.
+
+### Technical Achievements
+
+**Frontend Architecture:**
+- **React Router DOM 6.28.0**: Client-side routing with `/demo` and `/app` routes, automatic `/` → `/demo` redirect
+- **AppModeContext**: Complete context provider with tour state management foundation and route-based mode detection
+- **Enhanced Zustand Store**: Unified store architecture with mode-aware sections (demo/production) avoiding component duplication
+- **Demo API Service**: Comprehensive mock service with realistic delays and complete workflow simulation
+- **Component Mode Awareness**: FileUpload and other components enhanced with demo/production behavior switching
+
+**Performance & Quality Improvements:**
+- **Debug Logging Cleanup**: Removed excessive console.log statements causing performance issues (45,161+ log entries reduced)
+- **Speaker Validation Enhancement**: Removed required name validation, added email format validation
+- **UI Consistency**: Ensured identical layout and behavior between demo and production modes
+
+**Visual Differentiation:**
+- **AppBar Color Coding**: Purple for demo mode (distinct from orange/blue production modes)
+- **Mode Indicators**: Clear "(Demo)" labeling and visual cues
+- **Development Controls**: Hidden in demo mode for clean user experience
+
+### Architectural Decisions
+
+**Mode-Aware State Management:**
+```typescript
+interface EnhancedSessionState {
+  demo: {
+    transcripts: TranscriptionResponse[];
+    selectedFileName: string;
+    uploadProgress: number;
+  };
+  production: {
+    transcripts: TranscriptionResponse[];
+    overrideCount: number;
+    sessionStartTime: string;
+  };
+}
+```
+
+**Service Factory Pattern:**
+- Runtime API service selection based on mode
+- Demo API service with realistic mock responses
+- Production API service unchanged
+
+**Component Strategy:**
+- Single component tree with mode-aware props
+- Context-driven behavior switching
+- No component duplication
+
+### Integration Points
+
+**Ready for Tour System:**
+- AppModeContext provides complete tour state management
+- Enhanced store supports tour progress tracking
+- Component architecture supports tour step highlighting
+
+**Demo Workflow Foundation:**
+- File upload simulation implemented
+- Transcript display with mock data
+- Speaker mapping with demo-aware validation
+- API service endpoints for summary and email (implemented but not UI-integrated)
+
+### Remaining Work for S5.1 Completion
+
+**Missing Components:**
+1. Interactive guided tour with Material-UI Popovers/Dialogs
+2. Sign-In/Sign-Out button replacing development toggle
+3. Summary generation and email sharing UI integration
+4. Tour auto-start and navigation controls
+5. Complete demo workflow demonstration
+
+---
+
 # 2025-08-29: S5.5 Automatic Audio Format Conversion (IN PROGRESS)
 
 ### Overview

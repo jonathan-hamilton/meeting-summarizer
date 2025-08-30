@@ -20,7 +20,7 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
-| S5.1     | User Mode Selection, Sign-In, and Demo Mode        | PENDING 🔄    | None                 |
+| S5.1     | User Mode Selection, Sign-In, and Demo Mode        | IN PROGRESS 🔄 (~40%) | None                 |
 | S5.2     | Payment Processing & Token Management Integration  | PENDING 🔄    | S5.1                 |
 | S5.3     | Persistent Upload Progress & Meeting History (Paid)| PENDING 🔄    | S5.1, S5.2           |
 | S5.4     | Accessibility Compliance Enhancements              | PENDING 🔄    | None                 |
@@ -90,6 +90,63 @@ As a user, I want to experience the app in Demo mode with a guided tour and simu
 - Tour completion shall be tracked for analytics (when implemented)
 
 Dependencies: None
+
+---
+
+### S5.1 Status: IN PROGRESS 🔄 (User Mode Selection, Sign-In, and Demo Mode)
+
+**Progress Date:** August 29, 2025
+**Completion Percentage:** ~40% (Foundational Architecture)
+
+**Implementation Summary:**
+✅ **Completed Components:**
+- React Router DOM 6.28.0 integration for `/demo` and `/app` routes with automatic redirect
+- AppModeContext foundation with tour state management structure and route-based mode detection
+- Enhanced Zustand store with mode-aware sections (demo/production data isolation)
+- Demo API Service with comprehensive mock responses and simulated processing workflows
+- Demo-aware FileUpload component with UI consistency between modes and stepper visualization
+- Purple AppBar color differentiation for demo mode (distinct from orange/blue production colors)
+- Speaker validation improvements (no required names, email format validation)
+- Performance optimization (removed excessive debug logging)
+
+❌ **Missing Components (Required for S5.1 Completion):**
+- Interactive guided tour system with Material-UI Popovers/Dialogs for step-by-step guidance
+- Sign-In/Sign-Out button replacing development toggle in AppBar with authentication dialog
+- Complete demo workflow beyond transcript display (summary generation → email sharing UI integration)
+- Tour-driven feature access (all demo features only available through guided tour)
+- Mock upload button implementation (simulated upload without file picker)
+- Tour auto-start functionality and navigation controls (forward/backward/skip/close)
+- Demo workflow completion through email sharing with mock confirmation dialog
+
+**Acceptance Criteria Status:**
+🔄 **Partially Implemented:**
+- Demo mode routing and visual distinction (missing sign-in button replacement)
+- Simulated full workflow (implemented through transcript, missing summary/email UI)
+
+❌ **Not Implemented:**
+- Step-by-step interactive tour with Material-UI components
+- Tour-driven feature access and auto-start on `/demo`
+- Sign-in dialog and seamless mode transition
+- Complete demo workflow demonstration
+
+**Technical Notes:**
+- Chose client-side routing over server-side mode detection for better development experience
+- Established unified store architecture supporting both modes without component duplication
+- AppModeContext provides complete tour state foundation but tour UI components not built
+- Demo API service fully functional but not integrated with missing UI components (summary/email flows)
+
+**Integration Points:**
+- Enhanced store ready for tour progress tracking
+- All demo API endpoints implemented and tested
+- Component architecture supports mode-aware behavior
+- Performance and validation improvements benefit both demo and production modes
+
+**Next Steps for S5.1 Completion:**
+1. Implement TourPopover component with Material-UI Backdrop and Portal for step highlighting
+2. Replace development environment toggle with Sign-In/Sign-Out button in AppBar
+3. Build missing UI components: Summary generation display and Email sharing dialog for demo
+4. Integrate tour system with existing demo-aware components
+5. Add tour auto-start, navigation controls, and completion tracking
 
 ---
 

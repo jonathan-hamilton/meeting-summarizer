@@ -22,25 +22,47 @@ export const validateSpeakerMapping = (
 ): ValidationError[] => {
   const errors: ValidationError[] = [];
 
-  // Check if name is empty
-  if (!mapping.name || mapping.name.trim() === '') {
-    errors.push({
-      field: 'name',
-      message: 'Speaker name is required',
-      speakerId: mapping.speakerId
-    });
+  // Check for duplicate names (excluding current mapping)
+  // Only validate duplicates if the name is not empty
+  if (mapping.name && mapping.name.trim() !== '') {
+    const nameExists = allMappings.some(
+      m => m.speakerId !== mapping.speakerId && 
+           m.name === mapping.name &&
+           m.name.trim() !== '' // Only consider non-empty names as duplicates
+    );
+    if (nameExists) {
+      errors.push({
+        field: 'name',
+        message: 'Speaker name must be unique',
+        speakerId: mapping.speakerId
+      });
+    }
   }
 
-  // Check for duplicate names (excluding current mapping)
-  const nameExists = allMappings.some(
-    m => m.speakerId !== mapping.speakerId && m.name === mapping.name
-  );
-  if (nameExists) {
-    errors.push({
-      field: 'name',
-      message: 'Speaker name must be unique',
-      speakerId: mapping.speakerId
-    });
+  // Email validation (optional but must be valid format if provided)
+  if (mapping.email && mapping.email.trim() !== '') {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(mapping.email.trim())) {
+      errors.push({
+        field: 'email',
+        message: 'Please enter a valid email address',
+        speakerId: mapping.speakerId
+      });
+    }
+
+    // Check for duplicate emails (excluding current mapping)
+    const emailExists = allMappings.some(
+      m => m.speakerId !== mapping.speakerId && 
+           m.email === mapping.email &&
+           m.email && m.email.trim() !== '' // Only consider non-empty emails as duplicates
+    );
+    if (emailExists) {
+      errors.push({
+        field: 'email',
+        message: 'Email address must be unique',
+        speakerId: mapping.speakerId
+      });
+    }
   }
 
   // Check for duplicate roles (excluding current mapping)

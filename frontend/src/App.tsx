@@ -14,6 +14,8 @@ import { Brightness4, Brightness7, HealthAndSafety, Help as HelpIcon } from "@mu
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import { EnvironmentProvider, useEnvironment } from "./contexts/EnvironmentProvider";
+import { useAppMode } from "./contexts/AppModeContext";
+import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
 import { HealthDialog } from "./components/HealthDialog";
@@ -47,6 +49,8 @@ const SummaryDisplayDemo = React.lazy(
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
   const { isProductionMode, toggleEnvironmentMode } = useEnvironment();
+  const { mode: appMode } = useAppMode(); // Add AppMode context
+  useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
   const { addTranscript } = useSessionStore();
   const [transcriptionResults, setTranscriptionResults] = useState<
@@ -168,6 +172,16 @@ const AppContent: React.FC = () => {
   };
 
   const getAppBarSx = () => {
+    // Demo mode gets a purple/teal color scheme, different from production orange/blue
+    if (appMode === 'demo') {
+      return {
+        width: "100%",
+        backgroundColor: "#6B46C1", // Purple color for demo mode
+        color: "#FFFFFF"
+      };
+    }
+    
+    // Production mode uses existing logic
     const baseColor = getAppBarColor();
     return {
       width: "100%",
@@ -203,8 +217,8 @@ const AppContent: React.FC = () => {
             sx={getAppBarSx()}
           >
             <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
-              {/* Development controls - positioned on left */}
-              {import.meta.env.DEV && (
+              {/* Development controls - positioned on left, hidden in demo mode */}
+              {import.meta.env.DEV && appMode !== 'demo' && (
                 <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
                   {/* Environment Mode Toggle Switch */}
                   <Tooltip
@@ -246,12 +260,15 @@ const AppContent: React.FC = () => {
                 textAlign: "center",
                 fontWeight: "bold"
               }}>
-                Meeting-Summary.io
+                Meeting-Summary.io {appMode === 'demo' && '(Demo)'}
               </Typography>
               
               {/* Right-aligned controls */}
               <Box sx={{ position: "absolute", right: 0, display: "flex", alignItems: "center" }}>
-                <SessionIndicator status={privacyControls.sessionStatus} />
+                {/* Hide SessionIndicator in demo mode */}
+                {appMode !== 'demo' && (
+                  <SessionIndicator status={privacyControls.sessionStatus} />
+                )}
                 <Tooltip title="Help & Privacy FAQ">
                   <IconButton color="inherit" onClick={() => setHelpDialogOpen(true)} sx={{ ml: 1 }}>
                     <HelpIcon />

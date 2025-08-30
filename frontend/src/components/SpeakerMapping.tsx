@@ -132,12 +132,8 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
   // Memoize computed speaker data (Replace expensive calculations)
   const computedSpeakerData = useMemo(() => {
-    console.log('🔍 SpeakerMapping: effectiveData.speakers:', effectiveData.speakers);
-    console.log('🔍 SpeakerMapping: effectiveData.mappings:', effectiveData.mappings);
-    
     // Use effectiveData.speakers directly - it already contains the filtered list of speakers with segments
     const uniqueSpeakers = effectiveData.speakers;
-    console.log('🔍 SpeakerMapping: uniqueSpeakers:', uniqueSpeakers);
 
     // Get unmapped speakers - speakers without custom names (either no mapping or name equals speaker ID)
     const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
@@ -145,7 +141,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       // Consider unmapped if: no mapping, no name, empty name, or name equals speaker ID (default)
       return !mapping || !mapping.name || mapping.name.trim() === "" || mapping.name === speakerId;
     });
-    console.log('🔍 SpeakerMapping: unmappedSpeakers:', unmappedSpeakers);
 
     return {
       allSpeakers: uniqueSpeakers,
@@ -162,10 +157,8 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       const hasName = mapping.name && mapping.name.trim() !== "";
       const isCustomName = hasName && mapping.name !== mapping.speakerId; // Only count as named if name is different from speaker ID
       const isActiveSpeaker = effectiveData.speakers.includes(mapping.speakerId);
-      console.log(`🔍 Checking mapping: ${mapping.speakerId} -> name: "${mapping.name}" -> hasName: ${hasName} -> isCustomName: ${isCustomName} -> isActive: ${isActiveSpeaker} -> source: ${mapping.source}`);
       return isCustomName && isActiveSpeaker; // Only include mappings for speakers that have custom names and are in allRelevantSpeakers
     });
-    console.log('🔄 mappedTraditionalSpeakers:', mapped);
     return mapped;
   }, [effectiveData.mappings, effectiveData.speakers]);
 
