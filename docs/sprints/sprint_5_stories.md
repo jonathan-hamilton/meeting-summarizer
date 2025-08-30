@@ -53,37 +53,40 @@ As a user, I want to experience the app in Demo mode with a guided tour and simu
 - The Tour and UI make the distinction between Demo and Paid modes clear; no banners or forced prompts are required, but visual cues (AppBar color, label, tooltips) must be present.
 - Demo mode usage, Tour start/completion, and "Sign In" button clicks are tracked with a privacy-friendly analytics tool. Analytics implementation may be deferred until after initial launch.
 - Demo mode meets all accessibility and mobile-responsiveness standards of the main app.
-- Demo mode content and workflow are implemented in client code, using static/mock data. Demo and Paid modes must have completely separate state management (e.g., Zustand stores), and demo logic must not leak into paid mode. Duplication is preferred over conditional logic for demo/paid separation.
+- Demo mode content and workflow are implemented in client code, using static/mock data. Demo and Production modes use enhanced Zustand stores with mode-aware sections, eliminating duplication while maintaining separation.
 - Demo mode is available in all environments (dev, staging, prod).
 
 **Development Environment Support:**
-- In local development environments (`import.meta.env.DEV === true`), a development/production toggle shall remain available for developers to test both mock and real API calls
-- The development toggle shall be hidden in deployed environments (staging/production)
-- Demo mode shall be available in all environments (dev, staging, prod) independent of the development toggle
-- The development toggle only affects API behavior (mock vs real), while demo/production modes affect the entire user experience and routing
+- In local development environments (`import.meta.env.DEV === true`), the existing environment toggle shall remain available for developers to test mock vs real API behavior
+- The development environment toggle shall be hidden in deployed environments (staging/production)
+- Demo mode shall be available in all environments independent of the development environment toggle
+- The development environment toggle shall only affect API implementation selection, while app mode (demo/production) affects user experience and authentication
+- Development mode shall support testing both demo and production app modes with either mock or real API services
 
 **Routing & Navigation:**
 - Default route `/` shall redirect users to `/demo` for the demo experience
-- Demo mode shall be accessible at `/demo` with complete application functionality using static data
-- Production mode shall be accessible at `/app` after successful authentication
-- Demo mode users shall transition to `/app` after successful sign-in authentication
-- All routes shall support direct navigation and browser refresh without loss of state
+- Demo mode shall be accessible at `/demo` with complete application functionality using static data and guided tour
+- Production mode shall be accessible at `/app` after successful authentication, using the same components with production data
+- Demo mode users shall transition to `/app` after successful sign-in authentication with AppModeContext state change
+- All routes shall support direct navigation and browser refresh without loss of state through enhanced store persistence
+- React Router DOM shall be implemented for client-side routing with mode-aware route handling
+- Route changes shall trigger appropriate AppModeContext updates and store state management
 
 **Technical Architecture:**
-- Demo and Production modes shall use completely separate component trees (DemoApp vs ProductionApp)
-- Demo components shall be duplicated rather than shared with conditional logic to ensure clean separation
-- State management shall use separate Zustand stores for demo vs production (demoStore vs productionStore)
-- API services shall be completely separate (demoApiService vs realApiService) with no shared conditional logic
-- Shared utilities shall be limited to types, constants, and pure utility functions only
-- React Router DOM shall be used for client-side routing between demo and production modes
+- Demo and Production modes shall use a single component tree with mode-aware behavior controlled by AppModeContext
+- Components shall remain shared but receive mode-specific data through props and context, eliminating duplication
+- State management shall use enhanced Zustand stores with mode-aware sections (demo vs production data within same store)
+- API services shall use a factory pattern with mode-aware implementations (DemoApiService vs RealApiService) selected at runtime
+- Mode separation shall be achieved through data flow control rather than component duplication
+- React Router DOM shall be used for client-side routing with mode-aware route handling
 
 **Guided Tour Implementation:**
-- Tour system shall use custom Material-UI components (Popovers, Dialogs, Tooltips) for guided experience
-- Tour state shall be managed by Zustand demo store with configurable steps
+- Tour system shall be integrated into enhanced stores as demo-specific state management
+- Tour state shall be managed by demo section of enhanced Zustand stores with configurable steps
 - Tour shall have configurable steps covering: file upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing
 - Tour progress shall be tracked in demo state but not persisted between sessions
-- Tour shall include skip, previous, next, and close functionality implemented with Material-UI buttons
-- Tour steps shall highlight specific UI elements using Material-UI Backdrop, Popovers, and positioning
+- Tour controls (skip, previous, next, close) shall be implemented as floating Material-UI components
+- Tour highlighting shall use Material-UI Backdrop and Portal components to overlay existing UI elements
 - Tour completion shall be tracked for analytics (when implemented)
 
 Dependencies: None

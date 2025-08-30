@@ -56,41 +56,78 @@
 
 ### Development Environment Support
 
-- REQ-DEV-TOGGLE-1: In local development environments (`import.meta.env.DEV === true`), a development/production toggle shall remain available for developers to test both mock and real API calls.
-- REQ-DEV-TOGGLE-2: The development toggle shall be hidden in deployed environments (staging/production).
-- REQ-DEV-TOGGLE-3: Demo mode shall be available in all environments independent of the development toggle.
-- REQ-DEV-TOGGLE-4: The development toggle shall only affect API behavior (mock vs real), while demo/production modes affect the entire user experience and routing.
+- REQ-DEV-TOGGLE-1: In local development environments (`import.meta.env.DEV === true`), the existing environment toggle shall remain available for developers to test mock vs real API behavior.
+- REQ-DEV-TOGGLE-2: The development environment toggle shall be hidden in deployed environments (staging/production).
+- REQ-DEV-TOGGLE-3: Demo mode shall be available in all environments independent of the development environment toggle.
+- REQ-DEV-TOGGLE-4: The development environment toggle shall only affect API implementation selection, while app mode (demo/production) affects user experience and authentication.
+- REQ-DEV-TOGGLE-5: Development mode shall support testing both demo and production app modes with either mock or real API services.
 
 ### Routing & Navigation Architecture
 
 - REQ-ROUTE-1: Default route `/` shall redirect users to `/demo` for the demo experience.
-- REQ-ROUTE-2: Demo mode shall be accessible at `/demo` with complete application functionality using static data.
-- REQ-ROUTE-3: Production mode shall be accessible at `/app` after successful authentication.
-- REQ-ROUTE-4: Demo mode users shall transition to `/app` after successful sign-in authentication.
-- REQ-ROUTE-5: All routes shall support direct navigation and browser refresh without loss of state.
-- REQ-ROUTE-6: React Router DOM shall be used for client-side routing between demo and production modes.
+- REQ-ROUTE-2: Demo mode shall be accessible at `/demo` with complete application functionality using static data and guided tour.
+- REQ-ROUTE-3: Production mode shall be accessible at `/app` after successful authentication, using the same components with production data.
+- REQ-ROUTE-4: Demo mode users shall transition to `/app` after successful sign-in authentication with AppModeContext state change.
+- REQ-ROUTE-5: All routes shall support direct navigation and browser refresh without loss of state through enhanced store persistence.
+- REQ-ROUTE-6: React Router DOM shall be implemented for client-side routing with mode-aware route handling.
+- REQ-ROUTE-7: Route changes shall trigger appropriate AppModeContext updates and store state management.
 
-### Technical Architecture & Component Separation
+### User Mode & Authentication Integration
 
-- REQ-ARCH-1: Demo and Production modes shall use completely separate component trees (DemoApp vs ProductionApp).
-- REQ-ARCH-2: Demo components shall be duplicated rather than shared with conditional logic to ensure clean separation.
-- REQ-ARCH-3: State management shall use separate Zustand stores for demo vs production (demoStore vs productionStore).
-- REQ-ARCH-4: API services shall be completely separate (demoApiService vs realApiService) with no shared conditional logic.
-- REQ-ARCH-5: Shared utilities shall be limited to types, constants, and pure utility functions only.
+- REQ-USER-1: The application shall provide Demo (anonymous) and Production (authenticated) user modes managed through AppModeContext.
+- REQ-USER-2: Demo mode shall serve static/mock content with no actual uploads, file processing, or persistent data storage.
+- REQ-USER-3: Production mode shall enable authenticated users to access real upload functionality and persistent data storage.
+- REQ-USER-4: Sign-in process shall transition from demo mode to production mode with complete state reset and authentication validation.
+- REQ-USER-5: Sign-out process shall return users to demo mode with production state clearance and session termination.
+
+### Technical Architecture & Mode Management
+
+- REQ-ARCH-1: The application shall use a single component tree with mode-aware behavior controlled by AppModeContext.
+- REQ-ARCH-2: Components shall remain shared but receive mode-specific data through props and context, eliminating duplication.
+- REQ-ARCH-3: State management shall use enhanced Zustand stores with mode-aware sections (demo vs production data within same store).
+- REQ-ARCH-4: API services shall use a factory pattern with mode-aware implementations (DemoApiService vs RealApiService) selected at runtime.
+- REQ-ARCH-5: Mode separation shall be achieved through data flow control rather than component duplication.
+
+### App Mode Context & State Management
+
+- REQ-MODE-1: The application shall implement AppModeContext providing mode state ('demo' | 'production') throughout the component tree.
+- REQ-MODE-2: AppModeContext shall include mode utilities (isDemo, isProduction) and mode transition methods (signIn, signOut).
+- REQ-MODE-3: Enhanced Zustand stores shall include mode-aware sections with demo and production data separation within single stores.
+- REQ-MODE-4: Store actions shall be mode-aware, operating on appropriate data sections based on current AppModeContext.
+- REQ-MODE-5: Mode transitions shall clear demo state and initialize production state appropriately.
+
+### Service Layer & Data Flow
+
+- REQ-SERVICE-1: API service factory shall return DemoApiService or RealApiService based on current mode from AppModeContext.
+- REQ-SERVICE-2: DemoApiService shall provide static/mock data for all operations with simulated delays and responses.
+- REQ-SERVICE-3: RealApiService shall maintain existing production API behavior with real backend communication.
+- REQ-SERVICE-4: Components shall receive API service through dependency injection or context, remaining unaware of implementation.
+- REQ-SERVICE-5: File upload operations shall be completely disabled in demo mode, replaced with simulated upload progression.
+
+### Component Enhancement Strategy
+
+- REQ-COMP-1: Existing components shall be enhanced with mode awareness through AppModeContext consumption.
+- REQ-COMP-2: Components shall conditionally render demo-specific UI elements (tooltips, tour highlights) based on mode.
+- REQ-COMP-3: AppBar component shall display mode-specific styling and labels based on AppModeContext.
+- REQ-COMP-4: File upload components shall disable real file selection in demo mode and trigger simulated upload workflows.
+- REQ-COMP-5: All interactive components shall include demo-specific messaging and visual indicators when in demo mode.
 
 ### Guided Tour System
 
-- REQ-TOUR-1: Tour system shall use custom Material-UI components (Popovers, Dialogs, Tooltips) for guided experience.
-- REQ-TOUR-2: Tour shall have configurable steps covering: file upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing.
-- REQ-TOUR-3: Tour progress shall be tracked in demo state but not persisted between sessions.
-- REQ-TOUR-4: Tour shall include skip, previous, next, and close functionality implemented with Material-UI buttons.
-- REQ-TOUR-5: Tour steps shall highlight specific UI elements using Material-UI Backdrop, Popovers, and positioning.
-- REQ-TOUR-6: Tour completion shall be tracked for analytics (when implemented).
+- REQ-TOUR-1: Tour system shall be integrated into enhanced stores as demo-specific state management.
+- REQ-TOUR-2: Tour shall use Material-UI Popovers and Dialogs overlaid on existing components in demo mode.
+- REQ-TOUR-3: Tour steps shall be defined as configuration covering: upload simulation, transcript viewing, speaker mapping, summary generation, and email sharing.
+- REQ-TOUR-4: Tour state shall be managed in demo section of enhanced stores with current step, completion status, and step history.
+- REQ-TOUR-5: Tour controls (skip, previous, next, close) shall be implemented as floating Material-UI components.
+- REQ-TOUR-6: Tour highlighting shall use Material-UI Backdrop and Portal components to overlay existing UI elements.
 
-- REQ-USER-1: The system shall provide two user modes: Demo/Public (anonymous) and Paid (account-based).
-- REQ-USER-2: In Demo/Public mode, the application shall serve only static/demo content. No actual uploads, file processing, or progress tracking shall occur in this mode. All upload and meeting features are simulated with static examples.
-- REQ-USER-3: In Paid mode, authenticated users shall have upload progress, meeting history, and related data persist across browser refreshes and sessions.
-- REQ-USER-4: The system shall clearly communicate data retention and privacy policies for each mode.
+### Demo Data & Simulation
+
+- REQ-DEMO-DATA-1: Demo mode shall use comprehensive static datasets including sample transcripts, speaker mappings, and generated summaries.
+- REQ-DEMO-DATA-2: Simulated operations shall include realistic timing delays and progress updates to mirror production behavior.
+- REQ-DEMO-DATA-3: Demo upload simulation shall progress through realistic stages (uploading, processing, transcribing, analyzing speakers).
+- REQ-DEMO-DATA-4: All demo interactions shall provide immediate feedback while clearly indicating simulated nature through UI messaging.
+- REQ-DEMO-DATA-5: Demo speaker mapping shall include realistic auto-detected speakers with confidence scores for demonstration purposes.
 
 ### Azure Storage & Persistent Data Setup
 
