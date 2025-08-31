@@ -425,25 +425,44 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                       </Stack>
                     </AccordionSummary>
                     <AccordionDetails>
-                      <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                      <Box sx={{ pl: 1 }}>
                         {roleGroup.actionItems.map((item, itemIndex) => (
-                          <Typography
-                            component="li"
+                          <Box
                             key={itemIndex}
-                            variant="body2"
-                            sx={{ mb: 1 }}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              mb: 1,
+                              gap: 0.5, // Reduced from 1 to 0.5 (4px instead of 8px)
+                            }}
                           >
-                            {item.description}
-                            {item.confidence < 0.8 && (
-                              <Chip
-                                label="Low Confidence"
-                                size="small"
-                                color="warning"
-                                variant="outlined"
-                                sx={{ ml: 1, fontSize: "0.7rem" }}
-                              />
-                            )}
-                          </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                minWidth: '20px',
+                                color: 'text.secondary',
+                                fontWeight: 500,
+                                flexShrink: 0, // Prevents number from shrinking
+                              }}
+                            >
+                              {itemIndex + 1}.
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ flex: 1 }}
+                            >
+                              {item.description}
+                              {item.confidence < 0.8 && (
+                                <Chip
+                                  label="Low Confidence"
+                                  size="small"
+                                  color="warning"
+                                  variant="outlined"
+                                  sx={{ ml: 1, fontSize: "0.7rem" }}
+                                />
+                              )}
+                            </Typography>
+                          </Box>
                         ))}
                       </Box>
                     </AccordionDetails>
@@ -459,25 +478,44 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                   Unassigned Action Items
                 </Typography>
                 <Paper sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}>
-                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                  <Box sx={{ pl: 1 }}>
                     {summary.unassignedActionItems.map((item, index) => (
-                      <Typography
-                        component="li"
+                      <Box
                         key={index}
-                        variant="body2"
-                        sx={{ mb: 1 }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          mb: 1,
+                          gap: 0.5, // Reduced from 1 to 0.5 (4px instead of 8px)
+                        }}
                       >
-                        {item.description}
-                        {item.confidence < 0.8 && (
-                          <Chip
-                            label="Low Confidence"
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            sx={{ ml: 1, fontSize: "0.7rem" }}
-                          />
-                        )}
-                      </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            minWidth: '20px',
+                            color: 'warning.contrastText',
+                            fontWeight: 500,
+                            flexShrink: 0, // Prevents number from shrinking
+                          }}
+                        >
+                          {index + 1}.
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ flex: 1, color: 'warning.contrastText' }}
+                        >
+                          {item.description}
+                          {item.confidence < 0.8 && (
+                            <Chip
+                              label="Low Confidence"
+                              size="small"
+                              color="warning"
+                              variant="outlined"
+                              sx={{ ml: 1, fontSize: "0.7rem" }}
+                            />
+                          )}
+                        </Typography>
+                      </Box>
                     ))}
                   </Box>
                 </Paper>
