@@ -1,3 +1,20 @@
+# Meeting Summarizer Requirements (Legacy)
+
+> **⚠️ IMPORTANT: This file has been refactored into a modular structure for better maintainability.**
+> 
+> **New Requirements Location:** See [docs/requirements/README.md](./requirements/README.md) for the complete modular requirements structure.
+> 
+> This legacy file is maintained for reference until the migration is complete. All new requirements should be added to the appropriate modular files under `docs/requirements/`.
+
+## Requirements Migration Status
+- ✅ **Modular Structure Created**: All requirements organized into 12 focused files
+- ✅ **Cross-References Added**: Inter-file links and dependencies documented
+- ✅ **README Created**: Central index with navigation and quick reference
+- 🔄 **Legacy File Maintained**: This file preserved during transition period
+- ☐ **Migration Complete**: Will be archived after team review
+
+---
+
 # Technical Dependencies
 
 - FFmpeg must be installed and available in the production environment (e.g., Azure App Service, Azure Functions, or container) to enable audio file conversion to WAV format. Ensure deployment scripts or container images include FFmpeg and that the application has permission to execute it. This is required for REQ-FPO-2 and related audio processing features.
@@ -474,6 +491,73 @@
 - REQ-AI-SUM-13: System shall provide export capabilities for generated summaries including PDF, email, and clipboard formats
 - REQ-AI-SUM-14: System shall process speaker role information to enhance action item categorization and attribution
 - REQ-AI-SUM-15: System shall maintain clear separation between transcript accuracy and AI summary generation features
+
+### Action Item Management & Assignment
+
+#### Core Data Model & State Management
+
+- REQ-ACTMGMT-1: System shall extend ActionItem interface with unique identifier (id) and assignedTo fields for CRUD operations
+- REQ-ACTMGMT-2: System shall use crypto.randomUUID() for generating unique action item identifiers
+- REQ-ACTMGMT-3: System shall integrate action item management with existing summaryStore using Zustand for state persistence
+- REQ-ACTMGMT-4: System shall replace ActionItemsByRole structure with flat ActionItem array using assignedTo field for grouping
+- REQ-ACTMGMT-5: System shall compute speaker groupings dynamically in components rather than maintaining separate grouped structures
+- REQ-ACTMGMT-6: System shall transform legacy ActionItemsByRole data to new ActionItem structure with proper migration
+
+#### User Interface & Interaction Design
+
+- REQ-ACTMGMT-7: System shall provide "ADD ACTION ITEM" button at the top of the Action Items section in SummaryDisplay
+- REQ-ACTMGMT-8: System shall implement UpsertActionItemDialog for both create and edit operations with speaker assignment
+- REQ-ACTMGMT-9: System shall provide pencil edit icon on each action item row for direct editing access
+- REQ-ACTMGMT-10: System shall pre-populate UpsertActionItemDialog with existing action item details when editing
+- REQ-ACTMGMT-11: System shall default new action items to "Unassigned" status in creation dialog
+- REQ-ACTMGMT-12: System shall include speaker dropdown with all meeting participants and "Unassigned" option
+- REQ-ACTMGMT-13: System shall support manually-added speakers in assignment dropdown alongside auto-detected speakers
+
+#### CRUD Operations
+
+- REQ-ACTMGMT-14: System shall implement Create operation allowing users to add new action items with description and speaker assignment
+- REQ-ACTMGMT-15: System shall implement Update operation allowing users to modify action item description and reassign ownership
+- REQ-ACTMGMT-16: System shall implement Delete operation with confirmation dialog to prevent accidental removal
+- REQ-ACTMGMT-17: System shall validate that action item descriptions are non-empty before allowing save operations
+- REQ-ACTMGMT-18: System shall prevent duplicate action items with same description and assignee combination
+- REQ-ACTMGMT-19: System shall validate speaker assignments against available meeting participants only
+
+#### Drag & Drop Functionality
+
+- REQ-ACTMGMT-20: System shall implement drag and drop functionality using @dnd-kit/core library for action item reassignment
+- REQ-ACTMGMT-21: System shall allow dragging action items between speaker sections and to/from unassigned area
+- REQ-ACTMGMT-22: System shall provide visual feedback during drag operations with appropriate cursor indicators
+- REQ-ACTMGMT-23: System shall highlight valid drop zones when drag operation is active
+- REQ-ACTMGMT-24: System shall validate drop targets and prevent assignment to non-meeting participants
+- REQ-ACTMGMT-25: System shall handle invalid drop attempts by resetting item to original position
+- REQ-ACTMGMT-26: System shall display error message via Snackbar for unsuccessful drop operations
+- REQ-ACTMGMT-27: System shall prevent duplicate assignments through drag and drop with clear error messaging
+
+#### Validation & Error Handling
+
+- REQ-ACTMGMT-28: System shall validate action items on dialog save button press for create and edit operations
+- REQ-ACTMGMT-29: System shall validate drag and drop operations at drop time with immediate feedback
+- REQ-ACTMGMT-30: System shall use consistent Snackbar error messaging matching existing application patterns
+- REQ-ACTMGMT-31: System shall provide specific error messages for validation failures (empty description, duplicate assignment, invalid speaker)
+- REQ-ACTMGMT-32: System shall maintain form state during validation failures to preserve user input
+
+#### Integration & Downstream Effects
+
+- REQ-ACTMGMT-33: System shall update copy functionality to reflect modified action items in clipboard content
+- REQ-ACTMGMT-34: System shall integrate modified action items into email sharing functionality
+- REQ-ACTMGMT-35: System shall maintain action item modifications in email composition and sending
+- REQ-ACTMGMT-36: System shall preserve action item edits throughout session until browser window closure
+- REQ-ACTMGMT-37: System shall work consistently in both Demo and Production modes
+- REQ-ACTMGMT-38: System shall integrate with tour system for guided demonstration of action item management features
+
+#### Component Architecture
+
+- REQ-ACTMGMT-39: System shall implement ActionItemCard component as draggable item with edit and delete controls
+- REQ-ACTMGMT-40: System shall implement UpsertActionItemDialog as modal for create and edit operations
+- REQ-ACTMGMT-41: System shall implement ActionItemDropZone components for speaker sections and unassigned area
+- REQ-ACTMGMT-42: System shall implement ActionItemsManager component to orchestrate all CRUD operations
+- REQ-ACTMGMT-43: System shall enhance existing SummaryDisplay accordion layout to support drag and drop zones
+- REQ-ACTMGMT-44: System shall maintain existing Material-UI styling consistency with enhanced interactive elements
 
 ### Content Management
 
