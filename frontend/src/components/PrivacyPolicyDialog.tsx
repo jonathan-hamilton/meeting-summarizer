@@ -30,7 +30,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   Check as CheckIcon,
 } from "@mui/icons-material";
-import { useEnvironment } from "../contexts/EnvironmentProvider";
+import { useAppMode } from "../contexts/AppModeContext";
 
 const PRIVACY_POLICY_KEY = 'meetingSummarizer_privacyPolicyAccepted';
 
@@ -53,7 +53,7 @@ export const PrivacyPolicyDialog: React.FC<PrivacyPolicyDialogProps> = ({
   onAccepted,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const { isProductionMode } = useEnvironment();
+  const { isProduction } = useAppMode();
 
   /**
    * Check if privacy policy has been accepted before
@@ -82,9 +82,9 @@ export const PrivacyPolicyDialog: React.FC<PrivacyPolicyDialogProps> = ({
    * Determine if dialog should be shown
    */
   useEffect(() => {
-    const shouldShow = forceShow || (isProductionMode && !hasAcceptedPolicy());
+    const shouldShow = forceShow || (isProduction && !hasAcceptedPolicy());
     setIsOpen(shouldShow);
-  }, [forceShow, isProductionMode]);
+  }, [forceShow, isProduction]);
 
   /**
    * Handle policy acceptance

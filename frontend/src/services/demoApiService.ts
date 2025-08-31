@@ -2,17 +2,29 @@ import type {
   TranscriptionResponse, 
   HealthStatus, 
   DetailedHealthStatus,
-  SpeakerMapping 
+  SpeakerMapping,
+  MeetingSummary,
+  MeetingSummaryRequest,
+  ApiResponse
 } from '../types';
 
 /**
  * Demo API Service - Provides mock responses for demo mode
- * Prevents real API calls and file operations in demo mode
+ * Prevents real API calls an  async sendSummaryEmail(transcriptionId: string, emailData: any): Promise<void> {
+    await this.mockDelay(500);
+    // In demo mode, just simulate the email send
+    console.log('Demo mode: Email simulated', { transcriptionId, emailData });
+  }
+
+  getBaseURL(): string {
+    return 'http://demo-api.localhost:5000';
+  }
+} operations in demo mode
  */
 class DemoApiService {
   private mockDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  async uploadFile(_file: File): Promise<TranscriptionResponse> {
+  async uploadFile(_file: File): Promise<ApiResponse<TranscriptionResponse>> {
     // In demo mode, don't actually upload the file
     // Just simulate the process with mock data
     
@@ -80,14 +92,21 @@ class DemoApiService {
       ]
     };
     
-    return mockResponse;
+    return {
+      data: mockResponse,
+      success: true
+    };
   }
 
   async getTranscriptionStatus(_transcriptionId: string): Promise<TranscriptionResponse> {
     await this.mockDelay(500);
     
     // Return mock completed status
-    return await this.uploadFile(new File([], 'mock-transcript.wav'));
+    const response = await this.uploadFile(new File([], 'mock-transcript.wav'));
+    if (!response.data) {
+      throw new Error('Failed to get transcription status');
+    }
+    return response.data;
   }
 
   async getHealthStatus(): Promise<HealthStatus> {
@@ -99,6 +118,15 @@ class DemoApiService {
       version: '1.0.0-demo',
       service: 'Demo Mode',
       environment: 'Demo'
+    };
+  }
+
+  async getHealth(): Promise<ApiResponse<HealthStatus>> {
+    // Alias for getHealthStatus to match real API interface
+    const healthStatus = await this.getHealthStatus();
+    return {
+      data: healthStatus,
+      success: true
     };
   }
 
@@ -122,6 +150,54 @@ class DemoApiService {
     };
   }
 
+    async getDetailedHealth(): Promise<ApiResponse<DetailedHealthStatus>> {
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    return {
+      data: {
+        status: "Healthy",
+        timestamp: new Date().toISOString(),
+        version: "1.0.0-demo",
+        service: "Demo API Service",
+        environment: "demo",
+        upTime: 123456,
+        machineName: "demo-server",
+        processorCount: 4,
+        workingSet: 256000000,
+        dependencies: {
+          openAI: "Connected",
+          database: "Connected"
+        }
+      },
+      success: true
+    };
+  }
+
+  async getOpenAIStatus(): Promise<ApiResponse<{ isEnabled: boolean; mode: string; message: string }>> {
+    await this.mockDelay(200);
+    return {
+      data: {
+        isEnabled: true,
+        mode: 'demo',
+        message: 'Demo mode - using mock AI responses'
+      },
+      success: true
+    };
+  }
+
+  async toggleOpenAI(enabled: boolean): Promise<ApiResponse<{ isEnabled: boolean; mode: string; message: string }>> {
+    await this.mockDelay(100);
+    return {
+      data: {
+        isEnabled: enabled,
+        mode: 'demo',
+        message: `Demo mode: OpenAI ${enabled ? 'enabled' : 'disabled'} (simulated)`
+      },
+      success: true
+    };
+  }
+
   async updateSpeakerMappings(transcriptionId: string, mappings: SpeakerMapping[]): Promise<void> {
     await this.mockDelay(200);
     // In demo mode, just simulate the API call
@@ -134,7 +210,7 @@ class DemoApiService {
     return `## Meeting Summary (Demo)
 
 **Date:** ${new Date().toLocaleDateString()}
-**Participants:** Sarah Johnson (Product Manager), Mike Chen (Senior Developer), Lisa Wang (UX Designer)
+**Participants:** Speaker 1, Speaker 2, Speaker 3
 
 ### Key Discussion Points
 - Q4 roadmap planning and prioritization
@@ -142,9 +218,9 @@ class DemoApiService {
 - UX design mockups presentation
 
 ### Action Items
-- **Sarah Johnson:** Finalize Q4 roadmap priorities by Friday
-- **Mike Chen:** Review technical feasibility of proposed features
-- **Lisa Wang:** Share updated mockups with the team
+- **Speaker 1:** Finalize Q4 roadmap priorities by Friday
+- **Speaker 2:** Review technical feasibility of proposed features
+- **Speaker 3:** Share updated mockups with the team
 
 ### Next Steps
 - Schedule follow-up meeting for next week
@@ -154,10 +230,80 @@ class DemoApiService {
 *This is a demo summary generated for demonstration purposes.*`;
   }
 
+  async generateMeetingSummary(_request: MeetingSummaryRequest): Promise<ApiResponse<MeetingSummary>> {
+    console.log('🎭 DemoApiService.generateMeetingSummary called');
+    console.log('- Request:', _request);
+    
+    await this.mockDelay(2000); // Simulate processing time
+    
+    const mockSummary: MeetingSummary = {
+      summaryId: 'demo-summary-' + Date.now(),
+      transcriptionId: 'demo-transcription-123',
+      meetingOverview: 'Daily standup meeting where the development team shared progress updates on the login feature, API integration, UI improvements, and deployment activities. Key blockers identified around API documentation and missing credentials.',
+      actionItemsByRole: [
+        {
+          speakerId: 'Speaker 1',
+          speakerName: 'Speaker 1',
+          speakerRole: '', // Empty role in demo mode until user maps speakers
+          actionItems: [
+            { description: 'Continue work on the summary feature', isExplicitAssignment: true, confidence: 0.95 },
+            { description: 'Complete API integration for login page', isExplicitAssignment: false, confidence: 0.80 }
+          ]
+        },
+        {
+          speakerId: 'Speaker 2',
+          speakerName: 'Speaker 2', 
+          speakerRole: '', // Empty role in demo mode until user maps speakers
+          actionItems: [
+            { description: 'Write more tests for the codebase', isExplicitAssignment: true, confidence: 0.92 },
+            { description: 'Follow up on missing API documentation', isExplicitAssignment: true, confidence: 0.88 }
+          ]
+        },
+        {
+          speakerId: 'Speaker 3',
+          speakerName: 'Speaker 3',
+          speakerRole: '', // Empty role in demo mode until user maps speakers
+          actionItems: [
+            { description: 'Pair with team member on summary feature', isExplicitAssignment: true, confidence: 0.90 },
+            { description: 'Continue mobile responsiveness improvements', isExplicitAssignment: false, confidence: 0.75 }
+          ]
+        }
+      ],
+      unassignedActionItems: [
+        { description: 'Resolve API documentation blocker', confidence: 0.70, reason: 'Requires coordination with external team' },
+        { description: 'Schedule follow-up on login page completion', confidence: 0.65, reason: 'Timeline dependent on API integration' }
+      ],
+      metadata: {
+        participants: ['Speaker 1', 'Speaker 2', 'Speaker 3'],
+        speakerCount: 3,
+        duration: '40s'
+      },
+      generation: {
+        generatedAt: new Date().toISOString(),
+        processingTimeMs: 2000,
+        tokenCount: 450,
+        isEditable: true
+      }
+    };
+
+    const response = {
+      success: true,
+      data: mockSummary,
+      message: 'Demo meeting summary generated successfully'
+    };
+    
+    console.log('🎭 DemoApiService.generateMeetingSummary response:', response);
+    return response;
+  }
+
   async sendSummaryEmail(transcriptionId: string, emailData: any): Promise<void> {
     await this.mockDelay(1000);
     // In demo mode, just simulate the email send
     console.log('Demo mode: Email simulated', { transcriptionId, emailData });
+  }
+
+  getBaseURL(): string {
+    return 'http://demo-api.localhost:5000';
   }
 }
 

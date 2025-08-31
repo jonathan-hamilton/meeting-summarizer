@@ -6,7 +6,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Box, Chip, IconButton, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Alert, Snackbar, Stack } from "@mui/material";
 import { Person, Check, Schedule, SwapHoriz } from "@mui/icons-material";
-import { useEnvironment } from "../contexts/EnvironmentProvider";
+import { useAppMode } from "../contexts/AppModeContext";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
@@ -45,7 +45,7 @@ export const TranscriptSpeakerSegment: React.FC<
   // Use centralized store for speaker management (fixed infinite loop)
   const storeMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
-  const { isProductionMode } = useEnvironment();
+  const { isProduction } = useAppMode();
   
   // Get ALL detected speakers from original segments for reassignment options
   const originalDetectedSpeakers = useMemo(() => {
@@ -121,7 +121,7 @@ export const TranscriptSpeakerSegment: React.FC<
           (speakerId.startsWith('Speaker ') || speakerId.match(/^Speaker\s*\d+$/i));
         
         if (isLikelyDeleted) {
-          displayName = isProductionMode ? "Unassigned" : speakerId;
+          displayName = isProduction ? "Unassigned" : speakerId;
         } else {
           // Probably just not initialized yet, show the speaker ID
           displayName = speakerId;
@@ -192,7 +192,7 @@ export const TranscriptSpeakerSegment: React.FC<
         (effectiveSpeakerId.startsWith('Speaker ') || effectiveSpeakerId.match(/^Speaker\s*\d+$/i));
       
       if (isLikelyDeleted) {
-  displayName = isProductionMode ? "Unassigned" : effectiveSpeakerId;
+  displayName = isProduction ? "Unassigned" : effectiveSpeakerId;
       } else {
         // Probably just not initialized yet, show the speaker ID
         displayName = effectiveSpeakerId;

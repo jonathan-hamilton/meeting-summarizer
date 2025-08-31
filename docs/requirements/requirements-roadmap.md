@@ -161,32 +161,32 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 
 
 ## Sprint 5
-**Partially Implemented (S5.1 ~40% Complete):**
+**Partially Implemented (S5.1 ~60% Complete - Incremental Progress):**
   - REQ-DEMO-1: Default to Demo mode for unsigned users ✅
   - REQ-DEMO-2: AppBar visually distinct and displays "Demo" ✅
   - REQ-USER-1: Two user modes: Demo/Public and Paid ✅
   - REQ-USER-2: Demo serves only static/demo content ✅
+  - REQ-DEMO-6: Simulate full workflow with static/mock data ✅
+  - REQ-DEMO-7: All features interactive on static data ✅
+  - REQ-DEMO-8: All actions simulated, no real data processed ✅
+  - REQ-DEMO-10: Upload simulated with mock progress ✅
+  - REQ-DEMO-11: Speaker mapping/transcript editing enabled ✅
+  - REQ-DEMO-12: Summary/email sharing simulated with mock confirmation ✅
+  - REQ-DEMO-13: No usage limits per session in Demo mode ✅
+  - REQ-DEMO-20: Demo implemented in client with static data ✅
+  - REQ-DEMO-21: Demo mode available in all environments ✅
   
 **In Progress/Not Yet Implemented:**
   - REQ-DEMO-3: Prominent "Sign In" button in AppBar ❌
   - REQ-DEMO-4: Step-by-step interactive Tour with tooltips ❌
   - REQ-DEMO-5: Tour closable, forward/backward navigation ❌
-  - REQ-DEMO-6: Simulate full workflow with static/mock data 🔄
-  - REQ-DEMO-7: All features interactive on static data 🔄
-  - REQ-DEMO-8: All actions simulated, no real data processed 🔄
   - REQ-DEMO-9: Tooltips/UI messaging clarify simulation ❌
-  - REQ-DEMO-10: Upload simulated with mock progress ✅
-  - REQ-DEMO-11: Speaker mapping/transcript editing enabled ✅
-  - REQ-DEMO-12: Summary/email sharing simulated with mock confirmation ❌
-  - REQ-DEMO-13: No usage limits per session in Demo mode ✅
   - REQ-DEMO-14: "Sign In" always visible in Demo mode ❌
   - REQ-DEMO-15: Signing in transitions to Paid mode ❌
   - REQ-DEMO-16: Tour/UI clarify Demo vs Paid modes ❌
   - REQ-DEMO-17: Privacy-friendly analytics for Demo usage ❌
   - REQ-DEMO-18: Analytics reviewed for abuse patterns ❌
   - REQ-DEMO-19: Demo mode meets accessibility/mobile standards 🔄
-  - REQ-DEMO-20: Demo implemented in client with static data ✅
-  - REQ-DEMO-21: Demo mode available in all environments ✅
   - REQ-USER-3: Paid mode persists data across sessions ❌
   - REQ-USER-4: Communicate data retention/privacy for each mode ❌
   - REQ-FPO-2: Convert all non-WAV audio files to WAV before transcription ✅

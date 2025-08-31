@@ -9,11 +9,15 @@ import {
   Switch,
   Tooltip,
   Link,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { Brightness4, Brightness7, HealthAndSafety, Help as HelpIcon } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
-import { EnvironmentProvider, useEnvironment } from "./contexts/EnvironmentProvider";
 import { useAppMode } from "./contexts/AppModeContext";
 import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
@@ -25,6 +29,7 @@ import { HelpDialog } from "./components/HelpDialog";
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
+import { createApiService } from "./services/apiServiceFactory";
 import realApiService from "./services/apiService";
 import mockApiService from "./services/apiService.mock";
 import { sessionManager } from "./services/sessionManager";
@@ -48,8 +53,7 @@ const SummaryDisplayDemo = React.lazy(
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
-  const { isProductionMode, toggleEnvironmentMode } = useEnvironment();
-  const { mode: appMode } = useAppMode(); // Add AppMode context
+  const { mode: appMode, setMode: setAppMode, signIn, signOut } = useAppMode();
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
   const { addTranscript } = useSessionStore();
@@ -59,10 +63,10 @@ const AppContent: React.FC = () => {
   const [healthDialogOpen, setHealthDialogOpen] = useState(false);
   const [isServerHealthy, setIsServerHealthy] = useState<boolean | null>(null);
 
-  // Update OpenAI state based on environment mode
+  // Update OpenAI state based on app mode
   const [isOpenAIEnabled, setIsOpenAIEnabled] = useState<boolean | null>(null);
-  // Use mock or real API service based on environment toggle
-  const apiService = isProductionMode ? realApiService : mockApiService;
+  // Use API service factory based on app mode
+  const apiService = createApiService(appMode);
 
   // State for forcing Privacy Policy dialog (for testing in dev mode)
   const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
@@ -70,6 +74,9 @@ const AppContent: React.FC = () => {
   // State for manually opening privacy policy and help dialogs
   const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  
+  // State for development mode sign-in dialog
+  const [devSignInDialogOpen, setDevSignInDialogOpen] = useState(false);
 
   // Listen for session expiry events
   useEffect(() => {
@@ -113,9 +120,9 @@ const AppContent: React.FC = () => {
     }
   };
 
-  // Sync OpenAI state with environment mode
+  // Sync OpenAI state with app mode
   useEffect(() => {
-    if (isProductionMode) {
+    if (appMode === 'production') {
       setIsOpenAIEnabled(true);
       realApiService.toggleOpenAI(true).catch(() => {
         console.warn('Failed to enable real API calls in production mode');
@@ -126,15 +133,20 @@ const AppContent: React.FC = () => {
         console.warn('Failed to enable mock API calls in development mode');
       });
     }
-  }, [isProductionMode]);
+  }, [appMode]);
 
-  const handleEnvironmentToggle = async () => {
-    toggleEnvironmentMode();
+  const handleModeToggle = async () => {
+    // Toggle between development and production modes (demo stays demo)
+    if (appMode === 'production') {
+      setAppMode('development');
+    } else if (appMode === 'development') {
+      setAppMode('production');
+    }
   };
 
-  const handleEnvironmentDoubleClick = () => {
+  const handleModeDoubleClick = () => {
     // In development mode, allow triggering Privacy Policy for testing
-    if (!isProductionMode) {
+    if (appMode === 'development') {
       setForceShowPrivacyPolicy(true);
     }
   };
@@ -145,6 +157,37 @@ const AppContent: React.FC = () => {
 
   const closeHealthDialog = () => {
     setHealthDialogOpen(false);
+  };
+
+  // Sign-In/Sign-Out button handlers
+  const handleSignInClick = async () => {
+    if (appMode === 'demo') {
+      // Demo mode: navigate to production mode
+      await signIn();
+    } else if (appMode === 'development') {
+      // Development mode: show stub dialog
+      setDevSignInDialogOpen(true);
+    }
+    // Production mode: this shouldn't happen as button shows "SIGN OUT"
+  };
+
+  const handleSignOutClick = () => {
+    // Production mode: navigate back to demo mode
+    signOut();
+  };
+
+  const getSignInButtonText = () => {
+    if (appMode === 'demo') return 'SIGN IN';
+    if (appMode === 'production') return 'SIGN OUT';
+    return 'SIGN IN'; // Development mode
+  };
+
+  const handleSignInButtonClick = () => {
+    if (appMode === 'production') {
+      handleSignOutClick();
+    } else {
+      handleSignInClick();
+    }
   };
 
   // Check server health and OpenAI status on component mount and periodically
@@ -217,41 +260,43 @@ const AppContent: React.FC = () => {
             sx={getAppBarSx()}
           >
             <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
-              {/* Development controls - positioned on left, hidden in demo mode */}
+              {/* Development controls - positioned on left, hidden in demo mode OR production mode */}
               {import.meta.env.DEV && appMode !== 'demo' && (
                 <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
-                  {/* Environment Mode Toggle Switch */}
+                  {/* Mode Toggle Switch - Toggle between development and production modes */}
                   <Tooltip
                     title={
-                      isProductionMode
+                      appMode === 'production'
                         ? "Production mode (real API calls, Privacy Policy enabled)"
                         : "Development mode (mocked API calls) - Double-click to test Privacy Policy"
                     }
                   >
                     <Switch
-                      checked={isProductionMode}
-                      onChange={handleEnvironmentToggle}
-                      onDoubleClick={handleEnvironmentDoubleClick}
+                      checked={appMode === 'production'}
+                      onChange={handleModeToggle}
+                      onDoubleClick={handleModeDoubleClick}
                       color="default"
                       sx={{ mr: 1, cursor: 'pointer' }}
                     />
                   </Tooltip>
 
-                  {/* Server Health Status Button */}
-                  <IconButton
-                    color={getHealthButtonColor()}
-                    onClick={openHealthDialog}
-                    sx={{ mr: 1 }}
-                    title={
-                      isServerHealthy === null
-                        ? "Checking server status..."
-                        : isServerHealthy
-                        ? "Server is healthy"
-                        : "Server is unhealthy"
-                    }
-                  >
-                    <HealthAndSafety />
-                  </IconButton>
+                  {/* Server Health Status Button - Hidden in production mode */}
+                  {appMode === 'development' && (
+                    <IconButton
+                      color={getHealthButtonColor()}
+                      onClick={openHealthDialog}
+                      sx={{ mr: 1 }}
+                      title={
+                        isServerHealthy === null
+                          ? "Checking server status..."
+                          : isServerHealthy
+                          ? "Server is healthy"
+                          : "Server is unhealthy"
+                      }
+                    >
+                      <HealthAndSafety />
+                    </IconButton>
+                  )}
                 </Box>
               )}
               
@@ -265,10 +310,29 @@ const AppContent: React.FC = () => {
               
               {/* Right-aligned controls */}
               <Box sx={{ position: "absolute", right: 0, display: "flex", alignItems: "center" }}>
-                {/* Hide SessionIndicator in demo mode */}
-                {appMode !== 'demo' && (
+                {/* Hide SessionIndicator in demo mode OR production mode */}
+                {appMode === 'development' && (
                   <SessionIndicator status={privacyControls.sessionStatus} />
                 )}
+                
+                {/* Sign-In/Sign-Out Button */}
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={handleSignInButtonClick}
+                  sx={{ 
+                    ml: 1,
+                    minWidth: '80px',
+                    fontWeight: 'bold',
+                    backgroundColor: appMode === 'demo' ? '#9C27B0' : '#1976d2',
+                    '&:hover': {
+                      backgroundColor: appMode === 'demo' ? '#7B1FA2' : '#1565C0'
+                    }
+                  }}
+                >
+                  {getSignInButtonText()}
+                </Button>
+                
                 <Tooltip title="Help & Privacy FAQ">
                   <IconButton color="inherit" onClick={() => setHelpDialogOpen(true)} sx={{ ml: 1 }}>
                     <HelpIcon />
@@ -303,6 +367,30 @@ const AppContent: React.FC = () => {
             open={helpDialogOpen}
             onClose={() => setHelpDialogOpen(false)}
           />
+
+          {/* Development mode sign-in dialog */}
+          <Dialog
+            open={devSignInDialogOpen}
+            onClose={() => setDevSignInDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle>Sign-In Not Available</DialogTitle>
+            <DialogContent>
+              <Typography>
+                Sign-in functionality is not available in Development mode. 
+                This mode is intended for developers to test the application with mock data.
+              </Typography>
+              <Typography sx={{ mt: 2 }}>
+                To test sign-in functionality, switch to Production mode using the toggle switch.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setDevSignInDialogOpen(false)} color="primary">
+                OK
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           <Box sx={{ py: 4, width: "100%" }}>
             <Typography
@@ -372,11 +460,9 @@ const AppContent: React.FC = () => {
 // Main app component with theme and environment providers
 const App: React.FC = () => {
   return (
-    <EnvironmentProvider>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
-    </EnvironmentProvider>
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 

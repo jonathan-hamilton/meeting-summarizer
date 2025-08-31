@@ -15,15 +15,12 @@ import {
   AccordionSummary,
   AccordionDetails,
   Snackbar,
-  ButtonGroup,
   Divider,
   Paper,
 } from "@mui/material";
 import {
   Psychology,
   ContentCopy,
-  Download,
-  Print,
   ExpandMore,
   Person,
   Assignment,
@@ -34,12 +31,14 @@ import {
 import type { SpeakerMapping, MeetingSummary } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
+import { useAppMode } from "../contexts/AppModeContext";
 import EmailCompositionDialog from "./EmailCompositionDialog";
 
 interface SummaryDisplayProps {
   transcriptionId: string;
   transcriptText: string;
   speakerMappings?: SpeakerMapping[];
+  detectedSpeakers?: string[];
   onSummaryGenerated?: (summary: MeetingSummary) => void;
 }
 
@@ -53,6 +52,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   transcriptionId,
   transcriptText,
   speakerMappings,
+  detectedSpeakers = [],
   onSummaryGenerated,
 }) => {
   // Get current speaker mappings from centralized store
@@ -67,6 +67,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     clearError,
     clearSummary 
   } = useSummaryStore();
+  
+  // Get the current app mode to pass to the summary generation
+  const { mode } = useAppMode();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
@@ -98,7 +101,56 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     }
 
     try {
-      await generateSummary(transcriptText, effectiveSpeakerMappings);
+      // Get current speakers from the store, with fallback to detected speakers prop
+      const currentSpeakers = useSpeakerSessionStore.getState().getActiveSpeakers();
+      
+      // Use detected speakers from props (original transcription) as fallback
+      // This ensures we use the actual speaker IDs like "Guest-1", "Guest-2" 
+      // instead of transformed ones like "Speaker 1", "Speaker 2"
+      const availableSpeakers = detectedSpeakers.length > 0 ? detectedSpeakers : currentSpeakers;
+      
+      console.log('🔍 Summary Generation Debug:');
+      console.log('- Store speakers:', currentSpeakers);
+      console.log('- Prop speakers (original):', detectedSpeakers);
+      console.log('- Available speakers (final):', availableSpeakers);
+      console.log('- Existing mappings:', effectiveSpeakerMappings);
+      
+      // If no speaker mappings exist, auto-generate default ones
+      let mappingsToUse = effectiveSpeakerMappings;
+      if (mappingsToUse.length === 0) {
+        if (availableSpeakers.length > 0) {
+          mappingsToUse = availableSpeakers.map((speakerId, index) => ({
+            speakerId,
+            name: `Speaker ${index + 1}`,
+            role: "Participant", // Default role to satisfy backend validation
+            transcriptionId,
+            source: "AutoDetected" as const,
+            email: ""
+          }));
+          
+          console.log('✅ Auto-generated mappings:', mappingsToUse);
+          console.log('- Raw speaker IDs used:', availableSpeakers);
+          console.log('- Generated mapping details:', mappingsToUse.map(m => ({ 
+            speakerId: m.speakerId, 
+            name: m.name, 
+            transcriptionId: m.transcriptionId 
+          })));
+        } else {
+          console.error('❌ No speakers available for summary generation');
+          setSnackbar({
+            open: true,
+            message: "No speakers detected in the transcript. Cannot generate summary.",
+            severity: "error",
+          });
+          return;
+        }
+      } else {
+        console.log('✅ Using existing mappings:', mappingsToUse);
+      }
+
+      console.log('🚀 Calling generateSummary with', mappingsToUse.length, 'speakers');
+      console.log('🎯 Mode being passed to generateSummary:', mode);
+      await generateSummary(transcriptText, mappingsToUse, mode);
       
       // Call the callback if provided
       if (onSummaryGenerated && summary) {
@@ -111,9 +163,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         severity: "success",
       });
     } catch (err) {
+      console.error('Summary generation error:', err);
       setSnackbar({
         open: true,
-        message: "Failed to generate meeting summary",
+        message: `Failed to generate meeting summary: ${err instanceof Error ? err.message : 'Unknown error'}`,
         severity: "error",
       });
     }
@@ -197,13 +250,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     content += `Processing Time: ${summary.generation.processingTimeMs}ms\n`;
     content += `Token Count: ${summary.generation.tokenCount}\n\n`;
 
-    content += `MEETING OVERVIEW\n`;
+    content += `${mode === 'demo' ? 'DEMO MEETING OVERVIEW' : mode === 'development' ? 'DEVELOPMENT MEETING OVERVIEW' : 'MEETING OVERVIEW'}\n`;
     content += `${summary.meetingOverview}\n\n`;
 
     if (summary.actionItemsByRole.length > 0) {
       content += `ACTION ITEMS BY ROLE\n`;
       summary.actionItemsByRole.forEach((roleGroup) => {
-        content += `\n${roleGroup.speakerName} (${roleGroup.speakerRole}):\n`;
+        const roleDisplay = roleGroup.speakerRole ? ` (${roleGroup.speakerRole})` : '';
+        content += `\n${roleGroup.speakerName}${roleDisplay}:\n`;
         roleGroup.actionItems.forEach((item, index) => {
           content += `  ${index + 1}. ${item.description}\n`;
         });
@@ -226,12 +280,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     content += `**Processing Time:** ${summary.generation.processingTimeMs}ms  \n`;
     content += `**Token Count:** ${summary.generation.tokenCount}  \n\n`;
 
-    content += `## Meeting Overview\n\n${summary.meetingOverview}\n\n`;
+    content += `## ${mode === 'demo' ? 'Demo Meeting Overview' : mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}\n\n${summary.meetingOverview}\n\n`;
 
     if (summary.actionItemsByRole.length > 0) {
       content += `## Action Items by Role\n\n`;
       summary.actionItemsByRole.forEach((roleGroup) => {
-        content += `### ${roleGroup.speakerName} (${roleGroup.speakerRole})\n\n`;
+        const roleDisplay = roleGroup.speakerRole ? ` (${roleGroup.speakerRole})` : '';
+        content += `### ${roleGroup.speakerName}${roleDisplay}\n\n`;
         roleGroup.actionItems.forEach((item, index) => {
           content += `${index + 1}. ${item.description}\n`;
         });
@@ -271,13 +326,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         <strong>Token Count:</strong> ${summary.generation.tokenCount}
     </div>
     
-    <h2>Meeting Overview</h2>
+    <h2>${mode === 'demo' ? 'Demo Meeting Overview' : mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}</h2>
     <div class="overview">${summary.meetingOverview}</div>`;
 
     if (summary.actionItemsByRole.length > 0) {
       content += `<h2>Action Items by Role</h2>`;
       summary.actionItemsByRole.forEach((roleGroup) => {
-        content += `<h3>${roleGroup.speakerName} (${roleGroup.speakerRole})</h3>`;
+        const roleDisplay = roleGroup.speakerRole ? ` (${roleGroup.speakerRole})` : '';
+        content += `<h3>${roleGroup.speakerName}${roleDisplay}</h3>`;
         content += `<ol>`;
         roleGroup.actionItems.forEach((item) => {
           content += `<li>${item.description}</li>`;
@@ -332,7 +388,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               Generate Meeting Summary
             </Button>
             <Typography variant="body2" color="text.secondary">
-              Creates a comprehensive summary with role-aware action items
+              Creates a comprehensive summary with role-aware action items.
+              <br />
+              Works with or without custom speaker names.
             </Typography>
           </Box>
         )}
@@ -393,24 +451,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                   </IconButton>
                 </Tooltip>
 
-                <ButtonGroup size="small" variant="outlined">
-                  <Button
-                    startIcon={<Download />}
-                    onClick={() => handleExport("text")}
-                  >
-                    TXT
-                  </Button>
-                  <Button onClick={() => handleExport("markdown")}>
-                    MD
-                  </Button>
-                  <Button onClick={() => handleExport("html")}>HTML</Button>
-                </ButtonGroup>
-
-                <Tooltip title="Print summary">
-                  <IconButton size="small" onClick={() => window.print()}>
-                    <Print />
-                  </IconButton>
-                </Tooltip>
               </Stack>
 
               {/* Metadata Chips */}
@@ -418,11 +458,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                 <Chip
                   icon={<Schedule />}
                   label={`${summary.generation.processingTimeMs}ms`}
-                  variant="outlined"
-                  size="small"
-                />
-                <Chip
-                  label={`${summary.generation.tokenCount} tokens`}
                   variant="outlined"
                   size="small"
                 />
@@ -448,7 +483,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             {/* Meeting Overview */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" gutterBottom>
-                Meeting Overview
+                {mode === 'demo' ? 'Demo Meeting Overview' : mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}
               </Typography>
               <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
                 {summary.meetingOverview}
@@ -473,7 +508,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                             {roleGroup.speakerName}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {roleGroup.speakerRole} • {roleGroup.actionItems.length} action items
+                            {roleGroup.speakerRole ? `${roleGroup.speakerRole} • ` : ''}{roleGroup.actionItems.length} action items
                           </Typography>
                         </Box>
                       </Stack>

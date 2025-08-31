@@ -1,7 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useAppMode } from './AppModeContext';
-import { useEnvironment } from './EnvironmentProvider';
 import { createApiService } from '../services/apiServiceFactory';
 
 interface ApiContextType {
@@ -16,9 +15,8 @@ interface ApiProviderProps {
 
 export const ApiProvider: React.FC<ApiProviderProps> = ({ children }) => {
   const { mode } = useAppMode();
-  const { isProductionMode } = useEnvironment();
   
-  const apiService = createApiService(mode, isProductionMode);
+  const apiService = createApiService(mode);
   
   return (
     <ApiContext.Provider value={{ apiService }}>

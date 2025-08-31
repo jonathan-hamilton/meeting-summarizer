@@ -28,6 +28,7 @@ import {
 import CodeEditor from '@uiw/react-textarea-code-editor';
 import type { MeetingSummary, SpeakerMapping } from '../types';
 import { emailService } from '../services/emailService';
+import { useAppMode } from '../contexts/AppModeContext';
 
 interface EmailCompositionDialogProps {
   open: boolean;
@@ -58,6 +59,9 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   speakerMappings,
   onSend,
 }) => {
+  // Mode detection for demo mode handling
+  const { mode } = useAppMode();
+  
   // Email composition state
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
@@ -215,7 +219,7 @@ Best regards`;
     }
   };
 
-  // Handle send email with real API call
+  // Handle send email with mode-aware behavior
   const handleSend = async () => {
     // Clear previous messages
     setError(null);
@@ -241,6 +245,29 @@ Best regards`;
     try {
       setIsSending(true);
       
+      // Demo mode: Simulate email sending without real API calls
+      if (mode === 'demo') {
+        // Simulate processing delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setSendSuccess(`✨ Demo: Email sent successfully to ${recipients.length} recipient(s)! (No actual emails were sent)`);
+        
+        // Call legacy onSend callback if provided for demo mode
+        if (onSend) {
+          const emailData: EmailData = {
+            subject: subject.trim(),
+            content: content.trim(),
+            htmlContent: content.trim(), // Use same content for HTML
+            recipients: [...recipients]
+          };
+          onSend(emailData);
+        }
+        
+        setIsSending(false);
+        return;
+      }
+      
+      // Production/Development mode: Real email sending
       // Generate professional HTML content
       let htmlContent = '';
       if (summary) {
