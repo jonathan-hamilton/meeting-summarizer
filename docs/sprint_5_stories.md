@@ -14,7 +14,7 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
-| S5.1     | User Mode Selection & Demo Content                 | PENDING 🔄    | None                 |
+| S5.1     | User Mode Selection & Demo Content                 | IN PROGRESS 🔄| None                 |
 | S5.2     | Azure Storage & Persistent Data Setup              | PENDING 🔄    | S5.1                 |
 | S5.3     | Payment & Token System Setup                       | PENDING 🔄    | S5.1                 |
 | S5.4     | Persistent Upload Progress & Meeting History (Paid)| PENDING 🔄    | S5.2, S5.3           |
@@ -25,12 +25,55 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 ### Story S5.1: User Mode Selection & Demo Content
 As a user, I want to choose between Demo/Public (static demo) and Paid (account-based) modes so that my experience matches my privacy and persistence needs.
 
+**Status: IN PROGRESS 🔄 (~60% Complete)**
+
+**Completion Date:** August 30, 2025 (Incremental Progress)
+
+**Implementation Summary:**
+✅ **Completed Components:**
+- AppModeContext with toggle-based mode selection (demo/development/production)
+- Complete demo API service with comprehensive mock responses and simulated processing workflows
+- Mode-aware routing infrastructure (/ → /demo, /app for production)
+- Demo mode visual distinction (purple AppBar, "Demo" labeling)
+- Simulated file upload without file picker using demo data
+- Demo-aware components (FileUpload, speaker mapping, transcript display)
+- Email simulation for demo mode (fixed bug preventing real API calls)
+- Complete tour step documentation (Steps 1-8) with conditional logic and workflow details
+- Demo workflow foundation through transcript display and speaker mapping
+
+❌ **Missing Components (Required for S5.1 Completion):**
+- Interactive guided tour system with Material-UI Popovers/Dialogs for step-by-step guidance
+- Sign-In/Sign-Out button replacing development toggle in AppBar with authentication dialog
+- Complete demo workflow beyond transcript display (summary generation → email sharing UI integration)
+- Tour-driven feature access (all demo features only available through guided tour)
+- Tour auto-start functionality and navigation controls (forward/backward/skip/close)
+- Demo mode messaging and visual indicators (tooltips clarifying simulation)
+
 Acceptance Criteria:
-- System provides clear option to select Demo/Public or Paid mode at entry or sign-in
-- Demo/Public mode: application serves only static/demo content; no uploads, file processing, or progress tracking occurs
-- All upload and meeting features in Demo/Public mode are simulated with static examples
-- Paid mode: authenticated users have access to upload and meeting features
-- Data retention and privacy policies are clearly communicated for each mode
+- ✅ System provides clear option to select Demo/Public or Paid mode at entry or sign-in
+- ✅ Demo/Public mode: application serves only static/demo content; no uploads, file processing, or progress tracking occurs
+- ✅ All upload and meeting features in Demo/Public mode are simulated with static examples
+- ❌ Paid mode: authenticated users have access to upload and meeting features
+- ❌ Data retention and privacy policies are clearly communicated for each mode
+
+**Technical Notes:**
+- Chose client-side routing over server-side mode detection for better development experience
+- Established unified store architecture supporting both modes without component duplication
+- AppModeContext provides complete tour state foundation but tour UI components not built
+- Demo API service fully functional but not integrated with missing UI components (summary/email flows)
+
+**Integration Points:**
+- Enhanced store ready for tour progress tracking
+- All demo API endpoints implemented and tested
+- Component architecture supports mode-aware behavior
+- Performance and validation improvements benefit both demo and production modes
+
+**Next Steps for S5.1 Completion:**
+1. Implement TourPopover component with Material-UI Backdrop and Portal for step highlighting
+2. Replace development environment toggle with Sign-In/Sign-Out button in AppBar
+3. Build missing UI components: Summary generation display and Email sharing dialog for demo
+4. Integrate tour system with existing demo-aware components
+5. Add tour auto-start, navigation controls, and completion tracking
 
 Dependencies: None
 

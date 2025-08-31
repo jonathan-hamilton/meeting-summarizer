@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { MeetingSummary, MeetingSummaryRequest, SpeakerMapping } from '../types';
-import apiService from '../services/apiService';
+import type { AppMode } from '../contexts/AppModeContext';
+import { createApiService } from '../services/apiServiceFactory';
 
 interface SummaryState {
   // Current summary data
@@ -13,7 +14,7 @@ interface SummaryState {
   lastGeneratedAt: string | null;
   
   // Actions
-  generateSummary: (transcriptText: string, speakerMappings: SpeakerMapping[]) => Promise<void>;
+  generateSummary: (transcriptText: string, speakerMappings: SpeakerMapping[], mode?: AppMode) => Promise<void>;
   clearSummary: () => void;
   clearError: () => void;
 }
@@ -28,10 +29,21 @@ export const useSummaryStore = create<SummaryState>()(
       lastGeneratedAt: null,
 
       // Generate meeting summary action
-      generateSummary: async (transcriptText: string, speakerMappings: SpeakerMapping[]) => {
+      generateSummary: async (transcriptText: string, speakerMappings: SpeakerMapping[], mode?: AppMode) => {
         set({ isGenerating: true, error: null });
         
         try {
+          // Use provided mode (should always be provided from AppModeContext)
+          // Fallback to demo mode if not provided (safer default)
+          const apiMode = mode || 'demo';
+          
+          console.log('🔍 API Service Selection:');
+          console.log('- Provided mode:', mode);
+          console.log('- Final apiMode:', apiMode);
+          
+          // Get the appropriate API service based on mode only
+          const apiService = createApiService(apiMode);
+          
           // Clean up speaker mappings to ensure valid data
           const cleanedMappings = speakerMappings.map(mapping => ({
             ...mapping,
@@ -44,7 +56,11 @@ export const useSummaryStore = create<SummaryState>()(
             SpeakerMappings: cleanedMappings // S3.4: PascalCase for backend
           };
 
-          console.log('🔄 Sending meeting summary request:', request); // Debug log
+          console.log('🔄 Sending meeting summary request:');
+          console.log('- Transcript length:', transcriptText.length);
+          console.log('- Original speaker mappings:', speakerMappings);
+          console.log('- Cleaned speaker mappings:', cleanedMappings);
+          console.log('- Full request:', request);
 
           const response = await apiService.generateMeetingSummary(request);
           
@@ -62,7 +78,13 @@ export const useSummaryStore = create<SummaryState>()(
             });
           }
         } catch (error) {
-          console.error('Summary generation error:', error);
+          console.error('Summary generation error details:', {
+            error,
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+            errorStack: error instanceof Error ? error.stack : undefined,
+            speakerMappings,
+            transcriptLength: transcriptText.length
+          });
           set({ 
             isGenerating: false, 
             error: error instanceof Error ? error.message : 'An unexpected error occurred while generating the summary'

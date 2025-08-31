@@ -39,22 +39,63 @@ const mockTranscription: TranscriptionResponse = {
 };
 
 const mockSummary: MeetingSummary = {
-  summaryId: 'mock-summary-1',
+  summaryId: 'mock-summary-' + Date.now(),
   transcriptionId: 'mock-123',
-  meetingOverview: 'This is a mock summary of the meeting.',
-  actionItemsByRole: [],
-  unassignedActionItems: [],
+  meetingOverview: 'Daily standup meeting where the development team shared progress updates. Speaker 1 completed login page work and will focus on summary feature. Speaker 2 fixed speaker mapping bugs and reviewed PRs but is blocked on API documentation. Speaker 3 improved UI mobile responsiveness and onboarding, plans to pair on summary work. Speaker 4 deployed to staging and verified analytics but is blocked by missing credentials for monitoring tasks.',
+  actionItemsByRole: [
+    {
+      speakerId: 'Speaker 1',
+      speakerName: 'Speaker 1',
+      speakerRole: 'Frontend Developer',
+      actionItems: [
+        { description: 'Work on the summary feature', isExplicitAssignment: true, confidence: 0.95 },
+        { description: 'Continue API integration work', isExplicitAssignment: false, confidence: 0.80 }
+      ]
+    },
+    {
+      speakerId: 'Speaker 2',
+      speakerName: 'Speaker 2', 
+      speakerRole: 'QA Engineer',
+      actionItems: [
+        { description: 'Write more tests', isExplicitAssignment: true, confidence: 0.92 },
+        { description: 'Resolve API documentation blocker', isExplicitAssignment: true, confidence: 0.88 }
+      ]
+    },
+    {
+      speakerId: 'Speaker 3',
+      speakerName: 'Speaker 3',
+      speakerRole: 'UI/UX Developer', 
+      actionItems: [
+        { description: 'Pair with someone on the summary', isExplicitAssignment: true, confidence: 0.90 },
+        { description: 'Continue mobile responsiveness work', isExplicitAssignment: false, confidence: 0.75 }
+      ]
+    },
+    {
+      speakerId: 'Speaker 4',
+      speakerName: 'Speaker 4',
+      speakerRole: 'DevOps Engineer',
+      actionItems: [
+        { description: 'Monitor error logs', isExplicitAssignment: true, confidence: 0.95 },
+        { description: 'Update documentation', isExplicitAssignment: true, confidence: 0.85 },
+        { description: 'Resolve missing credentials issue', isExplicitAssignment: true, confidence: 0.98 }
+      ]
+    }
+  ],
+  unassignedActionItems: [
+    { description: 'Resolve API documentation access for Speaker 2', confidence: 0.70, reason: 'External dependency blocking testing work' },
+    { description: 'Provide missing credentials for Speaker 4', confidence: 0.85, reason: 'Required for error monitoring and documentation tasks' }
+  ],
   metadata: {
-    participants: ['Speaker 1', 'Speaker 2'],
-    speakerCount: 2,
-    duration: '10s',
+    participants: ['Speaker 1', 'Speaker 2', 'Speaker 3', 'Speaker 4'],
+    speakerCount: 4,
+    duration: '40s'
   },
   generation: {
     generatedAt: new Date().toISOString(),
-    processingTimeMs: 100,
-    tokenCount: 100,
-    isEditable: false,
-  },
+    processingTimeMs: 200,
+    tokenCount: 450,
+    isEditable: true
+  }
 };
 
 const apiServiceMock = {
@@ -144,8 +185,13 @@ const apiServiceMock = {
     return { success: true };
   },
   // Removed getSessionStatus to eliminate 'Session Active' chip in mock mode
-  async generateMeetingSummary(): Promise<ApiResponse<MeetingSummary>> {
+  async generateMeetingSummary(_request: MeetingSummaryRequest): Promise<ApiResponse<MeetingSummary>> {
+    console.log('🔧 MockApiService.generateMeetingSummary called');
+    console.log('- Request:', _request);
+    
     await delay(200);
+    
+    console.log('🔧 MockApiService.generateMeetingSummary response:', mockSummary);
     return { data: mockSummary, success: true };
   },
   async getSummarizationStatus(): Promise<ApiResponse<{ status: string; service: string; isAvailable: boolean }>> {

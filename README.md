@@ -4,22 +4,25 @@ A modern web application for transcribing and summarizing meeting audio using Az
 
 ## ✅ Current Status - Sprint 5 Demo Mode & Audio Format Support
 
-### 🔄 **S5.1: Demo Mode Architecture - IN PROGRESS (~40% Complete)**
+### 🔄 **S5.1: Demo Mode Architecture - IN PROGRESS (~60% Complete)**
 
-**August 29, 2025**: Foundational architecture implemented, core user experience features pending
+**August 30, 2025**: Significant incremental progress with email simulation and tour documentation complete
 - ✅ **React Router Integration**: Client-side routing with `/demo` and `/app` modes, automatic redirect
 - ✅ **AppModeContext**: Complete context provider with tour state management foundation
 - ✅ **Enhanced Store Architecture**: Unified Zustand store with mode-aware sections (demo/production)
 - ✅ **Demo API Service**: Comprehensive mock service with realistic delays and workflow simulation
 - ✅ **Visual Differentiation**: Purple AppBar for demo mode, distinct from production orange/blue colors
 - ✅ **Component Mode Awareness**: FileUpload and core components support demo/production switching
+- ✅ **Email Simulation**: Fixed demo mode email bug - now properly simulates instead of real API calls
+- ✅ **Tour Documentation**: Complete tour step documentation (Steps 1-8) with detailed workflow ready for UI implementation
+- ✅ **Demo Workflow Foundation**: Complete simulation from file upload through transcript display and speaker mapping
 - ❌ **Interactive Guided Tour**: Step-by-step tour with Material-UI Popovers/Dialogs not implemented
 - ❌ **Sign-In Flow**: Sign-In/Sign-Out button and authentication dialog not implemented
-- ❌ **Complete Demo Workflow**: Summary generation and email sharing UI missing from demo
 - ❌ **Tour Navigation**: Auto-start, forward/backward controls, and step highlighting not implemented
+- ❌ **Demo Mode Messaging**: Tooltips and indicators clarifying simulation not implemented
 
 **Architecture Ready For**: Tour system integration, authentication flow, complete demo workflow
-**Next Sprint Tasks**: Complete tour UI components, sign-in button replacement, demo workflow integration
+**Next Sprint Tasks**: Complete tour UI components (TourPopover, TourControls), sign-in button replacement, demo messaging system
 
 ### 🧪 **S5.5: Automatic WAV Conversion - TESTING PHASE**
 

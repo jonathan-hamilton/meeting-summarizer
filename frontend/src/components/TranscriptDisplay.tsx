@@ -83,10 +83,19 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
-    return transcription.speakerSegments
+    const speakers = transcription.speakerSegments
       ? Array.from(new Set(transcription.speakerSegments.map((s) => s.speaker)))
       : [];
-  }, [transcription.speakerSegments]);
+    
+    console.log('🔍 TranscriptDisplay detected speakers:', {
+      transcriptionId: transcription.transcriptionId,
+      speakerSegments: transcription.speakerSegments?.map(s => ({ speaker: s.speaker, text: s.text?.substring(0, 50) + '...' })),
+      detectedSpeakers: speakers,
+      rawSpeakerList: speakers
+    });
+    
+    return speakers;
+  }, [transcription.speakerSegments, transcription.transcriptionId]);
 
   // Memoize effective speaker mappings
   const effectiveSpeakerMappings = useMemo(() => {
@@ -657,6 +666,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               transcriptionId={transcription.transcriptionId}
               transcriptText={transcription.transcribedText || ""}
               speakerMappings={effectiveSpeakerMappings}
+              detectedSpeakers={allDetectedSpeakers}
             />
           </Box>
         )}

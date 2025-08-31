@@ -25,10 +25,8 @@ import {
   Psychology,
   RadioButtonUnchecked,
 } from "@mui/icons-material";
-import realApiService from "../services/apiService";
-import mockApiService from "../services/apiService.mock";
-import { useEnvironment } from "../contexts/EnvironmentProvider";
 import { useAppMode } from "../contexts/AppModeContext";
+import { createApiService } from "../services/apiServiceFactory";
 import { useEnhancedSessionStore } from "../stores/enhancedSessionStore";
 import type { TranscriptionResponse } from "../types";
 
@@ -114,7 +112,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
 }) => {
-  const { isProductionMode } = useEnvironment();
+  const { mode } = useAppMode();
   const { isDemo } = useAppMode();
   const { 
     startDemoUpload,
@@ -125,7 +123,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       mockTranscripts
     }
   } = useEnhancedSessionStore();
-  const apiService = isProductionMode ? realApiService : mockApiService;
+  const apiService = createApiService(mode);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const demoCallbackCalledRef = useRef(false);

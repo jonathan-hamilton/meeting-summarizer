@@ -2,12 +2,14 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-export type AppMode = 'demo' | 'production';
+export type AppMode = 'demo' | 'development' | 'production';
 
 interface AppModeContextType {
   mode: AppMode;
   isDemo: boolean;
+  isDevelopment: boolean;
   isProduction: boolean;
+  setMode: (mode: AppMode) => void;
   signIn: () => Promise<void>;
   signOut: () => void;
   tourStep: number;
@@ -28,26 +30,23 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Determine mode based on current route
-  const getCurrentMode = (): AppMode => {
-    return location.pathname.startsWith('/app') ? 'production' : 'demo';
+  // Determine initial mode based on current route
+  const getInitialMode = (): AppMode => {
+    if (location.pathname.startsWith('/app')) return 'production';
+    return 'demo'; // default for / and /demo
   };
   
-  const [mode, setMode] = useState<AppMode>(getCurrentMode());
+  const [mode, setMode] = useState<AppMode>(getInitialMode());
   const [tourStep, setTourStep] = useState(0);
   const [isTourActive, setIsTourActive] = useState(false);
   
-  // Update mode when route changes
+  // Auto-start tour when entering demo mode
   useEffect(() => {
-    const newMode = getCurrentMode();
-    setMode(newMode);
-    
-    // Auto-start tour when entering demo mode
-    if (newMode === 'demo' && !isTourActive) {
+    if (mode === 'demo' && !isTourActive) {
       setIsTourActive(true);
       setTourStep(0);
     }
-  }, [location.pathname, isTourActive]);
+  }, [mode, isTourActive]);
   
   const signIn = async (): Promise<void> => {
     // TODO: Implement actual authentication logic
@@ -66,7 +65,7 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
     setIsTourActive(true);
     setTourStep(0);
   };
-  
+
   const startTour = (): void => {
     setIsTourActive(true);
     setTourStep(0);
@@ -92,7 +91,9 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   const contextValue: AppModeContextType = {
     mode,
     isDemo: mode === 'demo',
+    isDevelopment: mode === 'development',
     isProduction: mode === 'production',
+    setMode,
     signIn,
     signOut,
     tourStep,

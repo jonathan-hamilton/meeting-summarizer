@@ -24,9 +24,8 @@ import {
   Timer,
   Storage,
 } from "@mui/icons-material";
-import realApiService from "../services/apiService";
-import mockApiService from "../services/apiService.mock";
-import { useEnvironment } from "../contexts/EnvironmentProvider";
+import { useAppMode } from "../contexts/AppModeContext";
+import { createApiService } from "../services/apiServiceFactory";
 import type {
   HealthStatus,
   DetailedHealthStatus,
@@ -50,8 +49,8 @@ export const HealthDialog: React.FC<HealthDialogProps> = ({
     error: null,
   });
 
-  const { isProductionMode } = useEnvironment();
-  const apiService = isProductionMode ? realApiService : mockApiService;
+  const { mode } = useAppMode();
+  const apiService = createApiService(mode);
 
   const fetchHealthData = async () => {
     setLoading({ isLoading: true, error: null });
