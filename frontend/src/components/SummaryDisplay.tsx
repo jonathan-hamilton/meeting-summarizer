@@ -28,10 +28,11 @@ import {
   CheckCircle,
   Email,
 } from "@mui/icons-material";
+import { useAppMode } from "../contexts/AppModeContext";
 import type { SpeakerMapping, MeetingSummary } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
-import { useAppMode } from "../contexts/AppModeContext";
+import { useTourStore } from "../stores/tourStore";
 import EmailCompositionDialog from "./EmailCompositionDialog";
 
 interface SummaryDisplayProps {
@@ -69,7 +70,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   } = useSummaryStore();
   
   // Get the current app mode to pass to the summary generation
-  const { mode } = useAppMode();
+  const { mode, isDemo } = useAppMode();
+  
+  // Tour store for managing closed steps
+  const { closeStep, isStepClosed } = useTourStore();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
@@ -86,6 +90,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     message: "",
     severity: "info",
   });
+
+  // Tour step management for development
+  const [closedTourSteps, setClosedTourSteps] = useState<Set<number>>(new Set());
+
+  const closeTourStep = (stepNumber: number) => {
+    setClosedTourSteps(prev => new Set([...prev, stepNumber]));
+  };
 
   // Email dialog state
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -213,7 +224,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   };
 
   return (
-    <Card sx={{ width: "100%" }}>
+    <Card sx={{ width: "100%", position: "relative" }}>
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
           <Psychology color="primary" />
@@ -241,6 +252,58 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               Works with or without custom speaker names.
             </Typography>
           </Box>
+        )}
+
+        {/* Step 9 Tour Popover - Summary */}
+        {isDemo && !isStepClosed(9) && (
+          <Paper
+            sx={{
+              position: 'absolute',
+              top: '20px',
+              right: '50px',
+              p: 2,
+              backgroundColor: 'grey.700',
+              color: 'white',
+              borderRadius: 2,
+              maxWidth: '300px',
+              zIndex: 9999,
+              boxShadow: 3,
+              pointerEvents: 'auto', // Allow interactions for close button
+              textAlign: 'center', // Center all text content
+            }}
+          >
+            {/* Step indicator */}
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="primary" fontWeight="bold">
+                Step 9
+              </Typography>
+            </Box>
+
+            {/* Title */}
+            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
+              Summary
+            </Typography>
+
+            {/* Description */}
+            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+              Click GENERATE MEETING SUMMARY to generate a (mock) Meeting Summary with Action Items
+            </Typography>
+
+            {/* Controls - Development mode: no navigation needed */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: 'grey.300',
+                  cursor: 'pointer',
+                  '&:hover': { color: 'white' }
+                }}
+                onClick={() => closeStep(9)}
+              >
+                CLOSE
+              </Typography>
+            </Box>
+          </Paper>
         )}
 
         {/* Loading State */}

@@ -25,9 +25,9 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 ### Story S5.1: User Mode Selection & Demo Content
 As a user, I want to choose between Demo/Public (static demo) and Paid (account-based) modes so that my experience matches my privacy and persistence needs.
 
-**Status: IN PROGRESS 🔄 (~75% Complete)**
+**Status: IN PROGRESS 🔄 (~85% Complete)**
 
-**Completion Date:** August 30, 2025 (Incremental Progress)
+**Completion Date:** August 31, 2025 (Incremental Progress)
 
 **Implementation Summary:**
 ✅ **Completed Components:**
@@ -40,17 +40,23 @@ As a user, I want to choose between Demo/Public (static demo) and Paid (account-
 - Email simulation for demo mode (fixed bug preventing real API calls)
 - Complete tour step documentation (Steps 1-18) with conditional logic and workflow details
 - Demo workflow foundation through transcript display and speaker mapping
-- **Interactive tour infrastructure (Steps 2-4 implemented):**
+- **Enhanced interactive tour infrastructure (Steps 2-9 implemented):**
   - Step 2 TourPopover in TranscriptDisplay.tsx (transcription statistics overview)
   - Step 3 TourPopover in SpeakerMapping.tsx (speaker management guidance)
-  - Step 4 TourPopover in SpeakerMappingDialog.tsx (optional add speaker with AI confidence warning)
+  - **Steps 4-8 TourPopovers in SpeakerMappingDialog.tsx with full tour store integration**
+  - **Step 9 TourPopover in SummaryDisplay.tsx with tour store integration**
+  - **Tour store infrastructure with closeable functionality for development workflow**
+  - **All implemented TourPopovers support individual close actions without step dependencies**
   - Enhanced metadata chips with PlayCircle and Schedule icons for better UX clarity
   - Consistent TourPopover styling with dark grey theme and fixed positioning
   - Z-index layering management for proper tour display above dialogs
   - Tour step documentation simplified from decimal to whole number format
+- **Critical bug fixes:**
+  - **Speaker mapping functionality restored (handleSpeakerMappingsSaved callback fix)**
+  - **Tour positioning refinements and development-friendly closeable behavior**
 
 ❌ **Missing Components (Required for S5.1 Completion):**
-- Steps 1, 5-18 tour popover implementations
+- **Steps 1, 10-18 tour popover implementations** (reduced scope - Steps 2-9 now complete)
 - Tour navigation controls (forward/backward/skip/close)
 - Tour auto-start functionality and completion tracking
 - Sign-In/Sign-Out button replacing development toggle in AppBar with authentication dialog
@@ -81,7 +87,7 @@ Acceptance Criteria:
 - Performance and validation improvements benefit both demo and production modes
 
 **Next Steps for S5.1 Completion:**
-1. Implement remaining tour steps (Steps 1, 5-18) following established TourPopover pattern
+1. **Implement remaining tour steps (Steps 1, 10-18) following established TourPopover pattern** (reduced scope from Steps 1, 5-18)
 2. Add tour navigation controls (forward/backward/skip/close) to existing tour infrastructure
 3. Implement tour auto-start functionality and completion tracking
 4. Replace development environment toggle with Sign-In/Sign-Out button in AppBar

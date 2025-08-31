@@ -1,10 +1,28 @@
-# 2025-08-30: S5.1 Demo Tour Infrastructure Implementation (INCREMENTAL PROGRESS ~75%)
+# 2025-08-31: S5.1 Enhanced Tour Infrastructure with Closeable Functionality (INCREMENTAL PROGRESS ~85%)
 
 ### Overview
 
-Significant advancement in Sprint 5.1 "User Mode Selection & Demo Content" with implementation of interactive tour infrastructure. Completed Steps 2-4 of the guided tour system with consistent styling, enhanced UX elements, and proper component integration. Advanced completion from ~60% to ~75%.
+Major advancement in Sprint 5.1 "User Mode Selection & Demo Content" with comprehensive tour infrastructure implementation and critical bug fixes. Completed Steps 2-9 of the guided tour system with tour store integration, closeable functionality for development workflow, and restored speaker mapping functionality. Advanced completion from ~75% to ~85%.
 
-### Recent Progress (August 30, 2025)
+### Recent Progress (August 31, 2025)
+
+**Tour Infrastructure Enhancement:**
+- Implemented centralized tour store with Zustand for state management across components
+- Enhanced TourPopover architecture with individual close functionality for development workflow
+- Established consistent positioning strategy (fixed vs absolute) for tour elements
+- Integrated tour store with existing demo mode context for seamless user experience
+- Resolved tour element interaction conflicts with proper pointerEvents management
+- **Completed Steps 4-9 TourPopovers with full tour store integration:**
+  - Steps 4-8 in SpeakerMappingDialog.tsx with closeable functionality
+  - Step 9 in SummaryDisplay.tsx with tour store integration
+  - All implemented TourPopovers support individual close actions without step dependencies
+
+**Critical Bug Fixes:**
+- **Speaker mapping functionality restored:** Fixed handleSpeakerMappingsSaved callback to properly update TranscriptDisplay when speaker mappings are changed
+- **Tour development workflow:** Implemented closeable TourPopovers to enable focused testing of individual features without tour dependencies
+- **Tour positioning refinements:** Established proper positioning strategies for consistent display across components
+
+### Previous Progress (August 30, 2025)
 
 **Tour Infrastructure Implementation:**
 - Implemented Step 2 TourPopover in TranscriptDisplay.tsx (transcription statistics overview)

@@ -58,6 +58,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const initializeSession = useSpeakerSessionStore(state => state.initializeSession);
   const reassignSegment = useSpeakerSessionStore(state => state.reassignSegment);
   const resetToOriginal = useSpeakerSessionStore(state => state.resetToOriginal);
+  const addSpeakerMapping = useSpeakerSessionStore(state => state.addSpeakerMapping);
+  const updateSpeakerMapping = useSpeakerSessionStore(state => state.updateSpeakerMapping);
+  const deleteSpeakerMapping = useSpeakerSessionStore(state => state.deleteSpeakerMapping);
+  const getAllMappings = useSpeakerSessionStore(state => state.getFilteredMappings);
   
   // Use current segments from store (reflects reassignments), fallback to original transcription
   const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
@@ -70,10 +74,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   
   const clearSpeakers = () => {
     clearSession();
-  };
-  
-  const getAllMappings = () => {
-    return storeSpeakerMappings;
   };
 
   // Centralized store hooks
@@ -297,10 +297,17 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     setForceUpdate((prev) => prev + 1);
   }, []);
 
-  const handleSpeakerMappingsSaved = useCallback(() => {
+  const handleSpeakerMappingsSaved = useCallback((savedMappings: SpeakerMapping[]) => {
+    console.log('🔄 TranscriptDisplay: Speaker mappings saved', savedMappings);
+    
+    // Update the speaker mappings in the store using addSpeakerMapping which handles both add/update
+    savedMappings.forEach(mapping => {
+      addSpeakerMapping(mapping);
+    });
+    
     setSpeakerMappingDialogOpen(false);
     setForceUpdate((prev) => prev + 1);
-  }, []);
+  }, [addSpeakerMapping]);
 
   const handleSpeakerSegmentChange = useCallback(
     (segmentIndex: number, newSpeaker: string) => {
