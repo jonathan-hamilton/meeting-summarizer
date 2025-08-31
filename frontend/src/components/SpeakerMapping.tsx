@@ -457,7 +457,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
             {/* Description */}
             <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-              (Optional) Click 'MANAGE NAMES' to assign names to the speakers we detected in the meeting.
+              (Optional) Click 'MANAGE NAMES' to assign names to the speakers that were detected in the meeting.
             </Typography>
 
             {/* Controls - Development mode: no navigation needed */}
