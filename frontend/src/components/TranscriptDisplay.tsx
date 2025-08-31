@@ -16,18 +16,13 @@ import {
   ContentCopy,
   Person,
   Schedule,
-  VolumeUp,
-  CheckCircle,
   Error,
-  Undo,
-  Delete,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
-import { SessionIndicator } from "./SessionIndicator";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
@@ -79,7 +74,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const activeSpeakers = useActiveSpeakers();
 
   // Session management for privacy controls
-  const { privacyControls } = useSessionManagement();
+  const { privacyControls: _privacyControls } = useSessionManagement();
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -185,7 +180,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   ]); // Removed allDetectedSpeakers from dependencies to prevent re-initialization loops
 
   // Memoize hasModifiedSpeakers calculation
-  const hasModifiedSpeakers = useMemo(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _hasModifiedSpeakers = useMemo(() => {
     // Check for manually added speakers (more speakers than originally detected)
     const originalSpeakerCount =
       transcription.speakerCount || allDetectedSpeakers.length;
@@ -214,7 +210,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   ]);
 
   // Memoize speaker reassignment detection
-  const hasSpeakerReassignments = useMemo(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _hasSpeakerReassignments = useMemo(() => {
     // Check if any speaker segments have been changed from original
     const originalSegments = transcription.speakerSegments || [];
     const currentSegments = speakerSegments;
@@ -309,7 +306,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   );
 
   // Handle reverting all speakers to original auto-detected values
-  const handleRevertAllSpeakers = useCallback(async () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleRevertAllSpeakers = useCallback(async () => {
     try {
       console.log('🔄 RESET: Starting reset process...');
       console.log('🔄 RESET: allDetectedSpeakers:', allDetectedSpeakers);
@@ -341,7 +339,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   }, [clearSpeakers, initializeSpeakers, resetToOriginal, transcription.transcriptionId, allDetectedSpeakers]);
 
   // Handle deleting transcription - open confirmation dialog
-  const handleDeleteTranscription = useCallback(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _handleDeleteTranscription = useCallback(() => {
     setDeleteConfirmationOpen(true);
   }, []);
 

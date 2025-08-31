@@ -268,18 +268,11 @@ Best regards`;
       }
       
       // Production/Development mode: Real email sending
-      // Generate professional HTML content
+      // Use the user's edited content (convert to HTML if needed)
       let htmlContent = '';
-      if (summary) {
-        try {
-          htmlContent = await emailService.createEmailContent(summary, speakerMappings);
-        } catch (templateError) {
-          console.warn('Failed to generate template, using basic content:', templateError);
-          htmlContent = convertToHtml(content);
-        }
-      } else {
-        htmlContent = convertToHtml(content);
-      }
+      
+      // Always use the user's edited content, not the original summary
+      htmlContent = convertToHtml(content);
 
       // Send email via API
       const sendRequest = {
