@@ -12,6 +12,7 @@ import {
   CircularProgress,
   Divider,
   Chip,
+  Paper,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -27,6 +28,7 @@ import { getSpeakerColor } from "../theme/speakerColors";
 import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
 import { useSpeakerValidation } from "../hooks/useSpeakerValidation";
+import { useAppMode } from "../contexts/AppModeContext";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -53,6 +55,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   existingMappings = [],
   onMappingsSaved,
 }) => {
+  const { isDemo } = useAppMode();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -624,6 +627,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         PaperProps={{
           sx: { minHeight: "400px" },
         }}
+        sx={{
+          zIndex: 10000, // Higher than tour popover z-index (9999)
+        }}
       >
         <DialogTitle
           sx={{
@@ -659,11 +665,67 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             </Alert>
           )}
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, position: 'relative' }}>
             <Typography variant="subtitle2" color="text.secondary">
               Auto-detected Speakers:
             </Typography>
             {speakerChips}
+            
+            {/* Step 4 Tour Popover - Add Speaker */}
+            {isDemo && (
+              <Paper
+                sx={{
+                  position: 'fixed',
+                  top: '250px',
+                  left: '500px',
+                  p: 2,
+                  backgroundColor: 'grey.700',
+                  color: 'white',
+                  borderRadius: 2,
+                  maxWidth: '300px',
+                  zIndex: 9999,
+                  boxShadow: 3,
+                  pointerEvents: 'none', // Prevent blocking interactions
+                  textAlign: 'center', // Center all text content
+                }}
+              >
+                {/* Step indicator */}
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="body2" color="primary" fontWeight="bold">
+                    Step 4
+                  </Typography>
+                </Box>
+
+                {/* Title */}
+                <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
+                  (Optional) Add Speaker
+                </Typography>
+
+                {/* Description */}
+                <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+                  You can add additional speakers if someone was missed during automatic detection.
+                </Typography>
+                
+                {/* Warning */}
+                <Typography variant="body2" color="warning.main" fontWeight="bold" sx={{ mb: 2 }}>
+                  ⚠️ Adding speakers will break the AI confidence score calculation
+                </Typography>
+
+                {/* Controls - Development mode: no navigation needed */}
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      color: 'grey.300',
+                      cursor: 'pointer',
+                      '&:hover': { color: 'white' }
+                    }}
+                  >
+                    CLOSE
+                  </Typography>
+                </Box>
+              </Paper>
+            )}
           </Box>
 
           <Divider sx={{ my: 2 }} />
