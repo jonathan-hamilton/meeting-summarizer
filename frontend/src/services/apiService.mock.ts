@@ -118,7 +118,7 @@ const apiServiceMock = {
       dependencies: { openAI: 'Healthy', database: 'Healthy' },
     }, success: true };
   },
-  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<TranscriptionResponse>> {
+  async uploadFile(_file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<TranscriptionResponse>> {
     if (onProgress) {
       for (let i = 0; i <= 100; i += 20) {
         await delay(50);
@@ -128,19 +128,19 @@ const apiServiceMock = {
     await delay(500);
     return { data: mockTranscription, success: true };
   },
-  async get<T>(url: string): Promise<ApiResponse<T>> {
+  async get<T>(_url: string): Promise<ApiResponse<T>> {
     await delay(100);
     return { data: {} as T, success: true };
   },
-  async post<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
+  async post<T>(_url: string, _data?: unknown): Promise<ApiResponse<T>> {
     await delay(100);
     return { data: {} as T, success: true };
   },
-  async put<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
+  async put<T>(_url: string, _data?: unknown): Promise<ApiResponse<T>> {
     await delay(100);
     return { data: {} as T, success: true };
   },
-  async delete<T>(url: string): Promise<ApiResponse<T>> {
+  async delete<T>(_url: string): Promise<ApiResponse<T>> {
     await delay(100);
     return { data: {} as T, success: true };
   },
@@ -156,11 +156,11 @@ const apiServiceMock = {
       success: true
     };
   },
-  async getSpeakerMappings(transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {
+  async getSpeakerMappings(_transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {
     await delay(100);
     return {
       data: {
-        transcriptionId,
+        transcriptionId: _transcriptionId,
         mappings: mockTranscription.speakerMappings || [],
         lastUpdated: new Date().toISOString(),
         mappedSpeakerCount: (mockTranscription.speakerMappings || []).length,
@@ -168,7 +168,7 @@ const apiServiceMock = {
       success: true
     };
   },
-  async deleteSpeakerMappings(transcriptionId: string): Promise<ApiResponse<void>> {
+  async deleteSpeakerMappings(_transcriptionId: string): Promise<ApiResponse<void>> {
     await delay(100);
     return { success: true };
   },
