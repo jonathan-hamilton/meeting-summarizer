@@ -15,6 +15,8 @@ import {
   Step,
   StepLabel,
   CircularProgress,
+  IconButton,
+  Stack,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -24,6 +26,9 @@ import {
   Upload,
   Psychology,
   RadioButtonUnchecked,
+  Close,
+  SkipNext,
+  ArrowForward,
 } from "@mui/icons-material";
 import { useAppMode } from "../contexts/AppModeContext";
 import { createApiService } from "../services/apiServiceFactory";
@@ -112,8 +117,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
 }) => {
-  const { mode } = useAppMode();
-  const { isDemo } = useAppMode();
+  const { mode, isDemo, isTourActive, tourStep, nextTourStep, closeTour } = useAppMode();
   const { 
     startDemoUpload,
     demo: {
@@ -127,6 +131,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const demoCallbackCalledRef = useRef(false);
+  
+  // Tour Step 1: File Upload Button Reference
+  const selectFileButtonRef = useRef<HTMLButtonElement>(null);
+  
+  // Tour Step 1: Position anchor for right-side placement
+  const tourStep1AnchorRef = useRef<HTMLDivElement>(null);
 
   // Check if there's a completed file to disable upload
   const hasCompletedFile = uploadFiles.some(file => file.status === "completed");
@@ -287,14 +297,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {/* Drop Zone */}
       <Paper
         {...(hasCompletedFile || isDemo ? {} : getRootProps())}
-        onClick={(e) => {
-          if (isDemo && !hasCompletedFile) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Demo dropzone clicked, starting demo upload...');
-            startDemoUpload();
-          }
-        }}
         sx={{
           p: 4,
           width: "100%",
@@ -345,10 +347,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
             ? "Demo mode - Simulated transcription with mock data"
             : `Supported formats: ${acceptedFileTypes.join(", ")}`}
         </Typography>
+        {isDemo && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Supported formats: {acceptedFileTypes.join(", ")}
+          </Typography>
+        )}
         <Typography variant="body2" color="text.secondary">
           Maximum file size: {formatFileSize(maxFileSize)}
         </Typography>
         <Button 
+          ref={selectFileButtonRef}
           variant="contained" 
           startIcon={<CloudUpload />} 
           sx={{ mt: 2 }}
@@ -760,6 +768,122 @@ const FileUpload: React.FC<FileUploadProps> = ({
             </List>
           </CardContent>
         </Card>
+      )}
+
+      {/* Tour Step 1: File Upload - Shows in demo mode */}
+      {isDemo && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '260px',
+            right: '390px',
+            zIndex: 1300,
+            pointerEvents: 'none' // Prevent blocking interactions
+          }}
+        >
+          <Paper sx={{ 
+            p: 2, 
+            position: 'relative',
+            bgcolor: 'grey.700',
+            border: '1px solid',
+            borderColor: 'grey.500',
+            boxShadow: 3,
+            maxWidth: 360,
+            minWidth: 280,
+            pointerEvents: 'auto' // Re-enable for the dialog itself
+          }}>
+            {/* Close button */}
+            <IconButton
+              size="small"
+              onClick={closeTour}
+              sx={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+              }}
+            >
+              <Close fontSize="small" />
+            </IconButton>
+
+            {/* Step indicator */}
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="primary" fontWeight="bold">
+                Step 1
+              </Typography>
+            </Box>
+
+            {/* Title */}
+            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
+              Start Demo Transcription
+            </Typography>
+
+            {/* Description */}
+            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+              Click 'SELECT FILE' to begin the demo transcription process with our sample meeting audio. No actual file upload is needed in demo mode.
+            </Typography>
+
+            {/* Controls - Development mode: no navigation needed */}
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="text"
+                onClick={closeTour}
+                sx={{ color: 'grey.300' }}
+              >
+                CLOSE
+              </Button>
+            </Stack>
+          </Paper>
+        </Box>
+      )}
+
+      {/* Invisible tour anchor positioned in right area - DISABLED FOR NOW */}
+      {false && isDemo && (
+        <div
+          ref={tourStep1AnchorRef}
+          style={{
+            position: 'absolute',
+            top: '200px',
+            right: '300px',
+            width: '1px',
+            height: '1px',
+            visibility: 'hidden',
+            pointerEvents: 'none',
+            zIndex: -1
+          }}
+        />
+      )}
+
+      {/* Debug info for tour development */}
+      {isDemo && process.env.NODE_ENV === 'development' && (
+        <Box sx={{ position: 'fixed', top: 100, right: 20, p: 2, bgcolor: 'background.paper', border: 1, borderColor: 'grey.300', zIndex: 9999 }}>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Mode: {mode}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Demo Mode: {isDemo.toString()}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Tour Active: {isTourActive.toString()}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Tour Step: {tourStep}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Button Ref: {selectFileButtonRef.current ? 'Found' : 'Not found'}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Tour Anchor: {tourStep1AnchorRef.current ? 'Found' : 'Not found'}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            Button Disabled: {(hasCompletedFile || (isDemo && (isSimulatingUpload || mockTranscripts.length > 0))).toString()}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            isSimulatingUpload: {isSimulatingUpload.toString()}
+          </Typography>
+          <Typography variant="caption" sx={{ display: 'block' }}>
+            mockTranscripts.length: {mockTranscripts.length}
+          </Typography>
+        </Box>
       )}
     </Box>
   );

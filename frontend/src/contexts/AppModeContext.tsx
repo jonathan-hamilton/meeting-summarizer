@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useEnhancedSessionStore } from '../stores/enhancedSessionStore';
 
 export type AppMode = 'demo' | 'development' | 'production';
 
@@ -29,6 +30,7 @@ interface AppModeProviderProps {
 export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { demo } = useEnhancedSessionStore();
   
   // Determine initial mode based on current route
   const getInitialMode = (): AppMode => {
@@ -43,10 +45,12 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   // Auto-start tour when entering demo mode
   useEffect(() => {
     if (mode === 'demo' && !isTourActive) {
+      // Clear any existing demo state for fresh start
+      demo.mockTranscripts.splice(0, demo.mockTranscripts.length);
       setIsTourActive(true);
-      setTourStep(0);
+      setTourStep(1); // Start at step 1, not 0
     }
-  }, [mode, isTourActive]);
+  }, [mode, isTourActive, demo.mockTranscripts]);
   
   const signIn = async (): Promise<void> => {
     // TODO: Implement actual authentication logic
@@ -63,12 +67,12 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
     navigate('/demo');
     setMode('demo');
     setIsTourActive(true);
-    setTourStep(0);
+    setTourStep(1); // Start at step 1, not 0
   };
 
   const startTour = (): void => {
     setIsTourActive(true);
-    setTourStep(0);
+    setTourStep(1); // Start at step 1, not 0
   };
   
   const nextTourStep = (): void => {

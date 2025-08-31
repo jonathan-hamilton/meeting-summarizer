@@ -25,7 +25,7 @@ Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implemen
 ### Story S5.1: User Mode Selection & Demo Content
 As a user, I want to choose between Demo/Public (static demo) and Paid (account-based) modes so that my experience matches my privacy and persistence needs.
 
-**Status: IN PROGRESS 🔄 (~60% Complete)**
+**Status: IN PROGRESS 🔄 (~75% Complete)**
 
 **Completion Date:** August 30, 2025 (Incremental Progress)
 
@@ -38,15 +38,24 @@ As a user, I want to choose between Demo/Public (static demo) and Paid (account-
 - Simulated file upload without file picker using demo data
 - Demo-aware components (FileUpload, speaker mapping, transcript display)
 - Email simulation for demo mode (fixed bug preventing real API calls)
-- Complete tour step documentation (Steps 1-8) with conditional logic and workflow details
+- Complete tour step documentation (Steps 1-18) with conditional logic and workflow details
 - Demo workflow foundation through transcript display and speaker mapping
+- **Interactive tour infrastructure (Steps 2-4 implemented):**
+  - Step 2 TourPopover in TranscriptDisplay.tsx (transcription statistics overview)
+  - Step 3 TourPopover in SpeakerMapping.tsx (speaker management guidance)
+  - Step 4 TourPopover in SpeakerMappingDialog.tsx (optional add speaker with AI confidence warning)
+  - Enhanced metadata chips with PlayCircle and Schedule icons for better UX clarity
+  - Consistent TourPopover styling with dark grey theme and fixed positioning
+  - Z-index layering management for proper tour display above dialogs
+  - Tour step documentation simplified from decimal to whole number format
 
 ❌ **Missing Components (Required for S5.1 Completion):**
-- Interactive guided tour system with Material-UI Popovers/Dialogs for step-by-step guidance
+- Steps 1, 5-18 tour popover implementations
+- Tour navigation controls (forward/backward/skip/close)
+- Tour auto-start functionality and completion tracking
 - Sign-In/Sign-Out button replacing development toggle in AppBar with authentication dialog
 - Complete demo workflow beyond transcript display (summary generation → email sharing UI integration)
 - Tour-driven feature access (all demo features only available through guided tour)
-- Tour auto-start functionality and navigation controls (forward/backward/skip/close)
 - Demo mode messaging and visual indicators (tooltips clarifying simulation)
 
 Acceptance Criteria:
@@ -59,8 +68,11 @@ Acceptance Criteria:
 **Technical Notes:**
 - Chose client-side routing over server-side mode detection for better development experience
 - Established unified store architecture supporting both modes without component duplication
-- AppModeContext provides complete tour state foundation but tour UI components not built
+- Implemented tour infrastructure with fixed positioning instead of Material-UI anchoring for better stability
+- Tour popovers use consistent dark grey styling with proper z-index layering (9999 for tours, 10000 for dialogs)
+- Enhanced transcription metadata with descriptive icons and text ("45s processing", "17s audio")
 - Demo API service fully functional but not integrated with missing UI components (summary/email flows)
+- Tour step numbering simplified from decimal format (4.1, 8.1) to whole numbers (4, 12) for cleaner organization
 
 **Integration Points:**
 - Enhanced store ready for tour progress tracking
@@ -69,11 +81,12 @@ Acceptance Criteria:
 - Performance and validation improvements benefit both demo and production modes
 
 **Next Steps for S5.1 Completion:**
-1. Implement TourPopover component with Material-UI Backdrop and Portal for step highlighting
-2. Replace development environment toggle with Sign-In/Sign-Out button in AppBar
-3. Build missing UI components: Summary generation display and Email sharing dialog for demo
-4. Integrate tour system with existing demo-aware components
-5. Add tour auto-start, navigation controls, and completion tracking
+1. Implement remaining tour steps (Steps 1, 5-18) following established TourPopover pattern
+2. Add tour navigation controls (forward/backward/skip/close) to existing tour infrastructure
+3. Implement tour auto-start functionality and completion tracking
+4. Replace development environment toggle with Sign-In/Sign-Out button in AppBar
+5. Build missing UI components: Summary generation display and Email sharing dialog for demo
+6. Integrate tour system with existing demo-aware components
 
 Dependencies: None
 
