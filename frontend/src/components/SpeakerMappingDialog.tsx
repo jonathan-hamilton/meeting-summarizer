@@ -30,6 +30,7 @@ import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
 import { useSpeakerValidation } from "../hooks/useSpeakerValidation";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
+import { TourPopover } from "./TourPopover";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -57,7 +58,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   onMappingsSaved,
 }) => {
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isStepClosed } = useTourStore();
+  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -674,60 +675,17 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             {speakerChips}
             
             {/* Step 4 Tour Popover - Add Speaker */}
-            {isDemo && isTourActive && !isStepClosed(4) && (
-              <Paper
-                sx={{
-                  position: 'fixed',
-                  top: '250px',
-                  left: '500px',
-                  p: 2,
-                  backgroundColor: 'grey.700',
-                  color: 'white',
-                  borderRadius: 2,
-                  maxWidth: '300px',
-                  zIndex: 9999,
-                  boxShadow: 3,
-                  pointerEvents: 'none', // Prevent blocking interactions
-                  textAlign: 'center', // Center all text content
-                }}
-              >
-                {/* Step indicator */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="body2" color="primary" fontWeight="bold">
-                    Step 4
-                  </Typography>
-                </Box>
+            <TourPopover
+              open={isDemo && isTourActive && !isStepClosed(4)}
+              step={4}
+              title="(Optional) Add Speaker"
+              description="Click 'ADD SPEAKER' to add additional speakers if someone was missed during automatic detection.
 
-                {/* Title */}
-                <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-                  (Optional) Add Speaker
-                </Typography>
-
-                {/* Description */}
-                <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                  You can add additional speakers if someone was missed during automatic detection.
-                </Typography>
-                
-                {/* Warning */}
-                <Typography variant="body2" color="warning.main" fontWeight="bold" sx={{ mb: 2 }}>
-                  ⚠️ Adding speakers will break the AI confidence score calculation
-                </Typography>
-
-                {/* Controls - Development mode: no navigation needed */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: 'grey.300',
-                      cursor: 'pointer',
-                      '&:hover': { color: 'white' }
-                    }}
-                  >
-                    CLOSE
-                  </Typography>
-                </Box>
-              </Paper>
-            )}
+⚠️ Adding speakers will break the AI confidence score calculation"
+              onClose={() => closeStep(4)}
+              position={{ top: '100px', left: '50px' }}
+              maxWidth="300px"
+            />
           </Box>
 
           <Divider sx={{ my: 2 }} />
@@ -748,112 +706,18 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, position: 'relative' }}>
             {mappingFields}
             
-            {/* Step 5 Tour Popover - Delete Speaker */}
-            {isDemo && isTourActive && !isStepClosed(5) && (
-              <Paper
-                sx={{
-                  position: 'fixed',
-                  top: '450px',
-                  right: '250px',
-                  p: 2,
-                  backgroundColor: 'grey.700',
-                  color: 'white',
-                  borderRadius: 2,
-                  maxWidth: '300px',
-                  zIndex: 9999,
-                  boxShadow: 3,
-                  pointerEvents: 'none', // Prevent blocking interactions
-                  textAlign: 'center', // Center all text content
-                }}
-              >
-                {/* Step indicator */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="body2" color="primary" fontWeight="bold">
-                    Step 5
-                  </Typography>
-                </Box>
+            {/* Step 5 Tour Popover - Edit/Delete Speaker */}
+            <TourPopover
+              open={isDemo && isTourActive && !isStepClosed(5)}
+              step={5}
+              title="(Optional) Edit/Delete Speaker"
+              description="Click the pencil icon to edit speaker details or the trash icon to delete speakers that were incorrectly detected.
 
-                {/* Title */}
-                <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-                  (Optional) Delete Speaker
-                </Typography>
-
-                {/* Description */}
-                <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                  You can delete speakers if they were incorrectly detected.
-                </Typography>
-                
-                {/* Warning */}
-                <Typography variant="body2" color="warning.main" fontWeight="bold" sx={{ mb: 2 }}>
-                  ⚠️ Deleting speakers will break the AI confidence score calculation
-                </Typography>
-
-                {/* Controls - Development mode: no navigation needed */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: 'grey.300',
-                      cursor: 'pointer',
-                      '&:hover': { color: 'white' }
-                    }}
-                  >
-                    CLOSE
-                  </Typography>
-                </Box>
-              </Paper>
-            )}
-            
-            {/* Step 6 Tour Popover - Edit Speaker */}
-            {isDemo && isTourActive && !isStepClosed(6) && (
-              <Paper
-                sx={{
-                  position: 'fixed',
-                  top: '250px',
-                  right: '250px',
-                  p: 2,
-                  backgroundColor: 'grey.700',
-                  color: 'white',
-                  borderRadius: 2,
-                  maxWidth: '300px',
-                  zIndex: 9999,
-                  boxShadow: 3,
-                  pointerEvents: 'none', // Prevent blocking interactions
-                  textAlign: 'center', // Center all text content
-                }}
-              >
-                {/* Step indicator */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="body2" color="primary" fontWeight="bold">
-                    Step 6
-                  </Typography>
-                </Box>
-
-                {/* Title */}
-                <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-                  (Optional) Edit Speaker
-                </Typography>
-
-                {/* Description */}
-                <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                  Click the pencil icon to edit an individual Speaker
-                </Typography>
-
-                {/* Controls - Development mode: no navigation needed */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: 'grey.300',
-                      cursor: 'pointer',
-                      '&:hover': { color: 'white' }
-                    }}
-                  >
-                    CLOSE
-                  </Typography>
-                </Box>
-              </Paper>
-            )}
+⚠️ Deleting speakers will break the AI confidence score calculation"
+              onClose={() => closeStep(5)}
+              position={{ top: '50px', right: '0px' }}
+              maxWidth="300px"
+            />
           </Box>
 
           {mappings.length === 0 && (
@@ -906,6 +770,17 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           >
             {loading ? "Saving..." : "Save Mappings"}
           </Button>
+
+          {/* Step 7 Tour Popover - SAVE MAPPINGS */}
+          <TourPopover
+            open={isDemo && isTourActive && !isStepClosed(7)}
+            step={7}
+            title="SAVE MAPPINGS"
+            description="Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes."
+            onClose={() => closeStep(7)}
+            position={{ top: '650px', right: '10px' }}
+            maxWidth="300px"
+          />
         </DialogActions>
       </Dialog>
 

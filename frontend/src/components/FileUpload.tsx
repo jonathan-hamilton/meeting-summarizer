@@ -27,6 +27,7 @@ import {
 } from "@mui/icons-material";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
+import { TourPopover } from "./TourPopover";
 import { createApiService } from "../services/apiServiceFactory";
 import { useEnhancedSessionStore } from "../stores/enhancedSessionStore";
 import type { TranscriptionResponse } from "../types";
@@ -374,56 +375,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </Button>
 
         {/* Step 1 Tour Popover - File Upload */}
-        {isDemo && isTourActive && !isStepClosed(1) && (
-          <Paper
-            sx={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              p: 2,
-              backgroundColor: 'grey.700',
-              color: 'white',
-              borderRadius: 2,
-              maxWidth: '300px',
-              zIndex: 9999,
-              boxShadow: 3,
-              pointerEvents: 'auto',
-              textAlign: 'center',
-            }}
-          >
-            {/* Step indicator */}
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2" color="primary" fontWeight="bold">
-                Step 1
-              </Typography>
-            </Box>
-
-            {/* Title */}
-            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-              File Upload Demo
-            </Typography>
-
-            {/* Description */}
-            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-              Click 'SELECT FILE' to start the demo transcription process with our sample meeting audio.
-            </Typography>
-
-            {/* Controls */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'grey.300',
-                  cursor: 'pointer',
-                  '&:hover': { color: 'white' }
-                }}
-                onClick={() => closeStep(1)}
-              >
-                CLOSE
-              </Typography>
-            </Box>
-          </Paper>
-        )}
+        <TourPopover
+          open={isDemo && isTourActive && !isStepClosed(1)}
+          step={1}
+          title="File Upload Demo"
+          description="Click 'SELECT FILE' to start the demo transcription process with our sample meeting audio."
+          onClose={() => closeStep(1)}
+          position={{ top: '50px', right: '55px' }}
+        />
       </Paper>
 
       {/* Validation Errors */}
