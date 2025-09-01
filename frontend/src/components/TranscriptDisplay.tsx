@@ -23,10 +23,13 @@ import { SpeakerMappingComponent } from "./SpeakerMapping";
 import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
+import { TourPopover } from "./TourPopover";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
+import { useAppMode } from "../contexts/AppModeContext";
+import { useTourStore } from "../stores/tourStore";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -75,6 +78,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Session management for privacy controls
   const { privacyControls: _privacyControls } = useSessionManagement();
+
+  // Tour state management
+  const { isDemo } = useAppMode();
+  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -490,7 +497,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     <Card sx={{ mb: 2, width: "100%" }}>
       <CardContent>
         {/* Header with file info and metadata */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{ mb: 3, position: 'relative' }}>
           <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
             <Typography variant="h5" component="h3">
               {transcription.fileName}
@@ -555,6 +562,18 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             )}
             
           </Stack>
+
+          {/* Step 2 Tour Popover - Transcription Statistics Overview */}
+          <TourPopover
+            open={isDemo && isTourActive}
+            step={2}
+            title="Transcription Statistics Overview"
+            description="Great! Your audio has been processed. Here you can see the transcription statistics: processing time, file size, audio duration, speaker mapping progress, AI confidence score, and detected language."
+            onClose={() => closeStep(2)}
+            position={{ top: '85px', left: '50px' }}
+            maxWidth="350px"
+            sx={{ zIndex: 99999 }}
+          />
         </Box>
 
         <Divider sx={{ mb: 3 }} />

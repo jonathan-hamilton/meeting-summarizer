@@ -18,6 +18,7 @@ import {
   Divider,
   Paper,
 } from "@mui/material";
+import TourPopover from "./TourPopover";
 import {
   Psychology,
   ContentCopy,
@@ -148,13 +149,6 @@ const SortableActionItem: React.FC<SortableActionItemProps> = ({ item, onEdit, o
           color="primary"
         >
           <Edit fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={() => onDelete(item.id)}
-          color="error"
-        >
-          <Delete fontSize="small" />
         </IconButton>
       </Box>
     </Paper>
@@ -477,57 +471,17 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           </Alert>
         )}
 
-        {/* Step 9 Tour Popover - Summary */}
-        {isDemo && isTourActive && !isStepClosed(9) && (
-          <Paper
-            sx={{
-              position: 'absolute',
-              top: '20px',
-              right: '50px',
-              p: 2,
-              backgroundColor: 'grey.700',
-              color: 'white',
-              borderRadius: 2,
-              maxWidth: '300px',
-              zIndex: 9999,
-              boxShadow: 3,
-              pointerEvents: 'auto', // Allow interactions for close button
-              textAlign: 'center', // Center all text content
-            }}
-          >
-            {/* Step indicator */}
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2" color="primary" fontWeight="bold">
-                Step 9
-              </Typography>
-            </Box>
-
-            {/* Title */}
-            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-              Summary
-            </Typography>
-
-            {/* Description */}
-            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-              Click GENERATE MEETING SUMMARY to generate a (mock) Meeting Summary with Action Items
-            </Typography>
-
-            {/* Controls - Development mode: no navigation needed */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'grey.300',
-                  cursor: 'pointer',
-                  '&:hover': { color: 'white' }
-                }}
-                onClick={() => closeStep(9)}
-              >
-                CLOSE
-              </Typography>
-            </Box>
-          </Paper>
-        )}
+        {/* Step 8 Tour Popover - Generate Summary */}
+        <TourPopover
+          open={isDemo && isTourActive && !isStepClosed(8)}
+          step={8}
+          title="Generate Summary"
+          description="Click 'GENERATE MEETING SUMMARY' to create a comprehensive summary with action items."
+          onClose={() => closeStep(8)}
+          totalSteps={8}
+          position={{ top: '-5px', right: '50px' }}
+          maxWidth="300px"
+        />
 
         {/* Summary Content */}
         {summary && !isGenerating && (
@@ -610,7 +564,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                     Action Items by Role
                   </Typography>
                   <Button
-                    variant="contained"
+                    variant="outlined"
                     startIcon={<Add />}
                     onClick={handleCreateActionItem}
                     size="small"
@@ -719,9 +673,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                             <Chip
                               label="Low Confidence"
                               size="small"
-                              color="warning"
                               variant="outlined"
-                              sx={{ ml: 1, fontSize: "0.7rem" }}
+                              sx={{ 
+                                ml: 1, 
+                                fontSize: "0.7rem",
+                                borderColor: 'error.main',
+                                backgroundColor: 'warning.light',
+                                color: 'error.main'
+                              }}
                             />
                           )}
                         </Typography>
@@ -773,20 +732,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               </Box>
             )}
 
-            {/* Add Action Item button when no custom items exist */}
-            {actionItems.length === 0 && summary && (
-              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-                <Button
-                  variant="outlined"
-                  startIcon={<Add />}
-                  onClick={handleCreateActionItem}
-                  size="large"
-                  sx={{ px: 4 }}
-                >
-                  Add Custom Action Item
-                </Button>
-              </Box>
-            )}
           </Box>
         )}
       </CardContent>

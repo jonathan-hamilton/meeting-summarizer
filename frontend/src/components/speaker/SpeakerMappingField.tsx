@@ -13,6 +13,9 @@ import type {
   SpeakerSource,
   ValidationError,
 } from "../../types";
+import { useAppMode } from "../../contexts/AppModeContext";
+import { useTourStore } from "../../stores/tourStore";
+import { TourPopover } from "../TourPopover";
 
 interface SpeakerMappingFieldProps {
   mapping: {
@@ -53,6 +56,10 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
   onCancelEdit,
   onRemove,
 }) => {
+  // Tour state management
+  const { isDemo } = useAppMode();
+  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
+  
   const nameError = validationErrors?.find((err) => err.field === "name");
   const roleError = validationErrors?.find((err) => err.field === "role");
   const emailError = validationErrors?.find((err) => err.field === "email"); // S3.4: Email validation
@@ -165,6 +172,19 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
+
+        {/* Step 6 Tour Popover - Save Row */}
+        {isEditing && (
+          <TourPopover
+            open={isDemo && isTourActive && !isStepClosed(6)}
+            step={6}
+            title="Save Row"
+            description="After editing speaker details, click the checkmark to save changes for this speaker."
+            onClose={() => closeStep(6)}
+            position={{ top: '-60px', right: '140px' }}
+            maxWidth="300px"
+          />
+        )}
       </Box>
 
       {/* Form fields */}
