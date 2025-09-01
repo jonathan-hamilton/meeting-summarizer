@@ -27,12 +27,37 @@ import {
   Schedule,
   CheckCircle,
   Email,
+  Add,
+  Edit,
+  Delete,
+  DragIndicator,
 } from "@mui/icons-material";
-import type { SpeakerMapping, MeetingSummary } from "../types";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import {CSS} from '@dnd-kit/utilities';
+import type { SpeakerMapping, MeetingSummary, ActionItem } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
+import { useTourStore } from "../stores/tourStore";
 import { useAppMode } from "../contexts/AppModeContext";
 import EmailCompositionDialog from "./EmailCompositionDialog";
+import UpsertActionItemDialog from "./UpsertActionItemDialog";
 
 interface SummaryDisplayProps {
   transcriptionId: string;
@@ -47,6 +72,94 @@ interface SnackbarState {
   message: string;
   severity: "success" | "error" | "info" | "warning";
 }
+
+// Sortable Action Item Component
+interface SortableActionItemProps {
+  item: ActionItem;
+  onEdit: (item: ActionItem) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortableActionItem: React.FC<SortableActionItemProps> = ({ item, onEdit, onDelete }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Paper
+      ref={setNodeRef}
+      style={style}
+      sx={{
+        p: 2,
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 1,
+        border: '1px solid',
+        borderColor: 'divider',
+        cursor: isDragging ? 'grabbing' : 'auto',
+      }}
+    >
+      <DragIndicator 
+        {...attributes}
+        {...listeners}
+        sx={{ 
+          color: 'text.secondary', 
+          cursor: 'grab', 
+          mt: 0.5,
+          '&:hover': { color: 'primary.main' }
+        }} 
+      />
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          {item.description}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Chip
+            label={item.assignedTo || 'Unassigned'}
+            size="small"
+            variant="outlined"
+            color={item.assignedTo ? 'primary' : 'default'}
+          />
+          {item.confidence < 0.8 && (
+            <Chip
+              label="Low Confidence"
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
+          )}
+        </Box>
+      </Box>
+      <Box sx={{ display: 'flex', gap: 0.5 }}>
+        <IconButton
+          size="small"
+          onClick={() => onEdit(item)}
+          color="primary"
+        >
+          <Edit fontSize="small" />
+        </IconButton>
+        <IconButton
+          size="small"
+          onClick={() => onDelete(item.id)}
+          color="error"
+        >
+          <Delete fontSize="small" />
+        </IconButton>
+      </Box>
+    </Paper>
+  );
+};
 
 const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   transcriptionId,
@@ -69,7 +182,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   } = useSummaryStore();
   
   // Get the current app mode to pass to the summary generation
-  const { mode } = useAppMode();
+  const { mode, isDemo } = useAppMode();
+
+  // Tour store for managing tour state and closed steps
+  const { isActive: isTourActive, closeStep, isStepClosed } = useTourStore();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
@@ -89,6 +205,33 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
   // Email dialog state
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+
+  // Action item dialog state
+  const [actionItemDialogOpen, setActionItemDialogOpen] = useState(false);
+  const [editingActionItem, setEditingActionItem] = useState<ActionItem | null>(null);
+  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Drag and drop handlers
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setActionItems((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
 
   const handleGenerateSummary = async () => {
     if (!transcriptText) {
@@ -184,6 +327,73 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       severity: "success",
     });
   };
+
+  // Action item handlers
+  const handleCreateActionItem = () => {
+    setEditingActionItem(null);
+    setActionItemDialogOpen(true);
+  };
+
+  const handleEditActionItem = (actionItem: ActionItem) => {
+    setEditingActionItem(actionItem);
+    setActionItemDialogOpen(true);
+  };
+
+  const handleDeleteActionItem = (actionItemId: string) => {
+    setActionItems(prev => prev.filter(item => item.id !== actionItemId));
+    setSnackbar({
+      open: true,
+      message: "Action item deleted successfully!",
+      severity: "success",
+    });
+  };
+
+  const handleSaveActionItem = (actionItemData: Omit<ActionItem, 'id'>) => {
+    if (editingActionItem) {
+      // Update existing action item
+      setActionItems(prev => prev.map(item => 
+        item.id === editingActionItem.id 
+          ? { ...actionItemData, id: editingActionItem.id }
+          : item
+      ));
+      setSnackbar({
+        open: true,
+        message: "Action item updated successfully!",
+        severity: "success",
+      });
+    } else {
+      // Create new action item
+      const newActionItem: ActionItem = {
+        ...actionItemData,
+        id: crypto.randomUUID(),
+      };
+      setActionItems(prev => [...prev, newActionItem]);
+      setSnackbar({
+        open: true,
+        message: "Action item created successfully!",
+        severity: "success",
+      });
+    }
+  };
+
+  // Get available speakers for action item assignment
+  const availableSpeakers = useMemo(() => {
+    const speakers = new Set<string>();
+    
+    // Add speakers from mappings
+    effectiveSpeakerMappings.forEach(mapping => {
+      if (mapping.name && mapping.name.trim()) {
+        speakers.add(mapping.name);
+      }
+    });
+    
+    // Add speakers from detected speakers if no mappings
+    if (speakers.size === 0) {
+      detectedSpeakers.forEach(speaker => speakers.add(speaker));
+    }
+    
+    return Array.from(speakers).sort();
+  }, [effectiveSpeakerMappings, detectedSpeakers]);
   
   const handleCopyToClipboard = async (text: string, type: string) => {
     try {
@@ -213,7 +423,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   };
 
   return (
-    <Card sx={{ width: "100%" }}>
+    <Card sx={{ width: "100%", position: "relative" }}>
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
           <Psychology color="primary" />
@@ -265,6 +475,58 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           >
             <Typography variant="body2">{error}</Typography>
           </Alert>
+        )}
+
+        {/* Step 9 Tour Popover - Summary */}
+        {isDemo && isTourActive && !isStepClosed(9) && (
+          <Paper
+            sx={{
+              position: 'absolute',
+              top: '20px',
+              right: '50px',
+              p: 2,
+              backgroundColor: 'grey.700',
+              color: 'white',
+              borderRadius: 2,
+              maxWidth: '300px',
+              zIndex: 9999,
+              boxShadow: 3,
+              pointerEvents: 'auto', // Allow interactions for close button
+              textAlign: 'center', // Center all text content
+            }}
+          >
+            {/* Step indicator */}
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="primary" fontWeight="bold">
+                Step 9
+              </Typography>
+            </Box>
+
+            {/* Title */}
+            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
+              Summary
+            </Typography>
+
+            {/* Description */}
+            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+              Click GENERATE MEETING SUMMARY to generate a (mock) Meeting Summary with Action Items
+            </Typography>
+
+            {/* Controls - Development mode: no navigation needed */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'grey.300',
+                  cursor: 'pointer',
+                  '&:hover': { color: 'white' }
+                }}
+                onClick={() => closeStep(9)}
+              >
+                CLOSE
+              </Typography>
+            </Box>
+          </Paper>
         )}
 
         {/* Summary Content */}
@@ -343,9 +605,20 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             {/* Action Items by Role */}
             {summary.actionItemsByRole.length > 0 && (
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Action Items by Role
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Action Items by Role
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={handleCreateActionItem}
+                    size="small"
+                    sx={{ minWidth: 'auto' }}
+                  >
+                    Add Action Item
+                  </Button>
+                </Box>
                 {summary.actionItemsByRole.map((roleGroup, index) => (
                   <Accordion key={index} sx={{ mb: 1 }}>
                     <AccordionSummary expandIcon={<ExpandMore />}>
@@ -362,25 +635,44 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                       </Stack>
                     </AccordionSummary>
                     <AccordionDetails>
-                      <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                      <Box sx={{ pl: 1 }}>
                         {roleGroup.actionItems.map((item, itemIndex) => (
-                          <Typography
-                            component="li"
+                          <Box
                             key={itemIndex}
-                            variant="body2"
-                            sx={{ mb: 1 }}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              mb: 1,
+                              gap: 0.5, // Reduced from 1 to 0.5 (4px instead of 8px)
+                            }}
                           >
-                            {item.description}
-                            {item.confidence < 0.8 && (
-                              <Chip
-                                label="Low Confidence"
-                                size="small"
-                                color="warning"
-                                variant="outlined"
-                                sx={{ ml: 1, fontSize: "0.7rem" }}
-                              />
-                            )}
-                          </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                minWidth: '20px',
+                                color: 'text.secondary',
+                                fontWeight: 500,
+                                flexShrink: 0, // Prevents number from shrinking
+                              }}
+                            >
+                              {itemIndex + 1}.
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ flex: 1 }}
+                            >
+                              {item.description}
+                              {item.confidence < 0.8 && (
+                                <Chip
+                                  label="Low Confidence"
+                                  size="small"
+                                  color="warning"
+                                  variant="outlined"
+                                  sx={{ ml: 1, fontSize: "0.7rem" }}
+                                />
+                              )}
+                            </Typography>
+                          </Box>
                         ))}
                       </Box>
                     </AccordionDetails>
@@ -396,28 +688,103 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                   Unassigned Action Items
                 </Typography>
                 <Paper sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}>
-                  <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                  <Box sx={{ pl: 1 }}>
                     {summary.unassignedActionItems.map((item, index) => (
-                      <Typography
-                        component="li"
+                      <Box
                         key={index}
-                        variant="body2"
-                        sx={{ mb: 1 }}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          mb: 1,
+                          gap: 0.5, // Reduced from 1 to 0.5 (4px instead of 8px)
+                        }}
                       >
-                        {item.description}
-                        {item.confidence < 0.8 && (
-                          <Chip
-                            label="Low Confidence"
-                            size="small"
-                            color="warning"
-                            variant="outlined"
-                            sx={{ ml: 1, fontSize: "0.7rem" }}
-                          />
-                        )}
-                      </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            minWidth: '20px',
+                            color: 'warning.contrastText',
+                            fontWeight: 500,
+                            flexShrink: 0, // Prevents number from shrinking
+                          }}
+                        >
+                          {index + 1}.
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ flex: 1, color: 'warning.contrastText' }}
+                        >
+                          {item.description}
+                          {item.confidence < 0.8 && (
+                            <Chip
+                              label="Low Confidence"
+                              size="small"
+                              color="warning"
+                              variant="outlined"
+                              sx={{ ml: 1, fontSize: "0.7rem" }}
+                            />
+                          )}
+                        </Typography>
+                      </Box>
                     ))}
                   </Box>
                 </Paper>
+              </Box>
+            )}
+
+            {/* Custom Action Items */}
+            {actionItems.length > 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Divider sx={{ mb: 3 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Custom Action Items
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={handleCreateActionItem}
+                    size="small"
+                  >
+                    Add Item
+                  </Button>
+                </Box>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext 
+                    items={actionItems.map(item => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      {actionItems.map((item) => (
+                        <SortableActionItem
+                          key={item.id}
+                          item={item}
+                          onEdit={handleEditActionItem}
+                          onDelete={handleDeleteActionItem}
+                        />
+                      ))}
+                    </Box>
+                  </SortableContext>
+                </DndContext>
+              </Box>
+            )}
+
+            {/* Add Action Item button when no custom items exist */}
+            {actionItems.length === 0 && summary && (
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Add />}
+                  onClick={handleCreateActionItem}
+                  size="large"
+                  sx={{ px: 4 }}
+                >
+                  Add Custom Action Item
+                </Button>
               </Box>
             )}
           </Box>
@@ -443,6 +810,15 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         summary={summary}
         speakerMappings={effectiveSpeakerMappings}
         onSend={handleSendEmail}
+      />
+
+      {/* Action Item Dialog */}
+      <UpsertActionItemDialog
+        open={actionItemDialogOpen}
+        onClose={() => setActionItemDialogOpen(false)}
+        onSave={handleSaveActionItem}
+        actionItem={editingActionItem}
+        speakers={availableSpeakers}
       />
     </Card>
   );

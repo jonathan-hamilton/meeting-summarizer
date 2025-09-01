@@ -15,6 +15,8 @@ import {
 } from "../services/sessionManager";
 import { useActiveSpeakers, useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor } from "../theme/speakerColors";
+import { useAppMode } from "../contexts/AppModeContext";
+import { useTourStore } from "../stores/tourStore";
 
 interface SpeakerMappingProps {
   transcriptionId: string;
@@ -28,6 +30,10 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   onMappingsChanged,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Tour state management
+  const { isDemo } = useAppMode();
+  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
 
   // Use centralized store for simplified state management
   const activeSpeakers = useActiveSpeakers();
@@ -380,6 +386,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
     <Box
       sx={{
         p: 2,
+        position: "relative",
         border: "1px solid",
         borderColor: "divider",
         borderRadius: 1,
@@ -389,6 +396,58 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       {mappedSpeakersSection}
       {unmappedSpeakersSection}
       {emptyState}
+
+      {/* Step 2 Tour Popover - Manage Names */}
+      {isDemo && isTourActive && !isStepClosed(2) && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            p: 2,
+            backgroundColor: 'grey.700',
+            color: 'white',
+            borderRadius: 2,
+            maxWidth: '300px',
+            zIndex: 9999,
+            boxShadow: 3,
+            pointerEvents: 'auto',
+            textAlign: 'center',
+          }}
+        >
+          {/* Step indicator */}
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="body2" color="primary" fontWeight="bold">
+              Step 2
+            </Typography>
+          </Box>
+
+          {/* Title */}
+          <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
+            Speaker Management
+          </Typography>
+
+          {/* Description */}
+          <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+            Click 'MANAGE NAMES' to assign names to the speakers we detected in the meeting.
+          </Typography>
+
+          {/* Controls */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'grey.300',
+                cursor: 'pointer',
+                '&:hover': { color: 'white' }
+              }}
+              onClick={() => closeStep(2)}
+            >
+              CLOSE
+            </Typography>
+          </Box>
+        </Box>
+      )}
 
       <SpeakerMappingDialog
         open={dialogOpen}
