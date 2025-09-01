@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { MeetingSummary, MeetingSummaryRequest, SpeakerMapping } from '../types';
+import type { MeetingSummary, MeetingSummaryRequest, SpeakerMapping, ActionItem } from '../types';
 import type { AppMode } from '../contexts/AppModeContext';
 import { createApiService } from '../services/apiServiceFactory';
 
 interface SummaryState {
   // Current summary data
   summary: MeetingSummary | null;
+  
+  // Unified action items (AI-generated + user-created, all editable)
+  actionItems: ActionItem[];
   
   // Loading and error states
   isGenerating: boolean;
@@ -17,6 +20,14 @@ interface SummaryState {
   generateSummary: (transcriptText: string, speakerMappings: SpeakerMapping[], mode?: AppMode) => Promise<void>;
   clearSummary: () => void;
   clearError: () => void;
+  
+  // Unified action item actions
+  addActionItem: (actionItem: Omit<ActionItem, 'id'>) => void;
+  updateActionItem: (id: string, updates: Partial<ActionItem>) => void;
+  deleteActionItem: (id: string) => void;
+  reorderActionItems: (newOrder: ActionItem[]) => void;
+  clearActionItems: () => void;
+  setActionItems: (actionItems: ActionItem[]) => void; // For bulk setting from AI
 }
 
 export const useSummaryStore = create<SummaryState>()(
@@ -24,6 +35,7 @@ export const useSummaryStore = create<SummaryState>()(
     (set) => ({
       // Initial state
       summary: null,
+      actionItems: [],
       isGenerating: false,
       error: null,
       lastGeneratedAt: null,
@@ -65,8 +77,38 @@ export const useSummaryStore = create<SummaryState>()(
           const response = await apiService.generateMeetingSummary(request);
           
           if (response.success && response.data) {
+            // Convert AI-generated action items to unified format
+            const convertedActionItems: ActionItem[] = [];
+            
+            // Convert role-based action items
+            response.data.actionItemsByRole.forEach(roleGroup => {
+              roleGroup.actionItems.forEach(item => {
+                convertedActionItems.push({
+                  id: crypto.randomUUID(),
+                  description: item.description,
+                  assignedTo: roleGroup.speakerName || roleGroup.speakerId,
+                  confidence: item.confidence,
+                  isExplicitAssignment: item.isExplicitAssignment,
+                  createdAt: new Date().toISOString()
+                });
+              });
+            });
+            
+            // Convert unassigned action items
+            response.data.unassignedActionItems.forEach(item => {
+              convertedActionItems.push({
+                id: crypto.randomUUID(),
+                description: item.description,
+                assignedTo: 'Unassigned',
+                confidence: item.confidence,
+                isExplicitAssignment: false,
+                createdAt: new Date().toISOString()
+              });
+            });
+            
             set({ 
               summary: response.data, 
+              actionItems: convertedActionItems, // Populate unified action items
               isGenerating: false, 
               error: null,
               lastGeneratedAt: new Date().toISOString()
@@ -104,13 +146,51 @@ export const useSummaryStore = create<SummaryState>()(
       // Clear error state
       clearError: () => {
         set({ error: null });
+      },
+
+      // Action item actions
+      addActionItem: (actionItemData: Omit<ActionItem, 'id'>) => {
+        const newActionItem: ActionItem = {
+          ...actionItemData,
+          id: crypto.randomUUID(),
+        };
+        set((state) => ({
+          actionItems: [...state.actionItems, newActionItem]
+        }));
+      },
+
+      updateActionItem: (id: string, updates: Partial<ActionItem>) => {
+        set((state) => ({
+          actionItems: state.actionItems.map(item =>
+            item.id === id ? { ...item, ...updates } : item
+          )
+        }));
+      },
+
+      deleteActionItem: (id: string) => {
+        set((state) => ({
+          actionItems: state.actionItems.filter(item => item.id !== id)
+        }));
+      },
+
+      reorderActionItems: (newOrder: ActionItem[]) => {
+        set({ actionItems: newOrder });
+      },
+
+      setActionItems: (actionItems: ActionItem[]) => {
+        set({ actionItems });
+      },
+
+      clearActionItems: () => {
+        set({ actionItems: [] });
       }
     }),
     {
       name: 'meeting-summary-store',
-      // Only persist the summary data, not loading states
+      // Persist summary data and action items, not loading states
       partialize: (state) => ({ 
         summary: state.summary,
+        actionItems: state.actionItems,
         lastGeneratedAt: state.lastGeneratedAt
       }),
     }

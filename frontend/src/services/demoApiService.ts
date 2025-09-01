@@ -58,11 +58,18 @@ class DemoApiService {
           start: 9.8,
           end: 13.5,
           confidence: 0.89
+        },
+        {
+          speaker: 'Speaker 4',
+          text: 'Great! Let me add some technical context for the Q4 roadmap.',
+          start: 14.0,
+          end: 17.2,
+          confidence: 0.88
         }
       ],
       processingTimeMs: 2500,
       createdAt: new Date().toISOString(),
-      speakerCount: 3,
+      speakerCount: 4,
       hasSpeakerDiarization: true,
       speakerMappings: [
         { 
@@ -230,52 +237,55 @@ class DemoApiService {
 *This is a demo summary generated for demonstration purposes.*`;
   }
 
-  async generateMeetingSummary(_request: MeetingSummaryRequest): Promise<ApiResponse<MeetingSummary>> {
+  async generateMeetingSummary(request: MeetingSummaryRequest): Promise<ApiResponse<MeetingSummary>> {
     console.log('🎭 DemoApiService.generateMeetingSummary called');
-    console.log('- Request:', _request);
+    console.log('- Request:', request);
     
     await this.mockDelay(2000); // Simulate processing time
+    
+    // Process the actual transcript and speaker mappings instead of using hardcoded data
+    const { SpeakerMappings: speakerMappings } = request;
+    
+    // Extract speakers from the mappings (this ensures we use the same speakers as the transcript)
+    const speakers = speakerMappings.map(mapping => ({
+      id: mapping.speakerId,
+      name: mapping.name || mapping.speakerId,
+      role: mapping.role || ''
+    }));
+    
+    console.log('🎭 Demo processing speakers:', speakers);
+    
+    // Generate action items based on the actual speakers
+    const actionItemsByRole = speakers.map(speaker => ({
+      speakerId: speaker.id,
+      speakerName: speaker.name,
+      speakerRole: speaker.role,
+      actionItems: [
+        { 
+          description: `Complete assigned tasks for ${speaker.name}`, 
+          isExplicitAssignment: true, 
+          confidence: 0.90 + Math.random() * 0.09 // Random confidence between 0.90-0.99
+        },
+        { 
+          description: `Follow up on discussion points from ${speaker.name}`, 
+          isExplicitAssignment: false, 
+          confidence: 0.75 + Math.random() * 0.15 // Random confidence between 0.75-0.90
+        }
+      ]
+    }));
     
     const mockSummary: MeetingSummary = {
       summaryId: 'demo-summary-' + Date.now(),
       transcriptionId: 'demo-transcription-123',
       meetingOverview: 'Daily standup meeting where the development team shared progress updates on the login feature, API integration, UI improvements, and deployment activities. Key blockers identified around API documentation and missing credentials.',
-      actionItemsByRole: [
-        {
-          speakerId: 'Speaker 1',
-          speakerName: 'Speaker 1',
-          speakerRole: '', // Empty role in demo mode until user maps speakers
-          actionItems: [
-            { description: 'Continue work on the summary feature', isExplicitAssignment: true, confidence: 0.95 },
-            { description: 'Complete API integration for login page', isExplicitAssignment: false, confidence: 0.80 }
-          ]
-        },
-        {
-          speakerId: 'Speaker 2',
-          speakerName: 'Speaker 2', 
-          speakerRole: '', // Empty role in demo mode until user maps speakers
-          actionItems: [
-            { description: 'Write more tests for the codebase', isExplicitAssignment: true, confidence: 0.92 },
-            { description: 'Follow up on missing API documentation', isExplicitAssignment: true, confidence: 0.88 }
-          ]
-        },
-        {
-          speakerId: 'Speaker 3',
-          speakerName: 'Speaker 3',
-          speakerRole: '', // Empty role in demo mode until user maps speakers
-          actionItems: [
-            { description: 'Pair with team member on summary feature', isExplicitAssignment: true, confidence: 0.90 },
-            { description: 'Continue mobile responsiveness improvements', isExplicitAssignment: false, confidence: 0.75 }
-          ]
-        }
-      ],
+      actionItemsByRole,
       unassignedActionItems: [
         { description: 'Resolve API documentation blocker', confidence: 0.70, reason: 'Requires coordination with external team' },
         { description: 'Schedule follow-up on login page completion', confidence: 0.65, reason: 'Timeline dependent on API integration' }
       ],
       metadata: {
-        participants: ['Speaker 1', 'Speaker 2', 'Speaker 3'],
-        speakerCount: 3,
+        participants: speakers.map(s => s.name),
+        speakerCount: speakers.length,
         duration: '40s'
       },
       generation: {

@@ -2,6 +2,41 @@
 
 ## Current Technical Debt
 
+### S5.2 Action Items Frontend Integration 🔄 ACTIVE
+
+**Date Identified**: September 1, 2025  
+**Sprint**: S5.2 Action Item Management & Tour Completion  
+**Priority**: Medium (Store architecture complete, frontend integration needed)
+
+**Problem**: 
+Unified action items store architecture is complete with full CRUD operations, but SummaryDisplay component still uses old dual action item system. Frontend drag & drop functionality not working.
+
+**Technical Progress**:
+- ✅ **Store Refactoring**: Complete conversion from dual (customActionItems + AI) to unified actionItems array
+- ✅ **AI Integration**: AI-generated action items automatically convert to editable format with proper metadata
+- ✅ **CRUD Operations**: Full add/update/delete/reorder functionality implemented at store level
+- ✅ **Type Safety**: Consistent ActionItem interface with assignedTo, confidence, timestamps
+- ✅ **Data Pipeline**: Enhanced demo API service processes actual speaker mappings (fixed 4-speaker consistency)
+
+**Remaining Work**:
+- ❌ **Component Integration**: SummaryDisplay component needs update to use unified store
+- ❌ **Drag & Drop**: Frontend DND Kit integration not functional
+- ❌ **UI Unification**: Replace dual display sections with single action items section
+- ❌ **CRUD Interface**: Connect Add/Edit/Delete buttons to store operations
+
+**Impact Assessment**:
+- **User Experience**: Action items visible but CRUD operations don't work in UI
+- **Data Consistency**: Store level works correctly but UI shows old behavior
+- **Architecture**: Backend complete, frontend integration straightforward
+- **Business Value**: Core action item management feature partially functional
+
+**Resolution Plan**:
+1. Update SummaryDisplay component destructuring to use unified store
+2. Implement working drag & drop with DND Kit integration
+3. Replace dual action item sections with unified display
+4. Connect CRUD buttons to store operations
+5. Test complete workflow: AI generation → editing → drag & drop → persistence
+
 ### S5.1 Demo Mode Incomplete Implementation 🔄 ACTIVE
 
 **Date Identified**: August 29, 2025  
