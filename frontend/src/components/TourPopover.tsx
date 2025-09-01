@@ -34,7 +34,7 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
   onNext,
   onPrevious,
   onStopTour,
-  totalSteps = 7,
+  totalSteps = 11,
   position = { top: '20px', right: '20px' },
   maxWidth = '300px',
   anchorOrigin = 'top-right',

@@ -117,7 +117,7 @@ const createMockTranscript = (fileName?: string): TranscriptionResponse => ({
       role: '', 
       transcriptionId: 'demo-transcript-1',
       source: 'AutoDetected' as const,
-      email: ''
+      email: 'speaker1@test.com'
     },
     { 
       speakerId: 'Speaker 2', 

@@ -205,12 +205,12 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
 
           {/* Assignee Field */}
           <FormControl fullWidth variant="outlined">
-            <InputLabel id="assignee-select-label">Assigned To</InputLabel>
+            <InputLabel id="assignee-select-label">Assigned To (Optional)</InputLabel>
             <Select
               labelId="assignee-select-label"
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
-              label="Assigned To"
+              label="Assigned To (Optional)"
               error={!!errors.assignedTo}
               sx={{
                 '& .MuiSelect-select': {
@@ -218,9 +218,6 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
                 }
               }}
             >
-              <MenuItem value="">
-                <em>Unassigned</em>
-              </MenuItem>
               {speakers.map((speaker) => (
                 <MenuItem key={speaker} value={speaker}>
                   {speaker}
@@ -234,7 +231,7 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
             )}
             {!errors.assignedTo && (
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, ml: 1.75 }}>
-                Optional: Who is responsible for this action?
+                Leave blank if not assigned to a specific person
               </Typography>
             )}
           </FormControl>

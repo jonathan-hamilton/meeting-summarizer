@@ -19,22 +19,24 @@ import {
   Close,
   Email,
   Send,
-  Save,
   Preview,
   Person,
   CheckCircle,
   Error,
 } from '@mui/icons-material';
 import CodeEditor from '@uiw/react-textarea-code-editor';
-import type { MeetingSummary, SpeakerMapping } from '../types';
+import type { MeetingSummary, SpeakerMapping, ActionItem } from '../types';
 import { emailService } from '../services/emailService';
 import { useAppMode } from '../contexts/AppModeContext';
+import { useTourStore } from '../stores/tourStore';
+import { TourPopover } from './TourPopover';
 
 interface EmailCompositionDialogProps {
   open: boolean;
   onClose: () => void;
   summary: MeetingSummary | null;
   speakerMappings: SpeakerMapping[];
+  actionItems: ActionItem[];
   onSend?: (emailData: EmailData) => void;
 }
 
@@ -45,22 +47,19 @@ interface EmailData {
   htmlContent: string;
 }
 
-interface EmailDraft {
-  subject: string;
-  content: string;
-  recipients: string[];
-  lastModified: string;
-}
-
 const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   open,
   onClose,
   summary,
   speakerMappings,
+  actionItems,
   onSend,
 }) => {
   // Mode detection for demo mode handling
-  const { mode } = useAppMode();
+  const { mode, isDemo } = useAppMode();
+  
+  // Tour state management
+  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
   
   // Email composition state
   const [subject, setSubject] = useState('');
@@ -69,7 +68,6 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   const [recipientInput, setRecipientInput] = useState('');
   const [isPreview, setIsPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   
   // S3.4 Increment 4: Real email sending state
   const [isSending, setIsSending] = useState(false);
@@ -102,44 +100,8 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
       
       setSubject(defaultSubject);
       setContent(defaultContent);
-      
-      // Load saved draft if exists
-      loadDraft();
     }
   }, [summary, open, speakerMappings]);
-
-  // Save draft to session storage
-  const saveDraft = () => {
-    if (!summary) return;
-    
-    const draft: EmailDraft = {
-      subject,
-      content,
-      recipients,
-      lastModified: new Date().toISOString(),
-    };
-    
-    sessionStorage.setItem(`email-draft-${summary.summaryId}`, JSON.stringify(draft));
-    setIsSaving(true);
-    setTimeout(() => setIsSaving(false), 1000);
-  };
-
-  // Load draft from session storage
-  const loadDraft = () => {
-    if (!summary) return;
-    
-    const savedDraft = sessionStorage.getItem(`email-draft-${summary.summaryId}`);
-    if (savedDraft) {
-      try {
-        const draft: EmailDraft = JSON.parse(savedDraft);
-        setSubject(draft.subject);
-        setContent(draft.content);
-        setRecipients(draft.recipients || []);
-      } catch (err) {
-        console.warn('Failed to load email draft:', err);
-      }
-    }
-  };
 
   // Generate default email content from summary
   const generateEmailContent = (meetingSummary: MeetingSummary, speakers: SpeakerMapping[]): string => {
@@ -147,18 +109,68 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
       .map(speaker => `• ${speaker.name}${speaker.role ? ` - ${speaker.role}` : ''}`)
       .join('\n');
 
-    const actionItemsList = meetingSummary.actionItemsByRole
-      .map(roleGroup => {
-        const items = roleGroup.actionItems
+    // Group current action items by speaker
+    const groupedActionItems: { [speakerId: string]: { speakerName: string; items: ActionItem[] } } = {};
+    
+    actionItems.forEach(item => {
+      const speakerId = item.assignedTo || 'Unassigned';
+      
+      if (!groupedActionItems[speakerId]) {
+        // Find speaker name from mappings
+        const speakerMapping = speakers.find(m => m.speakerId === speakerId);
+        const speakerName = speakerMapping?.name || (speakerId === 'Unassigned' ? 'Unassigned' : speakerId);
+        
+        groupedActionItems[speakerId] = {
+          speakerName,
+          items: []
+        };
+      }
+      
+      groupedActionItems[speakerId].items.push(item);
+    });
+
+    // Create action items list based on speaker mappings order, with Unassigned at the end
+    const orderedGroups: Array<{ speakerId: string; speakerName: string; items: ActionItem[] }> = [];
+    
+    // Add speakers in order from speaker mappings
+    speakers.forEach(mapping => {
+      if (groupedActionItems[mapping.speakerId]) {
+        orderedGroups.push({
+          speakerId: mapping.speakerId,
+          speakerName: groupedActionItems[mapping.speakerId].speakerName,
+          items: groupedActionItems[mapping.speakerId].items
+        });
+      }
+    });
+    
+    // Add any other assigned speakers that aren't in mappings
+    Object.entries(groupedActionItems).forEach(([speakerId, group]) => {
+      if (speakerId !== 'Unassigned' && !orderedGroups.find(g => g.speakerId === speakerId)) {
+        orderedGroups.push({
+          speakerId,
+          speakerName: group.speakerName,
+          items: group.items
+        });
+      }
+    });
+    
+    // Add Unassigned at the end if it has items
+    if (groupedActionItems['Unassigned']) {
+      orderedGroups.push({
+        speakerId: 'Unassigned',
+        speakerName: 'Unassigned',
+        items: groupedActionItems['Unassigned'].items
+      });
+    }
+
+    const actionItemsList = orderedGroups
+      .map(group => {
+        const items = group.items
           .map(item => `  • ${item.description}`)
           .join('\n');
-        return `${roleGroup.speakerName} (${roleGroup.speakerRole}):\n${items}`;
+        return `${group.speakerName}:\n${items}`;
       })
       .join('\n\n');
-
-    const unassignedItems = meetingSummary.unassignedActionItems
-      .map(item => `  • ${item.description}`)
-      .join('\n');
 
     return `Hello team,
 
@@ -171,9 +183,8 @@ ${meetingSummary.meetingOverview}
 ${participantsList}
 
 ## Action Items
-${actionItemsList}
+${actionItemsList || 'No action items assigned.'}
 
-${unassignedItems ? `## Unassigned Action Items\n${unassignedItems}\n\n` : ''}
 ## Summary Details
 - Generated: ${new Date().toLocaleString()}
 - Processing time: ${meetingSummary.generation.processingTimeMs}ms
@@ -263,6 +274,11 @@ Best regards`;
           onSend(emailData);
         }
         
+        // Close after a brief delay to show success message (consistent with production)
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+        
         setIsSending(false);
         return;
       }
@@ -335,7 +351,6 @@ Best regards`;
 
   // Handle dialog close
   const handleClose = () => {
-    saveDraft();
     onClose();
   };
 
@@ -398,10 +413,23 @@ Best regards`;
           )}
 
           {/* Recipients Section */}
-          <Box>
+          <Box sx={{ position: 'relative' }}>
             <Typography variant="subtitle2" gutterBottom>
               Recipients
             </Typography>
+            
+            {/* Step 12 Tour Popover - Add Email Recipients */}
+            <TourPopover
+              open={isDemo && isTourActive && !isStepClosed(12)}
+              step={12}
+              title="Add Email Recipients"
+              description="Either 'ADD' an email manually, click individual emails (ex. 'speaker1@test.com') or 'ADD ALL PARTICIPANTS'"
+              onClose={() => closeStep(12)}
+              totalSteps={17}
+              position={{ top: '0px', left: '320px' }}
+              maxWidth="350px"
+            />
+            
             {/* Display current recipients if any */}
             {recipients.length > 0 && (
               <TextField
@@ -496,7 +524,7 @@ Best regards`;
           />
 
           {/* Content Section */}
-          <Box>
+          <Box sx={{ position: 'relative' }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
               <Typography variant="subtitle2">
                 Email Content
@@ -509,16 +537,32 @@ Best regards`;
                 >
                   {isPreview ? 'Edit' : 'Preview'}
                 </Button>
-                <Button
-                  size="small"
-                  onClick={saveDraft}
-                  startIcon={<Save />}
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Saved' : 'Save Draft'}
-                </Button>
               </Stack>
             </Stack>
+
+            {/* Step 14 Tour Popover - Preview Email */}
+            <TourPopover
+              open={isDemo && isTourActive && !isStepClosed(14)}
+              step={14}
+              title="Preview Email"
+              description="Preview how your email will look with the meeting summary and action items included before sending it to recipients."
+              onClose={() => closeStep(14)}
+              totalSteps={16}
+              position={{ top: '50px', left: '450px' }}
+              maxWidth="350px"
+            />
+
+            {/* Step 13 Tour Popover - Edit Email Content */}
+            <TourPopover
+              open={isDemo && isTourActive && !isStepClosed(13)}
+              step={13}
+              title="Edit Email Content"
+              description="Customize the email subject and add a personal message. The Meeting Summary and Action Items will be included automatically."
+              onClose={() => closeStep(13)}
+              totalSteps={17}
+              position={{ top: '50px', left: '50px' }}
+              maxWidth="350px"
+            />
 
             {isPreview ? (
               <Paper sx={{ p: 2, minHeight: 300, bgcolor: 'background.default' }}>
@@ -556,6 +600,18 @@ Best regards`;
           {isSending ? 'Sending...' : 'Send Email'}
         </Button>
       </DialogActions>
+
+      {/* Step 15 Tour Popover - Send Email */}
+      <TourPopover
+        open={isDemo && isTourActive && !isStepClosed(15)}
+        step={15}
+        title="Send Email"
+        description="Send the meeting summary and action items to all recipients. In demo mode, no actual emails are sent."
+        onClose={() => closeStep(15)}
+        totalSteps={16}
+        position={{ top: '670px', left: '600px' }}
+        maxWidth="350px"
+      />
     </Dialog>
   );
 };

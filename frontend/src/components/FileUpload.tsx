@@ -381,7 +381,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           title="File Upload Demo"
           description="Click 'SELECT FILE' to start the demo transcription process with our sample meeting audio."
           onClose={() => closeStep(1)}
-          position={{ top: '50px', right: '55px' }}
+          position={{ top: '17px', right: '55px' }}
         />
       </Paper>
 

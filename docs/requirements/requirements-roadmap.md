@@ -178,8 +178,8 @@ This roadmap tracks which requirements have been implemented in each sprint and 
   
 **In Progress/Not Yet Implemented:**
   - REQ-DEMO-3: Prominent "Sign In" button in AppBar ❌
-  - REQ-DEMO-4: Step-by-step interactive Tour with tooltips ❌
-  - REQ-DEMO-5: Tour closable, forward/backward navigation ❌
+  - REQ-DEMO-4: Step-by-step interactive Tour with tooltips 🔄 *(Static tour popovers implemented, tour transition logic pending)*
+  - REQ-DEMO-5: Tour closable, forward/backward navigation 🔄 *(Individual step close implemented, navigation logic pending)*
   - REQ-DEMO-9: Tooltips/UI messaging clarify simulation ❌
   - REQ-DEMO-14: "Sign In" always visible in Demo mode ❌
   - REQ-DEMO-15: Signing in transitions to Paid mode ❌
@@ -187,6 +187,13 @@ This roadmap tracks which requirements have been implemented in each sprint and 
   - REQ-DEMO-17: Privacy-friendly analytics for Demo usage ❌
   - REQ-DEMO-18: Analytics reviewed for abuse patterns ❌
   - REQ-DEMO-19: Demo mode meets accessibility/mobile standards 🔄
+  - REQ-DEMO-22: Tour step tracking with numbered steps ✅ *(TourPopover component implemented)*
+  - REQ-DEMO-23: Tour steps include Step 9 (Summary) guidance ✅ *(Steps 1-15 implemented)*
+  - REQ-DEMO-24: Tour overlays positioned with high z-index ✅ *(z-index 9999 implemented)*
+  - REQ-DEMO-25: Tour steps include close functionality ✅ *(Individual step closure implemented)*
+  - REQ-DEMO-26: Tour content centered with appropriate contrast ✅ *(Dark grey/white styling implemented)*
+  - REQ-DEMO-27: Tour automatic step progression based on actions ❌ *(Tour transition logic pending)*
+  - REQ-DEMO-28: Tour navigation controls with functional transitions ❌ *(Navigation controls pending)*
   - REQ-USER-3: Paid mode persists data across sessions ❌
   - REQ-USER-4: Communicate data retention/privacy for each mode ❌
   - REQ-FPO-2: Convert all non-WAV audio files to WAV before transcription ✅
