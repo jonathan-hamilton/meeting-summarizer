@@ -78,7 +78,7 @@ class DemoApiService {
           role: 'Product Manager', 
           transcriptionId: 'demo-transcript-1',
           source: 'AutoDetected' as const,
-          email: 'sarah.johnson@company.com'
+          email: 'speaker1@test.com'
         },
         { 
           speakerId: 'Speaker 2', 

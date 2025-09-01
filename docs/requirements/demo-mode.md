@@ -17,6 +17,8 @@ This document contains all requirements related to demo experience, guided tours
 - **REQ-DEMO-24**: Tour overlays shall be positioned absolutely with high z-index (9999) to appear over other content
 - **REQ-DEMO-25**: Tour steps shall include close functionality with individual step closure tracking
 - **REQ-DEMO-26**: Tour content shall be centered and clearly visible with appropriate contrast (grey.700 background, white text)
+- **REQ-DEMO-27**: Tour system shall implement automatic step progression based on user actions and workflow completion
+- **REQ-DEMO-28**: Tour shall provide navigation controls (forward/backward/skip/close) with functional step transitions
 
 ## Demo Mode Simulated & Interactive Features
 
