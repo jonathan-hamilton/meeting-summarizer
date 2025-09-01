@@ -26,6 +26,7 @@ import {
   RadioButtonUnchecked,
 } from "@mui/icons-material";
 import { useAppMode } from "../contexts/AppModeContext";
+import { useTourStore } from "../stores/tourStore";
 import { createApiService } from "../services/apiServiceFactory";
 import { useEnhancedSessionStore } from "../stores/enhancedSessionStore";
 import type { TranscriptionResponse } from "../types";
@@ -112,8 +113,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
 }) => {
-  const { mode } = useAppMode();
-  const { isDemo } = useAppMode();
+  const { mode, isDemo } = useAppMode();
+  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
   const { 
     startDemoUpload,
     demo: {
@@ -298,6 +299,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         sx={{
           p: 4,
           width: "100%",
+          position: "relative",
           border: "2px dashed",
           borderColor: hasCompletedFile 
             ? "grey.200" 
@@ -370,6 +372,58 @@ const FileUpload: React.FC<FileUploadProps> = ({
         >
           Select File
         </Button>
+
+        {/* Step 1 Tour Popover - File Upload */}
+        {isDemo && isTourActive && !isStepClosed(1) && (
+          <Paper
+            sx={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              p: 2,
+              backgroundColor: 'grey.700',
+              color: 'white',
+              borderRadius: 2,
+              maxWidth: '300px',
+              zIndex: 9999,
+              boxShadow: 3,
+              pointerEvents: 'auto',
+              textAlign: 'center',
+            }}
+          >
+            {/* Step indicator */}
+            <Box sx={{ mb: 1 }}>
+              <Typography variant="body2" color="primary" fontWeight="bold">
+                Step 1
+              </Typography>
+            </Box>
+
+            {/* Title */}
+            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
+              File Upload Demo
+            </Typography>
+
+            {/* Description */}
+            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
+              Click 'SELECT FILE' to start the demo transcription process with our sample meeting audio.
+            </Typography>
+
+            {/* Controls */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'grey.300',
+                  cursor: 'pointer',
+                  '&:hover': { color: 'white' }
+                }}
+                onClick={() => closeStep(1)}
+              >
+                CLOSE
+              </Typography>
+            </Box>
+          </Paper>
+        )}
       </Paper>
 
       {/* Validation Errors */}

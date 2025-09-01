@@ -29,6 +29,7 @@ import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
 import { useSpeakerValidation } from "../hooks/useSpeakerValidation";
 import { useAppMode } from "../contexts/AppModeContext";
+import { useTourStore } from "../stores/tourStore";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -56,6 +57,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   onMappingsSaved,
 }) => {
   const { isDemo } = useAppMode();
+  const { isActive: isTourActive, isStepClosed } = useTourStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -672,7 +674,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             {speakerChips}
             
             {/* Step 4 Tour Popover - Add Speaker */}
-            {isDemo && (
+            {isDemo && isTourActive && !isStepClosed(4) && (
               <Paper
                 sx={{
                   position: 'fixed',
@@ -747,7 +749,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             {mappingFields}
             
             {/* Step 5 Tour Popover - Delete Speaker */}
-            {isDemo && (
+            {isDemo && isTourActive && !isStepClosed(5) && (
               <Paper
                 sx={{
                   position: 'fixed',
@@ -803,7 +805,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             )}
             
             {/* Step 6 Tour Popover - Edit Speaker */}
-            {isDemo && (
+            {isDemo && isTourActive && !isStepClosed(6) && (
               <Paper
                 sx={{
                   position: 'fixed',
