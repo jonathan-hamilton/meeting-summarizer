@@ -22,7 +22,6 @@ import TourPopover from "./TourPopover";
 import {
   Psychology,
   ContentCopy,
-  ExpandMore,
   Person,
   Assignment,
   Schedule,
@@ -32,6 +31,7 @@ import {
   Edit,
   Delete,
   DragIndicator,
+  ExpandMore,
 } from "@mui/icons-material";
 import {
   DndContext,
@@ -150,6 +150,13 @@ const SortableActionItem: React.FC<SortableActionItemProps> = ({ item, onEdit, o
         >
           <Edit fontSize="small" />
         </IconButton>
+        <IconButton
+          size="small"
+          onClick={() => onDelete(item.id)}
+          color="error"
+        >
+          <Delete fontSize="small" />
+        </IconButton>
       </Box>
     </Paper>
   );
@@ -172,7 +179,12 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     error, 
     generateSummary, 
     clearError,
-    clearSummary 
+    clearSummary,
+    actionItems,
+    addActionItem,
+    updateActionItem,
+    deleteActionItem,
+    reorderActionItems
   } = useSummaryStore();
   
   // Get the current app mode to pass to the summary generation
@@ -203,7 +215,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   // Action item dialog state
   const [actionItemDialogOpen, setActionItemDialogOpen] = useState(false);
   const [editingActionItem, setEditingActionItem] = useState<ActionItem | null>(null);
-  const [actionItems, setActionItems] = useState<ActionItem[]>([]);
+
+  // Accordion expansion state - track which speaker accordions are expanded
+  const [expandedAccordions, setExpandedAccordions] = useState<Set<string>>(new Set());
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -217,14 +231,53 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (active.id !== over?.id) {
-      setActionItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over?.id);
+    if (active.id !== over?.id && over?.id) {
+      const draggedItem = actionItems.find((item) => item.id === active.id);
+      const targetItem = actionItems.find((item) => item.id === over.id);
+      
+      if (draggedItem && targetItem) {
+        // Check if we're moving to a different speaker
+        const needsReassignment = draggedItem.assignedTo !== targetItem.assignedTo;
+        
+        if (needsReassignment) {
+          // Update the assignedTo field to match the target speaker
+          updateActionItem(draggedItem.id, { assignedTo: targetItem.assignedTo });
+          
+          // Auto-expand the target accordion to show the newly assigned item
+          if (targetItem.assignedTo) {
+            setExpandedAccordions(prev => new Set(prev).add(targetItem.assignedTo!));
+          }
+          
+          setSnackbar({
+            open: true,
+            message: `Action item reassigned to ${targetItem.assignedTo || 'Unassigned'}`,
+            severity: "success",
+          });
+        } else {
+          // Just reorder within the same speaker group
+          const oldIndex = actionItems.findIndex((item) => item.id === active.id);
+          const newIndex = actionItems.findIndex((item) => item.id === over.id);
 
-        return arrayMove(items, oldIndex, newIndex);
-      });
+          if (oldIndex !== -1 && newIndex !== -1) {
+            const reorderedItems = arrayMove(actionItems, oldIndex, newIndex);
+            reorderActionItems(reorderedItems);
+          }
+        }
+      }
     }
+  };
+
+  // Handle accordion expansion/collapse
+  const handleAccordionChange = (speakerId: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
+    setExpandedAccordions(prev => {
+      const newSet = new Set(prev);
+      if (isExpanded) {
+        newSet.add(speakerId);
+      } else {
+        newSet.delete(speakerId);
+      }
+      return newSet;
+    });
   };
 
   const handleGenerateSummary = async () => {
@@ -334,7 +387,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   };
 
   const handleDeleteActionItem = (actionItemId: string) => {
-    setActionItems(prev => prev.filter(item => item.id !== actionItemId));
+    deleteActionItem(actionItemId);
     setSnackbar({
       open: true,
       message: "Action item deleted successfully!",
@@ -345,11 +398,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const handleSaveActionItem = (actionItemData: Omit<ActionItem, 'id'>) => {
     if (editingActionItem) {
       // Update existing action item
-      setActionItems(prev => prev.map(item => 
-        item.id === editingActionItem.id 
-          ? { ...actionItemData, id: editingActionItem.id }
-          : item
-      ));
+      updateActionItem(editingActionItem.id, actionItemData);
       setSnackbar({
         open: true,
         message: "Action item updated successfully!",
@@ -357,11 +406,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       });
     } else {
       // Create new action item
-      const newActionItem: ActionItem = {
-        ...actionItemData,
-        id: crypto.randomUUID(),
-      };
-      setActionItems(prev => [...prev, newActionItem]);
+      addActionItem(actionItemData);
       setSnackbar({
         open: true,
         message: "Action item created successfully!",
@@ -410,10 +455,67 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Group action items by speaker with stable ordering
+  const groupedActionItems = useMemo(() => {
+    const groups: { [speakerId: string]: { speakerName: string; items: ActionItem[] } } = {};
+    
+    // First, populate the groups with action items
+    actionItems.forEach(item => {
+      const speakerId = item.assignedTo || 'Unassigned';
+      
+      if (!groups[speakerId]) {
+        // Find speaker name from mappings
+        const speakerMapping = effectiveSpeakerMappings.find(m => m.speakerId === speakerId);
+        const speakerName = speakerMapping?.name || (speakerId === 'Unassigned' ? 'Unassigned' : speakerId);
+        
+        groups[speakerId] = {
+          speakerName,
+          items: []
+        };
+      }
+      
+      groups[speakerId].items.push(item);
+    });
+    
+    // Create ordered list based on speaker mappings order, then add Unassigned at the end
+    const orderedGroups: Array<{ speakerId: string; speakerName: string; items: ActionItem[] }> = [];
+    
+    // Add speakers in the order they appear in speaker mappings (maintains original order)
+    effectiveSpeakerMappings.forEach(mapping => {
+      if (groups[mapping.speakerId]) {
+        orderedGroups.push({
+          speakerId: mapping.speakerId,
+          speakerName: groups[mapping.speakerId].speakerName,
+          items: groups[mapping.speakerId].items
+        });
+      }
+    });
+    
+    // Add any other assigned speakers that aren't in mappings (shouldn't happen, but safe fallback)
+    Object.entries(groups).forEach(([speakerId, group]) => {
+      if (speakerId !== 'Unassigned' && !orderedGroups.find(g => g.speakerId === speakerId)) {
+        orderedGroups.push({
+          speakerId,
+          speakerName: group.speakerName,
+          items: group.items
+        });
+      }
+    });
+    
+    // Always add Unassigned at the end if it has items
+    if (groups['Unassigned']) {
+      orderedGroups.push({
+        speakerId: 'Unassigned',
+        speakerName: 'Unassigned',
+        items: groups['Unassigned'].items
+      });
+    }
+    
+    return orderedGroups;
+  }, [actionItems, effectiveSpeakerMappings]);
+
   const getTotalActionItems = (): number => {
-    if (!summary) return 0;
-    return summary.actionItemsByRole.reduce((total, role) => total + role.actionItems.length, 0) + 
-           summary.unassignedActionItems.length;
+    return actionItems.length;
   };
 
   return (
@@ -556,148 +658,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Action Items by Role */}
-            {summary.actionItemsByRole.length > 0 && (
-              <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
-                    Action Items by Role
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Add />}
-                    onClick={handleCreateActionItem}
-                    size="small"
-                    sx={{ minWidth: 'auto' }}
-                  >
-                    Add Action Item
-                  </Button>
-                </Box>
-                {summary.actionItemsByRole.map((roleGroup, index) => (
-                  <Accordion key={index} sx={{ mb: 1 }}>
-                    <AccordionSummary expandIcon={<ExpandMore />}>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Person color="primary" />
-                        <Box>
-                          <Typography variant="subtitle1">
-                            {roleGroup.speakerName}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {roleGroup.speakerRole ? `${roleGroup.speakerRole} • ` : ''}{roleGroup.actionItems.length} action items
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Box sx={{ pl: 1 }}>
-                        {roleGroup.actionItems.map((item, itemIndex) => (
-                          <Box
-                            key={itemIndex}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              mb: 1,
-                              gap: 0.5, // Reduced from 1 to 0.5 (4px instead of 8px)
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                minWidth: '20px',
-                                color: 'text.secondary',
-                                fontWeight: 500,
-                                flexShrink: 0, // Prevents number from shrinking
-                              }}
-                            >
-                              {itemIndex + 1}.
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{ flex: 1 }}
-                            >
-                              {item.description}
-                              {item.confidence < 0.8 && (
-                                <Chip
-                                  label="Low Confidence"
-                                  size="small"
-                                  color="warning"
-                                  variant="outlined"
-                                  sx={{ ml: 1, fontSize: "0.7rem" }}
-                                />
-                              )}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                ))}
-              </Box>
-            )}
-
-            {/* Unassigned Action Items */}
-            {summary.unassignedActionItems.length > 0 && (
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Unassigned Action Items
-                </Typography>
-                <Paper sx={{ p: 2, bgcolor: "warning.light", color: "warning.contrastText" }}>
-                  <Box sx={{ pl: 1 }}>
-                    {summary.unassignedActionItems.map((item, index) => (
-                      <Box
-                        key={index}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          mb: 1,
-                          gap: 0.5, // Reduced from 1 to 0.5 (4px instead of 8px)
-                        }}
-                      >
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            minWidth: '20px',
-                            color: 'warning.contrastText',
-                            fontWeight: 500,
-                            flexShrink: 0, // Prevents number from shrinking
-                          }}
-                        >
-                          {index + 1}.
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ flex: 1, color: 'warning.contrastText' }}
-                        >
-                          {item.description}
-                          {item.confidence < 0.8 && (
-                            <Chip
-                              label="Low Confidence"
-                              size="small"
-                              variant="outlined"
-                              sx={{ 
-                                ml: 1, 
-                                fontSize: "0.7rem",
-                                borderColor: 'error.main',
-                                backgroundColor: 'warning.light',
-                                color: 'error.main'
-                              }}
-                            />
-                          )}
-                        </Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Paper>
-              </Box>
-            )}
-
-            {/* Custom Action Items */}
+            {/* Action Items by Speaker */}
             {actionItems.length > 0 && (
               <Box sx={{ mt: 3 }}>
                 <Divider sx={{ mb: 3 }} />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">
-                    Custom Action Items
+                    Action Items ({actionItems.length})
                   </Typography>
                   <Button
                     variant="outlined"
@@ -708,6 +675,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                     Add Item
                   </Button>
                 </Box>
+                
                 <DndContext
                   sensors={sensors}
                   collisionDetection={closestCenter}
@@ -717,18 +685,75 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                     items={actionItems.map(item => item.id)}
                     strategy={verticalListSortingStrategy}
                   >
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {actionItems.map((item) => (
-                        <SortableActionItem
-                          key={item.id}
-                          item={item}
-                          onEdit={handleEditActionItem}
-                          onDelete={handleDeleteActionItem}
-                        />
-                      ))}
-                    </Box>
+                    {groupedActionItems.map((group) => (
+                      <Accordion 
+                        key={group.speakerId} 
+                        sx={{ mb: 1 }}
+                        expanded={expandedAccordions.has(group.speakerId)}
+                        onChange={handleAccordionChange(group.speakerId)}
+                      >
+                        <AccordionSummary expandIcon={<ExpandMore />}>
+                          <Stack direction="row" alignItems="center" spacing={2}>
+                            <Person color="primary" />
+                            <Box>
+                              <Typography variant="subtitle1">
+                                {group.speakerName}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {group.items.length} action items
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                            {group.items.map((item) => (
+                              <SortableActionItem
+                                key={item.id}
+                                item={item}
+                                onEdit={handleEditActionItem}
+                                onDelete={handleDeleteActionItem}
+                              />
+                            ))}
+                          </Box>
+                        </AccordionDetails>
+                      </Accordion>
+                    ))}
                   </SortableContext>
                 </DndContext>
+              </Box>
+            )}
+
+            {/* Empty state when no action items exist */}
+            {actionItems.length === 0 && (
+              <Box sx={{ mt: 3 }}>
+                <Divider sx={{ mb: 3 }} />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6">
+                    Action Items (0)
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Add />}
+                    onClick={handleCreateActionItem}
+                    size="small"
+                  >
+                    Add Item
+                  </Button>
+                </Box>
+                <Paper 
+                  sx={{ 
+                    p: 3, 
+                    textAlign: 'center', 
+                    bgcolor: 'grey.50',
+                    border: '2px dashed',
+                    borderColor: 'grey.300'
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    No action items yet. Generate a meeting summary or add custom action items to get started.
+                  </Typography>
+                </Paper>
               </Box>
             )}
 
