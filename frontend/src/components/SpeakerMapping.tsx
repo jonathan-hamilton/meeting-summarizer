@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, Button, Typography, Chip } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -15,7 +15,6 @@ import {
 } from "../services/sessionManager";
 import { useActiveSpeakers, useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor } from "../theme/speakerColors";
-import { useAppMode } from "../contexts/AppModeContext";
 
 interface SpeakerMappingProps {
   transcriptionId: string;
@@ -29,10 +28,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   onMappingsChanged,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
-  
-  // Tour Step 3: Manage Names Button Reference
-  const manageNamesButtonRef = useRef<HTMLButtonElement>(null);
-  const { isDemo, isTourActive, tourStep, nextTourStep, previousTourStep, closeTour } = useAppMode();
 
   // Use centralized store for simplified state management
   const activeSpeakers = useActiveSpeakers();
@@ -321,7 +316,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         </Box>
 
         <Button
-          ref={manageNamesButtonRef}
           variant="outlined"
           size="small"
           startIcon={<EditIcon />}
@@ -404,75 +398,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         existingMappings={effectiveData.mappings}
         onMappingsSaved={handleMappingsSaved}
       />
-
-      {/* Tour Step 3: Speaker Management - Shows when speakers are available */}
-      {isDemo && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '850px',
-            right: '400px',
-            zIndex: 1300,
-            pointerEvents: 'none'
-          }}
-        >
-          <Box sx={{ 
-            p: 2, 
-            position: 'relative',
-            bgcolor: 'grey.700',
-            border: '1px solid',
-            borderColor: 'grey.500',
-            boxShadow: 3,
-            maxWidth: 360,
-            minWidth: 280,
-            pointerEvents: 'auto',
-            borderRadius: 1
-          }}>
-            {/* Close button */}
-            <Button
-              size="small"
-              onClick={closeTour}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                minWidth: 'auto',
-                p: 0.5
-              }}
-            >
-              ✕
-            </Button>
-
-            {/* Step indicator */}
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body2" color="primary" fontWeight="bold">
-                Step 3
-              </Typography>
-            </Box>
-
-            {/* Title */}
-            <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-              Speaker Management
-            </Typography>
-
-            {/* Description */}
-            <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-              (Optional) Click 'MANAGE NAMES' to assign names to the speakers that were detected in the meeting.
-            </Typography>
-
-            {/* Controls - Development mode: no navigation needed */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                variant="text"
-                onClick={closeTour}
-                sx={{ color: 'grey.300' }}
-              >
-                CLOSE
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      )}
     </Box>
   );
 };

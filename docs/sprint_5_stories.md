@@ -1,39 +1,33 @@
-# Sprint 5: Demo Mode Enhancement & Action Item Management
+ds## Sprint Overview
 
-## Progress Tracker
-
-| Story ID | Title                                              | Status        | Dependencies         |
-|----------|----------------------------------------------------|---------------|----------------------|
-| S5.1     | User Mode Selection & Demo Content                 | COMPLETE ✅   | None                 |
-| S5.2     | Action Item Management & Tour Completion           | IN PROGRESS 🔄| S5.1                 |
-
-## Sprint Overview
-
-Sprint 5 focuses on completing the demo mode experience with comprehensive action item management and guided tour system. This sprint delivers a complete interactive demonstration of the meeting transcription workflow from upload to final deliverable sharing, providing immediate user value and supporting go-to-market strategy.
+Sprint 5 focuses on enabling user account modes (Demo/Public vs. Paid), implementing persistent upload progress and meeting history for paid users, integrating payment processing and token management, and ensuring accessibility compliance across the UI. This sprint also includes the required Azure storage and payment system setup to support these features.
 
 ## Sprint Goals
 
-- Complete demo mode implementation with interactive tour system for showcasing product capabilities
-- Implement action item management with CRUD operations and drag & drop functionality
-- Finish guided tour workflow from file upload through final deliverable sharing
-- Establish foundation for user onboarding and product demonstration
-- Prepare complete demo experience for user testing and go-to-market strategy
+- Implement user mode selection logic with static demo content for Demo/Public mode
+- Set up Azure storage and database for persistent user data in Paid mode
+- Integrate secure payment processing and token/credit management
+- Provide persistent upload progress and meeting history for paid users
+- Ensure accessibility compliance for all interactive UI components
 
 ## Progress Tracker
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
-| S5.1     | User Mode Selection & Demo Content                 | COMPLETE ✅   | None                 |
-| S5.5     | Action Item Management & Tour Completion           | PLANNED �    | S5.1                 |
+| S5.1     | User Mode Selection & Demo Content                 | IN PROGRESS 🔄| None                 |
+| S5.2     | Azure Storage & Persistent Data Setup              | PENDING 🔄    | S5.1                 |
+| S5.3     | Payment & Token System Setup                       | PENDING 🔄    | S5.1                 |
+| S5.4     | Persistent Upload Progress & Meeting History (Paid)| PENDING 🔄    | S5.2, S5.3           |
+| S5.5     | Accessibility Compliance Enhancements              | PENDING 🔄    | None                 |
 
 ## User Stories
 
 ### Story S5.1: User Mode Selection & Demo Content
 As a user, I want to choose between Demo/Public (static demo) and Paid (account-based) modes so that my experience matches my privacy and persistence needs.
 
-**Status: IN PROGRESS 🔄 (~85% Complete)**
+**Status: IN PROGRESS 🔄 (~80% Complete)**
 
-**Completion Date:** August 31, 2025 (Incremental Progress)
+**Completion Date:** August 31, 2025 (Major Progress Update)
 
 **Implementation Summary:**
 ✅ **Completed Components:**
@@ -44,30 +38,17 @@ As a user, I want to choose between Demo/Public (static demo) and Paid (account-
 - Simulated file upload without file picker using demo data
 - Demo-aware components (FileUpload, speaker mapping, transcript display)
 - Email simulation for demo mode (fixed bug preventing real API calls)
-- Complete tour step documentation (Steps 1-18) with conditional logic and workflow details
+- Complete tour step documentation (Steps 1-8) with conditional logic and workflow details
 - Demo workflow foundation through transcript display and speaker mapping
-- **Enhanced interactive tour infrastructure (Steps 2-9 implemented):**
-  - Step 2 TourPopover in TranscriptDisplay.tsx (transcription statistics overview)
-  - Step 3 TourPopover in SpeakerMapping.tsx (speaker management guidance)
-  - **Steps 4-8 TourPopovers in SpeakerMappingDialog.tsx with full tour store integration**
-  - **Step 9 TourPopover in SummaryDisplay.tsx with tour store integration**
-  - **Tour store infrastructure with closeable functionality for development workflow**
-  - **All implemented TourPopovers support individual close actions without step dependencies**
-  - Enhanced metadata chips with PlayCircle and Schedule icons for better UX clarity
-  - Consistent TourPopover styling with dark grey theme and fixed positioning
-  - Z-index layering management for proper tour display above dialogs
-  - Tour step documentation simplified from decimal to whole number format
-- **Critical bug fixes:**
-  - **Speaker mapping functionality restored (handleSpeakerMappingsSaved callback fix)**
-  - **Tour positioning refinements and development-friendly closeable behavior**
+- **NEW**: Tour component infrastructure (TourPopover.tsx) and tour state management
+- **NEW**: Modular requirements structure with 22+ specialized requirement files
+- **NEW**: Action Item Management UI (UpsertActionItemDialog.tsx) with full CRUD operations
+- **NEW**: Technical improvements documentation modularized by functional area
 
 ❌ **Missing Components (Required for S5.1 Completion):**
-- **Steps 1, 10-18 tour popover implementations** (reduced scope - Steps 2-9 now complete)
-- Tour navigation controls (forward/backward/skip/close)
-- Tour auto-start functionality and completion tracking
+- Interactive guided tour system implementation (TourPopover component created but needs content)
 - Sign-In/Sign-Out button replacing development toggle in AppBar with authentication dialog
-- Complete demo workflow beyond transcript display (summary generation → email sharing UI integration)
-- Tour-driven feature access (all demo features only available through guided tour)
+- Tour auto-start functionality and navigation controls (forward/backward/skip/close)
 - Demo mode messaging and visual indicators (tooltips clarifying simulation)
 
 Acceptance Criteria:
@@ -80,11 +61,8 @@ Acceptance Criteria:
 **Technical Notes:**
 - Chose client-side routing over server-side mode detection for better development experience
 - Established unified store architecture supporting both modes without component duplication
-- Implemented tour infrastructure with fixed positioning instead of Material-UI anchoring for better stability
-- Tour popovers use consistent dark grey styling with proper z-index layering (9999 for tours, 10000 for dialogs)
-- Enhanced transcription metadata with descriptive icons and text ("45s processing", "17s audio")
+- AppModeContext provides complete tour state foundation but tour UI components not built
 - Demo API service fully functional but not integrated with missing UI components (summary/email flows)
-- Tour step numbering simplified from decimal format (4.1, 8.1) to whole numbers (4, 12) for cleaner organization
 
 **Integration Points:**
 - Enhanced store ready for tour progress tracking
@@ -93,12 +71,11 @@ Acceptance Criteria:
 - Performance and validation improvements benefit both demo and production modes
 
 **Next Steps for S5.1 Completion:**
-1. **Implement remaining tour steps (Steps 1, 10-18) following established TourPopover pattern** (reduced scope from Steps 1, 5-18)
-2. Add tour navigation controls (forward/backward/skip/close) to existing tour infrastructure
-3. Implement tour auto-start functionality and completion tracking
-4. Replace development environment toggle with Sign-In/Sign-Out button in AppBar
-5. Build missing UI components: Summary generation display and Email sharing dialog for demo
-6. Integrate tour system with existing demo-aware components
+1. Implement TourPopover component with Material-UI Backdrop and Portal for step highlighting
+2. Replace development environment toggle with Sign-In/Sign-Out button in AppBar
+3. Build missing UI components: Summary generation display and Email sharing dialog for demo
+4. Integrate tour system with existing demo-aware components
+5. Add tour auto-start, navigation controls, and completion tracking
 
 Dependencies: None
 
@@ -108,120 +85,95 @@ Developer Notes:
 
 ---
 
-### Story S5.2: Action Item Management & Tour Completion
-As a user in demo mode, I want to see and interact with action item management features so that I understand the complete meeting workflow from transcription to final deliverable sharing.
+### Story S5.2: Azure Storage & Persistent Data Setup
+As a developer, I want to set up Azure storage and database so that paid user data is securely and persistently managed.
 
-**Status: IN PROGRESS �**
+Acceptance Criteria:
+- Azure Blob Storage is configured for persistent storage of user-uploaded audio files and meeting artifacts (Paid mode only)
+- Each paid user has a logically isolated storage container or folder
+- Azure SQL Database or Cosmos DB is configured for user metadata, meeting history, and token balances
+- All storage operations use secure, authenticated access (Azure AD, SAS tokens)
+- Storage retention and cleanup policies are configurable and documented
 
-**Last Updated:** August 31, 2025
-
-**Dependencies**: S5.1 (Demo Mode & Tour Infrastructure) ✅ COMPLETE
-
-## Implementation Progress
-
-### Increment 1: Action Item Display & Email Enhancements ✅ COMPLETE (Aug 31, 2025)
-
-**Implementation Summary:**
-- ✅ Fixed action item spacing with flexbox layout (REQ-ACTMGMT-45, REQ-ACTMGMT-46)
-- ✅ Enhanced EmailCompositionDialog with participant management features
-- ✅ Implemented demo mode email sending with simulated functionality
-- ✅ Added Tour Step 9 (Summary) with proper guidance and close functionality
-- ✅ Updated 43 requirements across 4 documentation files
-
-**Technical Achievements:**
-- **UI Improvements**: Replaced list layout with flexbox for precise action item spacing (0.5 gap units)
-- **Email Features**: Participant suggestions, "Add All Participants" button, draft saving, preview mode
-- **Demo Mode**: Simulated email sending with clear user feedback and processing delays
-- **Tour System**: Step 9 implementation with positioned overlays and close tracking
-- **Requirements**: Comprehensive documentation updates in modular requirements structure
-
-**Files Modified:**
-- `frontend/src/components/SummaryDisplay.tsx` - Action item spacing fixes
-- `frontend/src/components/EmailCompositionDialog.tsx` - Enhanced email functionality 
-- `frontend/src/services/apiService.mock.ts` - Demo mode support
-- `docs/requirements/` - 43 new requirements added across 4 files
-
-**Acceptance Criteria Completed:**
-- ✅ Action item display improvements with proper spacing and layout
-- ✅ Enhanced email composition with participant management
-- ✅ Demo mode email functionality fully operational
-- ✅ Tour Step 9 implemented with proper user guidance
-- ✅ Requirements documentation updated to reflect implemented features
-
-### Remaining Work for S5.2 Completion:
-
-**Increment 2: Action Item CRUD Operations** 🔄 PENDING
-- Action item data model extended with id and assignedTo fields for CRUD operations
-- UpsertActionItemDialog implemented for creating and editing action items
-- Integration with existing summary display functionality
-
-**Increment 3: Drag & Drop Functionality** 🔄 PENDING  
-- Drag and drop functionality for reassigning action items between speakers
-- @dnd-kit/core library integration with validation and error handling
-- Snackbar error messaging consistent with existing patterns
-
-**Increment 4: Complete Tour System** 🔄 PENDING
-- Tour Steps 10-12 demonstrate action item management features
-- Tour Steps 13-18 demonstrate complete email workflow with modified action items
-- Tour navigation controls (forward/backward/skip/close) implemented
-- Complete demo tour workflow from file upload to email sharing
-
-**Technical Requirements:**
-- Implement remaining REQ-ACTMGMT-1 through REQ-ACTMGMT-44 from requirements document
-- Extend summaryStore with action item CRUD operations using Zustand
-- Use @dnd-kit/core library for drag and drop functionality
-- Integrate with existing tour infrastructure and Material-UI components
-- Maintain consistency between Demo and Production mode behaviors
-
-**Technical Notes:**
-- Action items use crypto.randomUUID() for unique identification
-- Replace ActionItemsByRole structure with flat ActionItem array using assignedTo field
-- Drag and drop validation uses Snackbar error messaging consistent with existing patterns
-- UpsertActionItemDialog supports both create and edit operations
-- Speaker dropdown includes all meeting participants plus "Unassigned" option
-
-**Integration Points:**
-- Enhanced summary display with action item management capabilities
-- Updated copy and email functionality to reflect action item modifications
-- Complete tour system demonstrating end-to-end meeting workflow
-- Foundation for paid mode action item persistence in future sprint
-
-**Next Steps After S5.5 Completion:**
-1. Move to Sprint 6 focusing on user authentication and paid mode infrastructure
-2. Implement Azure storage and payment system setup
-3. Add persistent data management for paid users
-4. Enhance accessibility compliance across all features
-
-Dependencies: S5.1 Complete
+Dependencies: S5.1
 
 Developer Notes:
-- Focus on completing demo tour workflow before implementing paid mode features
-- Action item management provides immediate user value and showcases product capabilities
-- Tour completion enables effective product demonstrations and user onboarding
+- Follow REQ-AZURE-1 through REQ-AZURE-5 in requirements
+
+---
+
+### Story S5.3: Payment & Token System Setup
+As a developer, I want to set up payment and token management infrastructure so that users can securely purchase and use credits.
+
+Acceptance Criteria:
+- PCI-compliant payment provider account (e.g., Stripe) is configured with API keys and webhook endpoints
+- Payment provider supports token/credit package products with pricing managed via dashboard
+- Backend implements secure webhook endpoints for payment confirmation, refunds, and token balance updates
+- Admin tools are available for reconciling transactions, managing token packages, and auditing events
+- All payment and token operations are logged for audit and compliance
+
+Dependencies: S5.1
+
+Developer Notes:
+- Follow REQ-PAY-SETUP-1 through REQ-PAY-SETUP-5 in requirements
+
+---
+
+### Story S5.4: Persistent Upload Progress & Meeting History (Paid Users)
+As a paid user, I want my upload progress and meeting history to persist across browser refreshes and sessions so that I can resume work and access past meetings.
+
+Acceptance Criteria:
+- Upload progress and meeting history are saved to user account in backend (Paid mode only)
+- Data is restored on login or page refresh for paid users
+- Real-time updates to progress and history
+- Error handling for data sync failures
+
+Dependencies: S5.2, S5.3
+
+Developer Notes:
+- Use Azure SQL/Cosmos DB for persistent storage
+- Implement backend APIs for progress/history management
+
+---
+
+### Story S5.5: Accessibility Compliance Enhancements
+As a user with accessibility needs, I want all interactive UI components to be fully accessible so that I can use the application with assistive technologies.
+
+Acceptance Criteria:
+- All UI components (chips, buttons, progress bars, dialogs, etc.) include ARIA labels, roles, and tabIndex
+- UI follows WCAG 2.1 guidelines for color contrast, focus indicators, and semantic HTML
+- Keyboard navigation is supported throughout the app
+
+Dependencies: None
+
+Developer Notes:
+- Audit and update Material-UI components for accessibility
+- Use automated and manual accessibility testing tools
 
 ---
 
 ## Integration Notes
 
-- Demo mode and tour infrastructure provide complete user experience for showcasing product capabilities
-- Action item management completes the demo workflow from transcription to final deliverable sharing
-- Tour system demonstrates all core features without requiring user authentication or payment
-- Foundation established for Sprint 6 user management and monetization features
+- Azure AD B2C setup required for Paid mode authentication
+- Azure Blob Storage and SQL/Cosmos DB setup for persistent user data
+- Stripe (or equivalent) integration for payment processing
+- Backend API endpoints for token management, upload progress, and meeting history
+- Accessibility improvements may require updates to frontend component library usage
 
 ## Success Metrics
 
-- Demo mode provides complete, interactive tour of all meeting workflow features
-- Users can experience full value proposition through guided demonstration
-- Action item CRUD functionality enables complete meeting management workflow
-- Tour system effectively onboards new users and demonstrates product capabilities
+- User mode selection and demo/static content work as specified
+- Azure storage and database are operational and secure
+- Payment processing and token management are functional and auditable
+- Paid users see persistent upload progress and meeting history
+- Accessibility audits pass with no critical issues
 
 ## Foundation for Next Sprint
 
-- Complete demo experience ready for user testing and feedback
-- Tour infrastructure can be extended for production user onboarding
-- Action item management provides core functionality for paid user value proposition
-- Demo mode serves as effective marketing and user acquisition tool
+- Enables advanced meeting features for paid users
+- Provides infrastructure for future monetization and reporting
+- Establishes accessibility baseline for all future UI work
 
 ## Technical Rationale
 
-Sprint 5 focuses on delivering a complete demo experience that showcases the full product value proposition. By implementing action item management and completing the tour workflow, users can experience the entire meeting transcription to final deliverable process without requiring authentication or payment setup. This provides immediate user value and supports go-to-market strategy.
+These stories are chosen to enable monetization, user account management, and accessibility, which are critical for production launch and compliance. Dependencies are minimized to allow parallel work on accessibility while core account/payment features are implemented.

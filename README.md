@@ -2,37 +2,11 @@
 
 A modern web application for transcribing and summarizing meeting audio using Azure Speech Services with hybrid speaker detection and OpenAI's GPT models for enhanced accuracy and reliability.
 
-## ✅ Current Status - Sprint 5 Demo Mode & Action Item Management
+## ✅ Current Status - Sprint 5 Demo Mode & Audio Format Support
 
-## Recent Updates (August 31, 2025)
+### 🔄 **S5.1: Demo Mode Architecture - IN PROGRESS (~80% Complete)**
 
-### S5.2 Action Item Enhancement & Email Integration (IN PROGRESS)
-- ✅ **Action Item Display Improvements**: Fixed spacing with flexbox layout (REQ-ACTMGMT-45, REQ-ACTMGMT-46)
-- ✅ **Enhanced Email Composition**: Participant management, draft saving, preview mode functionality
-- ✅ **Demo Mode Email Support**: Simulated email sending with realistic delays and user feedback
-- ✅ **Tour Step 9 Implementation**: Summary generation guidance with proper overlay positioning
-- ✅ **Requirements Documentation**: 43 new requirements added across 4 modular files
-
-### 🔄 **S5.2: Action Item Management & Tour Completion - IN PROGRESS (Increment 1 Complete)**
-
-**August 31, 2025**: Major UI and email functionality enhancements
-- ✅ **Action Item Spacing Fix**: Replaced ordered list with flexbox for precise control (0.5 gap units)
-- ✅ **Email Participant Management**: "Add All Participants" button, intelligent recipient suggestions
-- ✅ **Enhanced Email Features**: Draft saving, preview mode, HTML conversion, validation improvements
-- ✅ **Demo Mode Integration**: Simulated email sending with proper user feedback and mode awareness
-- ✅ **Tour System Progress**: Step 9 implemented with closeable functionality and tour store integration
-- ✅ **Requirements Updates**: Comprehensive documentation with 43 new requirements across modular structure
-- 🔄 **Remaining Increments**: Action item CRUD operations, drag & drop functionality, complete tour workflow (Steps 10-18)
-
-### Tour Infrastructure Enhancement
-- ✅ Implemented comprehensive tour system (Steps 2-9) with closeable functionality
-- ✅ Integrated centralized tour store for development-friendly workflow
-- ✅ Enhanced speaker mapping functionality with proper callback handling
-- ✅ Established consistent tour positioning and styling patterns
-
-### 🔄 **S5.1: Demo Mode Architecture - IN PROGRESS (~85% Complete)**
-
-**August 31, 2025**: Major advancement with comprehensive tour infrastructure and critical bug fixes
+**August 31, 2025**: Major progress update with tour components and modular documentation restructure
 - ✅ **React Router Integration**: Client-side routing with `/demo` and `/app` modes, automatic redirect
 - ✅ **AppModeContext**: Complete context provider with tour state management foundation
 - ✅ **Enhanced Store Architecture**: Unified Zustand store with mode-aware sections (demo/production)
@@ -40,24 +14,19 @@ A modern web application for transcribing and summarizing meeting audio using Az
 - ✅ **Visual Differentiation**: Purple AppBar for demo mode, distinct from production orange/blue colors
 - ✅ **Component Mode Awareness**: FileUpload and core components support demo/production switching
 - ✅ **Email Simulation**: Fixed demo mode email bug - now properly simulates instead of real API calls
-- ✅ **Tour Documentation**: Complete tour step documentation (Steps 1-18) with detailed workflow ready for UI implementation
+- ✅ **Tour Documentation**: Complete tour step documentation (Steps 1-8) with detailed workflow ready for UI implementation
 - ✅ **Demo Workflow Foundation**: Complete simulation from file upload through transcript display and speaker mapping
-- ✅ **Enhanced Interactive Tour Infrastructure**: Steps 2-9 implemented with comprehensive tour store integration
-  - Steps 2-3: Transcription statistics and speaker management guidance with enhanced UX
-  - **Steps 4-8**: Complete SpeakerMappingDialog tour integration with closeable functionality
-  - **Step 9**: SummaryDisplay tour integration with tour store
-  - **Tour Store Infrastructure**: Centralized state management with closeable functionality for development workflow
-  - **All implemented TourPopovers**: Support individual close actions without step dependencies
-  - Fixed positioning system with proper z-index layering and consistent styling
-  - Enhanced metadata with descriptive icons (PlayCircle, Schedule) and clear text
-- ✅ **Critical Bug Fixes**: Speaker mapping functionality restored with proper callback handling
-- ❌ **Remaining Tour Steps**: Steps 1, 10-18 implementation needed following established pattern (reduced scope)
-- ❌ **Tour Navigation**: Auto-start, forward/backward controls, and step highlighting not implemented
+- ✅ **Tour Component Infrastructure**: TourPopover.tsx component created with Material-UI foundation
+- ✅ **Modular Requirements**: Complete reorganization into 22+ specialized requirement files with clear prefixes
+- ✅ **Action Item Management**: UpsertActionItemDialog.tsx with full CRUD operations (276 lines)
+- ✅ **Technical Documentation**: Modular technical improvements structure by functional area
+- ❌ **Interactive Guided Tour**: Tour content and step-by-step navigation logic not implemented
 - ❌ **Sign-In Flow**: Sign-In/Sign-Out button and authentication dialog not implemented
+- ❌ **Tour Navigation**: Auto-start, forward/backward controls, and step highlighting not implemented
 - ❌ **Demo Mode Messaging**: Tooltips and indicators clarifying simulation not implemented
 
-**Architecture Ready For**: Complete tour system implementation, authentication flow, demo workflow integration
-**Next Sprint Tasks**: Remaining tour steps (1, 5-18), navigation controls, sign-in button replacement, demo messaging system
+**Architecture Ready For**: Tour content implementation, authentication flow, guided step progression
+**Next Sprint Tasks**: Complete tour step content, sign-in button replacement, tour navigation controls
 
 ### 🧪 **S5.5: Automatic WAV Conversion - TESTING PHASE**
 

@@ -29,7 +29,6 @@ import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
 import { useSpeakerValidation } from "../hooks/useSpeakerValidation";
 import { useAppMode } from "../contexts/AppModeContext";
-import { useTourStore } from "../stores/tourStore";
 
 interface SpeakerMappingDialogProps {
   open: boolean;
@@ -57,7 +56,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   onMappingsSaved,
 }) => {
   const { isDemo } = useAppMode();
-  const { closeStep, isStepClosed } = useTourStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -674,7 +672,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             {speakerChips}
             
             {/* Step 4 Tour Popover - Add Speaker */}
-            {isDemo && !isStepClosed(4) && (
+            {isDemo && (
               <Paper
                 sx={{
                   position: 'fixed',
@@ -687,7 +685,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
                   maxWidth: '300px',
                   zIndex: 9999,
                   boxShadow: 3,
-                  pointerEvents: 'auto', // Allow interactions for close button
+                  pointerEvents: 'none', // Prevent blocking interactions
                   textAlign: 'center', // Center all text content
                 }}
               >
@@ -722,7 +720,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
                       cursor: 'pointer',
                       '&:hover': { color: 'white' }
                     }}
-                    onClick={() => closeStep(4)}
                   >
                     CLOSE
                   </Typography>
@@ -750,7 +747,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             {mappingFields}
             
             {/* Step 5 Tour Popover - Delete Speaker */}
-            {isDemo && !isStepClosed(5) && (
+            {isDemo && (
               <Paper
                 sx={{
                   position: 'fixed',
@@ -763,7 +760,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
                   maxWidth: '300px',
                   zIndex: 9999,
                   boxShadow: 3,
-                  pointerEvents: 'auto', // Allow interactions for close button
+                  pointerEvents: 'none', // Prevent blocking interactions
                   textAlign: 'center', // Center all text content
                 }}
               >
@@ -798,7 +795,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
                       cursor: 'pointer',
                       '&:hover': { color: 'white' }
                     }}
-                    onClick={() => closeStep(5)}
                   >
                     CLOSE
                   </Typography>
@@ -807,7 +803,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             )}
             
             {/* Step 6 Tour Popover - Edit Speaker */}
-            {isDemo && !isStepClosed(6) && (
+            {isDemo && (
               <Paper
                 sx={{
                   position: 'fixed',
@@ -820,7 +816,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
                   maxWidth: '300px',
                   zIndex: 9999,
                   boxShadow: 3,
-                  pointerEvents: 'auto', // Allow interactions for close button
+                  pointerEvents: 'none', // Prevent blocking interactions
                   textAlign: 'center', // Center all text content
                 }}
               >
@@ -850,111 +846,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
                       cursor: 'pointer',
                       '&:hover': { color: 'white' }
                     }}
-                    onClick={() => closeStep(6)}
-                  >
-                    CLOSE
-                  </Typography>
-                </Box>
-              </Paper>
-            )}
-            
-            {/* Step 7 Tour Popover - Save Row */}
-            {isDemo && !isStepClosed(7) && (
-              <Paper
-                sx={{
-                  position: 'fixed',
-                  top: '75px',
-                  right: '520px',
-                  p: 2,
-                  backgroundColor: 'grey.700',
-                  color: 'white',
-                  borderRadius: 2,
-                  maxWidth: '300px',
-                  zIndex: 9999,
-                  boxShadow: 3,
-                  pointerEvents: 'auto', // Allow interactions for close button
-                  textAlign: 'center', // Center all text content
-                }}
-              >
-                {/* Step indicator */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="body2" color="primary" fontWeight="bold">
-                    Step 7
-                  </Typography>
-                </Box>
-
-                {/* Title */}
-                <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-                  Save Row
-                </Typography>
-
-                {/* Description */}
-                <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                  After editing speaker details, click the checkmark to save changes for this speaker.
-                </Typography>
-
-                {/* Controls - Development mode: no navigation needed */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: 'grey.300',
-                      cursor: 'pointer',
-                      '&:hover': { color: 'white' }
-                    }}
-                    onClick={() => closeStep(7)}
-                  >
-                    CLOSE
-                  </Typography>
-                </Box>
-              </Paper>
-            )}
-            
-            {/* Step 8 Tour Popover - SAVE MAPPINGS */}
-            {isDemo && !isStepClosed(8) && (
-              <Paper
-                sx={{
-                  position: 'fixed',
-                  top: '825px',
-                  right: '700px',
-                  p: 2,
-                  backgroundColor: 'grey.700',
-                  color: 'white',
-                  borderRadius: 2,
-                  maxWidth: '300px',
-                  zIndex: 9999,
-                  boxShadow: 3,
-                  pointerEvents: 'auto', // Allow interactions for close button
-                  textAlign: 'center', // Center all text content
-                }}
-              >
-                {/* Step indicator */}
-                <Box sx={{ mb: 1 }}>
-                  <Typography variant="body2" color="primary" fontWeight="bold">
-                    Step 8
-                  </Typography>
-                </Box>
-
-                {/* Title */}
-                <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-                  SAVE MAPPINGS
-                </Typography>
-
-                {/* Description */}
-                <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                  Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes.
-                </Typography>
-
-                {/* Controls - Development mode: no navigation needed */}
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: 'grey.300',
-                      cursor: 'pointer',
-                      '&:hover': { color: 'white' }
-                    }}
-                    onClick={() => closeStep(8)}
                   >
                     CLOSE
                   </Typography>
