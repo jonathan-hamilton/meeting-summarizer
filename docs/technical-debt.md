@@ -1,59 +1,29 @@
 # Technical Debt & Known Issues
 
-## Resolved Issues (August 31, 2025)
-
-### Speaker Mapping Callback Parameter Handling ✅ RESOLVED
-
-**Date Resolved**: August 31, 2025  
-**Component**: Frontend (TranscriptDisplay.tsx)  
-**Priority**: High (Critical functionality)
-
-**Problem**: 
-Speaker mapping changes not reflected in TranscriptDisplay when speaker mappings were changed in SpeakerMappingDialog due to incorrect callback parameter handling.
-
-**Resolution**: 
-Fixed handleSpeakerMappingsSaved callback to properly update TranscriptDisplay when speaker mappings are changed. Updated parameter handling to ensure proper integration with speaker session store.
-
-**Impact**: 
-Critical speaker mapping functionality fully restored, ensuring complete demo workflow operates correctly.
-
----
-
-### Tour Development Workflow ✅ RESOLVED
-
-**Date Resolved**: August 31, 2025  
-**Component**: Frontend (Tour Infrastructure)  
-**Priority**: Medium (Development experience)
-
-**Problem**: 
-TourPopovers always visible during development made it difficult to test individual features without tour dependencies.
-
-**Resolution**: 
-Implemented closeable TourPopovers with tour store integration to enable focused testing of individual features without tour step dependencies. All TourPopovers now support individual close actions while maintaining default visibility for development.
-
-**Impact**: 
-Significantly improved development workflow, enabling efficient testing of tour and non-tour functionality.
-
----
-
 ## Current Technical Debt
 
-### S5.1 Demo Mode Incomplete Implementation 🔄 ACTIVE (Progress: ~85%)
+### S5.1 Demo Mode Incomplete Implementation 🔄 ACTIVE
 
 **Date Identified**: August 29, 2025  
+**Last Updated**: August 31, 2025
 **Sprint**: S5.1 User Mode Selection, Sign-In, and Demo Mode  
-**Priority**: High (Core feature incomplete)
+**Priority**: Medium (Major progress made, final components needed)
 
 **Problem**: 
-S5.1 implementation is ~85% complete with comprehensive tour infrastructure (Steps 2-9) and critical bug fixes, but missing remaining tour steps and navigation system.
+S5.1 implementation is ~80% complete with foundational architecture and tour components established but missing final user-facing implementation for guided tour content and authentication flow.
 
-**Missing Components**:
-- **Remaining tour steps (Steps 1, 10-18) implementation** (reduced scope from Steps 1, 5-18)
-- Tour navigation controls (forward/backward/skip/close) to existing tour infrastructure
-- Tour auto-start functionality and completion tracking systems
+**Recent Progress (August 31, 2025)**:
+- ✅ **Tour Component Infrastructure**: TourPopover.tsx component created with Material-UI foundation
+- ✅ **Modular Requirements**: Complete reorganization into 22+ specialized requirement files
+- ✅ **Action Item Management**: UpsertActionItemDialog.tsx with full CRUD operations (276 lines)
+- ✅ **Documentation Modularization**: Technical improvements reorganized by functional area
+- ✅ **Obsolete File Cleanup**: Removed monolithic requirements and technical improvement files
+
+**Remaining Components**:
+- Interactive guided tour content and step progression logic
 - Sign-In/Sign-Out button replacing development toggle in AppBar
-- Complete demo workflow beyond transcript display (summary generation → email sharing UI integration)
-- Tour-driven feature access (all demo features only available through guided tour)
+- Tour auto-start functionality and navigation controls
+- Demo mode messaging and visual indicators
 
 **Current Status**:
 - ✅ React Router DOM integration with `/demo` and `/app` routes
@@ -61,25 +31,23 @@ S5.1 implementation is ~85% complete with comprehensive tour infrastructure (Ste
 - ✅ Enhanced Zustand store with mode-aware architecture
 - ✅ Demo API service with comprehensive mock responses
 - ✅ Demo-aware FileUpload component and AppBar color differentiation
-- ✅ **Tour store infrastructure with closeable functionality for development workflow**
-- ✅ **Steps 2-9 TourPopovers implemented with full tour store integration**
-- ✅ **Critical bug fixes for speaker mapping functionality**
-- ❌ Steps 1, 10-18 tour popover implementations
-- ❌ Tour navigation controls and auto-start functionality
+- ✅ Tour component infrastructure (TourPopover.tsx created)
+- ✅ Modular documentation structure established
+- ❌ Tour step content and navigation implementation
 - ❌ Sign-in authentication flow
+- ❌ Demo mode visual indicators and tooltips
 
 **Impact Assessment**:
-- **User Experience**: Demo mode functional with comprehensive guided experience for core workflow
-- **Business Value**: Strong showcase capability for potential users with interactive tour
-- **Architecture**: Solid foundation with established patterns for remaining implementation
-- **Dependencies**: Minimal blocking for S5.2 and S5.3 completion
+- **User Experience**: Demo mode functional with solid foundation for tour implementation
+- **Business Value**: Near completion of showcase capability for potential users
+- **Architecture**: Complete foundation ready for final content implementation
+- **Dependencies**: Close to unblocking S5.2 and S5.3
 
 **Resolution Plan**:
-1. **Implement remaining tour steps (Steps 1, 10-18) following established TourPopover pattern**
-2. Add tour navigation controls (forward/backward/skip/close) to existing tour infrastructure
-3. Implement tour auto-start functionality and completion tracking
-4. Replace environment toggle with Sign-In/Sign-Out button
-5. Integrate tour system with existing demo-aware components
+1. Implement tour step content in TourPopover component
+2. Add tour navigation controls and auto-start functionality
+3. Replace environment toggle with Sign-In/Sign-Out button
+4. Add demo mode messaging and visual indicators
 
 ---
 

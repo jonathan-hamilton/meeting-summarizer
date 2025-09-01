@@ -11,14 +11,12 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  Paper,
 } from "@mui/material";
 import {
   ContentCopy,
   Person,
   Schedule,
   Error,
-  PlayCircle,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
@@ -29,7 +27,6 @@ import { sessionManager } from "../services/sessionManager";
 import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
-import { useAppMode } from "../contexts/AppModeContext";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -48,9 +45,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
 
-  // Tour functionality
-  const { isDemo } = useAppMode();
-
   // Centralized store state and actions
   const storeSpeakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const storeCurrentSegments = useSpeakerSessionStore(state => state.currentSegments);
@@ -58,10 +52,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const initializeSession = useSpeakerSessionStore(state => state.initializeSession);
   const reassignSegment = useSpeakerSessionStore(state => state.reassignSegment);
   const resetToOriginal = useSpeakerSessionStore(state => state.resetToOriginal);
-  const addSpeakerMapping = useSpeakerSessionStore(state => state.addSpeakerMapping);
-  const updateSpeakerMapping = useSpeakerSessionStore(state => state.updateSpeakerMapping);
-  const deleteSpeakerMapping = useSpeakerSessionStore(state => state.deleteSpeakerMapping);
-  const getAllMappings = useSpeakerSessionStore(state => state.getFilteredMappings);
   
   // Use current segments from store (reflects reassignments), fallback to original transcription
   const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
@@ -74,6 +64,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   
   const clearSpeakers = () => {
     clearSession();
+  };
+  
+  const getAllMappings = () => {
+    return storeSpeakerMappings;
   };
 
   // Centralized store hooks
@@ -297,17 +291,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     setForceUpdate((prev) => prev + 1);
   }, []);
 
-  const handleSpeakerMappingsSaved = useCallback((savedMappings: SpeakerMapping[]) => {
-    console.log('🔄 TranscriptDisplay: Speaker mappings saved', savedMappings);
-    
-    // Update the speaker mappings in the store using addSpeakerMapping which handles both add/update
-    savedMappings.forEach(mapping => {
-      addSpeakerMapping(mapping);
-    });
-    
+  const handleSpeakerMappingsSaved = useCallback(() => {
     setSpeakerMappingDialogOpen(false);
     setForceUpdate((prev) => prev + 1);
-  }, [addSpeakerMapping]);
+  }, []);
 
   const handleSpeakerSegmentChange = useCallback(
     (segmentIndex: number, newSpeaker: string) => {
@@ -514,7 +501,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
           <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
             <Chip
               icon={<Schedule />}
-              label={`${formatTime(Math.round(transcription.processingTimeMs / 1000))} processing`}
+              label={formatTime(Math.round(transcription.processingTimeMs / 1000))}
               size="small"
               variant="outlined"
             />
@@ -525,8 +512,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             />
             {transcription.duration && (
               <Chip
-                icon={<PlayCircle />}
-                label={`${formatTime(transcription.duration)} audio`}
+                label={formatTime(transcription.duration)}
                 size="small"
                 variant="outlined"
               />
@@ -569,56 +555,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             )}
             
           </Stack>
-
-          {/* Step 2 Tour Popover - Transcription Statistics Overview */}
-          {isDemo && (
-            <Paper
-              sx={{
-                position: 'absolute',
-                top: '715px',
-                left: '400px',
-                p: 2,
-                backgroundColor: 'grey.700',
-                color: 'white',
-                borderRadius: 2,
-                maxWidth: '300px',
-                zIndex: 9999,
-                boxShadow: 3,
-                pointerEvents: 'none', // Prevent blocking interactions
-              }}
-            >
-              {/* Step indicator */}
-              <Box sx={{ mb: 1 }}>
-                <Typography variant="body2" color="primary" fontWeight="bold">
-                  Step 2
-                </Typography>
-              </Box>
-
-              {/* Title */}
-              <Typography variant="h6" component="h3" sx={{ mb: 1, pr: 4 }}>
-                Transcription Statistics
-              </Typography>
-
-              {/* Description */}
-              <Typography variant="body2" color="white" sx={{ mb: 2 }}>
-                Great! Your audio has been processed. Here you can see the transcription statistics: processing time, file size, audio duration, speaker mapping progress, AI confidence score, and detected language.
-              </Typography>
-
-              {/* Controls - Development mode: no navigation needed */}
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: 'grey.300',
-                    cursor: 'pointer',
-                    '&:hover': { color: 'white' }
-                  }}
-                >
-                  CLOSE
-                </Typography>
-              </Box>
-            </Paper>
-          )}
         </Box>
 
         <Divider sx={{ mb: 3 }} />

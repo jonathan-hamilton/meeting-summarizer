@@ -154,18 +154,31 @@ export interface MeetingSummaryRequest {
   MaxTokens?: number; // S3.4: Match backend PascalCase
 }
 
-export interface ActionItem {
+// Legacy ActionItem interface for backward compatibility
+export interface LegacyActionItem {
   description: string;
   isExplicitAssignment: boolean;
   confidence: number;
   sourceText?: string;
 }
 
+// Enhanced ActionItem interface for CRUD operations (REQ-ACTMGMT-1, REQ-ACTMGMT-2)
+export interface ActionItem {
+  id: string; // REQ-ACTMGMT-2: Use crypto.randomUUID()
+  description: string;
+  assignedTo: string; // REQ-ACTMGMT-1: Speaker ID or "Unassigned"
+  confidence: number;
+  isExplicitAssignment: boolean;
+  sourceText?: string;
+  createdAt?: string;
+  modifiedAt?: string;
+}
+
 export interface ActionItemsByRole {
   speakerId: string;
   speakerName: string;
   speakerRole: string;
-  actionItems: ActionItem[];
+  actionItems: LegacyActionItem[]; // Use legacy interface during transition
 }
 
 export interface UnassignedActionItem {
