@@ -27,7 +27,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 1,
     title: "Upload Your Audio",
-    description: "Click 'SELECT FILE' to choose an audio file to transcribe.",
+    description: "Start by selecting an audio file to transcribe.",
     transitionType: 'user-action',
     triggerAction: 'file-select',
     component: 'FileUpload'
@@ -42,37 +42,37 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 3,
     title: "Manage Speaker Names",
-    description: "Click 'MANAGE NAMES' to assign custom names to the speakers detected in your meeting.",
+    description: "Customize speaker names to make your transcript more readable.",
     transitionType: 'user-action',
     triggerAction: 'manage-names',
     component: 'TranscriptDisplay'
   },
   {
     id: 4,
-    title: "Add Speaker",
-    description: "Click 'ADD SPEAKER' to add additional speakers if someone was missed during automatic detection.",
+    title: "(Optional) Add Speaker",
+    description: "Click 'ADD SPEAKER' to add additional speakers if someone was missed during automatic detection. ⚠️ Adding speakers will break the AI confidence score calculation",
     transitionType: 'acknowledgment',
     component: 'SpeakerMappingDialog'
   },
   {
     id: 5,
-    title: "Edit/Delete Speaker",
-    description: "Click the pencil icon to edit speaker details or the trash icon to delete speakers that were incorrectly detected.",
+    title: "(Optional) Edit/Delete Speaker",
+    description: "Click the pencil icon to edit speaker details or the trash icon to delete speakers that were incorrectly detected. ⚠️ Deleting speakers will break the AI confidence score calculation",
     transitionType: 'user-action',
-    triggerAction: 'pencil-clicked',
+    triggerAction: 'edit-speaker',
     component: 'SpeakerMappingDialog'
   },
   {
     id: 6,
     title: "Save Row",
-    description: "Click the checkmark.",
+    description: "After editing speaker details, click the checkmark to save changes for this speaker.",
     transitionType: 'user-action',
-    triggerAction: 'save-mappings',
-    component: 'SpeakerMappingDialog'
+    triggerAction: 'save-row',
+    component: 'SpeakerMappingField'
   },
   {
     id: 7,
-    title: "Save All Mappings",
+    title: "Save All Changes",  
     description: "Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes.",
     transitionType: 'user-action',
     triggerAction: 'final-save',
@@ -81,7 +81,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 8,
     title: "Generate Summary",
-    description: "Click 'GENERATE SUMMARY' to create an AI-powered summary of your meeting.",
+    description: "Now that speakers are mapped, click 'GENERATE SUMMARY' to create an AI-powered summary of your meeting.",
     transitionType: 'user-action',
     triggerAction: 'generate-summary',
     component: 'SummaryDisplay'
@@ -89,7 +89,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 9,
     title: "Add/Edit/Delete Action Items",
-    description: "Click the ▼ to expand the Action Items. You can add, edit, delete, and drag Action Items between speakers.",
+    description: "Click the ▼ to expand the Action Items. You can add, edit, delete, and drag action items between speakers.",
     transitionType: 'user-action',
     triggerAction: 'expand-action-items',
     component: 'SummaryDisplay'
@@ -97,7 +97,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 10,
     title: "(Optional) Copy Summary",
-    description: "You can copy the summary to your clipboard using this button to paste it elsewhere.",
+    description: "You can copy the summary to your clipboard using this button to paste it elsewhere:",
     transitionType: 'acknowledgment',
     component: 'SummaryDisplay'
   },
@@ -106,17 +106,47 @@ export const TOUR_STEPS: TourStepConfig[] = [
     title: "Share Summary via Email",
     description: "Click 'SHARE' to send the meeting summary and action items via email to participants.",
     transitionType: 'user-action',
-    triggerAction: 'share-summary',
+    triggerAction: 'open-email-dialog',
     component: 'SummaryDisplay'
   },
   {
     id: 12,
+    title: "Add Email Recipients",
+    description: "Click in this area to add email addresses for meeting participants. If you entered emails during speaker mapping, you can select from those or type new ones.",
+    transitionType: 'user-action',
+    triggerAction: 'add-email-recipient',
+    component: 'EmailCompositionDialog'
+  },
+  {
+    id: 13,
+    title: "Edit Email Content",
+    description: "Customize the email subject and add a personal message. The meeting summary will be included automatically.",
+    transitionType: 'acknowledgment',
+    component: 'EmailCompositionDialog'
+  },
+  {
+    id: 14,
+    title: "Preview Email",
+    description: "Preview how your email will look with the meeting summary and action items included before sending it to recipients.",
+    transitionType: 'user-action',
+    triggerAction: 'preview-email',
+    component: 'EmailCompositionDialog'
+  },
+  {
+    id: 15,
     title: "Send Email",
-    description: "Review the email content and click 'SEND EMAIL' to share the meeting summary with participants.",
+    description: "Send the meeting summary and action items to all recipients. In demo mode, no actual emails are sent.",
     transitionType: 'user-action',
     triggerAction: 'send-email',
     component: 'EmailCompositionDialog'
   },
+  {
+    id: 16,
+    title: "Tour Completion",
+    description: "Congratulations! You've completed the demo tour. Sign up to start processing your own meeting recordings.",
+    transitionType: 'acknowledgment',
+    component: 'TourCompletion'
+  }
   // ... more steps
 ];
 
@@ -127,12 +157,6 @@ interface TourState {
   
   // Closed steps tracking
   closedSteps: Set<number>;
-  
-  // Visited/unlocked steps tracking
-  visitedSteps: Set<number>;
-  
-  // Step completion tracking for demo mode
-  completedSteps: Set<number>;
   
   // Step configurations
   steps: TourStepConfig[];
@@ -146,19 +170,12 @@ interface TourState {
   closeStep: (stepNumber: number) => void;
   reopenStep: (stepNumber: number) => void;
   resetTour: () => void;
-  isStepClosed: (stepNumber: number) => boolean;
   
   // New event-driven actions
   triggerStepAction: (action: string) => void;
   getCurrentStepConfig: () => TourStepConfig | undefined;
   canAdvanceStep: () => boolean;
   isCurrentStep: (stepNumber: number) => boolean;
-  hasVisitedStep: (stepNumber: number) => boolean;
-  canGoToNextStep: () => boolean;
-  
-  // Step completion tracking
-  hasCompletedStep: (stepNumber: number) => boolean;
-  markStepCompleted: (stepNumber: number) => void;
 }
 
 export const useTourStore = create<TourState>()(
@@ -167,17 +184,13 @@ export const useTourStore = create<TourState>()(
       isActive: false,
       currentStep: 0,
       closedSteps: new Set<number>(),
-      visitedSteps: new Set<number>(),
-      completedSteps: new Set<number>(),
       steps: TOUR_STEPS,
       
       startTour: () => {
         set({ 
           isActive: true, 
           currentStep: 1, 
-          closedSteps: new Set<number>(),
-          visitedSteps: new Set<number>([1]), // Step 1 is visited when tour starts
-          completedSteps: new Set<number>()
+          closedSteps: new Set<number>() 
         });
       },
       
@@ -189,28 +202,35 @@ export const useTourStore = create<TourState>()(
       },
       
       setCurrentStep: (step: number) => {
-        const state = get();
-        const newVisitedSteps = new Set(state.visitedSteps);
-        newVisitedSteps.add(step);
-        set({ 
-          currentStep: step,
-          visitedSteps: newVisitedSteps
-        });
+        set({ currentStep: step });
       },
       
       nextStep: () => {
         const state = get();
-        if (state.isActive && state.canGoToNextStep()) {
+        console.log('nextStep called:', { 
+          currentStep: state.currentStep, 
+          isActive: state.isActive, 
+          canAdvance: state.canAdvanceStep() 
+        });
+        
+        if (state.isActive && state.canAdvanceStep()) {
           // Close current step and advance
           const newClosedSteps = new Set(state.closedSteps);
           newClosedSteps.add(state.currentStep);
-          const newVisitedSteps = new Set(state.visitedSteps);
-          newVisitedSteps.add(state.currentStep + 1);
-          set({ 
-            currentStep: state.currentStep + 1,
-            closedSteps: newClosedSteps,
-            visitedSteps: newVisitedSteps
+          const newCurrentStep = state.currentStep + 1;
+          
+          console.log('Advancing step:', { 
+            from: state.currentStep, 
+            to: newCurrentStep,
+            closedSteps: Array.from(newClosedSteps)
           });
+          
+          set({ 
+            currentStep: newCurrentStep,
+            closedSteps: newClosedSteps
+          });
+        } else {
+          console.log('Cannot advance step - tour not active or cannot advance');
         }
       },
       
@@ -248,15 +268,8 @@ export const useTourStore = create<TourState>()(
         set({ 
           isActive: false,
           currentStep: 0,
-          closedSteps: new Set<number>(),
-          visitedSteps: new Set<number>(),
-          completedSteps: new Set<number>()
+          closedSteps: new Set<number>() 
         });
-      },
-      
-      isStepClosed: (stepNumber: number) => {
-        const state = get();
-        return state.closedSteps.has(stepNumber);
       },
       
       // New event-driven methods
@@ -264,47 +277,36 @@ export const useTourStore = create<TourState>()(
         const state = get();
         const currentStepConfig = state.getCurrentStepConfig();
         
-        // Special case: dialog-opened from Step 3 advances to Step 4
-        if (action === 'dialog-opened' && state.currentStep === 3) {
-          const newClosedSteps = new Set(state.closedSteps);
-          newClosedSteps.add(state.currentStep);
-          const newVisitedSteps = new Set(state.visitedSteps);
-          newVisitedSteps.add(state.currentStep + 1);
-          set({ 
-            currentStep: state.currentStep + 1,
-            closedSteps: newClosedSteps,
-            visitedSteps: newVisitedSteps
-          });
-          return;
-        }
-        
-        // Special case: share-summary from Step 11 advances to Step 12
-        if (action === 'share-summary' && state.currentStep === 11) {
-          const newClosedSteps = new Set(state.closedSteps);
-          newClosedSteps.add(state.currentStep);
-          const newVisitedSteps = new Set(state.visitedSteps);
-          newVisitedSteps.add(state.currentStep + 1);
-          set({ 
-            currentStep: state.currentStep + 1,
-            closedSteps: newClosedSteps,
-            visitedSteps: newVisitedSteps
-          });
-          return;
-        }
+        console.log('triggerStepAction called:', { 
+          action, 
+          currentStep: state.currentStep, 
+          isActive: state.isActive,
+          currentStepConfig 
+        });
         
         if (currentStepConfig && 
             currentStepConfig.transitionType === 'user-action' && 
             currentStepConfig.triggerAction === action) {
-          // This action triggers advancement for current step - advance directly
+          console.log('Triggering step advancement for action:', action);
+          
+          // Directly advance the step without checking canAdvanceStep
+          // since this is triggered by the required user action
           const newClosedSteps = new Set(state.closedSteps);
-          newClosedSteps.add(state.currentStep);
-          const newVisitedSteps = new Set(state.visitedSteps);
-          newVisitedSteps.add(state.currentStep + 1);
-          set({ 
-            currentStep: state.currentStep + 1,
-            closedSteps: newClosedSteps,
-            visitedSteps: newVisitedSteps
+          newClosedSteps.add(state.currentStep);  // Close current step
+          const newCurrentStep = state.currentStep + 1;
+          
+          console.log('Advancing step programmatically:', { 
+            from: state.currentStep, 
+            to: newCurrentStep,
+            closedSteps: Array.from(newClosedSteps)
           });
+          
+          set({ 
+            currentStep: newCurrentStep,
+            closedSteps: newClosedSteps
+          });
+        } else {
+          console.log('Action not matched or not user-action type');
         }
       },
       
@@ -317,6 +319,12 @@ export const useTourStore = create<TourState>()(
         const state = get();
         const currentStepConfig = state.getCurrentStepConfig();
         
+        console.log('canAdvanceStep check:', { 
+          currentStep: state.currentStep, 
+          currentStepConfig,
+          canAdvance: currentStepConfig?.transitionType === 'acknowledgment'
+        });
+        
         if (!currentStepConfig) return false;
         
         // For acknowledgment steps, Next button should be enabled
@@ -326,38 +334,6 @@ export const useTourStore = create<TourState>()(
       isCurrentStep: (stepNumber: number) => {
         const state = get();
         return state.isActive && state.currentStep === stepNumber;
-      },
-      
-      hasVisitedStep: (stepNumber: number) => {
-        const state = get();
-        return state.visitedSteps.has(stepNumber);
-      },
-      
-      canGoToNextStep: () => {
-        const state = get();
-        const currentStepConfig = state.getCurrentStepConfig();
-        
-        if (!currentStepConfig) return false;
-        
-        // For acknowledgment steps, Next button should be enabled
-        if (currentStepConfig.transitionType === 'acknowledgment') {
-          return true;
-        }
-        
-        // For user-action steps, Next button is enabled if next step has been visited
-        const nextStepNumber = state.currentStep + 1;
-        return state.hasVisitedStep(nextStepNumber);
-      },
-      
-      // Step completion tracking
-      hasCompletedStep: (stepNumber: number) => {
-        return get().completedSteps.has(stepNumber);
-      },
-      
-      markStepCompleted: (stepNumber: number) => {
-        set((state) => ({
-          completedSteps: new Set(state.completedSteps.add(stepNumber))
-        }));
       },
     }),
     {
