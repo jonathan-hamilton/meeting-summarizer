@@ -81,7 +81,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
+
+  // No need for useEffect - tour advancement is now handled by triggerStepAction in FileUpload
+  // The tour will automatically advance when user clicks SELECT FILE
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -565,10 +568,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
           {/* Step 2 Tour Popover - Transcription Statistics Overview */}
           <TourPopover
-            open={isDemo && isTourActive}
+            open={isDemo && isTourActive && isCurrentStep(2)}
             step={2}
-            title="Transcription Statistics Overview"
-            description="Great! Your audio has been processed. Here you can see the transcription statistics: processing time, file size, audio duration, speaker mapping progress, AI confidence score, and detected language."
             onClose={() => closeStep(2)}
             position={{ top: '85px', left: '50px' }}
             maxWidth="350px"

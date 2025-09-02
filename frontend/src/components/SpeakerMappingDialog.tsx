@@ -58,7 +58,15 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   onMappingsSaved,
 }) => {
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
+  const { isActive: isTourActive, isCurrentStep, closeStep, setCurrentStep, triggerStepAction, markStepCompleted, hasCompletedStep } = useTourStore();
+  
+  // Tour advancement: When dialog opens and we're on Step 3, advance to Step 4
+  React.useEffect(() => {
+    if (open && isDemo && isTourActive && isCurrentStep(3)) {
+      triggerStepAction('dialog-opened');
+    }
+  }, [open, isDemo, isTourActive, isCurrentStep, triggerStepAction]);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -150,8 +158,11 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       })));
       setEditingMappings(prev => new Set(prev.add(speakerId)));
       clearValidationErrors(speakerId);
+      
+      // Trigger tour progression when pencil (edit) icon is clicked
+      triggerStepAction('pencil-clicked');
     }
-  }, [mappings, clearValidationErrors]);
+  }, [mappings, clearValidationErrors, triggerStepAction]);
 
   const cancelEditMode = useCallback((speakerId: string) => {
     const original = originalValues.get(speakerId);
@@ -185,7 +196,13 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       newMap.delete(speakerId);
       return newMap;
     });
-  }, []);
+    
+    // Mark Step 6 as completed for demo mode save button enablement
+    markStepCompleted(6);
+    
+    // Trigger tour progression when individual save (checkmark) is clicked
+    triggerStepAction('save-mappings');
+  }, [triggerStepAction, markStepCompleted]);
 
   const clearEditState = useCallback(() => {
     setEditingMappings(new Set());
@@ -477,6 +494,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
       setSuccess(true);
 
+      // Trigger tour progression when SAVE MAPPINGS is clicked for Step 7
+      triggerStepAction('final-save');
+
       // Clear edit state after successful save
       clearEditState();
       clearValidationErrors();
@@ -520,6 +540,11 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // Memoize computed values
   // Check if there are changes (names filled, new speakers added, or any modification from original)
   const hasChanges = useMemo(() => {
+    // In demo mode, enable save button if any speaker has a name
+    if (isDemo) {
+      return mappings.some((m) => m.name.trim() !== "");
+    }
+    
     // Use baselineMappings for comparison if available, otherwise fall back to existingMappings
     const referenceMapping = baselineMappings.length > 0 ? baselineMappings : existingMappings;
     
@@ -547,12 +572,48 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         );
       })
     );
-  }, [mappings, detectedSpeakers.length, baselineMappings, existingMappings]);
+  }, [mappings, detectedSpeakers.length, baselineMappings, existingMappings, isDemo]);
 
   // Check if the form is valid and ready to save
   const canSave = useMemo(() => {
+    // In demo mode, allow saving if Step 6 has been completed or Step 7 is active
+    if (isDemo && (hasCompletedStep(6) || isCurrentStep(7))) {
+      console.log('🔍 canSave (demo mode):', {
+        hasCompletedStep6: hasCompletedStep(6),
+        isCurrentStep7: isCurrentStep(7),
+        hasValidationErrors,
+        loading,
+        result: !hasValidationErrors && !loading
+      });
+      return !hasValidationErrors && !loading;
+    }
+    // Normal mode: require actual changes
+    console.log('🔍 canSave (normal mode):', {
+      hasChanges,
+      hasValidationErrors,
+      loading,
+      result: hasChanges && !hasValidationErrors && !loading
+    });
     return hasChanges && !hasValidationErrors && !loading;
-  }, [hasChanges, hasValidationErrors, loading]);
+  }, [hasChanges, hasValidationErrors, loading, isDemo, hasCompletedStep(6), isCurrentStep(7)]);
+
+  // For demo mode, override the active edits restriction after Step 6
+  const canSaveWithEdits = useMemo(() => {
+    if (isDemo && (hasCompletedStep(6) || isCurrentStep(7))) {
+      console.log('🔍 canSaveWithEdits (demo mode):', {
+        canSave,
+        hasActiveEdits,
+        result: canSave
+      });
+      return canSave; // In demo mode after Step 6 or when Step 7 is active, ignore hasActiveEdits
+    }
+    console.log('🔍 canSaveWithEdits (normal mode):', {
+      canSave,
+      hasActiveEdits,
+      result: canSave && !hasActiveEdits
+    });
+    return canSave && !hasActiveEdits; // Normal behavior
+  }, [canSave, hasActiveEdits, isDemo, hasCompletedStep(6), isCurrentStep(7)]);
 
   // Memoize UI components
   const speakerChips = useMemo(() => {
@@ -676,12 +737,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             
             {/* Step 4 Tour Popover - Add Speaker */}
             <TourPopover
-              open={isDemo && isTourActive && !isStepClosed(4)}
+              open={isDemo && isTourActive && isCurrentStep(4)}
               step={4}
-              title="(Optional) Add Speaker"
-              description="Click 'ADD SPEAKER' to add additional speakers if someone was missed during automatic detection.
-
-⚠️ Adding speakers will break the AI confidence score calculation"
               onClose={() => closeStep(4)}
               position={{ top: '100px', left: '50px' }}
               maxWidth="300px"
@@ -708,12 +765,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             
             {/* Step 5 Tour Popover - Edit/Delete Speaker */}
             <TourPopover
-              open={isDemo && isTourActive && !isStepClosed(5)}
+              open={isDemo && isTourActive && isCurrentStep(5)}
               step={5}
-              title="(Optional) Edit/Delete Speaker"
-              description="Click the pencil icon to edit speaker details or the trash icon to delete speakers that were incorrectly detected.
-
-⚠️ Deleting speakers will break the AI confidence score calculation"
               onClose={() => closeStep(5)}
               position={{ top: '50px', right: '0px' }}
               maxWidth="300px"
@@ -754,15 +807,17 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           <Button
             onClick={handleSave}
             variant="contained"
-            disabled={!canSave || hasActiveEdits}
+            disabled={!canSaveWithEdits}
             startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
             title={
-              hasValidationErrors
-                ? "Please fix validation errors before saving"
-                : hasActiveEdits
-                ? "Please save or cancel active edits before saving all changes"
-                : !hasChanges
-                ? "No changes to save"
+              !canSaveWithEdits
+                ? hasValidationErrors
+                  ? "Please fix validation errors before saving"
+                  : hasActiveEdits && !(isDemo && hasCompletedStep(6))
+                  ? "Please save or cancel active edits before saving all changes"
+                  : !hasChanges && !(isDemo && hasCompletedStep(6))
+                  ? "No changes to save"
+                  : "Cannot save at this time"
                 : loading
                 ? "Saving changes..."
                 : "Save all speaker mappings"
@@ -773,10 +828,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
           {/* Step 7 Tour Popover - SAVE MAPPINGS */}
           <TourPopover
-            open={isDemo && isTourActive && !isStepClosed(7)}
+            open={isDemo && isTourActive && isCurrentStep(7)}
             step={7}
-            title="SAVE MAPPINGS"
-            description="Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes."
             onClose={() => closeStep(7)}
             position={{ top: '650px', right: '10px' }}
             maxWidth="300px"
