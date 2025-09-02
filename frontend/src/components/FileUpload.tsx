@@ -115,7 +115,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
 }) => {
   const { mode, isDemo } = useAppMode();
-  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
   const { 
     startDemoUpload,
     demo: {
@@ -214,6 +214,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
       // In demo mode, don't actually process files - start demo simulation instead
       if (isDemo) {
         startDemoUpload();
+        // Trigger tour step advancement
+        triggerStepAction('file-select');
         return;
       }
       
@@ -247,7 +249,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         uploadFileToServer(uploadFile);
       });
     },
-    [uploadFileToServer, isDemo, startDemoUpload]
+    [uploadFileToServer, isDemo, startDemoUpload, triggerStepAction]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -295,6 +297,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
             e.stopPropagation();
             console.log('Demo dropzone clicked, starting demo upload...');
             startDemoUpload();
+            // Trigger tour step advancement
+            triggerStepAction('file-select');
           }
         }}
         sx={{
@@ -348,6 +352,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
             ? "Demo mode - Simulated transcription with mock data"
             : `Supported formats: ${acceptedFileTypes.join(", ")}`}
         </Typography>
+        {isDemo && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Supported formats: {acceptedFileTypes.join(", ")}
+          </Typography>
+        )}
         <Typography variant="body2" color="text.secondary">
           Maximum file size: {formatFileSize(maxFileSize)}
         </Typography>
@@ -362,6 +371,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
               e.stopPropagation();
               console.log('Demo button clicked, starting demo upload...');
               startDemoUpload();
+              // Trigger tour step advancement
+              triggerStepAction('file-select');
             } else {
               // In production mode, trigger the file picker directly
               const input = e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
@@ -376,10 +387,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         {/* Step 1 Tour Popover - File Upload */}
         <TourPopover
-          open={isDemo && isTourActive && !isStepClosed(1)}
+          open={isDemo && isTourActive && isCurrentStep(1)}
           step={1}
-          title="File Upload Demo"
-          description="Click 'SELECT FILE' to start the demo transcription process with our sample meeting audio."
           onClose={() => closeStep(1)}
           position={{ top: '17px', right: '55px' }}
         />

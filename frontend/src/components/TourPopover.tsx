@@ -1,17 +1,15 @@
 import React from 'react';
 import { Box, Typography, Button, IconButton } from '@mui/material';
 import { Close } from '@mui/icons-material';
+import { useTourStore } from '../stores/tourStore';
 
 interface TourPopoverProps {
   /** Whether the popover should be displayed */
   open?: boolean;
   step: number;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
   onClose: () => void;
-  onNext?: () => void;
-  onPrevious?: () => void;
-  onStopTour?: () => void;
   totalSteps?: number;
   position?: {
     top?: string | number;
@@ -31,21 +29,32 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
   title,
   description,
   onClose,
-  onNext,
-  onPrevious,
-  onStopTour,
-  totalSteps = 11,
+  totalSteps = 15,
   position = { top: '20px', right: '20px' },
   maxWidth = '300px',
   anchorOrigin = 'top-right',
   sx = {}
 }) => {
+  const { nextStep, previousStep, getCurrentStepConfig, canGoToNextStep } = useTourStore();
+  
   if (!open) return null;
+  
+  // Get step configuration from store
+  const stepConfig = getCurrentStepConfig();
+  const displayTitle = title || stepConfig?.title || `Step ${step}`;
+  const displayDescription = description || stepConfig?.description || '';
+  
+  // Adjust position for step 1 - move down 40px total
+  const adjustedPosition = step === 1 
+    ? { ...position, top: typeof position.top === 'string' 
+        ? `calc(${position.top} + 40px)` 
+        : (typeof position.top === 'number' ? position.top + 40 : 60) }
+    : position;
   return (
     <Box
       sx={{
         position: 'absolute',
-        ...position,
+        ...adjustedPosition,
         p: 2,
         backgroundColor: 'grey.700',
         color: 'white',
@@ -85,69 +94,65 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
 
       {/* Title */}
       <Typography variant="h6" component="h3" sx={{ mb: 1, fontSize: '1rem' }}>
-        {title}
+        {displayTitle}
       </Typography>
 
       {/* Description */}
       <Typography variant="body2" color="white" sx={{ lineHeight: 1.4, mb: 2 }}>
-        {description}
+        {displayDescription}
       </Typography>
 
-      {/* Navigation buttons at bottom */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 2 }}>
-        {/* Previous button - non-functional stub */}
-        <Button 
-          variant="outlined"
-          size="small"
-          sx={{ 
-            color: 'white',
-            borderColor: 'white',
-            '&:hover': {
-              borderColor: 'primary.main',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
-            }
-          }}
-        >
-          Previous
-        </Button>
+      {/* Navigation buttons - conditional display based on step */}
+      <Box sx={{ display: 'flex', justifyContent: step === 1 ? 'flex-end' : 'space-between', gap: 1, mt: 2 }}>
+        {/* Previous button - only show for step 2+ */}
+        {step > 1 && (
+          <Button 
+            variant="outlined"
+            size="small"
+            onClick={previousStep}
+            sx={{ 
+              color: 'white',
+              borderColor: 'white',
+              '&:hover': {
+                borderColor: 'primary.main',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              }
+            }}
+          >
+            Previous
+          </Button>
+        )}
 
-        {/* Step counter */}
-        <Typography variant="caption" sx={{ alignSelf: 'center', color: 'grey.400' }}>
-          {step} of {totalSteps}
-        </Typography>
-
-        {/* Next button - non-functional stub */}
-        <Button 
-          variant="outlined"
-          size="small"
-          sx={{ 
-            color: 'white',
-            borderColor: 'white',
-            '&:hover': {
-              borderColor: 'primary.main',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
-            }
-          }}
-        >
-          Next
-        </Button>
+        {/* Next button - enabled based on progression logic */}
+        {(step !== 1 || canGoToNextStep()) && (
+          <Button 
+            variant="outlined"
+            size="small"
+            disabled={!canGoToNextStep()}
+            onClick={canGoToNextStep() ? nextStep : undefined}
+            sx={{ 
+              color: canGoToNextStep() ? 'white' : 'grey.500',
+              borderColor: canGoToNextStep() ? 'white' : 'grey.500',
+              '&:hover': canGoToNextStep() ? {
+                borderColor: 'primary.main',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
+              } : {},
+              '&:disabled': {
+                color: 'grey.500',
+                borderColor: 'grey.500'
+              }
+            }}
+          >
+            Next
+          </Button>
+        )}
       </Box>
 
-      {/* Stop Tour button - non-functional stub */}
-      <Box sx={{ textAlign: 'center', mt: 1 }}>
-        <Button 
-          variant="text"
-          size="small"
-          sx={{ 
-            color: 'grey.400',
-            '&:hover': {
-              color: 'white',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)'
-            }
-          }}
-        >
-          Stop Tour
-        </Button>
+      {/* Step counter */}
+      <Box sx={{ textAlign: 'center', mt: 2 }}>
+        <Typography variant="caption" sx={{ color: 'grey.400' }}>
+          {step} of {totalSteps}
+        </Typography>
       </Box>
     </Box>
   );

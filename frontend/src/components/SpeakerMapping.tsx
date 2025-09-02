@@ -34,7 +34,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
 
   // Use centralized store for simplified state management
   const activeSpeakers = useActiveSpeakers();
@@ -98,7 +98,11 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
   const handleOpenDialog = useCallback(() => {
     setDialogOpen(true);
-  }, []);
+    // Trigger tour step advancement if in demo mode
+    if (isDemo) {
+      triggerStepAction('manage-names');
+    }
+  }, [isDemo, triggerStepAction]);
 
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
@@ -397,10 +401,8 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
       {/* Step 3 Tour Popover - Speaker Management */}
       <TourPopover
-        open={isDemo && isTourActive && !isStepClosed(3)}
+        open={isDemo && isTourActive && isCurrentStep(3)}
         step={3}
-        title="Speaker Management"
-        description="Click 'MANAGE NAMES' to assign names to the speakers we detected in the meeting."
         onClose={() => closeStep(3)}
         position={{ top: '-40px', right: '190px' }}
       />

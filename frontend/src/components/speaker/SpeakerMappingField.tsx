@@ -178,11 +178,13 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           <TourPopover
             open={isDemo && isTourActive && !isStepClosed(6)}
             step={6}
-            title="Save Row"
-            description="After editing speaker details, click the checkmark to save changes for this speaker."
             onClose={() => closeStep(6)}
-            position={{ top: '-60px', right: '140px' }}
+            position={{ top: '90px', right: '670px' }}
             maxWidth="300px"
+            sx={{ 
+              zIndex: 20000,
+              position: 'fixed'
+            }}
           />
         )}
       </Box>
