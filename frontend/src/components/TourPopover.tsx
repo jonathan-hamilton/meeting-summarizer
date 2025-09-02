@@ -35,7 +35,7 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
   anchorOrigin = 'top-right',
   sx = {}
 }) => {
-  const { nextStep, previousStep, getCurrentStepConfig, canGoToNextStep } = useTourStore();
+  const { nextStep, previousStep, getCurrentStepConfig, canAdvanceStep } = useTourStore();
   
   if (!open) return null;
   
@@ -44,11 +44,11 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
   const displayTitle = title || stepConfig?.title || `Step ${step}`;
   const displayDescription = description || stepConfig?.description || '';
   
-  // Adjust position for step 1 - move down 40px total
+  // Adjust position for step 1 - move down 20px
   const adjustedPosition = step === 1 
     ? { ...position, top: typeof position.top === 'string' 
-        ? `calc(${position.top} + 40px)` 
-        : (typeof position.top === 'number' ? position.top + 40 : 60) }
+        ? `calc(${position.top} + 20px)` 
+        : (typeof position.top === 'number' ? position.top + 20 : 40) }
     : position;
   return (
     <Box
@@ -102,10 +102,10 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
         {displayDescription}
       </Typography>
 
-      {/* Navigation buttons - conditional display based on step */}
-      <Box sx={{ display: 'flex', justifyContent: step === 1 ? 'flex-end' : 'space-between', gap: 1, mt: 2 }}>
-        {/* Previous button - only show for step 2+ */}
-        {step > 1 && (
+      {/* Navigation buttons - only show for step 2+ */}
+      {step >= 2 && (
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 2 }}>
+          {/* Previous button - always enabled for step 2+ */}
           <Button 
             variant="outlined"
             size="small"
@@ -121,19 +121,17 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
           >
             Previous
           </Button>
-        )}
 
-        {/* Next button - enabled based on progression logic */}
-        {(step !== 1 || canGoToNextStep()) && (
+          {/* Next button - enabled only for acknowledgment steps */}
           <Button 
             variant="outlined"
             size="small"
-            disabled={!canGoToNextStep()}
-            onClick={canGoToNextStep() ? nextStep : undefined}
+            disabled={!canAdvanceStep()}
+            onClick={canAdvanceStep() ? nextStep : undefined}
             sx={{ 
-              color: canGoToNextStep() ? 'white' : 'grey.500',
-              borderColor: canGoToNextStep() ? 'white' : 'grey.500',
-              '&:hover': canGoToNextStep() ? {
+              color: canAdvanceStep() ? 'white' : 'grey.500',
+              borderColor: canAdvanceStep() ? 'white' : 'grey.500',
+              '&:hover': canAdvanceStep() ? {
                 borderColor: 'primary.main',
                 backgroundColor: 'rgba(255, 255, 255, 0.1)'
               } : {},
@@ -145,8 +143,8 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
           >
             Next
           </Button>
-        )}
-      </Box>
+        </Box>
+      )}
 
       {/* Step counter */}
       <Box sx={{ textAlign: 'center', mt: 2 }}>

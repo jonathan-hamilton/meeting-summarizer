@@ -13,9 +13,9 @@ import type {
   SpeakerSource,
   ValidationError,
 } from "../../types";
-import { useAppMode } from "../../contexts/AppModeContext";
 import { useTourStore } from "../../stores/tourStore";
 import { TourPopover } from "../TourPopover";
+import { useAppMode } from "../../contexts/AppModeContext";
 
 interface SpeakerMappingFieldProps {
   mapping: {
@@ -56,9 +56,8 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
   onCancelEdit,
   onRemove,
 }) => {
-  // Tour state management
+  const { triggerStepAction, isCurrentStep, isActive: isTourActive, closeStep } = useTourStore();
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isStepClosed, closeStep } = useTourStore();
   
   const nameError = validationErrors?.find((err) => err.field === "name");
   const roleError = validationErrors?.find((err) => err.field === "role");
@@ -131,7 +130,10 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           {isEditing ? (
             <>
               <IconButton
-                onClick={() => onConfirmEdit(mapping.speakerId)}
+                onClick={() => {
+                  triggerStepAction('save-row');
+                  onConfirmEdit(mapping.speakerId);
+                }}
                 size="small"
                 color="primary"
                 title="Save Changes"
@@ -151,7 +153,10 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
             </>
           ) : (
             <IconButton
-              onClick={() => onStartEdit(mapping.speakerId)}
+              onClick={() => {
+                triggerStepAction('edit-speaker');
+                onStartEdit(mapping.speakerId);
+              }}
               size="small"
               color="primary"
               title="Edit Speaker"
@@ -172,21 +177,6 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
             <DeleteIcon fontSize="small" />
           </IconButton>
         </Box>
-
-        {/* Step 6 Tour Popover - Save Row */}
-        {isEditing && (
-          <TourPopover
-            open={isDemo && isTourActive && !isStepClosed(6)}
-            step={6}
-            onClose={() => closeStep(6)}
-            position={{ top: '90px', right: '670px' }}
-            maxWidth="300px"
-            sx={{ 
-              zIndex: 20000,
-              position: 'fixed'
-            }}
-          />
-        )}
       </Box>
 
       {/* Form fields */}
@@ -243,6 +233,17 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           type="email"
         />
       </Box>
+      
+      {/* Step 6 Tour Popover - Save Row */}
+      <TourPopover
+        open={isDemo && isTourActive && isCurrentStep(6) && isEditing}
+        step={6}
+        title="Save Row"
+        description="After editing speaker details, click the checkmark to save changes for this speaker."
+        onClose={() => closeStep(6)}
+        position={{ bottom: '-200px', right: '10px' }}
+        maxWidth="300px"
+      />
     </Box>
   );
 };

@@ -191,7 +191,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const { mode, isDemo } = useAppMode();
 
   // Tour store for managing tour state and closed steps
-  const { isActive: isTourActive, closeStep, isStepClosed, triggerStepAction, isCurrentStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction } = useTourStore();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
@@ -273,7 +273,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       const newSet = new Set(prev);
       if (isExpanded) {
         newSet.add(speakerId);
-        // Trigger tour progression when an accordion is expanded for Step 9
+        // Trigger step action when accordion is expanded for the first time
         triggerStepAction('expand-action-items');
       } else {
         newSet.delete(speakerId);
@@ -283,9 +283,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   };
 
   const handleGenerateSummary = async () => {
-    // Trigger tour progression when generate summary is clicked
-    triggerStepAction('generate-summary');
-    
     if (!transcriptText) {
       setSnackbar({
         open: true,
@@ -540,7 +537,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               variant="contained"
               size="large"
               startIcon={<Psychology />}
-              onClick={handleGenerateSummary}
+              onClick={() => {
+                triggerStepAction('generate-summary');
+                handleGenerateSummary();
+              }}
               disabled={!transcriptText}
               sx={{ mb: 2 }}
             >
@@ -580,13 +580,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
         {/* Step 8 Tour Popover - Generate Summary */}
         <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(8) && !isStepClosed(8)}
+          open={isDemo && isTourActive && isCurrentStep(8)}
           step={8}
           title="Generate Summary"
           description="Click 'GENERATE MEETING SUMMARY' to create a comprehensive summary with action items."
           onClose={() => closeStep(8)}
           totalSteps={11}
-          position={{ top: '-5px', right: '50px' }}
+          position={{ top: '5px', right: '50px' }}
           maxWidth="300px"
         />
 
@@ -608,7 +608,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                     startIcon={<Email />}
                     onClick={() => {
                       setEmailDialogOpen(true);
-                      triggerStepAction('share-summary');
+                      triggerStepAction('open-email-dialog');
                     }}
                     sx={{ mr: 1 }}
                   >
@@ -618,7 +618,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
                 {/* Step 11 Tour Popover - Share via Email */}
                 <TourPopover
-                  open={isDemo && isTourActive && isCurrentStep(11) && !isStepClosed(11)}
+                  open={isDemo && isTourActive && isCurrentStep(11)}
                   step={11}
                   title="Share Summary via Email"
                   description="Click 'SHARE' to send the meeting summary and action items via email to participants."
@@ -639,7 +639,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
                 {/* Step 10 Tour Popover - Copy Summary */}
                 <TourPopover
-                  open={isDemo && isTourActive && isCurrentStep(10) && !isStepClosed(10)}
+                  open={isDemo && isTourActive && isCurrentStep(10)}
                   step={10}
                   title="(Optional) Copy Summary"
                   description="You can copy the summary to your clipboard using this button to paste it elsewhere."
@@ -710,10 +710,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                 
                 {/* Step 9 Tour Popover - Expand Action Items */}
                 <TourPopover
-                  open={isDemo && isTourActive && isCurrentStep(9) && !isStepClosed(9)}
+                  open={isDemo && isTourActive && isCurrentStep(9)}
                   step={9}
                   title="Add/Edit/Delete Action Items"
-                  description="Click the ▼ to expand the Action Items. You can add, edit, delete, and drag Action Items between speakers."
+                  description="Click the ▼ to expand the Action Items. You can add, edit, delete, and drag action items between speakers."
                   onClose={() => closeStep(9)}
                   totalSteps={11}
                   position={{ top: '310px', left: '575px' }}
@@ -834,6 +834,18 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         onSave={handleSaveActionItem}
         actionItem={editingActionItem}
         speakers={availableSpeakers}
+      />
+
+      {/* Step 16 Tour Popover - Tour Completion */}
+      <TourPopover
+        open={isDemo && isTourActive && isCurrentStep(16)}
+        step={16}
+        title="Tour Completion"
+        description="Congratulations! You've completed the demo tour. Sign up to start processing your own meeting recordings."
+        onClose={() => closeStep(16)}
+        totalSteps={16}
+        position={{ top: '325px', left: '375px' }}
+        maxWidth="400px"
       />
     </Card>
   );

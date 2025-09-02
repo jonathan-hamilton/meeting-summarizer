@@ -59,7 +59,7 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   const { mode, isDemo } = useAppMode();
   
   // Tour state management
-  const { isActive: isTourActive, isStepClosed, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, setCurrentStep } = useTourStore();
   
   // Email composition state
   const [subject, setSubject] = useState('');
@@ -221,6 +221,7 @@ Best regards`;
     const allEmails = participantEmails.map(p => p.email);
     const newRecipients = [...new Set([...recipients, ...allEmails])]; // Remove duplicates
     setRecipients(newRecipients);
+    triggerStepAction('add-email-recipient');
   };
 
   // S3.4: Add suggested recipient
@@ -232,6 +233,9 @@ Best regards`;
 
   // Handle send email with mode-aware behavior
   const handleSend = async () => {
+    // Trigger tour step action
+    triggerStepAction('send-email');
+    
     // Clear previous messages
     setError(null);
     setSendSuccess(null);
@@ -351,6 +355,10 @@ Best regards`;
 
   // Handle dialog close
   const handleClose = () => {
+    // If we're in demo mode and tour is active, advance to Step 16 when dialog closes
+    if (isDemo && isTourActive) {
+      setCurrentStep(16);
+    }
     onClose();
   };
 
@@ -420,10 +428,10 @@ Best regards`;
             
             {/* Step 12 Tour Popover - Add Email Recipients */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(12) && !isStepClosed(12)}
+              open={isDemo && isTourActive && isCurrentStep(12)}
               step={12}
               title="Add Email Recipients"
-              description="Either 'ADD' an email manually, click individual emails (ex. 'speaker1@test.com') or 'ADD ALL PARTICIPANTS'"
+              description="Click 'ADD ALL PARTICIPANTS' to add all participants defined in the Speaker Mapping, or the individual emails (ex. 'speaker1@test.com') or click 'ADD' to manually add an email"
               onClose={() => closeStep(12)}
               totalSteps={17}
               position={{ top: '0px', left: '320px' }}
@@ -532,7 +540,13 @@ Best regards`;
               <Stack direction="row" spacing={1}>
                 <Button
                   size="small"
-                  onClick={() => setIsPreview(!isPreview)}
+                  onClick={() => {
+                    const newPreviewState = !isPreview;
+                    setIsPreview(newPreviewState);
+                    if (newPreviewState) {
+                      triggerStepAction('preview-email');
+                    }
+                  }}
                   startIcon={<Preview />}
                 >
                   {isPreview ? 'Edit' : 'Preview'}
@@ -542,7 +556,7 @@ Best regards`;
 
             {/* Step 14 Tour Popover - Preview Email */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(14) && !isStepClosed(14)}
+              open={isDemo && isTourActive && isCurrentStep(14)}
               step={14}
               title="Preview Email"
               description="Preview how your email will look with the meeting summary and action items included before sending it to recipients."
@@ -554,7 +568,7 @@ Best regards`;
 
             {/* Step 13 Tour Popover - Edit Email Content */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(13) && !isStepClosed(13)}
+              open={isDemo && isTourActive && isCurrentStep(13)}
               step={13}
               title="Edit Email Content"
               description="Customize the email subject and add a personal message. The Meeting Summary and Action Items will be included automatically."
@@ -603,7 +617,7 @@ Best regards`;
 
       {/* Step 15 Tour Popover - Send Email */}
       <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(15) && !isStepClosed(15)}
+        open={isDemo && isTourActive && isCurrentStep(15)}
         step={15}
         title="Send Email"
         description="Send the meeting summary and action items to all recipients. In demo mode, no actual emails are sent."
