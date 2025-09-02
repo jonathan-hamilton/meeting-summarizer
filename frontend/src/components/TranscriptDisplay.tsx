@@ -81,7 +81,22 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep, registerDialogController, unregisterDialogController } = useTourStore();
+
+  // Register dialog controller for tour backward navigation
+  useEffect(() => {
+    const openSpeakerMapping = () => {
+      console.log('Tour: Opening SpeakerMappingDialog for backward navigation');
+      setSpeakerMappingDialogOpen(true);
+    };
+    
+    registerDialogController('openSpeakerMappingDialog', openSpeakerMapping);
+    
+    // Cleanup on unmount
+    return () => {
+      unregisterDialogController('openSpeakerMappingDialog');
+    };
+  }, [registerDialogController, unregisterDialogController]);
 
   // No need for useEffect - tour advancement is now handled by triggerStepAction in FileUpload
   // The tour will automatically advance when user clicks SELECT FILE
