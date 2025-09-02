@@ -338,7 +338,12 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       newMapping.role
     );
     setError(null);
-  }, [handleAddSpeaker, addSpeakerToStore]);
+    
+    // Trigger tour step advancement if in demo mode
+    if (isDemo && isTourActive) {
+      triggerStepAction('add-speaker');
+    }
+  }, [handleAddSpeaker, addSpeakerToStore, isDemo, isTourActive, triggerStepAction]);
 
   const handleRemoveSpeakerLocal = useCallback(
     (index: number) => {
@@ -696,7 +701,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           <Divider sx={{ my: 2 }} />
 
           {/* S2.5: Add Speaker Button */}
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mb: 3, position: 'relative' }}>
             <Button
               onClick={handleAddSpeakerLocal}
               startIcon={<PersonAddIcon />}
@@ -706,20 +711,31 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             >
               Add Speaker
             </Button>
+            
+            {/* Step 5 Tour Popover - Speaker Added Successfully */}
+            <TourPopover
+              open={isDemo && isTourActive && isCurrentStep(5)}
+              step={5}
+              title="Speaker Added Successfully"
+              description="Great! Manually added Speaker 5 has been added to the list. Notice the new colored chip in the auto-detected speakers section above."
+              onClose={() => closeStep(5)}
+              position={{ top: '-10px', left: '275px' }}
+              maxWidth="300px"
+            />
           </Box>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, position: 'relative' }}>
             {mappingFields}
             
-            {/* Step 5 Tour Popover - Edit/Delete Speaker */}
+            {/* Step 6 Tour Popover - Edit/Delete Speaker */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(5)}
-              step={5}
+              open={isDemo && isTourActive && isCurrentStep(6)}
+              step={6}
               title="(Optional) Edit/Delete Speaker"
               description="Click the pencil icon to edit speaker details or the trash icon to delete speakers that were incorrectly detected.
 
 ⚠️ Deleting speakers will break the AI confidence score calculation"
-              onClose={() => closeStep(5)}
+              onClose={() => closeStep(6)}
               position={{ top: '50px', right: '0px' }}
               maxWidth="300px"
             />
@@ -779,13 +795,13 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             {loading ? "Saving..." : "Save Mappings"}
           </Button>
 
-          {/* Step 7 Tour Popover - SAVE MAPPINGS */}
+          {/* Step 8 Tour Popover - SAVE MAPPINGS */}
           <TourPopover
-            open={isDemo && isTourActive && isCurrentStep(7)}
-            step={7}
+            open={isDemo && isTourActive && isCurrentStep(8)}
+            step={8}
             title="SAVE MAPPINGS"
             description="Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes."
-            onClose={() => closeStep(7)}
+            onClose={() => closeStep(8)}
             position={{ top: '650px', right: '10px' }}
             maxWidth="300px"
           />

@@ -355,7 +355,7 @@ Best regards`;
 
   // Handle dialog close
   const handleClose = () => {
-    // If we're in demo mode and tour is active, advance to Step 16 when dialog closes
+    // If we're in demo mode and tour is active, advance to Step 17 when dialog closes
     if (isDemo && isTourActive) {
       setCurrentStep(16);
     }
@@ -426,14 +426,13 @@ Best regards`;
               Recipients
             </Typography>
             
-            {/* Step 12 Tour Popover - Add Email Recipients */}
+            {/* Step 13 Tour Popover - Add Email Recipients */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(12)}
-              step={12}
+              open={isDemo && isTourActive && isCurrentStep(13)}
+              step={13}
               title="Add Email Recipients"
               description="Click 'ADD ALL PARTICIPANTS' to add all participants defined in the Speaker Mapping, or the individual emails (ex. 'speaker1@test.com') or click 'ADD' to manually add an email"
-              onClose={() => closeStep(12)}
-              totalSteps={17}
+              onClose={() => closeStep(13)}
               position={{ top: '0px', left: '320px' }}
               maxWidth="350px"
             />
@@ -554,26 +553,24 @@ Best regards`;
               </Stack>
             </Stack>
 
-            {/* Step 14 Tour Popover - Preview Email */}
+            {/* Step 15 Tour Popover - Preview Email */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(14)}
-              step={14}
+              open={isDemo && isTourActive && isCurrentStep(15)}
+              step={15}
               title="Preview Email"
               description="Preview how your email will look with the meeting summary and action items included before sending it to recipients."
-              onClose={() => closeStep(14)}
-              totalSteps={16}
+              onClose={() => closeStep(15)}
               position={{ top: '50px', left: '450px' }}
               maxWidth="350px"
             />
 
-            {/* Step 13 Tour Popover - Edit Email Content */}
+            {/* Step 14 Tour Popover - Edit Email Content */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(13)}
-              step={13}
+              open={isDemo && isTourActive && isCurrentStep(14)}
+              step={14}
               title="Edit Email Content"
               description="Customize the email subject and add a personal message. The Meeting Summary and Action Items will be included automatically."
-              onClose={() => closeStep(13)}
-              totalSteps={17}
+              onClose={() => closeStep(14)}
               position={{ top: '50px', left: '50px' }}
               maxWidth="350px"
             />
@@ -615,14 +612,13 @@ Best regards`;
         </Button>
       </DialogActions>
 
-      {/* Step 15 Tour Popover - Send Email */}
+      {/* Step 16 Tour Popover - Send Email */}
       <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(15)}
-        step={15}
+        open={isDemo && isTourActive && isCurrentStep(16)}
+        step={16}
         title="Send Email"
         description="Send the meeting summary and action items to all recipients. In demo mode, no actual emails are sent."
-        onClose={() => closeStep(15)}
-        totalSteps={16}
+        onClose={() => closeStep(16)}
         position={{ top: '670px', left: '600px' }}
         maxWidth="350px"
       />

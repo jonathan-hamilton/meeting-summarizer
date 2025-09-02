@@ -29,13 +29,16 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
   title,
   description,
   onClose,
-  totalSteps = 15,
+  totalSteps,
   position = { top: '20px', right: '20px' },
   maxWidth = '300px',
   anchorOrigin = 'top-right',
   sx = {}
 }) => {
-  const { nextStep, previousStep, getCurrentStepConfig, canAdvanceStep } = useTourStore();
+  const { nextStep, previousStep, getCurrentStepConfig, canAdvanceStep, stopTour, getTotalSteps } = useTourStore();
+  
+  // Use provided totalSteps or get from store
+  const actualTotalSteps = totalSteps ?? getTotalSteps();
   
   if (!open) return null;
   
@@ -104,7 +107,7 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
 
       {/* Navigation buttons - only show for step 2+ */}
       {step >= 2 && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: step === actualTotalSteps ? 'flex-start' : 'space-between', gap: 1, mt: 2 }}>
           {/* Previous button - always enabled for step 2+ */}
           <Button 
             variant="outlined"
@@ -122,34 +125,55 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
             Previous
           </Button>
 
-          {/* Next button - enabled only for acknowledgment steps */}
-          <Button 
-            variant="outlined"
-            size="small"
-            disabled={!canAdvanceStep()}
-            onClick={canAdvanceStep() ? nextStep : undefined}
-            sx={{ 
-              color: canAdvanceStep() ? 'white' : 'grey.500',
-              borderColor: canAdvanceStep() ? 'white' : 'grey.500',
-              '&:hover': canAdvanceStep() ? {
-                borderColor: 'primary.main',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
-              } : {},
-              '&:disabled': {
-                color: 'grey.500',
-                borderColor: 'grey.500'
-              }
-            }}
-          >
-            Next
-          </Button>
+          {/* Next button - only show if not the final step */}
+          {step < actualTotalSteps && (
+            <Button 
+              variant="outlined"
+              size="small"
+              disabled={!canAdvanceStep()}
+              onClick={canAdvanceStep() ? nextStep : undefined}
+              sx={{ 
+                color: canAdvanceStep() ? 'white' : 'grey.500',
+                borderColor: canAdvanceStep() ? 'white' : 'grey.500',
+                '&:hover': canAdvanceStep() ? {
+                  borderColor: 'primary.main',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                } : {},
+                '&:disabled': {
+                  color: 'grey.500',
+                  borderColor: 'grey.500'
+                }
+              }}
+            >
+              Next
+            </Button>
+          )}
         </Box>
       )}
+
+      {/* Close Tour button - always visible */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+        <Button 
+          variant="outlined"
+          size="small"
+          onClick={stopTour}
+          sx={{ 
+            color: 'white',
+            borderColor: 'white',
+            '&:hover': {
+              borderColor: 'primary.main',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+            }
+          }}
+        >
+          Close Tour
+        </Button>
+      </Box>
 
       {/* Step counter */}
       <Box sx={{ textAlign: 'center', mt: 2 }}>
         <Typography variant="caption" sx={{ color: 'grey.400' }}>
-          {step} of {totalSteps}
+          {step} of {actualTotalSteps}
         </Typography>
       </Box>
     </Box>
