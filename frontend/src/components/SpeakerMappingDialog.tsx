@@ -801,7 +801,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             title="SAVE MAPPINGS"
             description="Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes."
             onClose={() => closeStep(8)}
-            position={{ top: '650px', right: '10px' }}
+            position={{ top: '600px', right: '10px' }}
             maxWidth="300px"
           />
         </DialogActions>

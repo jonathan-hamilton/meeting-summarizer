@@ -5,53 +5,18 @@ import {
   Typography,
   Box,
   Button,
-  IconButton,
-  Tooltip,
-  Stack,
-  Chip,
   Alert,
   CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Snackbar,
   Divider,
-  Paper,
+  Stack,
 } from "@mui/material";
 import TourPopover from "./TourPopover";
+import SummaryHeader from "./SummaryHeader";
+import ActionItemsSection from "./ActionItemsSection";
 import {
   Psychology,
-  ContentCopy,
-  Person,
-  Assignment,
-  Schedule,
-  CheckCircle,
-  Email,
-  Add,
-  Edit,
-  Delete,
-  DragIndicator,
-  ExpandMore,
 } from "@mui/icons-material";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensors,
-  useSensor,
-} from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import {
-  useSortable,
-} from '@dnd-kit/sortable';
-import {CSS} from '@dnd-kit/utilities';
 import type { SpeakerMapping, MeetingSummary, ActionItem } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
@@ -73,94 +38,6 @@ interface SnackbarState {
   message: string;
   severity: "success" | "error" | "info" | "warning";
 }
-
-// Sortable Action Item Component
-interface SortableActionItemProps {
-  item: ActionItem;
-  onEdit: (item: ActionItem) => void;
-  onDelete: (id: string) => void;
-}
-
-const SortableActionItem: React.FC<SortableActionItemProps> = ({ item, onEdit, onDelete }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <Paper
-      ref={setNodeRef}
-      style={style}
-      sx={{
-        p: 2,
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: 1,
-        border: '1px solid',
-        borderColor: 'divider',
-        cursor: isDragging ? 'grabbing' : 'auto',
-      }}
-    >
-      <DragIndicator 
-        {...attributes}
-        {...listeners}
-        sx={{ 
-          color: 'text.secondary', 
-          cursor: 'grab', 
-          mt: 0.5,
-          '&:hover': { color: 'primary.main' }
-        }} 
-      />
-      <Box sx={{ flex: 1 }}>
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          {item.description}
-        </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Chip
-            label={item.assignedTo || 'Unassigned'}
-            size="small"
-            variant="outlined"
-            color={item.assignedTo ? 'primary' : 'default'}
-          />
-          {item.confidence < 0.8 && (
-            <Chip
-              label="Low Confidence"
-              size="small"
-              color="warning"
-              variant="outlined"
-            />
-          )}
-        </Box>
-      </Box>
-      <Box sx={{ display: 'flex', gap: 0.5 }}>
-        <IconButton
-          size="small"
-          onClick={() => onEdit(item)}
-          color="primary"
-        >
-          <Edit fontSize="small" />
-        </IconButton>
-        <IconButton
-          size="small"
-          onClick={() => onDelete(item.id)}
-          color="error"
-        >
-          <Delete fontSize="small" />
-        </IconButton>
-      </Box>
-    </Paper>
-  );
-};
 
 const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   transcriptionId,
@@ -231,70 +108,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const [actionItemDialogOpen, setActionItemDialogOpen] = useState(false);
   const [editingActionItem, setEditingActionItem] = useState<ActionItem | null>(null);
 
-  // Accordion expansion state - track which speaker accordions are expanded
-  const [expandedAccordions, setExpandedAccordions] = useState<Set<string>>(new Set());
-
-  // Drag and drop sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  // Drag and drop handlers
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (active.id !== over?.id && over?.id) {
-      const draggedItem = actionItems.find((item) => item.id === active.id);
-      const targetItem = actionItems.find((item) => item.id === over.id);
-      
-      if (draggedItem && targetItem) {
-        // Check if we're moving to a different speaker
-        const needsReassignment = draggedItem.assignedTo !== targetItem.assignedTo;
-        
-        if (needsReassignment) {
-          // Update the assignedTo field to match the target speaker
-          updateActionItem(draggedItem.id, { assignedTo: targetItem.assignedTo });
-          
-          // Auto-expand the target accordion to show the newly assigned item
-          if (targetItem.assignedTo) {
-            setExpandedAccordions(prev => new Set(prev).add(targetItem.assignedTo!));
-          }
-          
-          setSnackbar({
-            open: true,
-            message: `Action item reassigned to ${targetItem.assignedTo || 'Unassigned'}`,
-            severity: "success",
-          });
-        } else {
-          // Just reorder within the same speaker group
-          const oldIndex = actionItems.findIndex((item) => item.id === active.id);
-          const newIndex = actionItems.findIndex((item) => item.id === over.id);
-
-          if (oldIndex !== -1 && newIndex !== -1) {
-            const reorderedItems = arrayMove(actionItems, oldIndex, newIndex);
-            reorderActionItems(reorderedItems);
-          }
-        }
-      }
-    }
-  };
-
-  // Handle accordion expansion/collapse
-  const handleAccordionChange = (speakerId: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
-    setExpandedAccordions(prev => {
-      const newSet = new Set(prev);
-      if (isExpanded) {
-        newSet.add(speakerId);
-        // Trigger step action when accordion is expanded for the first time
-        triggerStepAction('expand-action-items');
-      } else {
-        newSet.delete(speakerId);
-      }
-      return newSet;
-    });
+  // Snackbar helper function
+  const showSnackbar = (message: string, severity: "success" | "error" | "info" | "warning") => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const handleGenerateSummary = async () => {
@@ -344,11 +160,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           })));
         } else {
           console.error('❌ No speakers available for summary generation');
-          setSnackbar({
-            open: true,
-            message: "No speakers detected in the transcript. Cannot generate summary.",
-            severity: "error",
-          });
+          showSnackbar("No speakers detected in the transcript. Cannot generate summary.", "error");
           return;
         }
       } else {
@@ -364,18 +176,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         onSummaryGenerated(summary);
       }
       
-      setSnackbar({
-        open: true,
-        message: "Meeting summary generated successfully!",
-        severity: "success",
-      });
+      showSnackbar("Meeting summary generated successfully!", "success");
     } catch (err) {
       console.error('Summary generation error:', err);
-      setSnackbar({
-        open: true,
-        message: `Failed to generate meeting summary: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        severity: "error",
-      });
+      showSnackbar(`Failed to generate meeting summary: ${err instanceof Error ? err.message : 'Unknown error'}`, "error");
     }
   };
 
@@ -385,11 +189,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     // In a real implementation, this would call an email service
     console.log('Sending email:', emailData);
     
-    setSnackbar({
-      open: true,
-      message: `Email sent successfully to ${emailData.recipients.length} recipient(s)!`,
-      severity: "success",
-    });
+    showSnackbar(`Email sent successfully to ${emailData.recipients.length} recipient(s)!`, "success");
   };
 
   // Action item handlers
@@ -405,30 +205,18 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
   const handleDeleteActionItem = (actionItemId: string) => {
     deleteActionItem(actionItemId);
-    setSnackbar({
-      open: true,
-      message: "Action item deleted successfully!",
-      severity: "success",
-    });
+    showSnackbar("Action item deleted successfully!", "success");
   };
 
   const handleSaveActionItem = (actionItemData: Omit<ActionItem, 'id'>) => {
     if (editingActionItem) {
       // Update existing action item
       updateActionItem(editingActionItem.id, actionItemData);
-      setSnackbar({
-        open: true,
-        message: "Action item updated successfully!",
-        severity: "success",
-      });
+      showSnackbar("Action item updated successfully!", "success");
     } else {
       // Create new action item
       addActionItem(actionItemData);
-      setSnackbar({
-        open: true,
-        message: "Action item created successfully!",
-        severity: "success",
-      });
+      showSnackbar("Action item created successfully!", "success");
     }
   };
 
@@ -454,82 +242,15 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const handleCopyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setSnackbar({
-        open: true,
-        message: `${type} copied to clipboard!`,
-        severity: "success",
-      });
+      showSnackbar(`${type} copied to clipboard!`, "success");
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: "Failed to copy to clipboard",
-        severity: "error",
-      });
+      showSnackbar("Failed to copy to clipboard", "error");
     }
   };
 
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
-
-  // Group action items by speaker with stable ordering
-  const groupedActionItems = useMemo(() => {
-    const groups: { [speakerId: string]: { speakerName: string; items: ActionItem[] } } = {};
-    
-    // First, populate the groups with action items
-    actionItems.forEach(item => {
-      const speakerId = item.assignedTo || 'Unassigned';
-      
-      if (!groups[speakerId]) {
-        // Find speaker name from mappings
-        const speakerMapping = effectiveSpeakerMappings.find(m => m.speakerId === speakerId);
-        const speakerName = speakerMapping?.name || (speakerId === 'Unassigned' ? 'Unassigned' : speakerId);
-        
-        groups[speakerId] = {
-          speakerName,
-          items: []
-        };
-      }
-      
-      groups[speakerId].items.push(item);
-    });
-    
-    // Create ordered list based on speaker mappings order, then add Unassigned at the end
-    const orderedGroups: Array<{ speakerId: string; speakerName: string; items: ActionItem[] }> = [];
-    
-    // Add speakers in the order they appear in speaker mappings (maintains original order)
-    effectiveSpeakerMappings.forEach(mapping => {
-      if (groups[mapping.speakerId]) {
-        orderedGroups.push({
-          speakerId: mapping.speakerId,
-          speakerName: groups[mapping.speakerId].speakerName,
-          items: groups[mapping.speakerId].items
-        });
-      }
-    });
-    
-    // Add any other assigned speakers that aren't in mappings (shouldn't happen, but safe fallback)
-    Object.entries(groups).forEach(([speakerId, group]) => {
-      if (speakerId !== 'Unassigned' && !orderedGroups.find(g => g.speakerId === speakerId)) {
-        orderedGroups.push({
-          speakerId,
-          speakerName: group.speakerName,
-          items: group.items
-        });
-      }
-    });
-    
-    // Always add Unassigned at the end if it has items
-    if (groups['Unassigned']) {
-      orderedGroups.push({
-        speakerId: 'Unassigned',
-        speakerName: 'Unassigned',
-        items: groups['Unassigned'].items
-      });
-    }
-    
-    return orderedGroups;
-  }, [actionItems, effectiveSpeakerMappings]);
 
   const getTotalActionItems = (): number => {
     return actionItems.length;
@@ -608,87 +329,17 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         {summary && !isGenerating && (
           <Box>
             {/* Summary Header with Metadata */}
-            <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
-              <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-                <CheckCircle color="success" />
-                <Typography variant="h6">Summary Generated</Typography>
-                <Box sx={{ flexGrow: 1 }} />
-                
-                {/* Action Buttons */}
-                <Tooltip title="Share via email">
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<Email />}
-                    onClick={() => {
-                      setEmailDialogOpen(true);
-                      triggerStepAction('open-email-dialog');
-                    }}
-                    sx={{ mr: 1 }}
-                  >
-                    Share
-                  </Button>
-                </Tooltip>
-
-                {/* Step 12 Tour Popover - Share via Email */}
-                <TourPopover
-                  open={isDemo && isTourActive && isCurrentStep(12)}
-                  step={12}
-                  title="Share Summary via Email"
-                  description="Click 'SHARE' to send the meeting summary and action items via email to participants."
-                  onClose={() => closeStep(12)}
-                  position={{ top: '50px', right: '190px' }}
-                  maxWidth="300px"
-                />
-
-                <Tooltip title="Copy full summary">
-                  <IconButton
-                    onClick={() => handleCopyToClipboard(summary.meetingOverview, "Summary")}
-                    size="small"
-                  >
-                    <ContentCopy />
-                  </IconButton>
-                </Tooltip>
-
-                {/* Step 11 Tour Popover - Copy Summary */}
-                <TourPopover
-                  open={isDemo && isTourActive && isCurrentStep(11)}
-                  step={11}
-                  title="(Optional) Copy Summary"
-                  description="You can copy the summary to your clipboard using this button to paste it elsewhere."
-                  onClose={() => closeStep(11)}
-                  position={{ top: '150px', right: '10px' }}
-                  maxWidth="300px"
-                />
-
-              </Stack>
-
-              {/* Metadata Chips */}
-              <Stack direction="row" spacing={1} flexWrap="wrap">
-                <Chip
-                  icon={<Schedule />}
-                  label={`${summary.generation.processingTimeMs}ms`}
-                  variant="outlined"
-                  size="small"
-                />
-                <Chip
-                  icon={<Assignment />}
-                  label={`${getTotalActionItems()} action items`}
-                  variant="outlined"
-                  size="small"
-                />
-                <Chip
-                  icon={<Person />}
-                  label={`${summary.actionItemsByRole.length} speakers`}
-                  variant="outlined"
-                  size="small"
-                />
-              </Stack>
-              
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
-                Generated: {new Date(summary.generation.generatedAt).toLocaleString()}
-              </Typography>
-            </Paper>
+            <SummaryHeader
+              summary={summary}
+              totalActionItems={getTotalActionItems()}
+              isDemo={isDemo}
+              isTourActive={isTourActive}
+              isCurrentStep={isCurrentStep}
+              onShareClick={() => setEmailDialogOpen(true)}
+              onCopyClick={() => handleCopyToClipboard(summary.meetingOverview, "Summary")}
+              onCloseStep={closeStep}
+              triggerStepAction={triggerStepAction}
+            />
 
             {/* Meeting Overview */}
             <Box sx={{ mb: 3 }}>
@@ -702,115 +353,22 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Action Items by Speaker */}
-            {actionItems.length > 0 && (
-              <Box sx={{ mt: 3 }}>
-                <Divider sx={{ mb: 3 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
-                    Action Items ({actionItems.length})
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Add />}
-                    onClick={handleCreateActionItem}
-                    size="small"
-                  >
-                    Add Item
-                  </Button>
-                </Box>
-                
-                {/* Step 10 Tour Popover - Expand Action Items */}
-                <TourPopover
-                  open={isDemo && isTourActive && isCurrentStep(10)}
-                  step={10}
-                  title="Add/Edit/Delete Action Items"
-                  description="Click the ▼ to expand the Action Items. You can add, edit, delete, and drag action items between speakers."
-                  onClose={() => closeStep(10)}
-                  position={{ top: '310px', left: '575px' }}
-                  maxWidth="400px"
-                />
-                
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext 
-                    items={actionItems.map(item => item.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {groupedActionItems.map((group) => (
-                      <Accordion 
-                        key={group.speakerId} 
-                        sx={{ mb: 1 }}
-                        expanded={expandedAccordions.has(group.speakerId)}
-                        onChange={handleAccordionChange(group.speakerId)}
-                      >
-                        <AccordionSummary expandIcon={<ExpandMore />}>
-                          <Stack direction="row" alignItems="center" spacing={2}>
-                            <Person color="primary" />
-                            <Box>
-                              <Typography variant="subtitle1">
-                                {group.speakerName}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                {group.items.length} action items
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                            {group.items.map((item) => (
-                              <SortableActionItem
-                                key={item.id}
-                                item={item}
-                                onEdit={handleEditActionItem}
-                                onDelete={handleDeleteActionItem}
-                              />
-                            ))}
-                          </Box>
-                        </AccordionDetails>
-                      </Accordion>
-                    ))}
-                  </SortableContext>
-                </DndContext>
-              </Box>
-            )}
-
-            {/* Empty state when no action items exist */}
-            {actionItems.length === 0 && (
-              <Box sx={{ mt: 3 }}>
-                <Divider sx={{ mb: 3 }} />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                  <Typography variant="h6">
-                    Action Items (0)
-                  </Typography>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Add />}
-                    onClick={handleCreateActionItem}
-                    size="small"
-                  >
-                    Add Item
-                  </Button>
-                </Box>
-                <Paper 
-                  sx={{ 
-                    p: 3, 
-                    textAlign: 'center', 
-                    bgcolor: 'grey.50',
-                    border: '2px dashed',
-                    borderColor: 'grey.300'
-                  }}
-                >
-                  <Typography variant="body2" color="text.secondary">
-                    No action items yet. Generate a meeting summary or add custom action items to get started.
-                  </Typography>
-                </Paper>
-              </Box>
-            )}
+            {/* Action Items Section */}
+            <ActionItemsSection
+              actionItems={actionItems}
+              speakerMappings={effectiveSpeakerMappings}
+              isDemo={isDemo}
+              isTourActive={isTourActive}
+              isCurrentStep={isCurrentStep}
+              onCreateActionItem={handleCreateActionItem}
+              onEditActionItem={handleEditActionItem}
+              onDeleteActionItem={handleDeleteActionItem}
+              onReorderActionItems={reorderActionItems}
+              onUpdateActionItem={updateActionItem}
+              onCloseStep={closeStep}
+              triggerStepAction={triggerStepAction}
+              onSnackbar={showSnackbar}
+            />
 
           </Box>
         )}
