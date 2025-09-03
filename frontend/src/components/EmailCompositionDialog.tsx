@@ -619,7 +619,7 @@ Best regards`;
         title="Send Email"
         description="Send the meeting summary and action items to all recipients. In demo mode, no actual emails are sent."
         onClose={() => closeStep(16)}
-        position={{ top: '670px', left: '600px' }}
+        position={{ top: '620px', left: '600px' }}
         maxWidth="350px"
       />
     </Dialog>

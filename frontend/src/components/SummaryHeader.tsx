@@ -1,0 +1,130 @@
+import React from 'react';
+import {
+  Paper,
+  Stack,
+  Typography,
+  Box,
+  Button,
+  IconButton,
+  Tooltip,
+  Chip,
+} from '@mui/material';
+import {
+  CheckCircle,
+  Email,
+  ContentCopy,
+  Schedule,
+  Assignment,
+  Person,
+} from '@mui/icons-material';
+import TourPopover from './TourPopover';
+import type { MeetingSummary } from '../types';
+
+interface SummaryHeaderProps {
+  summary: MeetingSummary;
+  totalActionItems: number;
+  isDemo: boolean;
+  isTourActive: boolean;
+  isCurrentStep: (step: number) => boolean;
+  onShareClick: () => void;
+  onCopyClick: () => void;
+  onCloseStep: (step: number) => void;
+  triggerStepAction: (action: string) => void;
+}
+
+const SummaryHeader: React.FC<SummaryHeaderProps> = ({
+  summary,
+  totalActionItems,
+  isDemo,
+  isTourActive,
+  isCurrentStep,
+  onShareClick,
+  onCopyClick,
+  onCloseStep,
+  triggerStepAction,
+}) => {
+  return (
+    <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
+      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+        <CheckCircle color="success" />
+        <Typography variant="h6">Summary Generated</Typography>
+        <Box sx={{ flexGrow: 1 }} />
+        
+        {/* Action Buttons */}
+        <Tooltip title="Share via email">
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<Email />}
+            onClick={() => {
+              onShareClick();
+              triggerStepAction('open-email-dialog');
+            }}
+            sx={{ mr: 1 }}
+          >
+            Share
+          </Button>
+        </Tooltip>
+
+        {/* Step 12 Tour Popover - Share via Email */}
+        <TourPopover
+          open={isDemo && isTourActive && isCurrentStep(12)}
+          step={12}
+          title="Share Summary via Email"
+          description="Click 'SHARE' to send the meeting summary and action items via email to participants."
+          onClose={() => onCloseStep(12)}
+          position={{ top: '50px', right: '190px' }}
+          maxWidth="300px"
+        />
+
+        <Tooltip title="Copy full summary">
+          <IconButton
+            onClick={onCopyClick}
+            size="small"
+          >
+            <ContentCopy />
+          </IconButton>
+        </Tooltip>
+
+        {/* Step 11 Tour Popover - Copy Summary */}
+        <TourPopover
+          open={isDemo && isTourActive && isCurrentStep(11)}
+          step={11}
+          title="(Optional) Copy Summary"
+          description="You can copy the summary to your clipboard using this button to paste it elsewhere."
+          onClose={() => onCloseStep(11)}
+          position={{ top: '150px', right: '10px' }}
+          maxWidth="300px"
+        />
+      </Stack>
+
+      {/* Metadata Chips */}
+      <Stack direction="row" spacing={1} flexWrap="wrap">
+        <Chip
+          icon={<Schedule />}
+          label={`${summary.generation.processingTimeMs}ms`}
+          variant="outlined"
+          size="small"
+        />
+        <Chip
+          icon={<Assignment />}
+          label={`${totalActionItems} action items`}
+          variant="outlined"
+          size="small"
+        />
+        <Chip
+          icon={<Person />}
+          label={`${summary.actionItemsByRole.length} speakers`}
+          variant="outlined"
+          size="small"
+        />
+      </Stack>
+      
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+        Generated: {new Date(summary.generation.generatedAt).toLocaleString()}
+      </Typography>
+    </Paper>
+  );
+};
+
+export default SummaryHeader;
