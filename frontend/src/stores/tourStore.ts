@@ -163,6 +163,22 @@ interface DialogControllers {
   openEmailCompositionDialog?: () => void;
 }
 
+// Helper function for step-specific scroll behavior
+const handleStepScroll = (stepNumber: number) => {
+  console.log('🔄 handleStepScroll called with step:', stepNumber);
+  switch (stepNumber) {
+    case 2:
+      console.log('🔄 Step 2 detected - scroll will be handled by TranscriptDisplay component');
+      // Step 2: Scroll is now handled by the TranscriptDisplay component
+      // when it detects tour step 2 is active and component is fully rendered
+      break;
+    // Add more cases here for other steps that need scroll behavior
+    default:
+      // No special scroll behavior for other steps
+      break;
+  }
+};
+
 interface TourState {
   // Tour status
   isActive: boolean;
@@ -245,6 +261,9 @@ export const useTourStore = create<TourState>()(
           const newClosedSteps = new Set(state.closedSteps);
           newClosedSteps.delete(step);
           
+          // Handle step-specific scroll behavior
+          handleStepScroll(step);
+          
           set({ 
             currentStep: step,
             closedSteps: newClosedSteps
@@ -260,6 +279,9 @@ export const useTourStore = create<TourState>()(
           const newClosedSteps = new Set(state.closedSteps);
           newClosedSteps.add(state.currentStep);
           const newCurrentStep = state.currentStep + 1;
+          
+          // Handle step-specific scroll behavior
+          handleStepScroll(newCurrentStep);
           
           set({ 
             currentStep: newCurrentStep,
@@ -361,6 +383,9 @@ export const useTourStore = create<TourState>()(
           const newClosedSteps = new Set(state.closedSteps);
           newClosedSteps.add(state.currentStep);  // Close current step
           const newCurrentStep = state.currentStep + 1;
+          
+          // Handle step-specific scroll behavior
+          handleStepScroll(newCurrentStep);
           
           set({ 
             currentStep: newCurrentStep,

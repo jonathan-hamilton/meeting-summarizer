@@ -73,8 +73,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   
   // Compatibility functions
   const initializeSpeakers = (transcriptionId: string, detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
-    console.log('SpeakerMappingDialog: initializeSpeakers called', { transcriptionId, detectedSpeakers, existingMappings });
-    
     // Only add mappings that don't already exist to avoid clearing and re-adding
     existingMappings.forEach(mapping => {
       const existingMapping = speakerMappings.find(m => m.speakerId === mapping.speakerId && m.transcriptionId === transcriptionId);
@@ -632,6 +630,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   return (
     <>
       <Dialog
+        id="speaker-mapping-dialog"
         open={open}
         onClose={handleClose}
         maxWidth="md"

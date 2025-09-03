@@ -238,9 +238,6 @@ class DemoApiService {
   }
 
   async generateMeetingSummary(request: MeetingSummaryRequest): Promise<ApiResponse<MeetingSummary>> {
-    console.log('🎭 DemoApiService.generateMeetingSummary called');
-    console.log('- Request:', request);
-    
     await this.mockDelay(2000); // Simulate processing time
     
     // Process the actual transcript and speaker mappings instead of using hardcoded data
@@ -252,8 +249,6 @@ class DemoApiService {
       name: mapping.name || mapping.speakerId,
       role: mapping.role || ''
     }));
-    
-    console.log('🎭 Demo processing speakers:', speakers);
     
     // Generate action items based on the actual speakers
     const actionItemsByRole = speakers.map(speaker => ({
@@ -302,7 +297,6 @@ class DemoApiService {
       message: 'Demo meeting summary generated successfully'
     };
     
-    console.log('🎭 DemoApiService.generateMeetingSummary response:', response);
     return response;
   }
 
