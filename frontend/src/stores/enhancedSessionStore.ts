@@ -5,8 +5,6 @@ import type { AppMode } from '../contexts/AppModeContext';
 
 // Demo-specific state structure
 interface DemoState {
-  currentStep: number;
-  isTourActive: boolean;
   mockTranscripts: TranscriptionResponse[];
   mockSegments: SpeakerSegment[];
   mockSpeakerMappings: SpeakerMapping[];
@@ -40,10 +38,6 @@ interface EnhancedSessionState {
   setMode: (mode: AppMode) => void;
   
   // Demo actions
-  startDemoTour: () => void;
-  nextDemoStep: () => void;
-  previousDemoStep: () => void;
-  closeDemoTour: () => void;
   simulateUpload: (fileName?: string) => Promise<void>;
   startDemoUpload: () => Promise<void>;
   stopSimulation: () => void;
@@ -153,8 +147,6 @@ export const useEnhancedSessionStore = create<EnhancedSessionState>()(
       currentMode: 'demo',
       
       demo: {
-        currentStep: 0,
-        isTourActive: false,
         mockTranscripts: [],
         mockSegments: [],
         mockSpeakerMappings: [],
@@ -176,44 +168,6 @@ export const useEnhancedSessionStore = create<EnhancedSessionState>()(
       },
       
       // Demo actions
-      startDemoTour: () => {
-        set((state) => ({
-          demo: {
-            ...state.demo,
-            isTourActive: true,
-            currentStep: 0,
-          }
-        }));
-      },
-      
-      nextDemoStep: () => {
-        set((state) => ({
-          demo: {
-            ...state.demo,
-            currentStep: state.demo.currentStep + 1,
-          }
-        }));
-      },
-      
-      previousDemoStep: () => {
-        set((state) => ({
-          demo: {
-            ...state.demo,
-            currentStep: Math.max(0, state.demo.currentStep - 1),
-          }
-        }));
-      },
-      
-      closeDemoTour: () => {
-        set((state) => ({
-          demo: {
-            ...state.demo,
-            isTourActive: false,
-            currentStep: 0,
-          }
-        }));
-      },
-      
       simulateUpload: async (fileName?: string) => {
         const mockFileName = fileName || 'mock-transcript.wav';
         

@@ -132,12 +132,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       // instead of transformed ones like "Speaker 1", "Speaker 2"
       const availableSpeakers = detectedSpeakers.length > 0 ? detectedSpeakers : currentSpeakers;
       
-      console.log('🔍 Summary Generation Debug:');
-      console.log('- Store speakers:', currentSpeakers);
-      console.log('- Prop speakers (original):', detectedSpeakers);
-      console.log('- Available speakers (final):', availableSpeakers);
-      console.log('- Existing mappings:', effectiveSpeakerMappings);
-      
       // If no speaker mappings exist, auto-generate default ones
       let mappingsToUse = effectiveSpeakerMappings;
       if (mappingsToUse.length === 0) {
@@ -150,25 +144,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             source: "AutoDetected" as const,
             email: ""
           }));
-          
-          console.log('✅ Auto-generated mappings:', mappingsToUse);
-          console.log('- Raw speaker IDs used:', availableSpeakers);
-          console.log('- Generated mapping details:', mappingsToUse.map(m => ({ 
-            speakerId: m.speakerId, 
-            name: m.name, 
-            transcriptionId: m.transcriptionId 
-          })));
         } else {
           console.error('❌ No speakers available for summary generation');
           showSnackbar("No speakers detected in the transcript. Cannot generate summary.", "error");
           return;
         }
-      } else {
-        console.log('✅ Using existing mappings:', mappingsToUse);
       }
 
-      console.log('🚀 Calling generateSummary with', mappingsToUse.length, 'speakers');
-      console.log('🎯 Mode being passed to generateSummary:', mode);
       await generateSummary(transcriptText, mappingsToUse, mode);
       
       // Call the callback if provided

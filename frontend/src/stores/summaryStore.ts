@@ -49,10 +49,6 @@ export const useSummaryStore = create<SummaryState>()(
           // Fallback to demo mode if not provided (safer default)
           const apiMode = mode || 'demo';
           
-          console.log('🔍 API Service Selection:');
-          console.log('- Provided mode:', mode);
-          console.log('- Final apiMode:', apiMode);
-          
           // Get the appropriate API service based on mode only
           const apiService = createApiService(apiMode);
           
@@ -67,12 +63,6 @@ export const useSummaryStore = create<SummaryState>()(
             Transcript: transcriptText, // S3.4: PascalCase for backend
             SpeakerMappings: cleanedMappings // S3.4: PascalCase for backend
           };
-
-          console.log('🔄 Sending meeting summary request:');
-          console.log('- Transcript length:', transcriptText.length);
-          console.log('- Original speaker mappings:', speakerMappings);
-          console.log('- Cleaned speaker mappings:', cleanedMappings);
-          console.log('- Full request:', request);
 
           const response = await apiService.generateMeetingSummary(request);
           

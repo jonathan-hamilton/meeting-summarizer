@@ -8,21 +8,14 @@ import type { AppMode } from '../contexts/AppModeContext';
  * Returns appropriate API service based on current mode
  */
 export const createApiService = (mode: AppMode) => {
-  console.log('🏭 API Service Factory Selection:');
-  console.log('- Mode:', mode);
-  
   switch (mode) {
     case 'demo':
-      console.log('- Selected: demoApiService (Demo mode - demo content)');
       return demoApiService;
     case 'development':
-      console.log('- Selected: mockApiService (Development mode - mock data)');
       return mockApiService;
     case 'production':
-      console.log('- Selected: realApiService (Production mode - real API calls)');
       return realApiService;
     default:
-      console.warn('- Unknown mode, defaulting to demoApiService');
       return demoApiService;
   }
 };
