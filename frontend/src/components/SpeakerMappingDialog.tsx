@@ -12,7 +12,6 @@ import {
   CircularProgress,
   Divider,
   Chip,
-  Paper,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -58,7 +57,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   onMappingsSaved,
 }) => {
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isCurrentStep, closeStep, setCurrentStep, triggerStepAction } = useTourStore();
+  const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction } = useTourStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);

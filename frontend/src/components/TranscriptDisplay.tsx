@@ -54,19 +54,13 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const storeDetectedSpeakers = storeSpeakerMappings.map(mapping => mapping.speakerId);
   const initializeSession = useSpeakerSessionStore(state => state.initializeSession);
   const reassignSegment = useSpeakerSessionStore(state => state.reassignSegment);
-  const resetToOriginal = useSpeakerSessionStore(state => state.resetToOriginal);
   
   // Use current segments from store (reflects reassignments), fallback to original transcription
   const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
-  const clearSession = useSpeakerSessionStore(state => state.clearSession);
   
   // Compatibility functions to match legacy interface
   const initializeSpeakers = (transcriptionId: string, _detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
     initializeSession(transcriptionId, transcription.speakerSegments || [], existingMappings);
-  };
-  
-  const clearSpeakers = () => {
-    clearSession();
   };
   
   const getAllMappings = () => {
@@ -81,7 +75,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep, registerDialogController, unregisterDialogController } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, registerDialogController, unregisterDialogController } = useTourStore();
 
   // Register dialog controller for tour backward navigation
   useEffect(() => {
@@ -204,65 +198,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     getAllMappings,
   ]); // Removed allDetectedSpeakers from dependencies to prevent re-initialization loops
 
-  // Memoize hasModifiedSpeakers calculation
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _hasModifiedSpeakers = useMemo(() => {
-    // Check for manually added speakers (more speakers than originally detected)
-    const originalSpeakerCount =
-      transcription.speakerCount || allDetectedSpeakers.length;
-    const currentSpeakerCount =
-      effectiveSpeakerMappings.length + detectedSpeakers.length;
-
-    if (currentSpeakerCount > originalSpeakerCount) {
-      return true;
-    }
-
-    // Check for edited/renamed speakers
-    const hasEditedSpeakers = effectiveSpeakerMappings.some(
-      (mapping) => mapping.source === "ManuallyAdded" || mapping.isOverridden
-    );
-
-    // Check for session overrides
-    const hasSessionOverrides = Object.keys(sessionOverrides).length > 0;
-
-    return hasEditedSpeakers || hasSessionOverrides;
-  }, [
-    transcription.speakerCount,
-    allDetectedSpeakers.length,
-    effectiveSpeakerMappings,
-    detectedSpeakers.length,
-    sessionOverrides,
-  ]);
-
-  // Memoize speaker reassignment detection
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _hasSpeakerReassignments = useMemo(() => {
-    // Check if any speaker segments have been changed from original
-    const originalSegments = transcription.speakerSegments || [];
-    const currentSegments = speakerSegments;
-    
-    // Compare current segments with original segments
-    const hasSegmentChanges = currentSegments.some((segment, index) => {
-      const originalSegment = originalSegments[index];
-      return originalSegment && segment.speaker !== originalSegment.speaker;
-    });
-
-    // Check for speaker mappings (name/role assignments)
-    const hasMappings = effectiveSpeakerMappings.some(
-      mapping => mapping.name && mapping.name.trim() !== ''
-    );
-
-    // Check for session overrides (dropdown reassignments)
-    const hasOverrides = Object.keys(sessionOverrides).length > 0;
-
-    return hasSegmentChanges || hasMappings || hasOverrides;
-  }, [
-    transcription.speakerSegments,
-    speakerSegments,
-    effectiveSpeakerMappings,
-    sessionOverrides,
-  ]);
-
   // Memoize transcript structure invalidation (for confidence score strikethrough)
   const isTranscriptStructureInvalidated = useMemo(() => {
     // Check if any speaker segments have been reassigned (structural change)
@@ -329,45 +264,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     },
     [reassignSegment]
   );
-
-  // Handle reverting all speakers to original auto-detected values
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleRevertAllSpeakers = useCallback(async () => {
-    try {
-      console.log('🔄 RESET: Starting reset process...');
-      console.log('🔄 RESET: allDetectedSpeakers:', allDetectedSpeakers);
-      console.log('🔄 RESET: original speakerSegments:', transcription.speakerSegments?.map(s => s.speaker));
-      
-      // Clear only speaker overrides (not entire session data)
-      sessionManager.clearSpeakerOverrides();
-      
-      // Clear all speaker mappings to revert to original auto-detected speakers
-      clearSpeakers();
-      console.log('🔄 RESET: Cleared speakers');
-      
-      // Re-initialize with original detected speakers (no mappings)
-      initializeSpeakers(transcription.transcriptionId, allDetectedSpeakers, []);
-      console.log('🔄 RESET: Re-initialized with speakers:', allDetectedSpeakers);
-      
-      // Reset segments to original using store action
-      resetToOriginal();
-      console.log('🔄 RESET: Reset speaker segments');
-      
-      // Force update to reflect changes
-      setForceUpdate((prev) => prev + 1);
-      
-      console.log('🔄 RESET: Reset complete');
-      
-    } catch (error) {
-      console.error('Failed to revert all speakers:', error);
-    }
-  }, [clearSpeakers, initializeSpeakers, resetToOriginal, transcription.transcriptionId, allDetectedSpeakers]);
-
-  // Handle deleting transcription - open confirmation dialog
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _handleDeleteTranscription = useCallback(() => {
-    setDeleteConfirmationOpen(true);
-  }, []);
 
   // Handle confirmed deletion - reset page to original state
   const handleConfirmDelete = useCallback(() => {

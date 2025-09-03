@@ -32,7 +32,6 @@ export const TourPopover: React.FC<TourPopoverProps> = ({
   totalSteps,
   position = { top: '20px', right: '20px' },
   maxWidth = '300px',
-  anchorOrigin = 'top-right',
   sx = {}
 }) => {
   const { nextStep, previousStep, getCurrentStepConfig, canAdvanceStep, stopTour, getTotalSteps } = useTourStore();
