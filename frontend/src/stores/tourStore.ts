@@ -112,7 +112,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 12,
     title: "Copy Summary",
-    description: "You can copy the Summary to your clipboard using this button to paste it elsewhere:",
+    description: "You can copy the Summary to your clipboard using this button to paste it elsewhere. Click 'NEXT'.",
     transitionType: 'acknowledgment',
     component: 'SummaryDisplay'
   },
@@ -127,7 +127,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 14,
     title: "Add Email Recipients",
-    description: "Click in this area to add email addresses for meeting participants. If you entered emails during Speaker mapping, you can select from those or type new ones.",
+    description: "Here you can add email addresses for meeting participants. If you entered emails during Speaker mapping, you can select from those or type new ones. Click 'ADD ALL PARTICIPANTS' to continue.",
     transitionType: 'user-action',
     triggerAction: 'add-email-recipient',
     component: 'EmailCompositionDialog'
@@ -135,14 +135,14 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 15,
     title: "Edit Email Content",
-    description: "Customize the email subject and add a personal message. The Meeting Summary will be included automatically.",
+    description: "Customize the email subject and add a personal message. The Meeting Summary will be included automatically. Click 'NEXT'.",
     transitionType: 'acknowledgment',
     component: 'EmailCompositionDialog'
   },
   {
     id: 16,
     title: "Preview Email",
-    description: "Preview how your email will look with the Meeting Summary and action items included before sending it to recipients.",
+    description: "Preview how your email will look with the Meeting Summary and action items included before sending it to recipients. Click 'PREVIEW' to continue",
     transitionType: 'user-action',
     triggerAction: 'preview-email',
     component: 'EmailCompositionDialog'
@@ -150,7 +150,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 17,
     title: "Send Email",
-    description: "Send the Meeting Summary and action items to all recipients. In demo mode, no actual emails are sent.",
+    description: "Send the Meeting Summary and Action Items to all recipients. In demo mode, no actual emails are sent. Click 'SEND EMAIL'.",
     transitionType: 'user-action',
     triggerAction: 'send-email',
     component: 'EmailCompositionDialog'
@@ -175,6 +175,9 @@ const handleStepScroll = (stepNumber: number) => {
   switch (stepNumber) {
     case 2:
       // Step 2: Scroll is handled by ref callback pattern in App.tsx
+      break;
+    case 10:
+      // Step 10: Scroll to AI-Powered Meeting Summary is handled by ref callback pattern in App.tsx
       break;
     // Add more cases here for other steps that need scroll behavior
     default:

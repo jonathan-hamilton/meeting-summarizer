@@ -31,6 +31,7 @@ interface SummaryDisplayProps {
   speakerMappings?: SpeakerMapping[];
   detectedSpeakers?: string[];
   onSummaryGenerated?: (summary: MeetingSummary) => void;
+  aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for Step 9->10 tour scroll
 }
 
 interface SnackbarState {
@@ -45,6 +46,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   speakerMappings,
   detectedSpeakers = [],
   onSummaryGenerated,
+  aiSummaryRef,
 }) => {
   // Get current speaker mappings from centralized store
   const speakerMappings_store = useSpeakerSessionStore(state => state.speakerMappings);
@@ -243,7 +245,15 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
           <Psychology color="primary" />
-          <Typography variant="h5" component="h3">
+          <Typography 
+            variant="h5" 
+            component="h3"
+            ref={(node) => {
+              if (aiSummaryRef) {
+                aiSummaryRef(node);
+              }
+            }}
+          >
             AI-Powered Meeting Summary
           </Typography>
         </Stack>
