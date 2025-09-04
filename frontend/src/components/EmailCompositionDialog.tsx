@@ -430,8 +430,6 @@ Best regards`;
             <TourPopover
               open={isDemo && isTourActive && isCurrentStep(13)}
               step={13}
-              title="Add Email Recipients"
-              description="Click 'ADD ALL PARTICIPANTS' to add all participants defined in the Speaker Mapping, or the individual emails (ex. 'speaker1@test.com') or click 'ADD' to manually add an email"
               onClose={() => closeStep(13)}
               position={{ top: '0px', left: '320px' }}
               maxWidth="350px"
@@ -557,8 +555,6 @@ Best regards`;
             <TourPopover
               open={isDemo && isTourActive && isCurrentStep(15)}
               step={15}
-              title="Preview Email"
-              description="Preview how your email will look with the meeting summary and action items included before sending it to recipients."
               onClose={() => closeStep(15)}
               position={{ top: '50px', left: '450px' }}
               maxWidth="350px"
@@ -568,8 +564,6 @@ Best regards`;
             <TourPopover
               open={isDemo && isTourActive && isCurrentStep(14)}
               step={14}
-              title="Edit Email Content"
-              description="Customize the email subject and add a personal message. The Meeting Summary and Action Items will be included automatically."
               onClose={() => closeStep(14)}
               position={{ top: '50px', left: '50px' }}
               maxWidth="350px"
@@ -616,8 +610,6 @@ Best regards`;
       <TourPopover
         open={isDemo && isTourActive && isCurrentStep(16)}
         step={16}
-        title="Send Email"
-        description="Send the meeting summary and action items to all recipients. In demo mode, no actual emails are sent."
         onClose={() => closeStep(16)}
         position={{ top: '620px', left: '600px' }}
         maxWidth="350px"

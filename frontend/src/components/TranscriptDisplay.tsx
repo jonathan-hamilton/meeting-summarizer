@@ -47,7 +47,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
     useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [step2ScrollExecuted, setStep2ScrollExecuted] = useState(false);
 
   // Centralized store state and actions
   const storeSpeakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
@@ -76,114 +75,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, isCurrentStep, registerDialogController, unregisterDialogController } = useTourStore();
-
-  // Step 2 scroll callback - memoized to prevent repeated execution
-  const handleStep2Scroll = useCallback((element: HTMLElement | null) => {
-    if (element && isDemo && isTourActive && isCurrentStep(2) && !step2ScrollExecuted) {
-      console.log('🔄 TranscriptDisplay mounted, executing Step 2 scroll');
-      setStep2ScrollExecuted(true); // Mark as executed to prevent repeats
-      
-      const rect = element.getBoundingClientRect();
-      const elementTop = rect.top + window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const targetScroll = elementTop - (viewportHeight * 0.3);
-      
-      console.log('🔄 Step 2 scroll calculation:', { 
-        elementTop, 
-        viewportHeight, 
-        targetScroll, 
-        currentScroll: window.scrollY 
-      });
-      
-      if (targetScroll > window.scrollY) {
-        const scrollAmount = targetScroll - window.scrollY;
-        console.log('🔄 Scrolling by:', scrollAmount, 'pixels');
-        window.scrollBy({
-          top: scrollAmount,
-          behavior: 'smooth'
-        });
-      } else {
-        console.log('🔄 Target scroll position is above current position, no scroll needed');
-      }
-    }
-  }, [isDemo, isTourActive, isCurrentStep, step2ScrollExecuted]);
-
-  // Register dialog controller for tour backward navigation
-  useEffect(() => {
-    const openSpeakerMapping = () => {
-      console.log('Tour: Opening SpeakerMappingDialog for backward navigation');
-      setSpeakerMappingDialogOpen(true);
-    };
-    
-    registerDialogController('openSpeakerMappingDialog', openSpeakerMapping);
-    
-    // Cleanup on unmount
-    return () => {
-      unregisterDialogController('openSpeakerMappingDialog');
-    };
-  }, [registerDialogController, unregisterDialogController]);
-
-  // Auto-scroll to make Step 2 visible when it becomes active and transcript is rendered
-  useEffect(() => {
-    if (isDemo && isTourActive && isCurrentStep(2) && speakerSegments.length > 0) {
-      console.log('🔄 TranscriptDisplay: Step 2 is active and transcript segments are rendered, scrolling...');
-      
-      // Use useCallback pattern - execute when component is actually ready
-      const performStep2Scroll = () => {
-        const beforeScroll = window.scrollY;
-        console.log('🔄 Executing Step 2 scroll from TranscriptDisplay, current scrollY:', beforeScroll);
-        
-        // Find the first transcript segment (we know it exists because speakerSegments.length > 0)
-        const targetElement = document.querySelector('#first-transcript-segment');
-        
-        if (targetElement) {
-          console.log('🔄 Found first transcript segment element');
-          
-          // Get the element's position
-          const rect = targetElement.getBoundingClientRect();
-          const elementTop = rect.top + window.scrollY;
-          const viewportHeight = window.innerHeight;
-          
-          // Calculate position to center the Step 2 dialog optimally
-          const targetScroll = elementTop - (viewportHeight * 0.3);
-          
-          console.log('🔄 Element position:', { 
-            elementTop, 
-            viewportHeight, 
-            targetScroll, 
-            currentScroll: window.scrollY 
-          });
-          
-          // Scroll to position that centers Step 2 dialog nicely
-          window.scrollTo({
-            top: Math.max(0, targetScroll), // Don't scroll above top of page
-            behavior: 'smooth'
-          });
-          
-          // Verify scroll after completion
-          setTimeout(() => {
-            const afterScroll = window.scrollY;
-            console.log('🔄 Step 2 scroll complete - before:', beforeScroll, 'after:', afterScroll, 'difference:', afterScroll - beforeScroll);
-          }, 1000);
-        } else {
-          console.log('🔄 First transcript segment not found, falling back to simple scroll');
-          // Fallback to simple scroll
-          window.scrollTo({
-            top: 200,
-            behavior: 'smooth'
-          });
-        }
-      };
-      
-      // Small delay to ensure DOM is fully updated after render
-      const timer = setTimeout(performStep2Scroll, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [isDemo, isTourActive, isCurrentStep, speakerSegments.length]); // Added speakerSegments.length as dependency
-
-  // No need for useEffect - tour advancement is now handled by triggerStepAction in FileUpload
-  // The tour will automatically advance when user clicks SELECT FILE
+  const { isActive: isTourActive, closeStep, isCurrentStep } = useTourStore();
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -595,7 +487,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         {speakerSegments && speakerSegments.length > 0 ? (
           <Box
             id="transcript-display"
-            ref={handleStep2Scroll}
           >
             <Stack
               direction="row"

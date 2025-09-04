@@ -300,8 +300,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         <TourPopover
           open={isDemo && isTourActive && isCurrentStep(9)}
           step={9}
-          title="Generate Summary"
-          description="Click 'GENERATE MEETING SUMMARY' to create a comprehensive summary with action items."
           onClose={() => closeStep(9)}
           position={{ top: '5px', right: '50px' }}
           maxWidth="300px"

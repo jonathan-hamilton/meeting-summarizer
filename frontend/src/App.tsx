@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Typography,
   Box,
@@ -22,6 +22,7 @@ import { useAppMode } from "./contexts/AppModeContext";
 import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
+import { useTourStore } from "./stores/tourStore";
 import { HealthDialog } from "./components/HealthDialog";
 import { SessionTimeoutWarningDialog } from "./components/SessionTimeoutWarningDialog";
 import { PrivacyPolicyDialog } from "./components/PrivacyPolicyDialog";
@@ -57,6 +58,7 @@ const AppContent: React.FC = () => {
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
   const { addTranscript } = useSessionStore();
+  const { isActive: isTourActive, isCurrentStep } = useTourStore();
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -97,6 +99,17 @@ const AppContent: React.FC = () => {
     // Also add to sessionStore for consistent session data tracking
     addTranscript(result);
   };
+
+  // Ref callback for Step 2 tour scroll - scrolls when element is mounted and tour is on Step 2
+  const transcriptionResultsRef = useCallback((node: HTMLElement | null) => {
+    if (node && appMode === 'demo' && isTourActive && isCurrentStep(2)) {
+      node.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      });
+    }
+  }, [appMode, isTourActive, isCurrentStep]);
 
   const checkServerHealth = async () => {
     try {
@@ -421,7 +434,11 @@ const AppContent: React.FC = () => {
 
               {transcriptionResults.length > 0 && (
                 <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                  <Box sx={{ width: "100%" }}>
+                  <Box 
+                    id="transcription-results" 
+                    ref={transcriptionResultsRef}
+                    sx={{ width: "100%" }}
+                  >
                     <Typography variant="h4" component="h2" gutterBottom>
                       Transcription Results
                     </Typography>

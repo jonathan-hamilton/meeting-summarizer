@@ -6,6 +6,7 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[September 4: Tour Configuration Centralization](technical-improvements/2025/09-04-tour-configuration-centralization.md)** - Architecture cleanup & maintainability
 - **[September 2: Tour System Enhancements](technical-improvements/2025/09-02-tour-system-enhancements.md)** - Dynamic navigation & state management
 - **[September 1: Action Items System](technical-improvements/2025/09-01-action-items-system.md)** - Comprehensive workflow implementation  
 - **[August 30: Demo Mode Foundation](technical-improvements/2025/08-30-demo-mode-foundation.md)** - Session architecture & UI framework
