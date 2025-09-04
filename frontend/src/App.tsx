@@ -111,6 +111,20 @@ const AppContent: React.FC = () => {
     }
   }, [appMode, isTourActive, isCurrentStep]);
 
+  // Ref callback for Step 10 & 11 tour scroll - scrolls to AI-Powered Meeting Summary
+  // Step 10: When user clicks GENERATE SUMMARY and step appears
+  // Step 11: When summary content loads and page becomes longer
+  const aiSummaryRef = useCallback((node: HTMLElement | null) => {
+    if (node && appMode === 'demo' && isTourActive && (isCurrentStep(10) || isCurrentStep(11))) {
+      // Scroll to show the AI-Powered Meeting Summary prominently at the top
+      node.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start',
+        inline: 'nearest'
+      });
+    }
+  }, [appMode, isTourActive, isCurrentStep]);
+
   const checkServerHealth = async () => {
     try {
       const response = await apiService.getHealth();
@@ -446,6 +460,7 @@ const AppContent: React.FC = () => {
                       <TranscriptDisplay
                         key={result.transcriptionId}
                         transcription={result}
+                        aiSummaryRef={aiSummaryRef}
                       />
                     ))}
                   </Box>

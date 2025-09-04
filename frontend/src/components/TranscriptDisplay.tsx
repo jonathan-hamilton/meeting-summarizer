@@ -35,12 +35,14 @@ interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
   loading?: boolean;
   speakerMappings?: SpeakerMapping[]; // Optional external speaker mappings
+  aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for Step 9->10 tour scroll
 }
 
 const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   transcription,
   loading = false,
   speakerMappings,
+  aiSummaryRef,
 }) => {
   const [copiedSegment, setCopiedSegment] = useState<string | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -593,6 +595,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               transcriptText={transcription.transcribedText || ""}
               speakerMappings={effectiveSpeakerMappings}
               detectedSpeakers={allDetectedSpeakers}
+              aiSummaryRef={aiSummaryRef}
             />
           </Box>
         )}
