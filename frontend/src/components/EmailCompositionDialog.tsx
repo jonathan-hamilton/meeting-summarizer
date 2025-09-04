@@ -355,9 +355,9 @@ Best regards`;
 
   // Handle dialog close
   const handleClose = () => {
-    // If we're in demo mode and tour is active, advance to Step 17 when dialog closes
+    // If we're in demo mode and tour is active, advance to Step 18 when dialog closes
     if (isDemo && isTourActive) {
-      setCurrentStep(16);
+      setCurrentStep(18);
     }
     onClose();
   };
@@ -426,11 +426,11 @@ Best regards`;
               Recipients
             </Typography>
             
-            {/* Step 13 Tour Popover - Add Email Recipients */}
+            {/* Step 14 Tour Popover - Add Email Recipients */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(13)}
-              step={13}
-              onClose={() => closeStep(13)}
+              open={isDemo && isTourActive && isCurrentStep(14)}
+              step={14}
+              onClose={() => closeStep(14)}
               position={{ top: '0px', left: '320px' }}
               maxWidth="350px"
             />
@@ -551,20 +551,20 @@ Best regards`;
               </Stack>
             </Stack>
 
-            {/* Step 15 Tour Popover - Preview Email */}
+            {/* Step 16 Tour Popover - Preview Email */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(15)}
-              step={15}
-              onClose={() => closeStep(15)}
+              open={isDemo && isTourActive && isCurrentStep(16)}
+              step={16}
+              onClose={() => closeStep(16)}
               position={{ top: '50px', left: '450px' }}
               maxWidth="350px"
             />
 
-            {/* Step 14 Tour Popover - Edit Email Content */}
+            {/* Step 15 Tour Popover - Edit Email Content */}
             <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(14)}
-              step={14}
-              onClose={() => closeStep(14)}
+              open={isDemo && isTourActive && isCurrentStep(15)}
+              step={15}
+              onClose={() => closeStep(15)}
               position={{ top: '50px', left: '50px' }}
               maxWidth="350px"
             />
@@ -606,11 +606,11 @@ Best regards`;
         </Button>
       </DialogActions>
 
-      {/* Step 16 Tour Popover - Send Email */}
+      {/* Step 17 Tour Popover - Send Email */}
       <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(16)}
-        step={16}
-        onClose={() => closeStep(16)}
+        open={isDemo && isTourActive && isCurrentStep(17)}
+        step={17}
+        onClose={() => closeStep(17)}
         position={{ top: '620px', left: '600px' }}
         maxWidth="350px"
       />

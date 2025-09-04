@@ -239,7 +239,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   };
 
   return (
-    <Card sx={{ width: "100%", position: "relative" }}>
+    <Card sx={{ width: "100%", position: "relative", overflow: "visible" }}>
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
           <Psychology color="primary" />
@@ -296,13 +296,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           </Alert>
         )}
 
-        {/* Step 9 Tour Popover - Generate Summary */}
+        {/* Step 10 Tour Popover - Generate Summary */}
         <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(9)}
-          step={9}
-          onClose={() => closeStep(9)}
-          position={{ top: '5px', right: '50px' }}
+          open={isDemo && isTourActive && isCurrentStep(10)}
+          step={10}
+          onClose={() => closeStep(10)}
+          position={{ top: '-40px', right: '50px' }}
           maxWidth="300px"
+          sx={{ zIndex: 10000 }}
         />
 
         {/* Summary Content */}
@@ -385,13 +386,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         speakers={availableSpeakers}
       />
 
-      {/* Step 17 Tour Popover - Tour Completion */}
+      {/* Step 18 Tour Popover - Tour Completion */}
       <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(17)}
-        step={17}
-        title="Tour Completion"
-        description="Congratulations! You've completed the demo tour. Sign up to start processing your own meeting recordings."
-        onClose={() => closeStep(17)}
+        open={isDemo && isTourActive && isCurrentStep(18)}
+        step={18}
+        onClose={() => closeStep(18)}
         position={{ top: '325px', left: '375px' }}
         maxWidth="400px"
       />
