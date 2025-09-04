@@ -35,21 +35,21 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 2,
     title: "Transcription Complete",
-    description: "Your audio has been transcribed. Review the details below.",
+    description: "Excellent! Review the transcript statistics shown in the chips above: file size, processing time, duration, speaker count, confidence score, and detected language. Click 'NEXT' to continue.",
     transitionType: 'acknowledgment',
     component: 'TranscriptDisplay'
   },
   {
     id: 3,
-    title: "Manage Speaker Names",
-    description: "Customize speaker names to make your transcript more readable.",
+    title: "MANAGE SPEAKERS",
+    description: "Click 'MANAGE SPEAKERS' to create/edit/delete Speakers. You can optionally assign Name/Role/Email",
     transitionType: 'user-action',
     triggerAction: 'manage-names',
     component: 'TranscriptDisplay'
   },
   {
     id: 4,
-    title: "(Optional) Add Speaker",
+    title: "Add Speaker",
     description: "Click 'ADD SPEAKER' to add additional speakers if someone was missed during automatic detection. ⚠️ Adding speakers will break the AI confidence score calculation",
     transitionType: 'user-action',
     triggerAction: 'add-speaker',
@@ -165,12 +165,9 @@ interface DialogControllers {
 
 // Helper function for step-specific scroll behavior
 const handleStepScroll = (stepNumber: number) => {
-  console.log('🔄 handleStepScroll called with step:', stepNumber);
   switch (stepNumber) {
     case 2:
-      console.log('🔄 Step 2 detected - scroll will be handled by TranscriptDisplay component');
-      // Step 2: Scroll is now handled by the TranscriptDisplay component
-      // when it detects tour step 2 is active and component is fully rendered
+      // Step 2: Scroll is handled by ref callback pattern in App.tsx
       break;
     // Add more cases here for other steps that need scroll behavior
     default:

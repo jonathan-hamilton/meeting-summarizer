@@ -686,10 +686,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             <TourPopover
               open={isDemo && isTourActive && isCurrentStep(4)}
               step={4}
-              title="(Optional) Add Speaker"
-              description="Click 'ADD SPEAKER' to add additional speakers if someone was missed during automatic detection.
-
-⚠️ Adding speakers will break the AI confidence score calculation"
               onClose={() => closeStep(4)}
               position={{ top: '100px', left: '50px' }}
               maxWidth="300px"
@@ -729,10 +725,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             <TourPopover
               open={isDemo && isTourActive && isCurrentStep(6)}
               step={6}
-              title="(Optional) Edit/Delete Speaker"
-              description="Click the pencil icon to edit speaker details or the trash icon to delete speakers that were incorrectly detected.
-
-⚠️ Deleting speakers will break the AI confidence score calculation"
               onClose={() => closeStep(6)}
               position={{ top: '50px', right: '0px' }}
               maxWidth="300px"
@@ -797,8 +789,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           <TourPopover
             open={isDemo && isTourActive && isCurrentStep(8)}
             step={8}
-            title="SAVE MAPPINGS"
-            description="Once you've finished editing speakers, click 'SAVE MAPPINGS' to apply all changes."
             onClose={() => closeStep(8)}
             position={{ top: '600px', right: '10px' }}
             maxWidth="300px"

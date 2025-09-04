@@ -70,8 +70,6 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         <TourPopover
           open={isDemo && isTourActive && isCurrentStep(12)}
           step={12}
-          title="Share Summary via Email"
-          description="Click 'SHARE' to send the meeting summary and action items via email to participants."
           onClose={() => onCloseStep(12)}
           position={{ top: '50px', right: '190px' }}
           maxWidth="300px"
@@ -90,8 +88,6 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         <TourPopover
           open={isDemo && isTourActive && isCurrentStep(11)}
           step={11}
-          title="(Optional) Copy Summary"
-          description="You can copy the summary to your clipboard using this button to paste it elsewhere."
           onClose={() => onCloseStep(11)}
           position={{ top: '150px', right: '10px' }}
           maxWidth="300px"

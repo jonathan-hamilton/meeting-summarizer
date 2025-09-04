@@ -332,7 +332,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           startIcon={<EditIcon />}
           onClick={handleOpenDialog}
         >
-          Manage Names
+          MANAGE SPEAKERS
         </Button>
       </Box>
     ),

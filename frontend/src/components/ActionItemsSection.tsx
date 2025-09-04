@@ -241,8 +241,6 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
       <TourPopover
         open={isDemo && isTourActive && isCurrentStep(10)}
         step={10}
-        title="Add/Edit/Delete Action Items"
-        description="Click the ▼ to expand the Action Items. You can add, edit, delete, and drag action items between speakers."
         onClose={() => onCloseStep(10)}
         position={{ top: '310px', left: '575px' }}
         maxWidth="400px"

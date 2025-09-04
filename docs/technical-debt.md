@@ -2,6 +2,33 @@
 
 ## Current Technical Debt
 
+### Hardcoded Tour Content Distribution ✅ RESOLVED
+
+**Date Identified**: September 4, 2025  
+**Date Resolved**: September 4, 2025  
+**Sprint**: S5.1 User Mode Selection & Demo Content (Tour System)  
+**Resolution Duration**: Same day
+
+**Problem Resolved**: 
+Tour step titles and descriptions were scattered across multiple components as hardcoded props, making content updates require changes to 8+ files and risking inconsistencies.
+
+**Solution Implemented**:
+- ✅ **Centralized Configuration**: All tour content moved to tourStore.ts TOUR_STEPS array
+- ✅ **Component Cleanup**: Removed hardcoded title/description props from all TourPopover instances
+- ✅ **Single Source of Truth**: Store configuration now authoritative for all tour content
+- ✅ **Maintainability**: Tour content updates require editing only one file
+- ✅ **Consistency**: Eliminated possibility of components showing different content for same step
+
+**Components Cleaned** (8 files):
+- FileUpload.tsx, SpeakerMappingDialog.tsx, SpeakerMappingField.tsx
+- SummaryDisplay.tsx, ActionItemsSection.tsx, SummaryHeader.tsx, EmailCompositionDialog.tsx
+
+**Impact Resolved**:
+- **Maintenance**: Content updates reduced from 8+ files to 1 file
+- **Consistency**: Guaranteed content alignment across all tour components
+- **Code Quality**: Cleaner component interfaces, eliminated prop duplication
+- **Foundation**: Enables easier tour content iteration and localization
+
 ### S5.2 Action Items Frontend Integration ✅ RESOLVED
 
 **Date Identified**: September 1, 2025  
