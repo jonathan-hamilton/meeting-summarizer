@@ -66,11 +66,11 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           </Button>
         </Tooltip>
 
-        {/* Step 12 Tour Popover - Share via Email */}
+        {/* Step 13 Tour Popover - Share via Email */}
         <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(12)}
-          step={12}
-          onClose={() => onCloseStep(12)}
+          open={isDemo && isTourActive && isCurrentStep(13)}
+          step={13}
+          onClose={() => onCloseStep(13)}
           position={{ top: '50px', right: '190px' }}
           maxWidth="300px"
         />
@@ -84,11 +84,11 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           </IconButton>
         </Tooltip>
 
-        {/* Step 11 Tour Popover - Copy Summary */}
+        {/* Step 12 Tour Popover - Copy Summary */}
         <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(11)}
-          step={11}
-          onClose={() => onCloseStep(11)}
+          open={isDemo && isTourActive && isCurrentStep(12)}
+          step={12}
+          onClose={() => onCloseStep(12)}
           position={{ top: '150px', right: '10px' }}
           maxWidth="300px"
         />

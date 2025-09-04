@@ -510,7 +510,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             </Stack>
 
             {/* Speaker segments */}
-            <Box sx={{ maxHeight: "400px", overflowY: "auto" }}>
+            <Box sx={{ maxHeight: "400px", overflowY: "auto", position: "relative" }}>
+              {/* Step 9 Tour Popover - Reassign Speaker Transcript Segments */}
+              <TourPopover
+                open={isDemo && isTourActive && isCurrentStep(9)}
+                step={9}
+                onClose={() => closeStep(9)}
+                position={{ top: '20px', right: '70px' }}
+                maxWidth="350px"
+              />
+              
               {speakerSegments.map((segment, index) => (
                 <Box 
                   key={`${index}-${forceUpdate}`} 

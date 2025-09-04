@@ -237,11 +237,11 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
         </Button>
       </Box>
       
-      {/* Step 10 Tour Popover - Expand Action Items */}
+      {/* Step 11 Tour Popover - Expand Action Items */}
       <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(10)}
-        step={10}
-        onClose={() => onCloseStep(10)}
+        open={isDemo && isTourActive && isCurrentStep(11)}
+        step={11}
+        onClose={() => onCloseStep(11)}
         position={{ top: '310px', left: '575px' }}
         maxWidth="400px"
       />

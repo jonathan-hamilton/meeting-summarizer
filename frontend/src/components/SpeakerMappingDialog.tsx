@@ -710,8 +710,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             <TourPopover
               open={isDemo && isTourActive && isCurrentStep(5)}
               step={5}
-              title="Speaker Added Successfully"
-              description="Great! Manually added Speaker 5 has been added to the list. Notice the new colored chip in the auto-detected speakers section above."
               onClose={() => closeStep(5)}
               position={{ top: '-10px', left: '275px' }}
               maxWidth="300px"
