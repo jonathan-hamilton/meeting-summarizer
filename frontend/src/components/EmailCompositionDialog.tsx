@@ -59,7 +59,7 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   const { mode, isDemo } = useAppMode();
   
   // Tour state management
-  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, setCurrentStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction } = useTourStore();
   
   // Email composition state
   const [subject, setSubject] = useState('');
@@ -355,10 +355,6 @@ Best regards`;
 
   // Handle dialog close
   const handleClose = () => {
-    // If we're in demo mode and tour is active, advance to Step 18 when dialog closes
-    if (isDemo && isTourActive) {
-      setCurrentStep(18);
-    }
     onClose();
   };
 

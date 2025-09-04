@@ -27,7 +27,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 1,
     title: "Upload Your Audio",
-    description: "Start by selecting an audio file to transcribe.",
+    description: "Click 'SELECT FILE' to select a mock audio file to transcribe.",
     transitionType: 'user-action',
     triggerAction: 'file-select',
     component: 'FileUpload'
@@ -164,12 +164,6 @@ export const TOUR_STEPS: TourStepConfig[] = [
   }
 ];
 
-// Dialog control callbacks for tour navigation
-interface DialogControllers {
-  openSpeakerMappingDialog?: () => void;
-  openEmailCompositionDialog?: () => void;
-}
-
 // Helper function for step-specific scroll behavior
 const handleStepScroll = (stepNumber: number) => {
   switch (stepNumber) {
@@ -194,28 +188,20 @@ interface TourState {
   // Closed steps tracking
   closedSteps: Set<number>;
   
+  // Completed steps tracking - for enabling NEXT button on user-action steps
+  completedSteps: Set<number>;
+  
   // Step configurations
   steps: TourStepConfig[];
-  
-  // Dialog controllers for backward navigation
-  dialogControllers: DialogControllers;
   
   // Actions
   startTour: () => void;
   stopTour: () => void;
-  setCurrentStep: (step: number) => void;
   nextStep: () => void;
-  previousStep: () => void;
   closeStep: (stepNumber: number) => void;
   reopenStep: (stepNumber: number) => void;
   resetTour: () => void;
-  
-  // Dialog management for tour navigation
-  registerDialogController: (dialogType: keyof DialogControllers, controller: () => void) => void;
-  unregisterDialogController: (dialogType: keyof DialogControllers) => void;
-  
-  // Navigation utilities
-  jumpToStep: (step: number) => void;
+  restartTour: () => void;
   
   // New event-driven actions
   triggerStepAction: (action: string) => void;
@@ -231,14 +217,15 @@ export const useTourStore = create<TourState>()(
       isActive: false,
       currentStep: 0,
       closedSteps: new Set<number>(),
+      completedSteps: new Set<number>(),
       steps: TOUR_STEPS,
-      dialogControllers: {},
       
       startTour: () => {
         set({ 
           isActive: true, 
           currentStep: 1, 
-          closedSteps: new Set<number>() 
+          closedSteps: new Set<number>(),
+          completedSteps: new Set<number>()
         });
       },
       
@@ -247,35 +234,6 @@ export const useTourStore = create<TourState>()(
           isActive: false, 
           currentStep: 0 
         });
-      },
-      
-      setCurrentStep: (step: number) => {
-        const state = get();
-        if (state.isActive) {
-          // When manually setting a step, we need to handle dialog opening
-          const targetStepConfig = state.steps.find(s => s.id === step);
-          
-          // Open the required dialog if the step requires it
-          if (targetStepConfig) {
-            if (targetStepConfig.component === 'SpeakerMappingDialog' && state.dialogControllers.openSpeakerMappingDialog) {
-              state.dialogControllers.openSpeakerMappingDialog();
-            } else if (targetStepConfig.component === 'EmailCompositionDialog' && state.dialogControllers.openEmailCompositionDialog) {
-              state.dialogControllers.openEmailCompositionDialog();
-            }
-          }
-          
-          // Remove the target step from closed steps to ensure it shows
-          const newClosedSteps = new Set(state.closedSteps);
-          newClosedSteps.delete(step);
-          
-          // Handle step-specific scroll behavior
-          handleStepScroll(step);
-          
-          set({ 
-            currentStep: step,
-            closedSteps: newClosedSteps
-          });
-        }
       },
       
       nextStep: () => {
@@ -292,35 +250,6 @@ export const useTourStore = create<TourState>()(
           
           set({ 
             currentStep: newCurrentStep,
-            closedSteps: newClosedSteps
-          });
-        }
-      },
-      
-      previousStep: () => {
-        const state = get();
-        if (state.isActive && state.currentStep > 1) {
-          // Close current step and go back
-          const newClosedSteps = new Set(state.closedSteps);
-          newClosedSteps.add(state.currentStep);
-          const previousStepNumber = state.currentStep - 1;
-          // Reopen the previous step
-          newClosedSteps.delete(previousStepNumber);
-          
-          // Get the step configuration for the target step
-          const targetStepConfig = state.steps.find(step => step.id === previousStepNumber);
-          
-          // Open the required dialog if the step requires it
-          if (targetStepConfig) {
-            if (targetStepConfig.component === 'SpeakerMappingDialog' && state.dialogControllers.openSpeakerMappingDialog) {
-              state.dialogControllers.openSpeakerMappingDialog();
-            } else if (targetStepConfig.component === 'EmailCompositionDialog' && state.dialogControllers.openEmailCompositionDialog) {
-              state.dialogControllers.openEmailCompositionDialog();
-            }
-          }
-          
-          set({ 
-            currentStep: previousStepNumber,
             closedSteps: newClosedSteps
           });
         }
@@ -345,35 +274,13 @@ export const useTourStore = create<TourState>()(
           isActive: false,
           currentStep: 0,
           closedSteps: new Set<number>(),
-          dialogControllers: {}
+          completedSteps: new Set<number>()
         });
       },
       
-      // Dialog management methods
-      registerDialogController: (dialogType: keyof DialogControllers, controller: () => void) => {
-        const state = get();
-        set({
-          dialogControllers: {
-            ...state.dialogControllers,
-            [dialogType]: controller
-          }
-        });
-      },
-      
-      unregisterDialogController: (dialogType: keyof DialogControllers) => {
-        const state = get();
-        const newControllers = { ...state.dialogControllers };
-        delete newControllers[dialogType];
-        set({ dialogControllers: newControllers });
-      },
-      
-      // Navigation utility method
-      jumpToStep: (step: number) => {
-        const state = get();
-        if (state.isActive && step >= 1 && step <= state.steps.length) {
-          // Use setCurrentStep which handles dialog opening
-          state.setCurrentStep(step);
-        }
+      restartTour: () => {
+        // Refresh the page to restart the tour completely
+        window.location.reload();
       },
       
       // New event-driven methods
@@ -385,8 +292,13 @@ export const useTourStore = create<TourState>()(
             currentStepConfig.transitionType === 'user-action' && 
             currentStepConfig.triggerAction === action) {
           
-          // Directly advance the step without checking canAdvanceStep
-          // since this is triggered by the required user action
+          // Mark the current step as completed (enables NEXT button for backward navigation)
+          const newCompletedSteps = new Set(state.completedSteps);
+          newCompletedSteps.add(state.currentStep);
+          
+          console.log(`Tour: Step ${state.currentStep} completed with action '${action}' - auto-advancing`);
+          
+          // ALWAYS auto-advance (restore original behavior)
           const newClosedSteps = new Set(state.closedSteps);
           newClosedSteps.add(state.currentStep);  // Close current step
           const newCurrentStep = state.currentStep + 1;
@@ -396,7 +308,8 @@ export const useTourStore = create<TourState>()(
           
           set({ 
             currentStep: newCurrentStep,
-            closedSteps: newClosedSteps
+            closedSteps: newClosedSteps,
+            completedSteps: newCompletedSteps
           });
         }
       },
@@ -412,8 +325,17 @@ export const useTourStore = create<TourState>()(
         
         if (!currentStepConfig) return false;
         
-        // For acknowledgment steps, Next button should be enabled
-        return currentStepConfig.transitionType === 'acknowledgment';
+        // For acknowledgment steps, Next button should always be enabled
+        if (currentStepConfig.transitionType === 'acknowledgment') {
+          return true;
+        }
+        
+        // For user-action steps, enable Next button if the step has been completed
+        if (currentStepConfig.transitionType === 'user-action') {
+          return state.completedSteps.has(state.currentStep);
+        }
+        
+        return false;
       },
       
       isCurrentStep: (stepNumber: number) => {
