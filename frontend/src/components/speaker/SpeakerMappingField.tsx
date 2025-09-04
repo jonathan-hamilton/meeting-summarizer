@@ -57,6 +57,10 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
   onRemove,
 }) => {
   const { triggerStepAction, isCurrentStep, isActive: isTourActive, closeStep } = useTourStore();
+  
+  // Check if Step 7 has been completed (indicating possible backward navigation)
+  const tourState = useTourStore();
+  const isStep7Completed = tourState.completedSteps?.has(7) || false;
   const { isDemo } = useAppMode();
   
   const nameError = validationErrors?.find((err) => err.field === "name");
@@ -234,9 +238,9 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
         />
       </Box>
       
-      {/* Step 7 Tour Popover - Save Row */}
+      {/* Step 7 Tour Popover - Save Row - Show on first speaker row when navigating backwards */}
       <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(7) && isEditing}
+        open={isDemo && isTourActive && isCurrentStep(7) && (isEditing || (isStep7Completed && index === 0))}
         step={7}
         onClose={() => closeStep(7)}
         position={{ bottom: '-260px', right: '10px' }}

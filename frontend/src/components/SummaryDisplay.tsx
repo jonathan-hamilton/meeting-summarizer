@@ -70,28 +70,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const { mode, isDemo } = useAppMode();
 
   // Tour store for managing tour state and closed steps
-  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, registerDialogController, unregisterDialogController } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction } = useTourStore();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
     clearSummary();
   }, [transcriptionId, clearSummary]);
 
-  // Register email dialog controller for tour backward navigation
-  useEffect(() => {
-    const openEmailComposition = () => {
-      console.log('Tour: Opening EmailCompositionDialog for backward navigation');
-      setEmailDialogOpen(true);
-    };
-    
-    registerDialogController('openEmailCompositionDialog', openEmailComposition);
-    
-    // Cleanup on unmount
-    return () => {
-      unregisterDialogController('openEmailCompositionDialog');
-    };
-  }, [registerDialogController, unregisterDialogController]);
-  
   // Use store mappings if available, otherwise fall back to props
   const effectiveSpeakerMappings = useMemo(() => {
     return speakerMappings_store.length > 0 ? speakerMappings_store : (speakerMappings || []);

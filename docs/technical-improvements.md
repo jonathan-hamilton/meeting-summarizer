@@ -6,6 +6,7 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[September 4: Tour Architecture Simplification](technical-improvements/2025/09-04-tour-architecture-simplification.md)** - Backward navigation removal & "Restart Tour" implementation
 - **[September 4: Tour Scroll Behavior Enhancements](technical-improvements/2025/09-04-tour-scroll-behavior-enhancements.md)** - AI Summary scroll optimization & step descriptions
 - **[September 4: Tour Configuration Centralization](technical-improvements/2025/09-04-tour-configuration-centralization.md)** - Architecture cleanup & maintainability
 - **[September 2: Tour System Enhancements](technical-improvements/2025/09-02-tour-system-enhancements.md)** - Dynamic navigation & state management

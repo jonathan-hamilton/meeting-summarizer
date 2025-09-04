@@ -390,7 +390,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           open={isDemo && isTourActive && isCurrentStep(1)}
           step={1}
           onClose={() => closeStep(1)}
-          position={{ top: '17px', right: '55px' }}
+          position={{ top: '-3px', right: '55px' }}
         />
       </Paper>
 
