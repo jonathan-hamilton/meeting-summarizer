@@ -56,19 +56,23 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         
         {/* Action Buttons */}
         <Tooltip title="Share via email">
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<Email />}
-            onClick={() => {
-              onShareClick();
-              triggerStepAction('open-email-dialog');
-            }}
-            sx={{ mr: 1 }}
-            disabled={isActionDisabledDuringTour('share-summary')}
-          >
-            Share
-          </Button>
+          <span>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<Email />}
+              onClick={() => {
+                onShareClick();
+                triggerStepAction('open-email-dialog');
+              }}
+              sx={{ mr: 1 }}
+              disabled={isActionDisabledDuringTour('share-summary')}
+              aria-label="Share summary via email"
+              aria-describedby="share-email-tooltip"
+            >
+              Share
+            </Button>
+          </span>
         </Tooltip>
 
         {/* Step 13 Tour Popover - Share via Email */}
@@ -81,13 +85,17 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         />
 
         <Tooltip title="Copy full summary">
-          <IconButton
-            onClick={onCopyClick}
-            size="small"
-            disabled={isActionDisabledDuringTour('copy-summary')}
-          >
-            <ContentCopy />
-          </IconButton>
+          <span>
+            <IconButton
+              onClick={onCopyClick}
+              size="small"
+              disabled={isActionDisabledDuringTour('copy-summary')}
+              aria-label="Copy full summary text"
+              aria-describedby="copy-summary-tooltip"
+            >
+              <ContentCopy />
+            </IconButton>
+          </span>
         </Tooltip>
 
         {/* Step 12 Tour Popover - Copy Summary */}

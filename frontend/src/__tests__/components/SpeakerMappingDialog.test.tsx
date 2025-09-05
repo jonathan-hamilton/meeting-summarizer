@@ -180,6 +180,15 @@ describe("SpeakerMappingDialog - S3.0 Increment 4 Integration Testing", () => {
     resetToOriginal: vi.fn(),
     clearSession: vi.fn(),
     
+    // Legacy method aliases for test compatibility
+    addSpeaker: vi.fn(),
+    updateSpeaker: vi.fn(), 
+    deleteSpeaker: vi.fn(),
+    getAllMappings: vi.fn(() => []),
+    getSpeakerMapping: vi.fn(),
+    initializeSpeakers: vi.fn(),
+    clearSpeakers: vi.fn(),
+    
     // Selectors
     getActiveSpeakers: vi.fn(() => ["Speaker 1", "Speaker 2"]),
     getSpeakerStats: vi.fn(() => ({ totalCount: 2, mappedCount: 0, isFullyMapped: false })),

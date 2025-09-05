@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Box, Button, Typography, Chip } from "@mui/material";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import { Box, Button, Typography, Chip, Skeleton } from "@mui/material";
 import {
   Person as PersonIcon,
   Edit as EditIcon,
@@ -7,7 +7,10 @@ import {
   PersonAdd as PersonAddIcon,
   EditNote as EditNoteIcon,
 } from "@mui/icons-material";
-import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
+
+// Lazy load SpeakerMappingDialog to reduce bundle size
+const SpeakerMappingDialog = React.lazy(() => import("./SpeakerMappingDialog").then(m => ({ default: m.SpeakerMappingDialog })));
+
 import { TourPopover } from "./TourPopover";
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import {
@@ -27,7 +30,7 @@ interface SpeakerMappingProps {
 
 export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   transcriptionId,
-  detectedSpeakers: _, // Keep interface compatibility but don't use
+  detectedSpeakers: _detectedSpeakers, // Keep interface compatibility but don't use
   onMappingsChanged,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -136,7 +139,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
     // Get unmapped speakers - speakers without custom names (either no mapping or name equals speaker ID)
     const unmappedSpeakers = uniqueSpeakers.filter((speakerId) => {
-      const mapping = effectiveData.mappings.find((m: any) => m.speakerId === speakerId);
+      const mapping = effectiveData.mappings.find((m: SpeakerMapping) => m.speakerId === speakerId);
       // Consider unmapped if: no mapping, no name, empty name, or name equals speaker ID (default)
       return !mapping || !mapping.name || mapping.name.trim() === "" || mapping.name === speakerId;
     });
@@ -320,6 +323,15 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         startIcon={<EditIcon />}
         onClick={handleOpenDialog}
         disabled={isActionDisabledDuringTour('manage-speakers')}
+        aria-label="Open speaker management dialog"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!isActionDisabledDuringTour('manage-speakers')) {
+              handleOpenDialog();
+            }
+          }
+        }}
       >
         MANAGE SPEAKERS
       </Button>
@@ -398,14 +410,16 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       {unmappedSpeakersSection}
       {emptyState}
 
-      <SpeakerMappingDialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        transcriptionId={transcriptionId}
-        detectedSpeakers={effectiveData.speakers}
-        existingMappings={effectiveData.mappings}
-        onMappingsSaved={handleMappingsSaved}
-      />
+      <Suspense fallback={<Skeleton variant="rectangular" height={400} />}>
+        <SpeakerMappingDialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          transcriptionId={transcriptionId}
+          detectedSpeakers={effectiveData.speakers}
+          existingMappings={effectiveData.mappings}
+          onMappingsSaved={handleMappingsSaved}
+        />
+      </Suspense>
     </Box>
   );
 };

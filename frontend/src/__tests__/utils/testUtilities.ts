@@ -3,8 +3,6 @@
  * Provides utilities for Zustand store testing and session management testing
  */
 
-import { act } from '@testing-library/react';
-import { vi } from 'vitest';
 import type { SpeakerMapping, SpeakerSource } from '../../types';
 
 /**

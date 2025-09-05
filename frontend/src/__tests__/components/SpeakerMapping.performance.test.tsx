@@ -90,31 +90,35 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
 
   describe("Memoization Effectiveness Tests", () => {
     it("should memoize effective data and prevent unnecessary recalculations", () => {
-      const initializeSpeakersMock = vi.fn();
-      mockUseSpeakerStore.mockReturnValue({
+      const initializeSessionMock = vi.fn();
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: mockSpeakerMappings,
-        detectedSpeakers: defaultProps.detectedSpeakers,
-        initializeSpeakers: initializeSpeakersMock,
-        addSpeaker: vi.fn(),
-        updateSpeaker: vi.fn(),
-        deleteSpeaker: vi.fn(),
+        transcriptionId: "test-id",
+        originalSegments: [],
+        currentSegments: [],
+        _computedCache: null,
+        initializeSession: initializeSessionMock,
+        reassignSegment: vi.fn(),
+        updateSpeakerMapping: vi.fn(),
+        addSpeakerMapping: vi.fn(),
+        deleteSpeakerMapping: vi.fn(),
       });
 
       const { rerender } = render(
         <SpeakerMappingComponent {...defaultProps} />
       );
 
-      expect(initializeSpeakersMock).toHaveBeenCalledTimes(1);
+      expect(initializeSessionMock).toHaveBeenCalledTimes(1);
 
       // Rerender with same props - should not trigger re-initialization
       rerender(<SpeakerMappingComponent {...defaultProps} />);
-      expect(initializeSpeakersMock).toHaveBeenCalledTimes(1);
+      expect(initializeSessionMock).toHaveBeenCalledTimes(1);
 
       // Rerender with different transcriptionId - should trigger re-initialization
       rerender(
         <SpeakerMappingComponent {...defaultProps} transcriptionId="new-id" />
       );
-      expect(initializeSpeakersMock).toHaveBeenCalledTimes(2);
+      expect(initializeSessionMock).toHaveBeenCalledTimes(2);
     });
 
     it.skip("should cache session overrides to prevent expensive calls on every render", () => {
@@ -237,7 +241,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
   describe("Performance Under Prop Changes", () => {
     it("should handle detected speakers changes efficiently", () => {
       const initializeSpeakersMock = vi.fn();
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: [],
         detectedSpeakers: [],
         initializeSpeakers: initializeSpeakersMock,
@@ -297,7 +301,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
         },
       ];
 
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: updatedMappings,
         detectedSpeakers: defaultProps.detectedSpeakers,
         initializeSpeakers: vi.fn(),
@@ -343,7 +347,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
 
     it.skip("should handle mixed traditional mappings and session overrides efficiently", async () => {
       // Mix of traditional mappings and session overrides
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: [mockSpeakerMappings[0]], // Only John Doe
         detectedSpeakers: defaultProps.detectedSpeakers,
         initializeSpeakers: vi.fn(),
@@ -380,7 +384,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
 
   describe("Edge Cases and Performance Stability", () => {
     it("should handle empty state efficiently", () => {
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: [],
         detectedSpeakers: [],
         initializeSpeakers: vi.fn(),
@@ -413,7 +417,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
           source: "AutoDetected" as const,
         }));
 
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: largeMappingList,
         detectedSpeakers: largeSpeakerList,
         initializeSpeakers: vi.fn(),
@@ -438,7 +442,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
 
     it("should maintain performance with rapid prop changes", () => {
       const initializeMock = vi.fn();
-      mockUseSpeakerStore.mockReturnValue({
+      mockUseSpeakerSessionStore.mockReturnValue({
         speakerMappings: [],
         detectedSpeakers: [],
         initializeSpeakers: initializeMock,

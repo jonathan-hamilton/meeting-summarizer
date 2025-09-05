@@ -12,7 +12,7 @@ const AppWithContext: React.FC = () => (
   </AppModeProvider>
 );
 
-// Router configuration
+// Router configuration with v7 future flags
 const router = createBrowserRouter([
   {
     path: "/",
@@ -26,10 +26,23 @@ const router = createBrowserRouter([
     path: "/app", 
     element: <AppWithContext />,
   },
-])
+], {
+  future: {
+    v7_relativeSplatPath: true,
+    v7_fetcherPersist: true,
+    v7_normalizeFormMethod: true,
+    v7_partialHydration: true,
+    v7_skipActionErrorRevalidation: true,
+  },
+})
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <RouterProvider 
+      router={router} 
+      future={{ 
+        v7_startTransition: true 
+      }}
+    />
   </StrictMode>,
 )
