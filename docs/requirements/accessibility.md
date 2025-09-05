@@ -14,6 +14,11 @@ This document contains all requirements related to WCAG compliance, assistive te
 - **REQ-ACCESS-3**: System shall implement proper heading hierarchy (h1-h6) for screen reader navigation
 - **REQ-ACCESS-4**: System shall provide keyboard navigation for all interactive elements
 - **REQ-ACCESS-5**: System shall maintain color contrast ratios of at least 4.5:1 for normal text and 3:1 for large text
+- **REQ-ACCESS-6**: System shall wrap disabled buttons with span elements when used as children of tooltip components
+- **REQ-ACCESS-7**: System shall implement proper ARIA attributes for all complex UI components
+- **REQ-ACCESS-8**: System shall ensure all form elements have associated labels or aria-labelledby attributes
+- **REQ-ACCESS-9**: System shall provide screen reader announcements for dynamic content changes
+- **REQ-ACCESS-10**: System shall implement focus trap management for modal dialogs and popovers
 
 ## Keyboard Navigation & Focus Management
 
