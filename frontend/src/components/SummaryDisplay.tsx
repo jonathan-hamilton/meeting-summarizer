@@ -70,7 +70,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const { mode, isDemo } = useAppMode();
 
   // Tour store for managing tour state and closed steps
-  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
@@ -254,7 +254,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
                 triggerStepAction('generate-summary');
                 handleGenerateSummary();
               }}
-              disabled={!transcriptText}
+              disabled={!transcriptText || isActionDisabledDuringTour('generate-summary')}
               sx={{ mb: 2 }}
             >
               Generate Meeting Summary

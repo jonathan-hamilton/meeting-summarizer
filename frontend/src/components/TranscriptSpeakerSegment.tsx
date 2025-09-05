@@ -11,6 +11,7 @@ import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor } from "../theme/speakerColors";
+import { useTourStore } from "../stores/tourStore";
 
 interface TranscriptSpeakerSegmentProps {
   segment: SpeakerSegment;
@@ -46,6 +47,7 @@ export const TranscriptSpeakerSegment: React.FC<
   const storeMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
   const { isProduction } = useAppMode();
+  const { isActionDisabledDuringTour } = useTourStore();
   
   // Get ALL detected speakers from original segments for reassignment options
   const originalDetectedSpeakers = useMemo(() => {
@@ -341,7 +343,7 @@ export const TranscriptSpeakerSegment: React.FC<
               <IconButton
                 size="small"
                 onClick={handleMenuOpen}
-                disabled={isLoading}
+                disabled={isLoading || isActionDisabledDuringTour('reassign-speaker-left') || isActionDisabledDuringTour('reassign-speaker-right')}
                 color="primary"
               >
                 <SwapHoriz />

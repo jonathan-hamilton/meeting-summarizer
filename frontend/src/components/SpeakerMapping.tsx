@@ -34,7 +34,13 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep, isActionDisabledDuringTour } = useTourStore();
+  
+  // DEBUG: Log tour state and button disabled status
+  console.log('🎭 SpeakerMapping render - Tour state:', {
+    isTourActive,
+    manageButtonDisabled: isActionDisabledDuringTour('manage-speakers')
+  });
 
   // Use centralized store for simplified state management
   const activeSpeakers = useActiveSpeakers();
@@ -311,32 +317,31 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   }, [computedSpeakerData.unmappedSpeakers, effectiveData]);
 
   // Memoize header section
-  const headerSection = useMemo(
-    () => (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          mb: 2,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <PersonIcon color="primary" />
-          <Typography variant="h6">Speakers</Typography>
-        </Box>
-
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<EditIcon />}
-          onClick={handleOpenDialog}
-        >
-          MANAGE SPEAKERS
-        </Button>
+  // Render header section directly (not memoized to ensure tour state updates)
+  const headerSection = (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        mb: 2,
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <PersonIcon color="primary" />
+        <Typography variant="h6">Speakers</Typography>
       </Box>
-    ),
-    [computedSpeakerData, handleOpenDialog]
+
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<EditIcon />}
+        onClick={handleOpenDialog}
+        disabled={isActionDisabledDuringTour('manage-speakers')}
+      >
+        MANAGE SPEAKERS
+      </Button>
+    </Box>
   );
 
   // Memoize mapped speakers section
