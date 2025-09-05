@@ -96,7 +96,7 @@ export const TOUR_STEPS: TourStepConfig[] = [
   {
     id: 10,
     title: "Generate Summary",
-    description: "Now that Speakers are mapped, click 'GENERATE SUMMARY' to create an AI-powered Summary of your meeting.",
+    description: "Now that Speakers are mapped, click 'GENERATE MEETING SUMMARY' to create an AI-powered Summary of your meeting.",
     transitionType: 'user-action',
     triggerAction: 'generate-summary',
     component: 'SummaryDisplay'
@@ -171,7 +171,44 @@ const handleStepScroll = (stepNumber: number) => {
       // Step 2: Scroll is handled by ref callback pattern in App.tsx
       break;
     case 10:
-      // Step 10: Scroll to AI-Powered Meeting Summary is handled by ref callback pattern in App.tsx
+      // Step 10: Scroll to AI-Powered Meeting Summary section once when step opens
+      // Find the AI-Powered Meeting Summary element and scroll to it
+      setTimeout(() => {
+        // Try multiple selectors to find the AI-Powered Meeting Summary section
+        const aiSummaryElement = 
+          document.querySelector('[data-testid="ai-powered-meeting-summary"]') || 
+          document.querySelector('h3:has-text("AI-Powered Meeting Summary")') ||
+          Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent?.includes('AI-Powered Meeting Summary')) ||
+          Array.from(document.querySelectorAll('*')).find(el => el.textContent?.includes('AI-Powered Meeting Summary'));
+          
+        if (aiSummaryElement) {
+          aiSummaryElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100); // Small delay to ensure the element is rendered
+      break;
+    case 11:
+      // Step 11: Scroll to AI-Powered Meeting Summary section once when step opens
+      // Find the AI-Powered Meeting Summary element and scroll to it
+      setTimeout(() => {
+        // Try multiple selectors to find the AI-Powered Meeting Summary section
+        const aiSummaryElement = 
+          document.querySelector('[data-testid="ai-powered-meeting-summary"]') || 
+          document.querySelector('h3:has-text("AI-Powered Meeting Summary")') ||
+          Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent?.includes('AI-Powered Meeting Summary')) ||
+          Array.from(document.querySelectorAll('*')).find(el => el.textContent?.includes('AI-Powered Meeting Summary'));
+          
+        if (aiSummaryElement) {
+          aiSummaryElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+          });
+        }
+      }, 100); // Small delay to ensure the content is loaded
       break;
     // Add more cases here for other steps that need scroll behavior
     default:
@@ -209,6 +246,9 @@ interface TourState {
   canAdvanceStep: () => boolean;
   isCurrentStep: (stepNumber: number) => boolean;
   getTotalSteps: () => number;
+  
+  // Centralized process control
+  isActionDisabledDuringTour: (actionType: string, rowIndex?: number) => boolean;
 }
 
 export const useTourStore = create<TourState>()(
@@ -346,6 +386,239 @@ export const useTourStore = create<TourState>()(
       getTotalSteps: () => {
         const state = get();
         return state.steps.length;
+      },
+
+      // Centralized process control - determines if an action should be disabled during tour
+      isActionDisabledDuringTour: (actionType: string, rowIndex?: number) => {
+        const state = get();
+        if (!state.isActive) return false;
+        
+        const currentStep = state.currentStep;
+        console.log(`🎯 Checking action '${actionType}' for step ${currentStep}${rowIndex !== undefined ? ` row ${rowIndex}` : ''}`);
+        
+        switch (currentStep) {
+          case 1:
+            // Step 1: Only allow file upload action, disable all others
+            const step1DisabledActions = [
+              'copy-transcript',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers'
+            ];
+            const step1Result = step1DisabledActions.includes(actionType);
+            console.log(`📁 Step 1 result for ${actionType}:`, step1Result ? 'DISABLED' : 'ENABLED');
+            return step1Result;
+            
+          case 2:
+            // Step 2: Allow transcript copying and summary generation, but disable speaker management and reassignment
+            const step2DisabledActions = [
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'generate-summary'
+            ];
+            const step2Result = step2DisabledActions.includes(actionType);
+            console.log(`📋 Step 2 result for ${actionType}:`, step2Result ? 'DISABLED' : 'ENABLED');
+            return step2Result;
+            
+          case 3:
+            // Step 3: Only allow MANAGE SPEAKERS, disable all others
+            if (actionType === 'manage-speakers') {
+              console.log('🎯 Step 3 manage-speakers: ENABLED');
+              return false;
+            }
+            const step3DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'reassign-speaker-left',
+              'reassign-speaker-right'
+            ];
+            const step3Result = step3DisabledActions.includes(actionType);
+            console.log(`🎯 Step 3 result for ${actionType}:`, step3Result ? 'DISABLED' : 'ENABLED');
+            return step3Result;
+            
+          case 4:
+            // Step 4: Only allow ADD SPEAKER, disable all others
+            if (actionType === 'add-speaker') {
+              console.log('🔧 Step 4 add-speaker: ENABLED');
+              return false;
+            }
+            const step4DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'edit-speaker',
+              'delete-speaker'
+            ];
+            const step4Result = step4DisabledActions.includes(actionType);
+            console.log(`🔧 Step 4 result for ${actionType}:`, step4Result ? 'DISABLED' : 'ENABLED');
+            return step4Result;
+            
+          case 5:
+            // Step 5: Only allow CANCEL, disable all others
+            if (actionType === 'cancel-mappings') {
+              console.log('🎉 Step 5 cancel-mappings: ENABLED');
+              return false;
+            }
+            const step5DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker'
+            ];
+            const step5Result = step5DisabledActions.includes(actionType);
+            console.log(`🎉 Step 5 result for ${actionType}:`, step5Result ? 'DISABLED' : 'ENABLED');
+            return step5Result;
+            
+          case 6:
+            // Step 6: Only allow EDIT SPEAKER for first row (index 0), disable all others
+            if (actionType === 'edit-speaker') {
+              // Enable only the first row's edit button (index 0)
+              const isFirstRow = rowIndex === 0;
+              console.log(`✏️ Step 6 edit-speaker row ${rowIndex}:`, isFirstRow ? 'ENABLED (first row)' : 'DISABLED (not first row)');
+              return !isFirstRow; // Return false (enabled) for first row, true (disabled) for others
+            }
+            
+            // All other actions are disabled in Step 6
+            const step6DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'delete-speaker' // Always disabled, regardless of row
+            ];
+            const step6Result = step6DisabledActions.includes(actionType);
+            console.log(`✏️ Step 6 result for ${actionType}:`, step6Result ? 'DISABLED' : 'ENABLED');
+            return step6Result;
+            
+          case 7:
+            // Step 7: Only allow SAVE ROW for first row (index 0), disable all others
+            if (actionType === 'save-row' || actionType === 'confirm-edit') {
+              // Enable only the first row's save/confirm button (index 0)
+              const isFirstRow = rowIndex === 0;
+              console.log(`✅ Step 7 save-row row ${rowIndex}:`, isFirstRow ? 'ENABLED (first row)' : 'DISABLED (not first row)');
+              return !isFirstRow; // Return false (enabled) for first row, true (disabled) for others
+            }
+            
+            // For form fields, disable editing in all rows during Step 7 to focus on save action
+            if (actionType === 'edit-form-fields') {
+              console.log(`✅ Step 7 edit-form-fields row ${rowIndex}: DISABLED (focus on save)`);
+              return true; // Always disabled during Step 7 to focus on save action
+            }
+            
+            // All other actions are disabled in Step 7
+            const step7DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'cancel-edit' // Also disable cancel buttons to force saving
+            ];
+            const step7Result = step7DisabledActions.includes(actionType);
+            console.log(`✅ Step 7 result for ${actionType}:`, step7Result ? 'DISABLED' : 'ENABLED');
+            return step7Result;
+            
+          case 8:
+            // Step 8: Only allow SAVE MAPPINGS button, disable everything else
+            if (actionType === 'save-mappings') {
+              console.log('💾 Step 8 save-mappings: ENABLED');
+              return false; // Enable SAVE MAPPINGS button
+            }
+            
+            // All other actions are disabled in Step 8
+            const step8DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields'
+            ];
+            const step8Result = step8DisabledActions.includes(actionType);
+            console.log(`💾 Step 8 result for ${actionType}:`, step8Result ? 'DISABLED' : 'ENABLED');
+            return step8Result;
+            
+          case 9:
+            // Step 9: Only allow reassignment actions (double arrow icons), disable everything else
+            if (actionType === 'reassign-speaker-left' || actionType === 'reassign-speaker-right') {
+              console.log(`🔄 Step 9 ${actionType}: ENABLED`);
+              return false; // Enable reassignment buttons
+            }
+            
+            // All other actions are disabled in Step 9
+            const step9DisabledActions = [
+              'copy-transcript',
+              'generate-summary', 
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields'
+            ];
+            const step9Result = step9DisabledActions.includes(actionType);
+            console.log(`🔄 Step 9 result for ${actionType}:`, step9Result ? 'DISABLED' : 'ENABLED');
+            return step9Result;
+            
+          case 10:
+            // Step 10: Only allow GENERATE MEETING SUMMARY button, disable everything else
+            if (actionType === 'generate-summary') {
+              console.log('🤖 Step 10 generate-summary: ENABLED');
+              return false; // Enable GENERATE MEETING SUMMARY button
+            }
+            
+            // All other actions are disabled in Step 10
+            const step10DisabledActions = [
+              'copy-transcript',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields'
+            ];
+            const step10Result = step10DisabledActions.includes(actionType);
+            console.log(`🤖 Step 10 result for ${actionType}:`, step10Result ? 'DISABLED' : 'ENABLED');
+            return step10Result;
+            
+          default:
+            // For any other step, don't disable actions
+            return false;
+        }
       },
     }),
     {

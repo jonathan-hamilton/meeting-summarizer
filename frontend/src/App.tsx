@@ -111,19 +111,13 @@ const AppContent: React.FC = () => {
     }
   }, [appMode, isTourActive, isCurrentStep]);
 
-  // Ref callback for Step 10 & 11 tour scroll - scrolls to AI-Powered Meeting Summary
-  // Step 10: When user clicks GENERATE SUMMARY and step appears
-  // Step 11: When summary content loads and page becomes longer
+  // Ref callback for tour scroll - no longer handles Step 10 or 11 scrolling
+  // Both steps now use step transition logic in tourStore for one-time scrolling
   const aiSummaryRef = useCallback((node: HTMLElement | null) => {
-    if (node && appMode === 'demo' && isTourActive && (isCurrentStep(10) || isCurrentStep(11))) {
-      // Scroll to show the AI-Powered Meeting Summary prominently at the top
-      node.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
-      });
-    }
-  }, [appMode, isTourActive, isCurrentStep]);
+    // This ref is now just used for attaching to the DOM element
+    // All scrolling is handled by step transition logic in tourStore
+    // to ensure it only happens once when each step opens
+  }, []);
 
   const checkServerHealth = async () => {
     try {

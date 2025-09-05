@@ -77,7 +77,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Tour state management
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, isCurrentStep } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, isActionDisabledDuringTour } = useTourStore();
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -504,6 +504,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 <IconButton
                   size="small"
                   onClick={handleCopyFullTranscript}
+                  disabled={isActionDisabledDuringTour('copy-transcript')}
                   color={copiedSegment === "full" ? "success" : "default"}
                 >
                   <ContentCopy fontSize="small" />
@@ -555,6 +556,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 <IconButton
                   size="small"
                   onClick={handleCopySimpleTranscript}
+                  disabled={isActionDisabledDuringTour('copy-transcript')}
                   color={copiedSegment === "full" ? "success" : "default"}
                 >
                   <ContentCopy fontSize="small" />

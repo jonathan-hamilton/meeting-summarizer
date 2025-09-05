@@ -57,7 +57,15 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   onMappingsSaved,
 }) => {
   const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction } = useTourStore();
+  const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
+  
+  // DEBUG: Log tour state for Step 4
+  console.log('🏗️ SpeakerMappingDialog render - Tour state:', {
+    isTourActive,
+    addSpeakerDisabled: isActionDisabledDuringTour('add-speaker'),
+    saveDisabled: isActionDisabledDuringTour('save-mappings'),
+    cancelDisabled: isActionDisabledDuringTour('cancel-mappings')
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -72,7 +80,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   const deleteSpeakerMapping = useSpeakerSessionStore(state => state.deleteSpeakerMapping);
   
   // Compatibility functions
-  const initializeSpeakers = (transcriptionId: string, detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
+  const initializeSpeakers = (transcriptionId: string, _detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
     // Only add mappings that don't already exist to avoid clearing and re-adding
     existingMappings.forEach(mapping => {
       const existingMapping = speakerMappings.find(m => m.speakerId === mapping.speakerId && m.transcriptionId === transcriptionId);
@@ -701,7 +709,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
               startIcon={<PersonAddIcon />}
               variant="outlined"
               size="small"
-              disabled={loading}
+              disabled={loading || isActionDisabledDuringTour('add-speaker')}
             >
               Add Speaker
             </Button>
@@ -756,7 +764,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             </Box>
           )}
 
-          <Button onClick={handleClose} disabled={loading}>
+          <Button onClick={handleClose} disabled={loading || isActionDisabledDuringTour('cancel-mappings')}>
             Cancel
           </Button>
 
@@ -766,7 +774,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
               handleSave();
             }}
             variant="contained"
-            disabled={!canSave || hasActiveEdits}
+            disabled={!canSave || hasActiveEdits || isActionDisabledDuringTour('save-mappings')}
             startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
             title={
               hasValidationErrors
