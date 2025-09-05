@@ -229,6 +229,85 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 ---
 
 
+## Sprint 6 (Mobile Foundation)
+**Planned - Mobile PWA Foundation:**
+  - REQ-MOB-1: Platform Compatibility (iOS Safari 15+, Android Chrome 90+)
+  - REQ-MOB-1.1: Support iOS Safari 15+ and Chrome for iOS
+  - REQ-MOB-1.2: Support Android Chrome 90+ and Samsung Internet
+  - REQ-MOB-1.3: Responsive design for screen sizes 320px-428px (phone) and 768px-1024px (tablet)
+  - REQ-MOB-1.4: Support both portrait and landscape orientations
+  - REQ-MOB-2: Progressive Web App (PWA) Foundation
+  - REQ-MOB-2.1: Implement Service Worker for offline capability and caching
+  - REQ-MOB-2.2: Create Web App Manifest for app installation and native-like behavior
+  - REQ-MOB-2.3: Enable "Add to Home Screen" functionality on both platforms
+  - REQ-MOB-2.4: Display app icon and splash screen when launched from home screen
+  - REQ-MOB-2.5: Run in standalone mode (without browser UI) when installed
+  - REQ-UX-MOB-1: Mobile Navigation
+  - REQ-UX-MOB-1.1: Bottom navigation bar for primary actions (Upload, Transcripts, Settings)
+  - REQ-UX-MOB-1.2: Swipe gestures for common actions (swipe to delete, pull to refresh)
+  - REQ-UX-MOB-1.3: Modal sheets for secondary actions (speaker mapping, email composition)
+  - REQ-UX-MOB-2: Touch Interactions
+  - REQ-UX-MOB-2.1: Long press context menus for transcript segments
+  - REQ-UX-MOB-2.2: Swipe actions for action items (complete, delete, reassign)
+  - REQ-UX-MOB-2.3: Pinch-to-zoom for transcript text size adjustment
+  - REQ-TECH-MOB-1: PWA Implementation
+  - REQ-TECH-MOB-1.1: Service Worker with caching strategy for app shell and data
+  - REQ-TECH-MOB-1.2: Web App Manifest with complete configuration
+  - REQ-TECH-MOB-1.3: Background sync for offline functionality
+
+**Sprint 6 Target:** Complete PWA foundation and mobile UI patterns (3-4 weeks)
+
+---
+
+
+## Sprint 7 (Mobile App Store Deployment)
+**Planned - App Store Preparation:**
+  - REQ-STORE-1: iOS App Store
+  - REQ-STORE-1.1: Meet iOS App Store Review Guidelines
+  - REQ-STORE-1.2: App Privacy Policy and data collection transparency
+  - REQ-STORE-1.3: App metadata (description, keywords, screenshots)
+  - REQ-STORE-1.4: iOS-specific app icons (multiple sizes)
+  - REQ-STORE-2: Google Play Store
+  - REQ-STORE-2.1: Meet Google Play policy requirements
+  - REQ-STORE-2.2: Android app bundle (AAB) or APK packaging
+  - REQ-STORE-2.3: Google Play Console setup and app listing
+  - REQ-STORE-2.4: Android adaptive icon support
+  - REQ-TECH-MOB-1.5: PWA packaging for app store submission
+  - REQ-A11Y-MOB-1: Mobile Accessibility
+  - REQ-A11Y-MOB-1.1: VoiceOver (iOS) compatibility for all interface elements
+  - REQ-A11Y-MOB-1.2: TalkBack (Android) screen reader support
+  - REQ-A11Y-MOB-2: Touch Accessibility
+  - REQ-A11Y-MOB-2.1: Minimum 44px touch targets as per platform guidelines
+
+**Sprint 7 Target:** Apps live on both iOS and Android app stores (2-3 weeks)
+
+---
+
+
+## Sprint 8+ (Mobile Enhancement)
+**Future Mobile Features:**
+  - REQ-MOB-4: Audio File Handling
+  - REQ-MOB-4.1: Access device photo/file library for audio file selection
+  - REQ-MOB-4.2: Support mobile-native audio formats (M4A, AAC, AMR)
+  - REQ-MOB-4.4: Background upload capability (files continue uploading when app is backgrounded)
+  - REQ-MOB-5: Offline Capability
+  - REQ-MOB-5.1: Cache previously transcribed content for offline viewing
+  - REQ-MOB-5.2: Queue uploads when offline, sync when connection restored
+  - REQ-MOB-5.3: Offline editing of speaker mappings and action items
+  - REQ-UX-MOB-4: Mobile-Specific Features
+  - REQ-UX-MOB-4.1: Share sheet integration for exporting transcripts
+  - REQ-UX-MOB-4.2: Copy to clipboard with visual confirmation
+  - REQ-UX-MOB-4.3: Email composition with mobile-optimized interface
+  - REQ-INT-MOB-2: Third-Party Integrations
+  - REQ-INT-MOB-2.1: Cloud storage integration (iCloud, Google Drive)
+  - REQ-INT-MOB-2.2: Calendar app integration for meeting context
+  - REQ-INT-MOB-2.3: Contact app integration for speaker identification
+
+**Target:** Advanced mobile features and native integrations (ongoing)
+
+---
+
+
 ## Future
 **Planned/Future:**
   - REQ-BIZ-1: Token pricing maintains minimum 200% margin over API costs
