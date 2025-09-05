@@ -18,6 +18,7 @@ import {
   Person,
 } from '@mui/icons-material';
 import TourPopover from './TourPopover';
+import { useTourStore } from '../stores/tourStore';
 import type { MeetingSummary } from '../types';
 
 interface SummaryHeaderProps {
@@ -43,6 +44,9 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   onCloseStep,
   triggerStepAction,
 }) => {
+  // Tour control integration
+  const isActionDisabledDuringTour = useTourStore(state => state.isActionDisabledDuringTour);
+  
   return (
     <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
@@ -61,6 +65,7 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
               triggerStepAction('open-email-dialog');
             }}
             sx={{ mr: 1 }}
+            disabled={isActionDisabledDuringTour('share-summary')}
           >
             Share
           </Button>
@@ -79,6 +84,7 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           <IconButton
             onClick={onCopyClick}
             size="small"
+            disabled={isActionDisabledDuringTour('copy-summary')}
           >
             <ContentCopy />
           </IconButton>

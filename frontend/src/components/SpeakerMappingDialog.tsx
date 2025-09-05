@@ -59,13 +59,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   const { isDemo } = useAppMode();
   const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
   
-  // DEBUG: Log tour state for Step 4
-  console.log('🏗️ SpeakerMappingDialog render - Tour state:', {
-    isTourActive,
-    addSpeakerDisabled: isActionDisabledDuringTour('add-speaker'),
-    saveDisabled: isActionDisabledDuringTour('save-mappings'),
-    cancelDisabled: isActionDisabledDuringTour('cancel-mappings')
-  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -210,17 +203,12 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       // Get current mappings from the store (they may have been updated by previous saves)
       const currentStoreMappings = getAllMappings();
       
-      console.log('🔄 Dialog initialization - currentStoreMappings:', currentStoreMappings);
-      console.log('🔄 Dialog initialization - existingMappings:', existingMappings);
-      console.log('🔄 Dialog initialization - detectedSpeakers:', detectedSpeakers);
-
       // Check if we already have mappings for all detected speakers in this session
       const hasAllMappings = detectedSpeakers.every(speakerId => 
         currentStoreMappings.find(m => m.speakerId === speakerId && m.transcriptionId === transcriptionId)
       );
 
       if (hasAllMappings) {
-        console.log('🔄 Dialog initialization - speakers already mapped, skipping initialization');
         // Still set baseline mappings for change detection
         const existingForDialog = currentStoreMappings.filter(m => m.transcriptionId === transcriptionId);
         setBaselineMappings([...existingForDialog]);
@@ -272,8 +260,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         );
 
       const allMappings = [...initialMappings, ...storeManualSpeakers, ...existingManualSpeakers];
-      
-      console.log('🔄 Dialog initialization - final allMappings:', allMappings);
       
       // Initialize Zustand store with all mappings - use original detectedSpeakers
       initializeSpeakers(
@@ -401,12 +387,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       clearValidationErrors();
 
       // Validate all mappings before saving
-      console.log("🔍 Validating mappings...", { mappings });
       const validationResult = validateAllSpeakerMappings(mappings);
-      console.log("🔍 Validation result:", validationResult);
 
       if (!validationResult) {
-        console.log("❌ Validation failed");
         setError("Please fix the highlighted validation errors before saving.");
         setLoading(false);
         return;

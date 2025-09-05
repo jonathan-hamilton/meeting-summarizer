@@ -140,6 +140,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
       await generateSummary(transcriptText, mappingsToUse, mode);
       
+      // Trigger Step 11 tour advancement when summary generation completes
+      if (isDemo && isTourActive) {
+        triggerStepAction('summary-generated');
+      }
+      
       // Call the callback if provided
       if (onSummaryGenerated && summary) {
         onSummaryGenerated(summary);
@@ -156,8 +161,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const handleSendEmail = (emailData: any) => {
     // For now, just simulate sending and show success message
     // In a real implementation, this would call an email service
-    console.log('Sending email:', emailData);
-    
     showSnackbar(`Email sent successfully to ${emailData.recipients.length} recipient(s)!`, "success");
   };
 

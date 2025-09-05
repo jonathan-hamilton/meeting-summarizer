@@ -32,6 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import TourPopover from './TourPopover';
 import SortableActionItem from './SortableActionItem';
+import { useTourStore } from '../stores/tourStore';
 import type { ActionItem, SpeakerMapping } from '../types';
 
 interface ActionItemsSectionProps {
@@ -65,6 +66,9 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
   triggerStepAction,
   onSnackbar,
 }) => {
+  // Tour control integration
+  const isActionDisabledDuringTour = useTourStore(state => state.isActionDisabledDuringTour);
+  
   // Accordion expansion state - track which speaker accordions are expanded
   const [expandedAccordions, setExpandedAccordions] = useState<Set<string>>(new Set());
 
@@ -199,6 +203,7 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
             startIcon={<Add />}
             onClick={onCreateActionItem}
             size="small"
+            disabled={isActionDisabledDuringTour('add-item')}
           >
             Add Item
           </Button>
@@ -232,6 +237,7 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
           startIcon={<Add />}
           onClick={onCreateActionItem}
           size="small"
+          disabled={isActionDisabledDuringTour('add-item')}
         >
           Add Item
         </Button>

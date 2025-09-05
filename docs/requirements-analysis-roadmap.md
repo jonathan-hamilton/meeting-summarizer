@@ -128,35 +128,66 @@ Based on the updated requirements document, here are the major new features that
 - Hide development controls in production (REQ-DEV-1 to REQ-DEV-7)
 - Speaker cleanup automation (REQ-SPK-25 to REQ-SPK-29)
 
-### Sprint 5: Smart Email Controls (Priority 2)
-**Target:** Enhanced email functionality
+### Sprint 5: Demo Mode & Tour System (Priority 1)
+**Target:** Complete demo experience and performance optimization
+**Timeline:** 2-3 weeks
+**Status:** MOSTLY COMPLETE ✅
+
+#### S5.1: User Mode Selection & Demo Content ✅ COMPLETE
+- Complete demo mode infrastructure with guided tour system
+- 18-step interactive tour covering full meeting workflow
+- Centralized tour process control preventing user errors during guided experience
+- Mode-aware API services and routing infrastructure
+
+#### S5.2: Action Item Management & Tour Completion ✅ COMPLETE  
+- Advanced drag & drop action item management with cross-speaker assignment
+- Complete email composition workflow integration (Steps 11-18)
+- Tour-guided email recipient selection, content editing, and sending
+- Foundation for user onboarding and product demonstration
+
+#### S5.3: Performance Optimization & Accessibility Improvements 📋 PLANNED
+- **Performance Requirements (NEW):**
+  - Resolve event handler performance violations (>16ms execution time)
+  - Optimize React component rendering and event processing
+  - Implement handler debouncing/throttling for improved responsiveness
+- **Accessibility Requirements (NEW):**
+  - Fix MUI Tooltip accessibility warnings (disabled button wrapping)  
+  - Ensure ARIA compliance for complex UI components
+  - Screen reader compatibility for all interactive elements
+- **React Router Modernization (NEW):**
+  - Implement v7 future flags to eliminate deprecation warnings
+  - Prepare routing infrastructure for React Router v7 migration
+  - Test compatibility with new routing behaviors
+
+### Sprint 6: Advanced Email Controls (Priority 2)
+**Target:** Enhanced email functionality  
 **Timeline:** 2-3 weeks
 
-#### S5.1: Email Send History & Controls
+#### S6.1: Email Send History & Controls
 - Implement send history tracking (REQ-EMAIL-19 to REQ-EMAIL-21)
 - Add duplicate recipient warnings (REQ-EMAIL-22)
 - Build "Send Again" vs "Compose New" functionality (REQ-EMAIL-23 to REQ-EMAIL-24)
 - Enforce send limits and persistence (REQ-EMAIL-25 to REQ-EMAIL-28)
 
-### Sprint 6: Bulk Operations (Priority 3)
+### Sprint 7: Bulk Operations (Priority 3)
 **Target:** Advanced user productivity features
 **Timeline:** 3-4 weeks
 
-#### S6.1: Multi-Selection Interface
+#### S7.1: Multi-Selection Interface
 - Implement Ctrl+click and Shift+click selection (REQ-BULK-2 to REQ-BULK-4)
 - Visual selection indicators and feedback (REQ-BULK-5)
 - Accessibility compliance for multi-selection (REQ-TECH-1 to REQ-TECH-3)
 
-#### S6.2: Bulk Assignment System
+#### S7.2: Bulk Assignment System
 - Build bulk assign button and dialog (REQ-BULK-1, REQ-BULK-5)
 - Implement bulk operations with validation (REQ-BULK-6 to REQ-BULK-7)
 - Add undo functionality and progress indicators (REQ-BULK-8, REQ-PERF-3)
 
-### Sprint 7-8: Monetization Foundation (Priority 4)
+### Sprint 8-9: Monetization Foundation (Priority 4)
 **Target:** Basic payment and user management
 **Timeline:** 4-6 weeks
 
-#### S7.1: User Authentication & Basic Accounts
+#### S8.1: User Authentication & Basic Accounts
 - Email/password registration system (REQ-USR-1, REQ-USR-6)
 - JWT-based session management (REQ-USR-7)
 - User dashboard and profile management (REQ-USR-4)

@@ -59,7 +59,7 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({
   const { mode, isDemo } = useAppMode();
   
   // Tour state management
-  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction } = useTourStore();
+  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
   
   // Email composition state
   const [subject, setSubject] = useState('');
@@ -460,6 +460,7 @@ Best regards`;
                 variant="outlined" 
                 onClick={handleAddRecipient}
                 startIcon={<Person />}
+                disabled={isActionDisabledDuringTour('add-recipient')}
               >
                 Add
               </Button>
@@ -494,7 +495,10 @@ Best regards`;
                           size="small"
                           variant="outlined"
                           color="primary"
-                          sx={{ cursor: 'pointer' }}
+                          disabled={isActionDisabledDuringTour('add-suggested-recipient')}
+                          sx={{ 
+                            cursor: isActionDisabledDuringTour('add-suggested-recipient') ? 'not-allowed' : 'pointer'
+                          }}
                         />
                       ))}
                     </Box>
@@ -541,6 +545,7 @@ Best regards`;
                     }
                   }}
                   startIcon={<Preview />}
+                  disabled={isActionDisabledDuringTour('preview-email')}
                 >
                   {isPreview ? 'Edit' : 'Preview'}
                 </Button>
@@ -589,14 +594,17 @@ Best regards`;
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose}>
+        <Button 
+          onClick={handleClose}
+          disabled={isActionDisabledDuringTour('cancel-email')}
+        >
           Cancel
         </Button>
         <Button 
           variant="contained" 
           onClick={handleSend}
           startIcon={isSending ? <CircularProgress size={16} /> : <Send />}
-          disabled={recipients.length === 0 || !subject.trim() || !content.trim() || isSending}
+          disabled={recipients.length === 0 || !subject.trim() || !content.trim() || isSending || isActionDisabledDuringTour('send-email')}
         >
           {isSending ? 'Sending...' : 'Send Email'}
         </Button>

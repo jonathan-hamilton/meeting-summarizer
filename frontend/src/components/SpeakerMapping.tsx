@@ -36,12 +36,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   const { isDemo } = useAppMode();
   const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep, isActionDisabledDuringTour } = useTourStore();
   
-  // DEBUG: Log tour state and button disabled status
-  console.log('🎭 SpeakerMapping render - Tour state:', {
-    isTourActive,
-    manageButtonDisabled: isActionDisabledDuringTour('manage-speakers')
-  });
-
   // Use centralized store for simplified state management
   const activeSpeakers = useActiveSpeakers();
   // Get ALL mappings (not filtered) to include manually added speakers without segments
@@ -63,7 +57,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   // Initialize speakers in store when component mounts or transcriptionId changes
   useEffect(() => {
     if (transcriptionId && currentTranscriptionId !== transcriptionId) {
-      console.log('🔄 SpeakerMapping: Session check for transcription:', transcriptionId);
       // Let TranscriptDisplay handle the initialization to avoid conflicts
       // This component will use the data once it's available
     }
@@ -72,7 +65,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   // Memoize callback handlers
   const handleMappingsSaved = useCallback(
     (newMappings: SpeakerMapping[]) => {
-      console.log('🔄 handleMappingsSaved called with:', newMappings);
       
       // Clear any session overrides that might conflict with the new mappings
       const sessionOverrides = sessionManager.getOverrides();
@@ -94,7 +86,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       
       // The store should already be updated by the dialog component
       // Don't re-initialize here as it can cause the mappings to be lost
-      console.log('🔄 Speaker mappings already saved to store, skipping re-initialization');
       
       // Notify parent component of changes
       onMappingsChanged?.(newMappings);
@@ -132,15 +123,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         mappings: allMappings,
         speakers: allRelevantSpeakers,
       };
-      
-      console.log('🔄 effectiveData (includes manually added):', {
-        mappingsCount: data.mappings.length,
-        speakersCount: data.speakers.length,
-        activeSpeakersCount: activeSpeakers.length,
-        manuallyAddedCount: manuallyAddedSpeakers.length,
-        mappings: data.mappings.map((m: SpeakerMapping) => ({ id: m.speakerId, name: m.name, role: m.role, source: m.source })),
-        speakers: data.speakers
-      });
       
       return data;
     },

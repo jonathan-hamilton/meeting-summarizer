@@ -85,13 +85,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       ? Array.from(new Set(transcription.speakerSegments.map((s) => s.speaker)))
       : [];
     
-    console.log('🔍 TranscriptDisplay detected speakers:', {
-      transcriptionId: transcription.transcriptionId,
-      speakerSegments: transcription.speakerSegments?.map(s => ({ speaker: s.speaker, text: s.text?.substring(0, 50) + '...' })),
-      detectedSpeakers: speakers,
-      rawSpeakerList: speakers
-    });
-    
     return speakers;
   }, [transcription.speakerSegments, transcription.transcriptionId]);
 
