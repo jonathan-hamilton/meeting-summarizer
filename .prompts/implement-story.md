@@ -157,6 +157,12 @@ CRITICAL:
    ```
 3. If Front End State management is needed, then use/expand the Centralized State Managment strategy using Zustand
 
+4. **Document Implementation Plan:**
+   - Create implementation plan file in `docs/sprints/implementations/`
+   - Use naming convention: `s<X.Y>-implementation-plan.md` (lowercase, matching existing pattern)
+   - Include all increments, acceptance criteria mapping, and technical approach
+   - This provides tracking for complex stories and future reference
+
 [STOP - Wait for plan approval]
 
 ## 4. Incremental Implementation
