@@ -2,11 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { SpeakerMappingComponent } from "../../components/SpeakerMapping";
 import { useSpeakerSessionStore, useActiveSpeakers } from "../../stores/speakerSessionStore";
+import { useTourStore } from "../../stores/tourStore";
 import { sessionManager } from "../../services/sessionManager";
 import type { SpeakerMapping } from "../../types";
 
 // Mock dependencies
 vi.mock("../../stores/speakerSessionStore");
+vi.mock("../../stores/tourStore");
 vi.mock("../../services/sessionManager");
 vi.mock("../../components/SpeakerMappingDialog", () => ({
   SpeakerMappingDialog: vi.fn(({ open, onClose }) =>
@@ -23,8 +25,10 @@ vi.mock("../../theme/speakerColors", () => ({
   getSpeakerColor: vi.fn((speakerId: string) => `#${speakerId.slice(-6)}`),
 }));
 
+// Create properly typed mocks
 const mockUseSpeakerSessionStore = useSpeakerSessionStore as unknown as ReturnType<typeof vi.fn>;
 const mockUseActiveSpeakers = useActiveSpeakers as unknown as ReturnType<typeof vi.fn>;
+const mockUseTourStore = useTourStore as unknown as ReturnType<typeof vi.fn>;
 const mockSessionManager = sessionManager as unknown as {
   getOverrides: ReturnType<typeof vi.fn>;
 };
@@ -56,14 +60,24 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock Zustand store
-    mockUseSpeakerStore.mockReturnValue({
+    // Mock tour store
+    mockUseTourStore.mockReturnValue({
+      isActive: false,
+      isActionDisabledDuringTour: vi.fn().mockReturnValue(false),
+    });
+
+    // Mock active speakers hook
+    mockUseActiveSpeakers.mockReturnValue(['Speaker 1', 'Speaker 2']);
+
+    // Mock Zustand store with current architecture
+    mockUseSpeakerSessionStore.mockReturnValue({
       speakerMappings: mockSpeakerMappings,
-      detectedSpeakers: defaultProps.detectedSpeakers,
+      transcriptionId: "test-transcription-123",
       initializeSpeakers: vi.fn(),
-      addSpeaker: vi.fn(),
-      updateSpeaker: vi.fn(),
-      deleteSpeaker: vi.fn(),
+      addSpeakerMapping: vi.fn(),
+      updateSpeakerMapping: vi.fn(),
+      deleteSpeakerMapping: vi.fn(),
+      clearSession: vi.fn(),
     });
 
     // Mock session manager

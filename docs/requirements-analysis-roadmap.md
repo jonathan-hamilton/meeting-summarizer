@@ -186,14 +186,33 @@ Based on the updated requirements document, here are the major new features that
   - Resolve event handler performance violations (>16ms execution time)
   - Optimize React component rendering and event processing
   - Implement handler debouncing/throttling for improved responsiveness
+  - Bundle size optimization and memory leak prevention
 - **Accessibility Requirements (NEW):**
   - Fix MUI Tooltip accessibility warnings (disabled button wrapping)  
   - Ensure ARIA compliance for complex UI components
   - Screen reader compatibility for all interactive elements
+  - Keyboard navigation support for all functionality
 - **React Router Modernization (NEW):**
   - Implement v7 future flags to eliminate deprecation warnings
   - Prepare routing infrastructure for React Router v7 migration
   - Test compatibility with new routing behaviors
+
+#### S5.4: Test Framework Modernization & Coverage 📋 PLANNED
+- **Legacy Test Framework Issues (CRITICAL):**
+  - 68 failing tests due to outdated mocking patterns and architecture mismatches
+  - Replace legacy `mockUseSpeakerStore` with current `mockUseSpeakerSessionStore` patterns
+  - Fix component import issues (default vs named imports, missing props)
+  - Update API service mocking to use `createApiService` factory pattern
+- **Coverage Requirements (NEW):**
+  - Achieve 90% test coverage across all critical components
+  - Comprehensive tour system testing (18-step workflow validation)
+  - Integration tests for complete user workflows (upload → summary → email)
+  - Performance and accessibility regression testing
+- **Test Architecture Modernization (NEW):**
+  - Standardize Zustand store mocking patterns across all tests
+  - Create modern component test utilities with required providers
+  - Establish patterns for drag & drop, async operations, and tour integration
+  - Implement CI/CD-ready test suite with zero flaky tests
 
 ### Sprint 6: Advanced Email Controls (Priority 2)
 **Target:** Enhanced email functionality  
