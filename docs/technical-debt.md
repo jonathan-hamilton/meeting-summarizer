@@ -158,6 +158,41 @@ The `SpeakerMapping.tsx` component experiences React infinite render loops causi
 - Focus on backend completion first (S4.3-S4.4)
 - Return to frontend stability once core transcription features complete
 
+### Performance Violations & Accessibility Issues ⚠️ ACTIVE
+
+**Date Identified**: September 4, 2025  
+**Component**: Frontend (Multiple components)  
+**Priority**: Medium (Performance & Accessibility)
+
+**Problem**: 
+Console performance violations and MUI accessibility warnings identified during tour system testing. Multiple event handlers exceeding 16ms execution time and disabled buttons not properly wrapped for tooltip accessibility.
+
+**Issues Identified**:
+- **Performance Violations**: Multiple click, setTimeout, and message handlers taking >16ms
+- **MUI Tooltip Warnings**: "You are providing a disabled `button` child to the Tooltip component"
+- **React Router Deprecations**: 6 deprecation warnings for future v7 migration flags
+
+**Impact Assessment**:
+- **User Experience**: Performance violations may cause UI lag during interactions
+- **Accessibility**: Screen readers cannot properly handle disabled buttons in tooltips
+- **Future Compatibility**: React Router deprecation warnings indicate migration preparation needed
+
+**Components Affected**:
+- TranscriptSpeakerSegment.tsx (MUI tooltip warnings)
+- Multiple event handlers across tour system components
+- All React Router configurations need future flag updates
+
+**Resolution Plan** (S5.3):
+1. **Performance Optimization**: Profile and optimize slow event handlers
+2. **Accessibility Fixes**: Wrap disabled buttons with span elements in tooltips
+3. **React Router Modernization**: Implement v7 future flags
+4. **Testing Framework**: Add performance monitoring for handler execution times
+
+**Technical Notes**:
+- Issues discovered during comprehensive tour system development
+- All functional requirements working correctly, only performance/accessibility concerns
+- Foundation for production-ready performance standards
+
 ---
 
 ## Recently Resolved Issues

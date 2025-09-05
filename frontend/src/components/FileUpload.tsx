@@ -369,7 +369,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
             if (isDemo) {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Demo button clicked, starting demo upload...');
               startDemoUpload();
               // Trigger tour step advancement
               triggerStepAction('file-select');

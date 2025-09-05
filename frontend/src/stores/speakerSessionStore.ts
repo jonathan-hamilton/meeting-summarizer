@@ -181,8 +181,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           index === segmentIndex ? { ...segment, speaker: newSpeaker } : segment
         );
 
-        console.log(`🔄 SpeakerSessionStore: Reassigned segment ${segmentIndex} from ${state.currentSegments[segmentIndex].speaker} to ${newSpeaker}`);
-        
         set({
           currentSegments: updatedSegments,
           _computedCache: null, // Invalidate cache
@@ -199,8 +197,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
             : mapping
         );
 
-        console.log(`🔄 SpeakerSessionStore: Updated mapping for ${speakerId}:`, updates);
-        
         set({
           speakerMappings: updatedMappings,
           _computedCache: null, // Invalidate cache
@@ -231,8 +227,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
             _computedCache: null, // Invalidate cache
           });
         }
-
-        console.log(`🔄 SpeakerSessionStore: Added/updated mapping for ${mapping.speakerId}`);
       },
 
       // Delete speaker mapping
@@ -250,8 +244,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
             : segment
         );
 
-        console.log(`🔄 SpeakerSessionStore: Deleted mapping for ${speakerId} and reassigned ${updatedSegments.filter(s => s.speaker === "Unassigned").length} segments to "Unassigned"`);
-        
         set({
           speakerMappings: filteredMappings,
           currentSegments: updatedSegments,
@@ -263,8 +255,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
       resetToOriginal: () => {
         const state = get();
         
-        console.log('🔄 SpeakerSessionStore: Resetting to original segments');
-        
         set({
           currentSegments: [...state.originalSegments],
           speakerMappings: [], // Also clear mappings on reset
@@ -274,12 +264,10 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
 
       // Clear entire session
       clearSession: () => {
-        console.log('🔄 SpeakerSessionStore: Clearing session');
         
         // Clear any persisted legacy speaker store data
         try {
           sessionStorage.removeItem('speaker-store-session');
-          console.log('🧹 SpeakerSessionStore: Cleared legacy speaker store persistence');
         } catch (error) {
           console.warn('Failed to clear legacy speaker store:', error);
         }

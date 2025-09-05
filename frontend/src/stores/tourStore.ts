@@ -171,44 +171,16 @@ const handleStepScroll = (stepNumber: number) => {
       // Step 2: Scroll is handled by ref callback pattern in App.tsx
       break;
     case 10:
-      // Step 10: Scroll to AI-Powered Meeting Summary section once when step opens
-      // Find the AI-Powered Meeting Summary element and scroll to it
+      // Step 10: Scroll to bottom of page to show AI-Powered Meeting Summary section
       setTimeout(() => {
-        // Try multiple selectors to find the AI-Powered Meeting Summary section
-        const aiSummaryElement = 
-          document.querySelector('[data-testid="ai-powered-meeting-summary"]') || 
-          document.querySelector('h3:has-text("AI-Powered Meeting Summary")') ||
-          Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent?.includes('AI-Powered Meeting Summary')) ||
-          Array.from(document.querySelectorAll('*')).find(el => el.textContent?.includes('AI-Powered Meeting Summary'));
-          
-        if (aiSummaryElement) {
-          aiSummaryElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
-          });
-        }
+        window.scrollTo({ 
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
       }, 100); // Small delay to ensure the element is rendered
       break;
     case 11:
-      // Step 11: Scroll to AI-Powered Meeting Summary section once when step opens
-      // Find the AI-Powered Meeting Summary element and scroll to it
-      setTimeout(() => {
-        // Try multiple selectors to find the AI-Powered Meeting Summary section
-        const aiSummaryElement = 
-          document.querySelector('[data-testid="ai-powered-meeting-summary"]') || 
-          document.querySelector('h3:has-text("AI-Powered Meeting Summary")') ||
-          Array.from(document.querySelectorAll('h3')).find(h3 => h3.textContent?.includes('AI-Powered Meeting Summary')) ||
-          Array.from(document.querySelectorAll('*')).find(el => el.textContent?.includes('AI-Powered Meeting Summary'));
-          
-        if (aiSummaryElement) {
-          aiSummaryElement.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
-          });
-        }
-      }, 100); // Small delay to ensure the content is loaded
+      // Step 11: Scroll handled by aiSummaryRef callback in React when component mounts
       break;
     // Add more cases here for other steps that need scroll behavior
     default:
@@ -336,8 +308,6 @@ export const useTourStore = create<TourState>()(
           const newCompletedSteps = new Set(state.completedSteps);
           newCompletedSteps.add(state.currentStep);
           
-          console.log(`Tour: Step ${state.currentStep} completed with action '${action}' - auto-advancing`);
-          
           // ALWAYS auto-advance (restore original behavior)
           const newClosedSteps = new Set(state.closedSteps);
           newClosedSteps.add(state.currentStep);  // Close current step
@@ -394,7 +364,6 @@ export const useTourStore = create<TourState>()(
         if (!state.isActive) return false;
         
         const currentStep = state.currentStep;
-        console.log(`🎯 Checking action '${actionType}' for step ${currentStep}${rowIndex !== undefined ? ` row ${rowIndex}` : ''}`);
         
         switch (currentStep) {
           case 1:
@@ -406,9 +375,7 @@ export const useTourStore = create<TourState>()(
               'reassign-speaker-right',
               'manage-speakers'
             ];
-            const step1Result = step1DisabledActions.includes(actionType);
-            console.log(`📁 Step 1 result for ${actionType}:`, step1Result ? 'DISABLED' : 'ENABLED');
-            return step1Result;
+            return step1DisabledActions.includes(actionType);
             
           case 2:
             // Step 2: Allow transcript copying and summary generation, but disable speaker management and reassignment
@@ -418,14 +385,11 @@ export const useTourStore = create<TourState>()(
               'manage-speakers',
               'generate-summary'
             ];
-            const step2Result = step2DisabledActions.includes(actionType);
-            console.log(`📋 Step 2 result for ${actionType}:`, step2Result ? 'DISABLED' : 'ENABLED');
-            return step2Result;
+            return step2DisabledActions.includes(actionType);
             
           case 3:
             // Step 3: Only allow MANAGE SPEAKERS, disable all others
             if (actionType === 'manage-speakers') {
-              console.log('🎯 Step 3 manage-speakers: ENABLED');
               return false;
             }
             const step3DisabledActions = [
@@ -434,14 +398,11 @@ export const useTourStore = create<TourState>()(
               'reassign-speaker-left',
               'reassign-speaker-right'
             ];
-            const step3Result = step3DisabledActions.includes(actionType);
-            console.log(`🎯 Step 3 result for ${actionType}:`, step3Result ? 'DISABLED' : 'ENABLED');
-            return step3Result;
+            return step3DisabledActions.includes(actionType);
             
           case 4:
             // Step 4: Only allow ADD SPEAKER, disable all others
             if (actionType === 'add-speaker') {
-              console.log('🔧 Step 4 add-speaker: ENABLED');
               return false;
             }
             const step4DisabledActions = [
@@ -455,14 +416,11 @@ export const useTourStore = create<TourState>()(
               'edit-speaker',
               'delete-speaker'
             ];
-            const step4Result = step4DisabledActions.includes(actionType);
-            console.log(`🔧 Step 4 result for ${actionType}:`, step4Result ? 'DISABLED' : 'ENABLED');
-            return step4Result;
+            return step4DisabledActions.includes(actionType);
             
           case 5:
             // Step 5: Only allow CANCEL, disable all others
             if (actionType === 'cancel-mappings') {
-              console.log('🎉 Step 5 cancel-mappings: ENABLED');
               return false;
             }
             const step5DisabledActions = [
@@ -476,16 +434,13 @@ export const useTourStore = create<TourState>()(
               'edit-speaker',
               'delete-speaker'
             ];
-            const step5Result = step5DisabledActions.includes(actionType);
-            console.log(`🎉 Step 5 result for ${actionType}:`, step5Result ? 'DISABLED' : 'ENABLED');
-            return step5Result;
+            return step5DisabledActions.includes(actionType);
             
           case 6:
             // Step 6: Only allow EDIT SPEAKER for first row (index 0), disable all others
             if (actionType === 'edit-speaker') {
               // Enable only the first row's edit button (index 0)
               const isFirstRow = rowIndex === 0;
-              console.log(`✏️ Step 6 edit-speaker row ${rowIndex}:`, isFirstRow ? 'ENABLED (first row)' : 'DISABLED (not first row)');
               return !isFirstRow; // Return false (enabled) for first row, true (disabled) for others
             }
             
@@ -501,22 +456,18 @@ export const useTourStore = create<TourState>()(
               'add-speaker',
               'delete-speaker' // Always disabled, regardless of row
             ];
-            const step6Result = step6DisabledActions.includes(actionType);
-            console.log(`✏️ Step 6 result for ${actionType}:`, step6Result ? 'DISABLED' : 'ENABLED');
-            return step6Result;
+            return step6DisabledActions.includes(actionType);
             
           case 7:
             // Step 7: Only allow SAVE ROW for first row (index 0), disable all others
             if (actionType === 'save-row' || actionType === 'confirm-edit') {
               // Enable only the first row's save/confirm button (index 0)
               const isFirstRow = rowIndex === 0;
-              console.log(`✅ Step 7 save-row row ${rowIndex}:`, isFirstRow ? 'ENABLED (first row)' : 'DISABLED (not first row)');
               return !isFirstRow; // Return false (enabled) for first row, true (disabled) for others
             }
             
             // For form fields, disable editing in all rows during Step 7 to focus on save action
             if (actionType === 'edit-form-fields') {
-              console.log(`✅ Step 7 edit-form-fields row ${rowIndex}: DISABLED (focus on save)`);
               return true; // Always disabled during Step 7 to focus on save action
             }
             
@@ -534,14 +485,11 @@ export const useTourStore = create<TourState>()(
               'delete-speaker',
               'cancel-edit' // Also disable cancel buttons to force saving
             ];
-            const step7Result = step7DisabledActions.includes(actionType);
-            console.log(`✅ Step 7 result for ${actionType}:`, step7Result ? 'DISABLED' : 'ENABLED');
-            return step7Result;
+            return step7DisabledActions.includes(actionType);
             
           case 8:
             // Step 8: Only allow SAVE MAPPINGS button, disable everything else
             if (actionType === 'save-mappings') {
-              console.log('💾 Step 8 save-mappings: ENABLED');
               return false; // Enable SAVE MAPPINGS button
             }
             
@@ -560,14 +508,11 @@ export const useTourStore = create<TourState>()(
               'cancel-edit',
               'edit-form-fields'
             ];
-            const step8Result = step8DisabledActions.includes(actionType);
-            console.log(`💾 Step 8 result for ${actionType}:`, step8Result ? 'DISABLED' : 'ENABLED');
-            return step8Result;
+            return step8DisabledActions.includes(actionType);
             
           case 9:
             // Step 9: Only allow reassignment actions (double arrow icons), disable everything else
             if (actionType === 'reassign-speaker-left' || actionType === 'reassign-speaker-right') {
-              console.log(`🔄 Step 9 ${actionType}: ENABLED`);
               return false; // Enable reassignment buttons
             }
             
@@ -585,14 +530,11 @@ export const useTourStore = create<TourState>()(
               'cancel-edit',
               'edit-form-fields'
             ];
-            const step9Result = step9DisabledActions.includes(actionType);
-            console.log(`🔄 Step 9 result for ${actionType}:`, step9Result ? 'DISABLED' : 'ENABLED');
-            return step9Result;
+            return step9DisabledActions.includes(actionType);
             
           case 10:
             // Step 10: Only allow GENERATE MEETING SUMMARY button, disable everything else
             if (actionType === 'generate-summary') {
-              console.log('🤖 Step 10 generate-summary: ENABLED');
               return false; // Enable GENERATE MEETING SUMMARY button
             }
             
@@ -611,9 +553,252 @@ export const useTourStore = create<TourState>()(
               'cancel-edit',
               'edit-form-fields'
             ];
-            const step10Result = step10DisabledActions.includes(actionType);
-            console.log(`🤖 Step 10 result for ${actionType}:`, step10Result ? 'DISABLED' : 'ENABLED');
-            return step10Result;
+            return step10DisabledActions.includes(actionType);
+            
+          case 11:
+            // Step 11: Only allow expanding action items (down arrow buttons), disable everything else
+            if (actionType === 'expand-action-items' || actionType === 'toggle-expand') {
+              return false; // Enable expand/collapse buttons for action items
+            }
+            
+            // All other actions are disabled in Step 11
+            const step11DisabledActions = [
+              'copy-transcript',
+              'copy-summary', // Copy summary button should be disabled
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item', // ADD ITEM button should be disabled until they expand
+              'share-summary' // SHARE button should be disabled
+            ];
+            return step11DisabledActions.includes(actionType);
+            
+          case 12:
+            // Step 12: Only allow copy summary button (acknowledgment step), disable everything else
+            if (actionType === 'copy-summary') {
+              return false; // Enable copy summary button - this is the focus
+            }
+            
+            // All other actions are disabled in Step 12
+            const step12DisabledActions = [
+              'copy-transcript',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'share-summary', // SHARE button should be disabled
+              'expand-action-items',
+              'toggle-expand'
+            ];
+            return step12DisabledActions.includes(actionType);
+            
+          case 13:
+            // Step 13: Only allow share summary button (user-action step), disable everything else
+            if (actionType === 'share-summary') {
+              return false; // Enable share summary button - this is the focus
+            }
+            
+            // All other actions are disabled in Step 13
+            const step13DisabledActions = [
+              'copy-transcript',
+              'copy-summary', // Copy summary button should be disabled
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'expand-action-items',
+              'toggle-expand'
+            ];
+            return step13DisabledActions.includes(actionType);
+            
+          case 14:
+            // Step 14: Only allow add email recipient button (user-action step), disable everything else
+            if (actionType === 'add-email-recipient') {
+              return false; // Enable add email recipient button - this is the focus
+            }
+            
+            // All other actions are disabled in Step 14
+            const step14DisabledActions = [
+              'copy-transcript',
+              'copy-summary',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'share-summary',
+              'expand-action-items',
+              'toggle-expand',
+              'add-recipient', // ADD button should be disabled
+              'add-suggested-recipient', // Email participant chips should be disabled
+              'preview-email', // Email preview should be disabled
+              'send-email', // Send email should be disabled
+              'cancel-email' // Cancel email should be disabled
+            ];
+            return step14DisabledActions.includes(actionType);
+            
+          case 15:
+            // Step 15: Acknowledgment step - disable all UI actions, only tour navigation buttons should work
+            const step15DisabledActions = [
+              'copy-transcript',
+              'copy-summary',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'share-summary',
+              'expand-action-items',
+              'toggle-expand',
+              'add-recipient', // ADD button should be disabled
+              'add-suggested-recipient', // Email participant chips should be disabled
+              'add-email-recipient', // ADD ALL PARTICIPANTS button should be disabled
+              'preview-email', // Email preview should be disabled
+              'send-email', // Send email should be disabled
+              'cancel-email' // Cancel email should be disabled
+            ];
+            return step15DisabledActions.includes(actionType);
+            
+          case 16:
+            // Step 16: Only allow preview email button (user-action step), disable everything else
+            if (actionType === 'preview-email') {
+              return false; // Enable preview email button - this is the focus
+            }
+            
+            // All other actions are disabled in Step 16
+            const step16DisabledActions = [
+              'copy-transcript',
+              'copy-summary',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'share-summary',
+              'expand-action-items',
+              'toggle-expand',
+              'add-recipient', // ADD button should be disabled
+              'add-suggested-recipient', // Email participant chips should be disabled
+              'add-email-recipient', // ADD ALL PARTICIPANTS button should be disabled
+              'send-email', // Send email should be disabled
+              'cancel-email' // Cancel email should be disabled
+            ];
+            return step16DisabledActions.includes(actionType);
+            
+          case 17:
+            // Step 17: Only allow send email button (user-action step), disable everything else
+            if (actionType === 'send-email') {
+              return false; // Enable send email button - this is the focus
+            }
+            
+            // All other actions are disabled in Step 17
+            const step17DisabledActions = [
+              'copy-transcript',
+              'copy-summary',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'share-summary',
+              'expand-action-items',
+              'toggle-expand',
+              'add-recipient', // ADD button should be disabled
+              'add-suggested-recipient', // Email participant chips should be disabled
+              'add-email-recipient', // ADD ALL PARTICIPANTS button should be disabled
+              'preview-email', // Email preview should be disabled
+              'cancel-email' // Cancel email should be disabled
+            ];
+            return step17DisabledActions.includes(actionType);
+            
+          case 18:
+            // Step 18: Tour Completion - disable all UI actions, only tour navigation buttons (RESTART/CLOSE) should work
+            const step18DisabledActions = [
+              'copy-transcript',
+              'copy-summary',
+              'generate-summary',
+              'reassign-speaker-left',
+              'reassign-speaker-right',
+              'manage-speakers',
+              'save-mappings',
+              'cancel-mappings',
+              'add-speaker',
+              'edit-speaker',
+              'delete-speaker',
+              'save-row',
+              'cancel-edit',
+              'edit-form-fields',
+              'add-item',
+              'share-summary',
+              'expand-action-items',
+              'toggle-expand',
+              'add-recipient', // ADD button should be disabled
+              'add-suggested-recipient', // Email participant chips should be disabled
+              'add-email-recipient', // ADD ALL PARTICIPANTS button should be disabled
+              'preview-email', // Email preview should be disabled
+              'send-email', // Send email should be disabled
+              'cancel-email' // Cancel email should be disabled
+            ];
+            return step18DisabledActions.includes(actionType);
             
           default:
             // For any other step, don't disable actions
