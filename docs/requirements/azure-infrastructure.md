@@ -119,6 +119,11 @@ This document contains all requirements related to cloud storage, databases, ser
 - **REQ-DEVOPS-3**: System shall implement automated testing in deployment pipelines
 - **REQ-DEVOPS-4**: System shall use blue-green or canary deployment strategies
 - **REQ-DEVOPS-5**: System shall implement automated rollback capabilities
+- **REQ-DEVOPS-6**: System shall provide Docker containerization for both frontend and backend applications
+- **REQ-DEVOPS-7**: System shall implement docker-compose configuration for local development environment
+- **REQ-DEVOPS-8**: System shall provide automated security scanning in CI/CD pipelines
+- **REQ-DEVOPS-9**: System shall implement automated dependency vulnerability scanning
+- **REQ-DEVOPS-10**: System shall provide health check endpoints for deployment verification
 
 ### Environment Management
 - **REQ-ENV-1**: System shall maintain separate environments for development, testing, staging, and production
@@ -126,6 +131,11 @@ This document contains all requirements related to cloud storage, databases, ser
 - **REQ-ENV-3**: System shall use Azure Resource Groups for environment isolation
 - **REQ-ENV-4**: System shall implement automated environment provisioning and teardown
 - **REQ-ENV-5**: System shall maintain environment parity for consistent deployments
+- **REQ-ENV-6**: System shall secure API keys and secrets using Azure Key Vault or similar secure storage
+- **REQ-ENV-7**: System shall implement proper CORS policies for production domains
+- **REQ-ENV-8**: System shall enforce HTTPS/TLS encryption for all production traffic
+- **REQ-ENV-9**: System shall implement environment-specific logging and monitoring configurations
+- **REQ-ENV-10**: System shall provide automated backup and recovery procedures for each environment
 
 ## Performance & Scalability
 

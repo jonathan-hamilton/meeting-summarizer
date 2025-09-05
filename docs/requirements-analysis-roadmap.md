@@ -98,18 +98,54 @@ Based on the updated requirements document, here are the major new features that
 - Speaker relevance validation
 - Cleanup operations after mapping changes
 
+#### 6. Deployment Infrastructure & Security (REQ-DEVOPS, REQ-SEC, REQ-ENV series) ⚠️ CRITICAL
+**Status:** Not implemented
+**Complexity:** Medium-High
+**Dependencies:** Current application architecture
+**Priority:** BLOCKING DEPLOYMENT
+
+**Components needed:**
+- Docker containerization (frontend & backend)
+- CI/CD pipeline implementation (GitHub Actions)
+- Production security hardening (Key Vault, CORS, HTTPS)
+- Infrastructure as Code (ARM templates/Terraform)
+- Health checks and monitoring endpoints
+- Automated security and dependency scanning
+
+#### 7. Performance & Load Testing (REQ-PERF, REQ-LOAD series) ⚠️ CRITICAL  
+**Status:** S3.6 never implemented
+**Complexity:** Medium
+**Dependencies:** Current system performance
+**Priority:** BLOCKING DEPLOYMENT
+
+**Components needed:**
+- Event handler performance optimization (>16ms violations)
+- Load testing with large files (up to 500MB)
+- Concurrent user testing (50+ users)
+- Memory usage validation during processing
+- Performance monitoring and alerting
+
 ## 🗺️ PROPOSED SPRINT ROADMAP
 
-### Sprint 3 Completion (Current Sprint)
-**Target:** Complete remaining S3.6 work
-**Timeline:** 1-2 weeks
+### Sprint 3 Completion (CRITICAL PRIORITY)
+**Target:** Complete never-started S3.6 work + deployment readiness
+**Timeline:** 2-3 weeks
+**Status:** ⚠️ BLOCKING DEPLOYMENT
 
-#### S3.6: Performance & Security Testing
-- Load testing for large audio files (up to 500MB)
-- Security vulnerability scanning
-- Performance benchmarking and optimization
+#### S3.6: Performance & Security Testing (Never Started)
+- Load testing for large audio files (up to 500MB) - REQ-LOAD-1 to REQ-LOAD-5
+- Security vulnerability scanning - REQ-SECTEST-1 to REQ-SECTEST-5
+- Performance benchmarking and optimization - REQ-PERF-1 to REQ-PERF-5
 - Comprehensive error handling validation
 - Memory usage analysis and optimization
+- Event handler performance fixes (>16ms violations)
+
+#### S3.7: Deployment Infrastructure (NEW - CRITICAL)
+- Docker containerization for frontend and backend - REQ-DEVOPS-6, REQ-DEVOPS-7
+- GitHub Actions CI/CD pipeline setup - REQ-DEVOPS-1, REQ-DEVOPS-8, REQ-DEVOPS-9
+- Production security hardening - REQ-SEC-1 to REQ-SEC-6, REQ-ENV-6 to REQ-ENV-8
+- Health check endpoints implementation - REQ-DEVOPS-10
+- Infrastructure as Code setup - REQ-DEVOPS-2
 
 ### Sprint 4: Azure Migration & Core Fixes (Priority 1)
 **Target:** Address fundamental speaker diarization issues
@@ -234,19 +270,27 @@ Based on the updated requirements document, here are the major new features that
 
 ## 🎯 RECOMMENDED PRIORITIZATION
 
-### Phase 1: Foundation Stability (Sprints 3-4)
-**Goal:** Ensure core functionality is rock-solid
-- Complete S3.6 testing
-- Azure migration for accuracy
+### Phase 0: DEPLOYMENT READINESS (Sprints 3.6-3.7) ⚠️ CRITICAL
+**Goal:** Make application deployable and production-ready
+**Status:** BLOCKING ALL FUTURE WORK
+- Complete never-started S3.6 performance and security testing
+- Implement basic deployment infrastructure (Docker, CI/CD, security)
+- Fix critical performance violations and accessibility issues (S5.3)
+- Validate system behavior under production load
+
+### Phase 1: Foundation Stability (Sprints 4-5) 
+**Goal:** Ensure core functionality is rock-solid  
+- Azure migration for accuracy (if needed)
+- Complete S5.3 performance optimization and accessibility
 - UI polish and bug fixes
 
-### Phase 2: User Experience (Sprints 5-6)  
+### Phase 2: User Experience (Sprints 6-7)  
 **Goal:** Enhance productivity and usability
-- Smart email controls
-- Bulk operations
+- Advanced email controls
+- Bulk operations  
 - Advanced UI features
 
-### Phase 3: Business Model (Sprints 7-10)
+### Phase 3: Business Model (Sprints 8-10)
 **Goal:** Enable sustainable monetization
 - User accounts and authentication
 - Token system and payments
@@ -254,27 +298,60 @@ Based on the updated requirements document, here are the major new features that
 
 ## 🚨 CRITICAL CONSIDERATIONS
 
+### Deployment Readiness - BLOCKING ISSUES ⚠️
+- **S3.6 Never Implemented**: Performance and security testing completely missing
+- **No Deployment Infrastructure**: Docker, CI/CD, security hardening all missing  
+- **Performance Violations**: Console shows >16ms handler violations affecting UX
+- **Security Gaps**: API keys in config files, no CORS policies, missing security headers
+- **Load Testing Gap**: No validation of system behavior with large files or concurrent users
+
 ### Technical Debt
 - **OpenAI Whisper Accuracy**: Must be addressed in Sprint 4
 - **Test Coverage**: Continue expanding as new features are added
-- **Performance**: Monitor as feature complexity increases
+- **Performance**: Critical violations identified and must be fixed before deployment
+- **Accessibility**: MUI tooltip warnings and missing ARIA compliance
 
 ### User Experience
 - **Feature Creep**: Balance new features with core functionality stability
 - **Learning Curve**: Bulk operations may overwhelm casual users
 - **Mobile Responsiveness**: Ensure new features work on all devices
+- **Accessibility Compliance**: WCAG 2.1 Level AA standards must be met
 
-### Business Viability
-- **Development Timeline**: 6+ months to full monetization
+### Business Viability & Risk
+- **Deployment Timeline**: Cannot deploy until critical infrastructure is built (3-4 weeks minimum)
+- **Security Risk**: Current configuration unsuitable for production deployment
+- **Performance Risk**: Unknown behavior under load, potential user experience issues  
 - **Market Validation**: Consider user feedback before heavy payment system investment
 - **Cost Management**: Monitor API costs during development
 
-## 📋 IMMEDIATE NEXT STEPS
+## 📋 IMMEDIATE NEXT STEPS (CRITICAL DEPLOYMENT READINESS)
 
-1. **Complete Sprint 3**: Finish S3.6 performance testing
-2. **Plan Sprint 4**: Prioritize Azure migration and UI fixes
-3. **Validate Priorities**: Confirm business model direction before monetization work
-4. **User Testing**: Gather feedback on current functionality before major new features
-5. **Technical Planning**: Architect authentication system for future sprints
+### Week 1: Start Critical S3.6 Work (Never Started) 🔥
+1. **Begin S3.6 Performance Testing**: Profile event handlers, fix >16ms violations
+2. **Start S3.6 Security Testing**: Implement vulnerability scanning, security headers
+3. **S5.3 Accessibility Fixes**: Wrap disabled buttons in spans, fix MUI tooltip warnings
+4. **Load Testing Setup**: Prepare test scenarios for large files (up to 500MB)
 
-This roadmap provides a clear path from current state to full feature implementation while maintaining focus on core functionality stability and user experience quality.
+### Week 2-3: Deployment Infrastructure (S3.7) 🔥  
+1. **Create Docker Configuration**: Frontend and backend Dockerfiles + docker-compose
+2. **Implement CI/CD Pipeline**: GitHub Actions with automated testing and security scanning
+3. **Security Hardening**: Move API keys to secure storage, implement CORS policies
+4. **Health Checks**: Add monitoring endpoints for deployment verification
+
+### Week 4: Validation & Go-Live Preparation
+1. **Complete Load Testing**: Validate system behavior under production scenarios
+2. **Security Audit**: Verify all security requirements are implemented
+3. **Performance Validation**: Confirm all >16ms violations are resolved
+4. **Deployment Testing**: Verify complete deployment pipeline works end-to-end
+
+### After Deployment Readiness (Future):
+1. **Plan Sprint 4**: Azure migration and UI fixes (if still needed)
+2. **Validate Business Priorities**: Confirm monetization system direction  
+3. **User Testing**: Gather feedback on current functionality before major new features
+4. **Technical Planning**: Architect authentication system for future sprints
+
+**DEPLOYMENT STATUS: NO-GO** ❌  
+**ESTIMATED READY DATE: Early October 2025 (4-5 weeks)**  
+**CRITICAL BLOCKER: S3.6 never started + missing deployment infrastructure**
+
+This roadmap provides a clear path from current non-deployable state to production-ready system, prioritizing critical infrastructure and testing gaps before any new feature development.

@@ -19,6 +19,11 @@
 - REQ-NFR-2: System shall support concurrent processing of up to 50 audio files
 - REQ-NFR-3: System shall respond to API requests within 200ms for non-processing operations
 - REQ-NFR-4: System shall handle files up to 4 hours in duration
+- REQ-PERF-1: System shall ensure all event handlers execute within 16ms to maintain 60fps UI performance
+- REQ-PERF-2: System shall implement debouncing/throttling for frequently-triggered user interactions
+- REQ-PERF-3: System shall optimize React component rendering to prevent unnecessary re-renders
+- REQ-PERF-4: System shall implement proper memoization patterns for expensive calculations
+- REQ-PERF-5: System shall monitor and alert on performance degradation in production
 
 ## Scalability
 
@@ -33,6 +38,12 @@
 - REQ-NFR-10: System shall implement rate limiting to prevent abuse
 - REQ-NFR-11: System shall comply with data privacy regulations (GDPR, CCPA)
 - REQ-NFR-12: System shall provide audit logging for all user actions
+- REQ-SEC-1: System shall store sensitive configuration values in secure vaults (Azure Key Vault, etc.)
+- REQ-SEC-2: System shall implement proper CORS policies restricting cross-origin requests
+- REQ-SEC-3: System shall implement security headers (HSTS, CSP, X-Frame-Options, etc.)
+- REQ-SEC-4: System shall perform regular security vulnerability scanning
+- REQ-SEC-5: System shall implement input validation and sanitization for all user inputs
+- REQ-SEC-6: System shall implement proper session management and timeout policies
 
 ## Privacy & Data Handling
 
