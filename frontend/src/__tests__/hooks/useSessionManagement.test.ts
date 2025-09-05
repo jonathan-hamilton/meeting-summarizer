@@ -46,6 +46,7 @@ describe('useSessionManagement - Foundation Test Coverage (S3.0 Increment 2)', (
     dataSize: '2.5 KB',
     clearAllData: vi.fn(),
     extendSession: vi.fn(),
+    extendSessionByMinutes: vi.fn(),
     exportBeforeClear: vi.fn()
   };
 

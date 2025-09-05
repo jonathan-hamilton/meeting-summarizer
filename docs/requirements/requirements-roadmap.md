@@ -161,42 +161,52 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 
 
 ## Sprint 5
-**Partially Implemented (S5.1 ~60% Complete - Incremental Progress):**
-  - REQ-DEMO-1: Default to Demo mode for unsigned users ✅
-  - REQ-DEMO-2: AppBar visually distinct and displays "Demo" ✅
-  - REQ-USER-1: Two user modes: Demo/Public and Paid ✅
-  - REQ-USER-2: Demo serves only static/demo content ✅
-  - REQ-DEMO-6: Simulate full workflow with static/mock data ✅
-  - REQ-DEMO-7: All features interactive on static data ✅
-  - REQ-DEMO-8: All actions simulated, no real data processed ✅
-  - REQ-DEMO-10: Upload simulated with mock progress ✅
-  - REQ-DEMO-11: Speaker mapping/transcript editing enabled ✅
-  - REQ-DEMO-12: Summary/email sharing simulated with mock confirmation ✅
-  - REQ-DEMO-13: No usage limits per session in Demo mode ✅
-  - REQ-DEMO-20: Demo implemented in client with static data ✅
-  - REQ-DEMO-21: Demo mode available in all environments ✅
-  
-**In Progress/Not Yet Implemented:**
-  - REQ-DEMO-3: Prominent "Sign In" button in AppBar ❌
-  - REQ-DEMO-4: Step-by-step interactive Tour with tooltips 🔄 *(Static tour popovers implemented, tour transition logic pending)*
-  - REQ-DEMO-5: Tour closable, forward/backward navigation 🔄 *(Individual step close implemented, navigation logic pending)*
-  - REQ-DEMO-9: Tooltips/UI messaging clarify simulation ❌
-  - REQ-DEMO-14: "Sign In" always visible in Demo mode ❌
-  - REQ-DEMO-15: Signing in transitions to Paid mode ❌
-  - REQ-DEMO-16: Tour/UI clarify Demo vs Paid modes ❌
-  - REQ-DEMO-17: Privacy-friendly analytics for Demo usage ❌
-  - REQ-DEMO-18: Analytics reviewed for abuse patterns ❌
-  - REQ-DEMO-19: Demo mode meets accessibility/mobile standards 🔄
-  - REQ-DEMO-22: Tour step tracking with numbered steps ✅ *(TourPopover component implemented)*
-  - REQ-DEMO-23: Tour steps include Step 9 (Summary) guidance ✅ *(Steps 1-15 implemented)*
-  - REQ-DEMO-24: Tour overlays positioned with high z-index ✅ *(z-index 9999 implemented)*
-  - REQ-DEMO-25: Tour steps include close functionality ✅ *(Individual step closure implemented)*
-  - REQ-DEMO-26: Tour content centered with appropriate contrast ✅ *(Dark grey/white styling implemented)*
-  - REQ-DEMO-27: Tour automatic step progression based on actions ❌ *(Tour transition logic pending)*
-  - REQ-DEMO-28: Tour navigation controls with functional transitions ❌ *(Navigation controls pending)*
-  - REQ-USER-3: Paid mode persists data across sessions ❌
-  - REQ-USER-4: Communicate data retention/privacy for each mode ❌
-  - REQ-FPO-2: Convert all non-WAV audio files to WAV before transcription ✅
+**Implemented:**
+  - REQ-DEMO-1: Default to Demo mode for unsigned users ✅ (S5.1)
+  - REQ-DEMO-2: AppBar visually distinct and displays "Demo" ✅ (S5.1)
+  - REQ-USER-1: Two user modes: Demo/Public and Paid ✅ (S5.1)
+  - REQ-USER-2: Demo serves only static/demo content ✅ (S5.1)
+  - REQ-DEMO-6: Simulate full workflow with static/mock data ✅ (S5.1)
+  - REQ-DEMO-7: All features interactive on static data ✅ (S5.1)
+  - REQ-DEMO-8: All actions simulated, no real data processed ✅ (S5.1)
+  - REQ-DEMO-10: Upload simulated with mock progress ✅ (S5.1)
+  - REQ-DEMO-11: Speaker mapping/transcript editing enabled ✅ (S5.1)
+  - REQ-DEMO-12: Summary/email sharing simulated with mock confirmation ✅ (S5.1)
+  - REQ-DEMO-13: No usage limits per session in Demo mode ✅ (S5.1)
+  - REQ-DEMO-20: Demo implemented in client with static data ✅ (S5.1)
+  - REQ-DEMO-21: Demo mode available in all environments ✅ (S5.1)
+  - REQ-DEMO-4: Step-by-step interactive Tour with tooltips ✅ (S5.1)
+  - REQ-DEMO-5: Tour closable, forward/backward navigation ✅ (S5.1)
+  - REQ-DEMO-22: Tour step tracking with numbered steps ✅ (S5.1)
+  - REQ-DEMO-23: Tour steps include Step 9 (Summary) guidance ✅ (S5.1)
+  - REQ-DEMO-24: Tour overlays positioned with high z-index ✅ (S5.1)
+  - REQ-DEMO-25: Tour steps include close functionality ✅ (S5.1)
+  - REQ-DEMO-26: Tour content centered with appropriate contrast ✅ (S5.1)
+  - REQ-DEMO-27: Tour automatic step progression based on actions ✅ (S5.1)
+  - REQ-DEMO-28: Tour navigation controls with functional transitions ✅ (S5.1)
+  - REQ-FPO-2: Convert all non-WAV audio files to WAV before transcription ✅ (S5.2)
+  - REQ-PERF-1: Reduce main bundle size by minimum 15% ✅ (S5.3) - **EXCEEDED: 52.4% reduction achieved**
+  - REQ-PERF-2: Implement lazy loading for large dialog components ✅ (S5.3)
+  - REQ-PERF-3: Code splitting for optimal loading performance ✅ (S5.3)
+  - REQ-PERF-4: Bundle analysis tools for ongoing monitoring ✅ (S5.3)
+  - REQ-ACC-1: All interactive UI components include accessibility attributes ✅ (S5.3)
+  - REQ-ACC-2: Follow WCAG 2.1 for color contrast, focus, semantic HTML ✅ (S5.3)
+  - REQ-ACC-3: Screen reader compatibility for all major workflows ✅ (S5.3)
+  - REQ-ACC-4: Keyboard navigation support for all interactive elements ✅ (S5.3)
+  - REQ-MOD-1: React Router v7 future flags implementation ✅ (S5.3)
+  - REQ-MOD-2: Zero deprecation warnings for framework upgrades ✅ (S5.3)
+  - REQ-QUAL-1: TypeScript compilation errors resolution ✅ (S5.3) - **74 → 0 errors**
+  - REQ-QUAL-2: ESLint code quality improvements ✅ (S5.3) - **69% violation reduction**
+  - REQ-QUAL-3: Legacy code cleanup and technical debt reduction ✅ (S5.3)
+
+**In Progress:**
+  - REQ-DEMO-3: Prominent "Sign In" button in AppBar ⏳
+  - REQ-DEMO-9: Tooltips/UI messaging clarify simulation ⏳
+  - REQ-DEMO-14: "Sign In" always visible in Demo mode ⏳
+  - REQ-DEMO-15: Signing in transitions to Paid mode ⏳
+  - REQ-DEMO-16: Tour/UI clarify Demo vs Paid modes ⏳
+  - REQ-DEMO-17: Privacy-friendly analytics for Demo usage ⏳
+  - REQ-DEMO-18: Analytics reviewed for abuse patterns ⏳
 
 **Planned/Future:**
   - REQ-FPO-3: Handle conversion errors gracefully with user feedback

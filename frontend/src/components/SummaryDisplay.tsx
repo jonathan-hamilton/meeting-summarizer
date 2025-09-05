@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import {
   Snackbar,
   Divider,
   Stack,
+  Skeleton,
 } from "@mui/material";
 import TourPopover from "./TourPopover";
 import SummaryHeader from "./SummaryHeader";
@@ -22,7 +23,10 @@ import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
 import { useTourStore } from "../stores/tourStore";
 import { useAppMode } from "../contexts/AppModeContext";
-import EmailCompositionDialog from "./EmailCompositionDialog";
+
+// Lazy load EmailCompositionDialog to reduce bundle size
+const EmailCompositionDialog = React.lazy(() => import("./EmailCompositionDialog"));
+
 import UpsertActionItemDialog from "./UpsertActionItemDialog";
 
 interface SummaryDisplayProps {
@@ -366,14 +370,16 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       </Snackbar>
 
       {/* Email Composition Dialog */}
-      <EmailCompositionDialog
-        open={emailDialogOpen}
-        onClose={() => setEmailDialogOpen(false)}
-        summary={summary}
-        speakerMappings={effectiveSpeakerMappings}
-        actionItems={actionItems}
-        onSend={handleSendEmail}
-      />
+      <Suspense fallback={<Skeleton variant="rectangular" height={600} />}>
+        <EmailCompositionDialog
+          open={emailDialogOpen}
+          onClose={() => setEmailDialogOpen(false)}
+          summary={summary}
+          speakerMappings={effectiveSpeakerMappings}
+          actionItems={actionItems}
+          onSend={handleSendEmail}
+        />
+      </Suspense>
 
       {/* Action Item Dialog */}
       <UpsertActionItemDialog

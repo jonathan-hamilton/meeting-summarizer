@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import {
   Typography,
   Box,
@@ -23,10 +23,13 @@ import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
 import { useTourStore } from "./stores/tourStore";
-import { HealthDialog } from "./components/HealthDialog";
-import { SessionTimeoutWarningDialog } from "./components/SessionTimeoutWarningDialog";
-import { PrivacyPolicyDialog } from "./components/PrivacyPolicyDialog";
-import { HelpDialog } from "./components/HelpDialog";
+
+// Lazy load dialog components to reduce initial bundle size
+const HealthDialog = React.lazy(() => import("./components/HealthDialog").then(m => ({ default: m.HealthDialog })));
+const SessionTimeoutWarningDialog = React.lazy(() => import("./components/SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
+const PrivacyPolicyDialog = React.lazy(() => import("./components/PrivacyPolicyDialog").then(m => ({ default: m.PrivacyPolicyDialog })));
+const HelpDialog = React.lazy(() => import("./components/HelpDialog").then(m => ({ default: m.HelpDialog })));
+
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
@@ -371,28 +374,38 @@ const AppContent: React.FC = () => {
             </Toolbar>
           </AppBar>
 
-          <HealthDialog open={healthDialogOpen} onClose={closeHealthDialog} />
+          <Suspense fallback={null}>
+            <HealthDialog open={healthDialogOpen} onClose={closeHealthDialog} />
+          </Suspense>
 
           {/* Global session timeout warning dialog */}
-          <SessionTimeoutWarningDialog />
+          <Suspense fallback={null}>
+            <SessionTimeoutWarningDialog />
+          </Suspense>
 
           {/* Privacy policy dialog (production only, first visit) */}
-          <PrivacyPolicyDialog 
-            forceShow={forceShowPrivacyPolicy}
-            onAccepted={() => setForceShowPrivacyPolicy(false)}
-          />
+          <Suspense fallback={null}>
+            <PrivacyPolicyDialog 
+              forceShow={forceShowPrivacyPolicy}
+              onAccepted={() => setForceShowPrivacyPolicy(false)}
+            />
+          </Suspense>
 
           {/* Manual privacy policy dialog (footer link) */}
-          <PrivacyPolicyDialog 
-            forceShow={privacyPolicyOpen}
-            onAccepted={() => setPrivacyPolicyOpen(false)}
-          />
+          <Suspense fallback={null}>
+            <PrivacyPolicyDialog 
+              forceShow={privacyPolicyOpen}
+              onAccepted={() => setPrivacyPolicyOpen(false)}
+            />
+          </Suspense>
 
           {/* Help & FAQ dialog */}
-          <HelpDialog 
-            open={helpDialogOpen}
-            onClose={() => setHelpDialogOpen(false)}
-          />
+          <Suspense fallback={null}>
+            <HelpDialog 
+              open={helpDialogOpen}
+              onClose={() => setHelpDialogOpen(false)}
+            />
+          </Suspense>
 
           {/* Development mode sign-in dialog */}
           <Dialog
@@ -418,16 +431,17 @@ const AppContent: React.FC = () => {
             </DialogActions>
           </Dialog>
 
-          <Box sx={{ py: 4, width: "100%" }}>
-            <Typography
-              variant="h5"
-              component="h2"
-              gutterBottom
-              align="center"
-              color="text.secondary"
-            >
-              AI-Powered Meeting Transcription and Summarization
-            </Typography>
+          <main role="main" aria-label="Main content">
+            <Box sx={{ py: 4, width: "100%" }}>
+              <Typography
+                variant="h5"
+                component="h1"
+                gutterBottom
+                align="center"
+                color="text.secondary"
+              >
+                AI-Powered Meeting Transcription and Summarization
+              </Typography>
 
             <Grid
               container
@@ -435,38 +449,41 @@ const AppContent: React.FC = () => {
               sx={{ mt: 2, width: "100%", minHeight: "200px" }}
             >
               <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                <Box sx={{ width: "100%" }}>
-                  <Typography variant="h4" component="h2" gutterBottom>
+                <section aria-labelledby="upload-heading">
+                  <Typography variant="h4" component="h2" id="upload-heading" gutterBottom>
                     Upload Audio File
                   </Typography>
                   <FileUpload
                     onTranscriptionComplete={handleTranscriptionComplete}
                   />
-                </Box>
+                </section>
               </Grid>
 
               {transcriptionResults.length > 0 && (
                 <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                  <Box 
+                  <section 
+                    aria-labelledby="transcription-heading"
                     id="transcription-results" 
                     ref={transcriptionResultsRef}
-                    sx={{ width: "100%" }}
                   >
-                    <Typography variant="h4" component="h2" gutterBottom>
-                      Transcription Results
-                    </Typography>
-                    {transcriptionResults.map((result) => (
-                      <TranscriptDisplay
-                        key={result.transcriptionId}
-                        transcription={result}
-                        aiSummaryRef={aiSummaryRef}
-                      />
-                    ))}
-                  </Box>
+                    <Box sx={{ width: "100%" }}>
+                      <Typography variant="h4" component="h2" id="transcription-heading" gutterBottom>
+                        Transcription Results
+                      </Typography>
+                      {transcriptionResults.map((result) => (
+                        <TranscriptDisplay
+                          key={result.transcriptionId}
+                          transcription={result}
+                          aiSummaryRef={aiSummaryRef}
+                        />
+                      ))}
+                    </Box>
+                  </section>
                 </Grid>
               )}
             </Grid>
           </Box>
+          </main>
           
           {/* Footer with privacy link */}
           <Box component="footer" sx={{ mt: 4, py: 2, borderTop: 1, borderColor: 'divider' }}>

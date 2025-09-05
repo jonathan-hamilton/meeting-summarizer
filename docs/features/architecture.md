@@ -40,14 +40,49 @@ The app is structured for modularity and extensibility. It includes endpoints fo
 
 ### Frontend Application
 
-- **Technology Stack**: React with TypeScript for type safety and modern development
+- **Technology Stack**: React 19.1.0 with TypeScript 5.8.3 for type safety and modern development
 - **Architecture**: Single Page Application (SPA) consuming the .NET Web API
-- **Build Tools**: Vite for fast development and build process
-- **Styling**: Material-UI (MUI) for consistent, professional React components
-- **State Management**: React hooks and context for simple state, potentially Redux Toolkit for complex state
+- **Build Tools**: Vite 7.0.4 for fast development and optimized production builds
+- **Styling**: Material-UI 7.2.0 for consistent, professional React components
+- **State Management**: Zustand 5.0.2 for lightweight, scalable state management
 - **API Integration**: Axios for REST API communication with the backend
 - **File Upload**: Material-UI dropzone component for drag-and-drop audio file uploads
-- **Real-time Updates**: WebSocket or polling for transcription progress updates
+- **Performance Optimization**: React.lazy() with Suspense for code splitting and lazy loading
+- **Bundle Analysis**: rollup-plugin-visualizer for ongoing performance monitoring
+- **Accessibility**: WCAG AA compliant with comprehensive ARIA attributes and semantic HTML
+
+#### Performance Architecture
+
+**Lazy Loading Strategy**: 
+- Critical dialogs (EmailCompositionDialog, SpeakerMappingDialog) implement React.lazy() for on-demand loading
+- Suspense boundaries provide skeleton loading states during component loading
+- Main bundle reduced by 52.4% (1,712kB → 814kB) through strategic code splitting
+
+**Component Loading Pattern**:
+```typescript
+// Lazy loading with named imports
+const EmailCompositionDialog = React.lazy(() => import("./EmailCompositionDialog"));
+
+// Suspense wrapper with skeleton fallback
+<Suspense fallback={<Skeleton variant="rectangular" height={600} />}>
+  <EmailCompositionDialog />
+</Suspense>
+```
+
+**Bundle Structure** (Post S5.3 Optimization):
+- **Main Bundle**: 814.37 kB (254.24 kB gzipped) - Core application
+- **EmailCompositionDialog**: 863.21 kB (301.08 kB gzipped) - Lazy loaded
+- **SpeakerMappingDialog**: 14.31 kB (5.13 kB gzipped) - Lazy loaded
+- **Additional Dialogs**: ~25 kB total - Various lazy-loaded components
+
+#### Accessibility Architecture
+
+**WCAG AA Compliance Strategy**:
+- All disabled interactive elements wrapped in `<span>` for proper tooltip accessibility
+- Comprehensive ARIA labeling with `aria-label` and `aria-describedby` attributes
+- Semantic HTML structure using proper landmarks (`main`, `section`, `header`)
+- Screen reader optimization with descriptive labels and logical heading hierarchy
+- Keyboard navigation support for all interactive elements
 - **Theme**: MUI theming system for consistent design and dark/light mode support
 
 ### OpenAI Integration

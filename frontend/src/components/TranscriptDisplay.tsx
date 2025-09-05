@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import {
   Card,
   CardContent,
@@ -11,6 +11,7 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import {
   ContentCopy,
@@ -20,7 +21,10 @@ import {
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
-import { SpeakerMappingDialog } from "./SpeakerMappingDialog";
+
+// Lazy load SpeakerMappingDialog to reduce bundle size  
+const SpeakerMappingDialog = React.lazy(() => import("./SpeakerMappingDialog").then(m => ({ default: m.SpeakerMappingDialog })));
+
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
 import { TourPopover } from "./TourPopover";
@@ -73,6 +77,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const activeSpeakers = useActiveSpeakers();
 
   // Session management for privacy controls
+  // Session management for privacy controls (currently unused but kept for future use)
   const { privacyControls: _privacyControls } = useSessionManagement();
 
   // Tour state management
@@ -295,7 +300,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     const sizes = ["Bytes", "KB", "MB", "GB"];
     if (bytes === 0) return "0 Bytes";
     const i = Math.floor(Math.log(bytes) / Math.log(1000));
-    let value = bytes / Math.pow(1000, i);
+    const value = bytes / Math.pow(1000, i);
     // Always show two decimals for MB
     if (sizes[i] === "MB") {
       return value.toFixed(2) + " MB";
@@ -494,14 +499,18 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               </Typography>
               <Box sx={{ flexGrow: 1 }} />
               <Tooltip title="Copy full transcript">
-                <IconButton
-                  size="small"
-                  onClick={handleCopyFullTranscript}
-                  disabled={isActionDisabledDuringTour('copy-transcript')}
-                  color={copiedSegment === "full" ? "success" : "default"}
-                >
-                  <ContentCopy fontSize="small" />
-                </IconButton>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={handleCopyFullTranscript}
+                    disabled={isActionDisabledDuringTour('copy-transcript')}
+                    color={copiedSegment === "full" ? "success" : "default"}
+                    aria-label="Copy full transcript"
+                    aria-describedby="copy-full-transcript-tooltip"
+                  >
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Stack>
 
@@ -546,14 +555,18 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 Transcript
               </Typography>
               <Tooltip title="Copy transcript">
-                <IconButton
-                  size="small"
-                  onClick={handleCopySimpleTranscript}
-                  disabled={isActionDisabledDuringTour('copy-transcript')}
-                  color={copiedSegment === "full" ? "success" : "default"}
-                >
-                  <ContentCopy fontSize="small" />
-                </IconButton>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={handleCopySimpleTranscript}
+                    disabled={isActionDisabledDuringTour('copy-transcript')}
+                    color={copiedSegment === "full" ? "success" : "default"}
+                    aria-label="Copy transcript text"
+                    aria-describedby="copy-transcript-tooltip"
+                  >
+                    <ContentCopy fontSize="small" />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Stack>
 
@@ -611,14 +624,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       </CardContent>
 
       {/* Speaker Mapping Dialog */}
-      <SpeakerMappingDialog
-        open={speakerMappingDialogOpen}
-        onClose={() => setSpeakerMappingDialogOpen(false)}
-        transcriptionId={transcription.transcriptionId}
-        existingMappings={getAllMappings?.() || []}
-        detectedSpeakers={detectedSpeakers}
-        onMappingsSaved={handleSpeakerMappingsSaved}
-      />
+      <Suspense fallback={<Skeleton variant="rectangular" height={400} />}>
+        <SpeakerMappingDialog
+          open={speakerMappingDialogOpen}
+          onClose={() => setSpeakerMappingDialogOpen(false)}
+          transcriptionId={transcription.transcriptionId}
+          existingMappings={getAllMappings?.() || []}
+          detectedSpeakers={detectedSpeakers}
+          onMappingsSaved={handleSpeakerMappingsSaved}
+        />
+      </Suspense>
 
       {/* Transcription Delete Confirmation Dialog */}
       <ConfirmTranscriptionDeleteDialog
