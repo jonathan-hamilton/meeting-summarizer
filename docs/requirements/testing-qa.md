@@ -5,7 +5,7 @@ This document contains all requirements related to test coverage, validation, an
 ## Core Testing Requirements
 
 ### Test Coverage Standards
-- **REQ-TST-1**: System shall maintain minimum 85% test coverage for all core functionality
+- **REQ-TST-1**: System shall maintain minimum **90% test coverage** for all core functionality (UPDATED for deployment readiness)
 - **REQ-TST-2**: System shall include comprehensive unit tests for all Zustand state management stores
 - **REQ-TST-3**: System shall validate session management functionality through automated testing
 - **REQ-TST-4**: System shall include performance regression tests for optimized components
@@ -15,6 +15,11 @@ This document contains all requirements related to test coverage, validation, an
 - **REQ-TST-8**: System shall test error boundaries and fallback mechanisms
 - **REQ-TST-9**: System shall include cross-browser compatibility testing for core features
 - **REQ-TST-10**: System shall validate accessibility compliance through automated testing
+- **REQ-TST-11**: System shall **fix all existing test failures** before deployment (CRITICAL)
+- **REQ-TST-12**: System shall test **complete tour system workflow** including all 18 steps with process control
+- **REQ-TST-13**: System shall achieve **95% coverage** for critical components (TranscriptDisplay, SummaryDisplay, TourPopover)
+- **REQ-TST-14**: System shall test **email composition workflow** end-to-end including error scenarios
+- **REQ-TST-15**: System shall validate **action item management** CRUD operations and drag-drop functionality
 
 ### Load Testing & Performance Validation
 - **REQ-LOAD-1**: System shall perform load testing with audio files up to 500MB in size
@@ -38,6 +43,9 @@ This document contains all requirements related to test coverage, validation, an
 - **REQ-UNIT-3**: System shall test component error handling and edge cases
 - **REQ-UNIT-4**: System shall verify component accessibility attributes and behavior
 - **REQ-UNIT-5**: System shall test component interaction with external dependencies
+- **REQ-UNIT-6**: System shall test **missing critical components**: ActionItemsSection, EmailCompositionDialog, SummaryDisplay, SummaryHeader, TranscriptDisplay, TranscriptSpeakerSegment, TourPopover, UpsertActionItemDialog, SortableActionItem
+- **REQ-UNIT-7**: System shall fix **mock infrastructure issues** preventing test execution
+- **REQ-UNIT-8**: System shall test **user interactions** for all clickable elements and form inputs
 
 ### State Management Testing
 - **REQ-STATE-TEST-1**: System shall test all Zustand store actions and state transitions
@@ -45,6 +53,9 @@ This document contains all requirements related to test coverage, validation, an
 - **REQ-STATE-TEST-3**: System shall test store integration with React components
 - **REQ-STATE-TEST-4**: System shall verify store error handling and recovery mechanisms
 - **REQ-STATE-TEST-5**: System shall test store performance under load conditions
+- **REQ-STATE-TEST-6**: System shall test **missing store coverage**: tourStore.ts (CRITICAL - process control logic), speakerSessionStore.ts, summaryStore.ts, userModeStore.ts, enhancedSessionStore.ts
+- **REQ-STATE-TEST-7**: System shall test **tour store process control methods** including isActionDisabledDuringTour for all 18 steps
+- **REQ-STATE-TEST-8**: System shall validate **speaker session store CRUD operations** and data consistency
 
 ### Business Logic Testing
 - **REQ-LOGIC-TEST-1**: System shall test all business rules and validation logic

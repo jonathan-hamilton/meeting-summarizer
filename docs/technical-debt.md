@@ -908,6 +908,145 @@ Current approach: Document the 78% overall success rate as acceptable for Sprint
 
 ---
 
+## Performance & Accessibility Technical Debt (S5.3 Sprint)
+
+### Console Performance Violations 
+
+**Date Identified**: September 4, 2025 (Pre-S5.3)  
+**Priority**: High (Deployment blocker)  
+**Sprint**: S5.3 Performance Optimization & Accessibility
+
+**Problem**: 
+Application generates multiple console performance warnings where event handlers (click, setTimeout, message handlers) exceed 16ms execution time, impacting user experience responsiveness.
+
+**Impact Assessment**:
+- **User Experience**: Potential UI lag and unresponsive interactions
+- **Performance**: Suboptimal React rendering performance
+- **SEO/Metrics**: Poor Core Web Vitals scores
+- **Professional Quality**: Console warnings indicate unoptimized code
+
+**Resolution Requirements**:
+- Profile and optimize expensive event handlers
+- Implement debouncing/throttling for scroll and resize handlers
+- Optimize React component rendering patterns
+- Achieve >90% reduction in performance violations
+
+### Accessibility Compliance Gaps
+
+**Date Identified**: September 4, 2025 (Pre-S5.3)  
+**Priority**: High (Legal compliance)  
+**Sprint**: S5.3 Performance Optimization & Accessibility
+
+**Problem**: 
+Multiple accessibility issues including disabled buttons in MUI tooltips not properly wrapped, missing ARIA attributes, and incomplete keyboard navigation support.
+
+**Impact Assessment**:
+- **Legal Compliance**: WCAG AA compliance gaps
+- **User Accessibility**: Screen reader and keyboard navigation issues
+- **Market Access**: Excludes users with disabilities
+- **Professional Standards**: Below enterprise accessibility standards
+
+**Resolution Requirements**:
+- Wrap all disabled buttons in tooltips with span elements
+- Implement comprehensive ARIA labeling
+- Ensure complete keyboard navigation
+- Pass automated accessibility audits (axe-core, WAVE)
+
+### React Router Deprecation Warnings
+
+**Date Identified**: September 4, 2025 (Pre-S5.3)  
+**Priority**: Medium (Future compatibility)  
+**Sprint**: S5.3 Performance Optimization & Accessibility
+
+**Problem**: 
+Multiple React Router deprecation warnings due to missing v7 future flags, indicating potential breaking changes in future updates.
+
+**Impact Assessment**:
+- **Maintenance**: Future breaking changes without warning
+- **Development**: Console noise masking other issues
+- **Code Quality**: Using deprecated patterns
+- **Upgrade Path**: Easier migration to future versions
+
+**Resolution Requirements**:
+- Implement all React Router v7 future flags
+- Test routing behavior with new configuration
+- Document any behavior changes
+- Eliminate all deprecation warnings
+
+---
+
+## Test Framework Technical Debt (S5.4 Sprint)
+
+### Legacy Test Framework Architecture
+
+**Date Identified**: September 4, 2025 (Pre-S5.4)  
+**Priority**: Critical (Deployment readiness)  
+**Sprint**: S5.4 Test Framework Modernization & Coverage
+
+**Problem**: 
+Comprehensive test framework issues with 68 failing tests due to legacy mocking patterns, outdated component imports, and architecture mismatches with current Zustand store implementation.
+
+**Current Test Status**:
+- **Test Files**: 6 failing | 3 passing (9 total)
+- **Individual Tests**: 68 failed | 101 passed | 3 skipped (172 total)
+- **Coverage**: Below 90% target due to failing component tests
+- **Architecture**: Legacy mockUseSpeakerStore vs current mockUseSpeakerSessionStore
+
+**Specific Issues Identified**:
+
+**Legacy Store Mocking**:
+- `SpeakerMapping.performance.test.tsx` uses undefined `mockUseSpeakerStore`
+- Tests expect old store structure, current app uses `useSpeakerSessionStore`
+- Mock property errors in `SpeakerMappingDialog.test.tsx`
+- TypeScript compilation errors due to interface mismatches
+
+**Component Import Issues**:
+- Default vs named import mismatches (e.g., `{ FileUpload }` vs `FileUpload`)
+- Missing required props in component tests
+- Context and hook import path errors (AppModeContext vs useAppMode hook)
+
+**API Service Mocking**:
+- Tests use direct service imports, current app uses `createApiService` factory
+- `FileUpload.test.tsx` service mocking failures
+- Outdated API patterns not matching current architecture
+
+**Tour Integration Testing**:
+- No comprehensive tests for 18-step tour system
+- Tour store testing incomplete
+- Process control system testing missing
+
+**Impact Assessment**:
+- **Deployment Readiness**: Cannot deploy with failing tests
+- **Code Confidence**: No regression protection for critical features
+- **Development Velocity**: Broken tests slow feature development
+- **Maintenance**: Legacy patterns prevent easy test updates
+- **Coverage Goals**: 90% coverage impossible with failing tests
+
+**Resolution Requirements**:
+1. **Store Architecture Update**: Replace all legacy store mocks with current patterns
+2. **Component Test Modernization**: Fix imports, props, and context usage
+3. **API Service Pattern Update**: Update to factory pattern throughout
+4. **Tour System Testing**: Comprehensive tests for all 18 tour steps
+5. **Integration Testing**: End-to-end tests for critical workflows
+6. **Coverage Achievement**: Reach 90% coverage across all critical components
+
+**Files Requiring Updates** (Minimum 32 test files):
+- `SpeakerMapping.performance.test.tsx` - Store architecture update
+- `SpeakerMappingDialog.test.tsx` - Mock property fixes
+- `FileUpload.test.tsx` - API service factory pattern
+- All component tests with tour integration
+- New comprehensive TourStore tests
+- New SummaryStore action item tests
+
+**Technical Patterns to Establish**:
+- Standardized Zustand store mocking patterns
+- Consistent component rendering with required providers  
+- Modern API service testing with factory mocking
+- Tour integration test utilities
+- Drag & drop testing patterns for action items
+
+---
+
 ## Future Issues
 
 **Note**: Add new issues here as they are discovered
