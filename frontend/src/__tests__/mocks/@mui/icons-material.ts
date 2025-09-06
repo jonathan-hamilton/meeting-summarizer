@@ -24,6 +24,13 @@ export const Person = createMockIcon('Person')
 export const Edit = createMockIcon('Edit')
 export const Mic = createMockIcon('Mic')
 export const PersonAdd = createMockIcon('PersonAdd')
+export const Close = createMockIcon('Close')
+export const Save = createMockIcon('Save')
+export const Delete = createMockIcon('Delete')
+export const AudioFile = createMockIcon('AudioFile')
+export const DragIndicator = createMockIcon('DragIndicator')
+export const MoreVert = createMockIcon('MoreVert')
+export const Add = createMockIcon('Add')
 
 // Default export as an object (in case any components import the entire module)
 export default {
@@ -39,4 +46,11 @@ export default {
   Edit,
   Mic,
   PersonAdd,
+  Close,
+  Save,
+  Delete,
+  AudioFile,
+  DragIndicator,
+  MoreVert,
+  Add,
 }
