@@ -10,6 +10,18 @@ import { vi } from 'vitest';
 import { AppModeProvider } from '../../contexts/AppModeContext';
 import type { AppMode } from '../../contexts/AppModeContext';
 
+// Mock tour store for tests
+vi.mock('../../stores/tourStore', () => ({
+  useTourStore: vi.fn(() => ({
+    isActive: false,
+    currentStep: 0,
+    isCurrentStep: vi.fn((_step: number) => false),
+    triggerStepAction: vi.fn(),
+    closeStep: vi.fn(),
+    getTotalSteps: vi.fn(() => 17),
+  }))
+}));
+
 interface TestProvidersProps {
   children: ReactNode;
   initialMode?: AppMode;

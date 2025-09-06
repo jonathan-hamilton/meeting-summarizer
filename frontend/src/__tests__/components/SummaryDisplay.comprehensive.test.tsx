@@ -4,7 +4,6 @@
  * Target: 90% overall coverage through comprehensive testing of critical components
  */
 
-import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
