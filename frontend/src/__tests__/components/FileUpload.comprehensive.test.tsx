@@ -12,7 +12,7 @@ import { renderWithProviders } from "../utils/TestProviders";
 import type { TranscriptionResponse } from "../../types";
 
 // Import global mocks
-import "../mocks/tourStoreMock";
+import "../mocks/tourStore";
 import "../mocks/speakerSessionStoreMock";
 
 // Mock API service factory
@@ -520,7 +520,8 @@ describe("FileUpload Component - Comprehensive Testing (S5.4 Phase 2)", () => {
       
       renderWithProviders(<FileUpload acceptedFileTypes={customTypes} />);
       
-      expect(screen.getByText(/MP3, WAV/)).toBeInTheDocument();
+      // In demo mode, both text sections show formats
+      expect(screen.getByText(/\.mp3, \.wav/)).toBeInTheDocument();
     });
 
     it("calls onTranscriptionComplete callback when provided", async () => {

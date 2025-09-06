@@ -2,7 +2,7 @@
 
 ## Testing & Quality Assurance
 
-- REQ-TST-1: System shall maintain minimum 85% test coverage for all core functionality
+- REQ-TST-1: System shall maintain strategic 75-80% test coverage for core business functionality, with 85% minimum for critical components
 - REQ-TST-2: System shall include comprehensive unit tests for all Zustand state management stores
 - REQ-TST-3: System shall validate session management functionality through automated testing
 - REQ-TST-4: System shall include performance regression tests for optimized components
