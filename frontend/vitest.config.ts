@@ -46,7 +46,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@mui/icons-material': path.resolve(__dirname, 'src/__tests__/mocks/@mui/icons-material.ts')
+      // Remove the MUI icons mock to use the real package
+      // '@mui/icons-material': path.resolve(__dirname, 'src/__tests__/mocks/@mui/icons-material.ts')
     }
   }
 })
