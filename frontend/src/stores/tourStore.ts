@@ -396,7 +396,8 @@ export const useTourStore = create<TourState>()(
               'copy-transcript',
               'generate-summary', 
               'reassign-speaker-left',
-              'reassign-speaker-right'
+              'reassign-speaker-right',
+              'add-speaker'
             ];
             return step3DisabledActions.includes(actionType);
             
