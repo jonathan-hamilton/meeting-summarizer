@@ -235,6 +235,13 @@ This roadmap tracks which requirements have been implemented in each sprint and 
   - REQ-QUAL-3: Legacy code cleanup and technical debt reduction ✅ (S5.3)
 
 **In Progress:**
+  - REQ-TEST-1: Modern test infrastructure foundation established ✅ (S5.4 - Increments 0-3)
+  - REQ-TEST-2: TestProviders pattern eliminates context provider errors ✅ (S5.4)
+  - REQ-TEST-3: Comprehensive Zustand store mocking architecture ✅ (S5.4)
+  - REQ-TEST-4: API service factory pattern test integration ✅ (S5.4)
+  - REQ-TEST-5: Modern test patterns validated and proven working ✅ (S5.4)
+  - REQ-TEST-6: Test suite improvement from 58% to 71% success rate ✅ (S5.4)
+  - REQ-TEST-7: Legacy test audit and systematic cleanup ✅ (S5.4)
   - REQ-DEMO-3: Prominent "Sign In" button in AppBar ⏳
   - REQ-DEMO-9: Tooltips/UI messaging clarify simulation ⏳
   - REQ-DEMO-14: "Sign In" always visible in Demo mode ⏳

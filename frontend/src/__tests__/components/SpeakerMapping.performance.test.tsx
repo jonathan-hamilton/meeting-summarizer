@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { SpeakerMappingComponent } from "../../components/SpeakerMapping";
 import { useSpeakerSessionStore, useActiveSpeakers } from "../../stores/speakerSessionStore";
 import { useTourStore } from "../../stores/tourStore";
 import { sessionManager } from "../../services/sessionManager";
+import { renderWithProviders } from "../utils/TestProviders";
 import type { SpeakerMapping } from "../../types";
 
 // Mock dependencies
@@ -104,7 +105,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
         deleteSpeakerMapping: vi.fn(),
       });
 
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <SpeakerMappingComponent {...defaultProps} />
       );
 
@@ -134,7 +135,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
       const getOverridesMock = vi.fn().mockReturnValue(sessionOverrides);
       mockSessionManager.getOverrides = getOverridesMock;
 
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <SpeakerMappingComponent {...defaultProps} />
       );
 
@@ -152,7 +153,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     });
 
     it("should memoize computed speaker data and avoid recalculation", async () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       // Verify that computed values are displayed correctly
       await waitFor(() => {
@@ -172,7 +173,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     });
 
     it("should memoize rendered speaker chips and prevent unnecessary re-renders", async () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       await waitFor(() => {
         // Verify that speaker chips are rendered with memoized content
@@ -192,7 +193,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     it("should use memoized callback handlers to prevent function recreation", () => {
       const onMappingsChangedMock = vi.fn();
 
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <SpeakerMappingComponent
           {...defaultProps}
           onMappingsChanged={onMappingsChangedMock}
@@ -216,7 +217,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     });
 
     it("should maintain stable dialog open/close handlers", async () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       const openButton = screen.getByText("Manage Mappings");
       fireEvent.click(openButton);
@@ -250,7 +251,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
         deleteSpeaker: vi.fn(),
       });
 
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <SpeakerMappingComponent {...defaultProps} />
       );
 
@@ -282,7 +283,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     });
 
     it("should update speaker mapping counts when store data changes", () => {
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <SpeakerMappingComponent {...defaultProps} />
       );
 
@@ -335,7 +336,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
       // Set up mock return value
       mockSessionManager.getOverrides.mockReturnValue(sessionOverrides);
 
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       await waitFor(() => {
         // Should show session override in mapped speakers
@@ -367,7 +368,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
 
       mockSessionManager.getOverrides.mockReturnValue(sessionOverrides);
 
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       await waitFor(() => {
         // Should show both traditional mapping and session override
@@ -393,7 +394,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
         deleteSpeaker: vi.fn(),
       });
 
-      render(
+      renderWithProviders(
         <SpeakerMappingComponent {...defaultProps} detectedSpeakers={[]} />
       );
 
@@ -426,7 +427,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
         deleteSpeaker: vi.fn(),
       });
 
-      render(
+      renderWithProviders(
         <SpeakerMappingComponent
           {...defaultProps}
           detectedSpeakers={largeSpeakerList}
@@ -451,7 +452,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
         deleteSpeaker: vi.fn(),
       });
 
-      const { rerender } = render(
+      const { rerender } = renderWithProviders(
         <SpeakerMappingComponent {...defaultProps} />
       );
 
@@ -475,7 +476,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
 
   describe("Functional Correctness After Optimization", () => {
     it("should maintain exact speaker count calculation after memoization", async () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       await waitFor(() => {
         // Verify exact count calculation
@@ -493,7 +494,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     });
 
     it("should preserve all original functionality while being optimized", async () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       // Verify all core functionality still works
       await waitFor(() => {
@@ -513,7 +514,7 @@ describe("SpeakerMappingComponent - S3.0 Increment 3: Performance Optimization V
     });
 
     it("should correctly identify speaker sources after optimization", async () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
 
       await waitFor(() => {
         // Verify that auto-detected and manually-added speakers are handled correctly

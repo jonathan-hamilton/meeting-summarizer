@@ -4,11 +4,12 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import FileUpload from "../../components/FileUpload";
 import { createApiService } from "../../services/apiServiceFactory";
 import { useTourStore } from "../../stores/tourStore";
 import { useSpeakerSessionStore } from "../../stores/speakerSessionStore";
+import { renderWithProviders } from "../utils/TestProviders";
 
 // Mock the stores
 vi.mock("../../stores/tourStore", () => ({
@@ -32,6 +33,7 @@ describe("FileUpload Component - Tour Integration", () => {
   const mockTourStore = {
     isActive: false,
     currentStep: 0,
+    getTotalSteps: vi.fn().mockReturnValue(18),
     isActionDisabledDuringTour: vi.fn().mockReturnValue(false),
     triggerStepAction: vi.fn(),
     isCurrentStep: vi.fn().mockReturnValue(false),
@@ -64,14 +66,14 @@ describe("FileUpload Component - Tour Integration", () => {
 
   describe("Basic Upload Functionality", () => {
     it("renders upload interface correctly", () => {
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       expect(screen.getByText("SELECT FILE")).toBeInTheDocument();
       expect(screen.getByText("Select an audio file to transcribe")).toBeInTheDocument();
     });
 
     it("triggers file selection when SELECT FILE is clicked", async () => {
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const selectButton = screen.getByText("SELECT FILE");
       fireEvent.click(selectButton);
@@ -91,7 +93,7 @@ describe("FileUpload Component - Tour Integration", () => {
 
       mockApiService.uploadFile.mockResolvedValue(mockTranscriptionResult);
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const fileInput = screen.getByLabelText(/select.*file/i);
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
@@ -118,7 +120,7 @@ describe("FileUpload Component - Tour Integration", () => {
       mockTourStore.currentStep = 2;
       mockTourStore.isActionDisabledDuringTour.mockReturnValue(true);
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const selectButton = screen.getByText("SELECT FILE");
       expect(selectButton).toBeDisabled();
@@ -130,7 +132,7 @@ describe("FileUpload Component - Tour Integration", () => {
       mockTourStore.isCurrentStep.mockImplementation((step) => step === 1);
       mockTourStore.isActionDisabledDuringTour.mockReturnValue(false);
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const selectButton = screen.getByText("SELECT FILE");
       expect(selectButton).not.toBeDisabled();
@@ -143,7 +145,7 @@ describe("FileUpload Component - Tour Integration", () => {
 
       const mockFile = new File(["audio content"], "test.mp3", { type: "audio/mp3" });
       
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const fileInput = screen.getByLabelText(/select.*file/i);
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
@@ -156,7 +158,7 @@ describe("FileUpload Component - Tour Integration", () => {
       mockTourStore.currentStep = 1;
       mockTourStore.isCurrentStep.mockImplementation((step) => step === 1);
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       // Should show tour-specific instructions
       expect(screen.getByText(/select.*mock.*audio.*file/i)).toBeInTheDocument();
@@ -167,7 +169,7 @@ describe("FileUpload Component - Tour Integration", () => {
     it("shows loading state during upload", () => {
       mockSpeakerSessionStore.isUploading = true;
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       expect(screen.getByText("UPLOADING...")).toBeInTheDocument();
       expect(screen.getByText("UPLOADING...")).toBeDisabled();
@@ -176,7 +178,7 @@ describe("FileUpload Component - Tour Integration", () => {
     it("disables interactions during upload", () => {
       mockSpeakerSessionStore.isUploading = true;
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const selectButton = screen.getByText("UPLOADING...");
       expect(selectButton).toBeDisabled();
@@ -191,7 +193,7 @@ describe("FileUpload Component - Tour Integration", () => {
         new Error("Transcription failed")
       );
 
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const fileInput = screen.getByLabelText(/select.*file/i);
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
@@ -207,7 +209,7 @@ describe("FileUpload Component - Tour Integration", () => {
     it("validates file types", () => {
       const mockFile = new File(["text content"], "test.txt", { type: "text/plain" });
       
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const fileInput = screen.getByLabelText(/select.*file/i);
       fireEvent.change(fileInput, { target: { files: [mockFile] } });
@@ -217,7 +219,7 @@ describe("FileUpload Component - Tour Integration", () => {
     });
 
     it("handles empty file selection", () => {
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const fileInput = screen.getByLabelText(/select.*file/i);
       fireEvent.change(fileInput, { target: { files: [] } });
@@ -228,14 +230,14 @@ describe("FileUpload Component - Tour Integration", () => {
 
   describe("Accessibility", () => {
     it("has proper ARIA labels", () => {
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const fileInput = screen.getByLabelText(/select.*audio.*file/i);
       expect(fileInput).toHaveAttribute("accept", "audio/*");
     });
 
     it("supports keyboard navigation", () => {
-      render(<FileUpload />);
+      renderWithProviders(<FileUpload />);
       
       const selectButton = screen.getByText("SELECT FILE");
       expect(selectButton).toHaveAttribute("tabIndex", "0");

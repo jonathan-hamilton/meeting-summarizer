@@ -4,12 +4,13 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { SpeakerMappingComponent } from "../../components/SpeakerMapping";
 import { useSpeakerSessionStore, useActiveSpeakers } from "../../stores/speakerSessionStore";
 import { useTourStore } from "../../stores/tourStore";
 import { useAppMode } from "../../contexts/AppModeContext";
 import { sessionManager } from "../../services/sessionManager";
+import { renderWithProviders } from "../utils/TestProviders";
 import type { SpeakerMapping } from "../../types";
 
 // Mock all dependencies
@@ -100,7 +101,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
 
   describe("Basic Rendering", () => {
     it("renders component with speaker chips", () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       expect(screen.getByText("John Doe")).toBeInTheDocument();
       expect(screen.getByText("Jane Smith")).toBeInTheDocument();
@@ -109,13 +110,13 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
     });
 
     it("displays manage speakers button when not in tour", () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       expect(screen.getByRole("button", { name: /manage speakers/i })).toBeInTheDocument();
     });
 
     it("shows speaker count correctly", () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       expect(screen.getByText("2 Speakers")).toBeInTheDocument();
     });
@@ -134,7 +135,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
         ),
       });
 
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       const manageButton = screen.getByRole("button", { name: /manage speakers/i });
       expect(manageButton).toBeDisabled();
@@ -150,7 +151,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
         isActionDisabledDuringTour: vi.fn().mockReturnValue(false),
       });
 
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       const manageButton = screen.getByRole("button", { name: /manage speakers/i });
       expect(manageButton).not.toBeDisabled();
@@ -159,7 +160,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
 
   describe("Dialog Management", () => {
     it("opens speaker mapping dialog when manage button clicked", () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       const manageButton = screen.getByRole("button", { name: /manage speakers/i });
       fireEvent.click(manageButton);
@@ -168,7 +169,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
     });
 
     it("closes dialog when close button clicked", () => {
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       // Open dialog
       const manageButton = screen.getByRole("button", { name: /manage speakers/i });
@@ -197,7 +198,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
       
       mockUseActiveSpeakers.mockReturnValue([]);
 
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       expect(screen.getByText("0 Speakers")).toBeInTheDocument();
     });
@@ -205,7 +206,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
     it("triggers onMappingsChanged when mappings are saved", () => {
       const onMappingsChanged = vi.fn();
       
-      render(<SpeakerMappingComponent {...defaultProps} onMappingsChanged={onMappingsChanged} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} onMappingsChanged={onMappingsChanged} />);
       
       // Simulate mappings saved - this would be called by the dialog component
       // We're testing the callback structure here
@@ -220,7 +221,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
         "Speaker 1": "Speaker 3"
       });
 
-      render(<SpeakerMappingComponent {...defaultProps} />);
+      renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       // Component should still render normally - session overrides don't affect display
       expect(screen.getByText("John Doe")).toBeInTheDocument();
@@ -229,7 +230,7 @@ describe("SpeakerMappingComponent - Modern Architecture", () => {
 
   describe("Performance and Memoization", () => {
     it("does not re-render unnecessarily when props don't change", () => {
-      const { rerender } = render(<SpeakerMappingComponent {...defaultProps} />);
+      const { rerender } = renderWithProviders(<SpeakerMappingComponent {...defaultProps} />);
       
       const initialSpeakerCount = screen.getByText("2 Speakers");
       
