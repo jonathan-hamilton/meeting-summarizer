@@ -291,6 +291,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {/* Drop Zone */}
       <Paper
         {...(hasCompletedFile || isDemo ? {} : getRootProps())}
+        data-testid="dropzone"
         onClick={(e) => {
           if (isDemo && !hasCompletedFile) {
             e.preventDefault();
@@ -326,7 +327,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           },
         }}
       >
-        {!hasCompletedFile && !isDemo && <input {...getInputProps()} />}
+        {!hasCompletedFile && !isDemo && <input {...getInputProps()} data-testid="file-input" />}
         <CloudUpload
           sx={{
             fontSize: 48,

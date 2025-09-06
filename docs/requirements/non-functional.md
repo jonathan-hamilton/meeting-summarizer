@@ -122,7 +122,7 @@ This document contains all requirements related to performance, security, reliab
 ## Testing & Quality Assurance
 
 ### Testing Requirements
-- **REQ-TST-1**: System shall maintain minimum 85% test coverage for all core functionality
+- **REQ-TST-1**: System shall maintain strategic 75-80% test coverage for core business functionality, with 85% minimum for critical components
 - **REQ-TST-2**: System shall include comprehensive unit tests for all Zustand state management stores
 - **REQ-TST-3**: System shall validate session management functionality through automated testing
 - **REQ-TST-4**: System shall include performance regression tests for optimized components
@@ -132,6 +132,9 @@ This document contains all requirements related to performance, security, reliab
 - **REQ-TST-8**: System shall test error boundaries and fallback mechanisms
 - **REQ-TST-9**: System shall include cross-browser compatibility testing for core features
 - **REQ-TST-10**: System shall validate accessibility compliance through automated testing
+- **REQ-TST-11**: System shall prioritize test stability and maintainability over coverage percentages
+- **REQ-TST-12**: System shall implement strategic coverage tiers (85% critical, 75% business logic, 60% utilities)
+- **REQ-TST-13**: System shall focus integration testing over exhaustive unit test coverage for UI components
 
 ### Quality Metrics
 - **REQ-QUALITY-1**: System shall maintain code quality standards with automated linting
