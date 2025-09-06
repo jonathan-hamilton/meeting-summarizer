@@ -192,7 +192,7 @@ describe("FileUpload Component - Comprehensive Testing (S5.4 Phase 2)", () => {
       renderWithProviders(<FileUpload />);
       
       expect(screen.getByText(/Accepted formats:/)).toBeInTheDocument();
-      expect(screen.getByText(/MP3, WAV, M4A, FLAC, OGG, WEBM/)).toBeInTheDocument();
+      expect(screen.getByText(/MP3, WAV, M4A, FLAC, OGG/)).toBeInTheDocument();
     });
 
     it("shows maximum file size information", () => {

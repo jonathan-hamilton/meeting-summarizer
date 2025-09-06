@@ -143,7 +143,7 @@ public class ConfigurationValidationService : IConfigurationValidationService
             // or from the frontend build artifacts. For now, we'll validate against known frontend types.
             var expectedFrontendExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"
+                ".mp3", ".wav", ".m4a", ".flac", ".ogg"
             };
 
             var missingInBackend = expectedFrontendExtensions.Except(backendExtensions).ToList();

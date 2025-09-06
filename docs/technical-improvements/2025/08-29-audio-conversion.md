@@ -38,7 +38,7 @@ Implementing automatic audio format conversion for all supported audio file type
 
 ✅ **M4A Support** - Tested and working correctly  
 🧪 **Testing Phase** - Comprehensive testing required for all formats:
-- MP3, FLAC, OGG, WEBM formats need verification
+- MP3, FLAC, OGG formats need verification
 - Error handling and edge case testing
 - Performance and memory usage validation
 

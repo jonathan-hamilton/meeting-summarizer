@@ -22,7 +22,6 @@ public class AudioFileValidatorSprint1Tests
     [DataRow("test.m4a", "audio/mp4")]
     [DataRow("test.flac", "audio/flac")]
     [DataRow("test.ogg", "audio/ogg")]
-    [DataRow("test.webm", "audio/webm")]
     public void ValidateAudioFile_SupportedFormats_ReturnsValid(string fileName, string contentType)
     {
         // Arrange
@@ -305,7 +304,6 @@ public class AudioFileValidatorSprint1Tests
         AudioFileValidator.SupportedExtensions.Should().Contain(".m4a");
         AudioFileValidator.SupportedExtensions.Should().Contain(".flac");
         AudioFileValidator.SupportedExtensions.Should().Contain(".ogg");
-        AudioFileValidator.SupportedExtensions.Should().Contain(".webm");
     }
 
     [TestMethod]
@@ -330,7 +328,6 @@ public class AudioFileValidatorSprint1Tests
         AudioFileValidator.ValidMimeTypes.Should().Contain("audio/mp4");
         AudioFileValidator.ValidMimeTypes.Should().Contain("audio/flac");
         AudioFileValidator.ValidMimeTypes.Should().Contain("audio/ogg");
-        AudioFileValidator.ValidMimeTypes.Should().Contain("audio/webm");
     }
 
     #endregion

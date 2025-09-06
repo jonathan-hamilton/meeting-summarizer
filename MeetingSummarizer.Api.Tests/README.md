@@ -21,7 +21,7 @@ This comprehensive test suite validates all Sprint 1 API functionality for the M
 
 - ✅ Valid audio file transcription with speaker diarization
 - ✅ Multiple speaker segment identification
-- ✅ All supported audio formats (mp3, wav, m4a, flac, ogg, webm)
+- ✅ All supported audio formats (mp3, wav, m4a, flac, ogg)
 - ✅ File size validation (1KB - 500MB limits)
 - ✅ File format validation and security checks
 - ✅ Error handling (service unavailable, auth failure, timeout)
@@ -179,7 +179,7 @@ Mock transcription results include:
 
 ### File Format Support
 
-✅ **Supported formats**: mp3, wav, m4a, flac, ogg, webm
+✅ **Supported formats**: mp3, wav, m4a, flac, ogg
 ❌ **Rejected formats**: pdf, mp4 (video), jpg, txt, zip
 
 ### File Size Limits

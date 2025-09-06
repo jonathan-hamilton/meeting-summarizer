@@ -118,8 +118,7 @@ public class Sprint1IntegrationTests
             ("test.wav", "audio/wav"),
             ("test.m4a", "audio/mp4"),
             ("test.flac", "audio/flac"),
-            ("test.ogg", "audio/ogg"),
-            ("test.webm", "audio/webm")
+            ("test.ogg", "audio/ogg")
         };
 
         // Act & Assert

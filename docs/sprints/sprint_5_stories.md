@@ -886,7 +886,7 @@ As a user uploading audio files, I want the system to automatically convert any 
 **Implementation Status:**
 
 ✅ **Backend Audio Conversion Logic** - Implemented in `AzureConversationTranscriptionService`
-- FFmpeg integration for M4A, MP3, FLAC, OGG, WEBM → WAV conversion
+- FFmpeg integration for M4A, MP3, FLAC, OGG → WAV conversion
 - Automatic format detection and conditional conversion
 - Error handling and logging for conversion failures
 - Memory-efficient temporary file management
@@ -904,7 +904,7 @@ As a user uploading audio files, I want the system to automatically convert any 
 - Single conversion pipeline established
 
 **Acceptance Criteria Status:**
-✅ All uploaded audio files in non-WAV formats (M4A, MP3, FLAC, OGG, WEBM) are automatically converted to WAV format before transcription
+✅ All uploaded audio files in non-WAV formats (M4A, MP3, FLAC, OGG) are automatically converted to WAV format before transcription
 ✅ Conversion uses FFmpeg and produces WAV files compatible with Azure Speech Services (PCM, 16kHz, mono)
 ✅ No unnecessary conversion performed if file is already valid WAV
 ✅ Memory-efficient conversion handling for large files - Double-conversion eliminated
@@ -914,7 +914,7 @@ As a user uploading audio files, I want the system to automatically convert any 
 
 **Technical Implementation:**
 - **Service Integration:** `AzureConversationTranscriptionService.cs` enhanced with FFmpeg conversion pipeline
-- **Format Support:** M4A, MP3, FLAC, OGG, WEBM → WAV (PCM 16kHz mono)
+- **Format Support:** M4A, MP3, FLAC, OGG → WAV (PCM 16kHz mono)
 - **Error Handling:** Graceful fallback and user-friendly error messages
 - **Performance:** Temporary file management with automatic cleanup
 - **Compatibility:** Azure Speech Services optimized output format
@@ -929,7 +929,7 @@ As a user uploading audio files, I want the system to automatically convert any 
 **Integration Points:**
 - **FilePreProcessingService:** Now focuses purely on validation without redundant conversion
 - **AzureConversationTranscriptionService:** Single source of truth for all audio format conversion
-- **Test Infrastructure:** Audio test files available for all supported formats (MP3, WAV, M4A, FLAC, OGG, WebM)
+- **Test Infrastructure:** Audio test files available for all supported formats (MP3, WAV, M4A, FLAC, OGG)
 
 ---
 

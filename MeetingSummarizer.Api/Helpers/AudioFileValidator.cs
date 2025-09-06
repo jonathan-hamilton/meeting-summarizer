@@ -10,7 +10,7 @@ public static class AudioFileValidator
     /// <summary>
     /// Supported audio file extensions
     /// </summary>
-    public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm" };
+    public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".m4a", ".flac", ".ogg" };
 
     /// <summary>
     /// Maximum file size in bytes (1GB)
@@ -40,8 +40,7 @@ public static class AudioFileValidator
         "audio/x-m4a",       // .m4a alternative
         "audio/flac",        // .flac
         "audio/x-flac",      // .flac alternative
-        "audio/ogg",         // .ogg
-        "audio/webm"         // .webm
+        "audio/ogg"          // .ogg
     };
 
     /// <summary>

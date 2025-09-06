@@ -8,7 +8,6 @@ $testFiles = @(
     "sample-scrum-4-speakers-alternating-no-identifiers.m4a", 
     "sample-scrum-4-speakers-alternating-no-identifiers.flac",
     "sample-scrum-4-speakers-alternating-no-identifiers.ogg",
-    "sample-scrum-4-speakers-alternating-no-identifiers.webm",
     "sample-scrum-4-speakers-alternating-no-identifiers.wav"
 )
 
