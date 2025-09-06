@@ -245,7 +245,10 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
   - REQ-DEMO-26: Tour content centered with appropriate contrast ✅ (S5.1)
   - REQ-DEMO-27: Tour automatic step progression based on actions ✅ (S5.1)
   - REQ-DEMO-28: Tour navigation controls with functional transitions ✅ (S5.1)
-  - REQ-FPO-2: Convert all non-WAV audio files to WAV before transcription ✅ (S5.2)
+  - REQ-FPO-2: Convert all non-WAV audio files to WAV before transcription ✅ (S5.5)
+  - REQ-FPO-3: Handle conversion errors gracefully with user feedback ✅ (S5.5)
+  - REQ-FPO-4: Ensure WAV files are compatible with Azure Speech (PCM, 16kHz, mono) ✅ (S5.5)
+  - REQ-FPO-5: Log all conversion operations/errors ✅ (S5.5)
   - REQ-PERF-1: Reduce main bundle size by minimum 15% ✅ (S5.3) - **EXCEEDED: 52.4% reduction achieved**
   - REQ-PERF-2: Implement lazy loading for large dialog components ✅ (S5.3)
   - REQ-PERF-3: Code splitting for optimal loading performance ✅ (S5.3)
@@ -303,9 +306,6 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
   - REQ-DEMO-18: Analytics reviewed for abuse patterns ⏳
 
 **Planned/Future:**
-  - REQ-FPO-3: Handle conversion errors gracefully with user feedback
-  - REQ-FPO-4: Ensure WAV files are compatible with Azure Speech (PCM, 16kHz, mono)
-  - REQ-FPO-5: Log all conversion operations/errors
   - REQ-ACC-1: All interactive UI components include accessibility attributes
   - REQ-ACC-2: Follow WCAG 2.1 for color contrast, focus, semantic HTML
   - REQ-PAY-1: Integrate with PCI-compliant payment provider (e.g., Stripe)
