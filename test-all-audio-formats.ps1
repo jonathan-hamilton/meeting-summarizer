@@ -11,7 +11,7 @@ $testFiles = @(
     "sample-scrum-4-speakers-alternating-no-identifiers.wav"
 )
 
-Write-Host "🎯 Testing WAV Conversion for All Audio Formats" -ForegroundColor Green
+Write-Host "🎯 Testing Audio Format Support (MP3, M4A, FLAC, OGG, WAV)" -ForegroundColor Green
 Write-Host "=============================================="
 
 foreach ($file in $testFiles) {
