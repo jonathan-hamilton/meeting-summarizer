@@ -120,7 +120,7 @@ A modern web appli### ✅ **S5.3: Performance Optimization & Accessibility Impro
 - ✅ **Single Source of Truth**: AzureConversationTranscriptionService exclusively handles audio format conversion
 - ✅ **Memory Optimization**: Eliminated double-conversion pattern reducing temporary file overhead
 - ✅ **Code Simplification**: Clear separation between validation and transcription processing
-- ✅ **Format Support**: All supported formats (MP3, M4A, FLAC, OGG, WebM) automatically convert to Azure-compatible WAV
+- ✅ **Format Support**: All supported formats (MP3, M4A, FLAC, OGG) automatically convert to Azure-compatible WAV
 - ✅ **Test Infrastructure**: Complete audio test files available for all supported formats
 
 **Technical Achievement**: Streamlined audio conversion architecture with single conversion point, eliminating code duplication and improving maintainability while ensuring all audio formats work seamlessly with Azure Speech Services.
@@ -133,7 +133,7 @@ A modern web appli### ✅ **S5.3: Performance Optimization & Accessibility Impro
 - ✅ M4A: `iphone-recording-3-speakers-no-identifiers.m4a` (tested, working)
 - ✅ MP3: `sample-scrum.mp3`, `sample-scrum-converted.mp3` (ready for testing)
 - ✅ WAV: Multiple sample files available (pass-through testing)
-- 🔄 FLAC, OGG, WEBM: Need test files for comprehensive validation
+- 🔄 FLAC, OGG: Need test files for comprehensive validation
 
 ### � **Sprint 4: Azure Migration & Core Fixes (100% Complete)**
 

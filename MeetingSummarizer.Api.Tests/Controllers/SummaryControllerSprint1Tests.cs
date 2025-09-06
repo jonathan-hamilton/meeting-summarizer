@@ -120,7 +120,6 @@ public class SummaryControllerSprint1Tests
     [DataRow("test.m4a", "audio/mp4")]
     [DataRow("test.flac", "audio/flac")]
     [DataRow("test.ogg", "audio/ogg")]
-    [DataRow("test.webm", "audio/webm")]
     public async Task TranscribeAudio_SupportedAudioFormats_AcceptsAllValidFormats(string fileName, string contentType)
     {
         // Arrange

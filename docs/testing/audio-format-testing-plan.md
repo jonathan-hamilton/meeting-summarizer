@@ -48,12 +48,7 @@ Comprehensive testing plan for automatic WAV conversion feature to ensure all su
 - [ ] **OGG Vorbis** - Upload and verify conversion
 - [ ] **Different quality levels** - Test various compression levels
 
-#### Test Case 1.5: WEBM Files
-**Objective**: Verify WEBM files convert and transcribe correctly
-- [ ] **Standard WEBM audio** - Upload and verify conversion
-- [ ] **Browser-recorded WEBM** - Test browser recording format
-
-#### Test Case 1.6: WAV Files (Pass-through)
+#### Test Case 1.5: WAV Files (Pass-through)
 **Objective**: Verify WAV files are not unnecessarily converted
 - [ ] **Standard WAV** - Upload and verify no conversion occurs
 - [ ] **Different sample rates** - 44.1kHz, 48kHz, 16kHz
@@ -155,7 +150,7 @@ Create or obtain test files for each format:
 - **M4A**: iPhone recordings, iTunes exports ✅ Available
 - **FLAC**: Lossless audio files
 - **OGG**: Vorbis-encoded files  
-- **WEBM**: Web audio format files
+- **OGG**: Open source audio files
 - **WAV**: Various sample rates and channel configurations
 
 ### Test File Specifications

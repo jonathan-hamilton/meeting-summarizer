@@ -112,7 +112,7 @@ const getDemoWorkflowSteps = (isSimulating: boolean, progress: number) => [
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
   maxFileSize = 1024 * 1024 * 1024, // 1GB
-  acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm"],
+  acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg"],
 }) => {
   const { mode, isDemo } = useAppMode();
   const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();

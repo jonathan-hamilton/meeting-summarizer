@@ -156,7 +156,6 @@ public static class Sprint1TestDataFactory
         yield return new object[] { "test.m4a", "audio/mp4" };
         yield return new object[] { "test.flac", "audio/flac" };
         yield return new object[] { "test.ogg", "audio/ogg" };
-        yield return new object[] { "test.webm", "audio/webm" };
     }
 
     /// <summary>

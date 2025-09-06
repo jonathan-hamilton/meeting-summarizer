@@ -20,13 +20,13 @@ public class FilePreProcessingService : IFilePreProcessingService
         _memoryMonitor = new MemoryMonitor();
     }
     // Basic validation constants (from AudioFileValidator)
-    public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".webm" };
+    public static readonly string[] SupportedExtensions = { ".mp3", ".wav", ".m4a", ".flac", ".ogg" };
     public const long MaxFileSizeBytes = 1024L * 1024 * 1024;
     public const long MinFileSizeBytes = 1024;
     public const int MaxFileNameLength = 255;
     public static readonly string[] ValidMimeTypes = {
         "audio/mpeg", "audio/wav", "audio/wave", "audio/x-wav", "audio/mp4", "audio/x-m4a",
-        "audio/flac", "audio/x-flac", "audio/ogg", "audio/webm"
+        "audio/flac", "audio/x-flac", "audio/ogg"
     };
 
     /// <summary>
@@ -263,9 +263,6 @@ public class FilePreProcessingService : IFilePreProcessingService
                 case ".ogg":
                     hasValidHeaders = AnalyzeOggHeaders(headerBuffer, out corruptionDetails);
                     break;
-                case ".webm":
-                    hasValidHeaders = AnalyzeWebmHeaders(headerBuffer, out corruptionDetails);
-                    break;
                 default:
                     corruptionDetails = $"Unsupported audio format: {extension}";
                     break;
@@ -466,7 +463,7 @@ public class FilePreProcessingService : IFilePreProcessingService
 
         // Azure Speech Services optimal formats
         var optimalFormats = new[] { ".wav", ".mp3", ".flac" };
-        var supportedFormats = new[] { ".wav", ".mp3", ".flac", ".ogg", ".webm", ".m4a" };
+        var supportedFormats = new[] { ".wav", ".mp3", ".flac", ".ogg", ".m4a" };
 
         var azureCompatible = supportedFormats.Contains(extension);
         string? recommendedFormat = null;
@@ -612,21 +609,6 @@ public class FilePreProcessingService : IFilePreProcessingService
         return false;
     }
 
-    private bool AnalyzeWebmHeaders(byte[] buffer, out string? corruptionDetails)
-    {
-        corruptionDetails = null;
-        
-        if (buffer.Length >= 4)
-        {
-            // WebM uses EBML format, check for EBML header
-            if (buffer[0] == 0x1A && buffer[1] == 0x45 && buffer[2] == 0xDF && buffer[3] == 0xA3)
-                return true;
-        }
-        
-        corruptionDetails = "Invalid WebM header - missing EBML signature";
-        return false;
-    }
-
     private TimeSpan? EstimateDurationFromFileSize(long fileSizeBytes, string extension)
     {
         // Rough estimates based on typical bitrates
@@ -636,7 +618,6 @@ public class FilePreProcessingService : IFilePreProcessingService
             [".wav"] = 1411, // CD quality
             [".flac"] = 700, // compressed lossless
             [".ogg"] = 128,
-            [".webm"] = 128,
             [".m4a"] = 128
         };
 
@@ -657,7 +638,6 @@ public class FilePreProcessingService : IFilePreProcessingService
             ".wav" => "PCM",
             ".flac" => "Free Lossless Audio Codec",
             ".ogg" => "Ogg Vorbis",
-            ".webm" => "WebM Audio",
             ".m4a" => "AAC",
             _ => null
         };
