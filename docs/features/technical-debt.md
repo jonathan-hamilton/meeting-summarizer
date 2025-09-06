@@ -2,6 +2,47 @@
 
 ## Current Technical Debt
 
+### S5.5 Duplicate Audio Conversion Architecture ✅ RESOLVED
+
+**Date Identified**: September 6, 2025  
+**Date Resolved**: September 6, 2025  
+**Sprint**: S5.5 Automatic WAV Conversion for Audio Uploads  
+**Resolution Duration**: Same day
+
+**Problem Resolved**: 
+- Duplicate WAV conversion logic in FilePreProcessingService and AzureConversationTranscriptionService
+- Legacy batch transcription architecture (400+ lines of unused code)
+- Memory inefficiency from double-conversion pattern
+- Confusing codebase with multiple conversion implementations
+
+**Solution Implemented**:
+- ✅ **Single Source of Truth**: Consolidated all audio conversion to AzureConversationTranscriptionService
+- ✅ **Duplicate Code Elimination**: Removed 69 lines of redundant conversion logic from FilePreProcessingService
+- ✅ **Legacy Cleanup**: Removed BatchTranscriptionModels.cs (439 lines) and BatchTranscriptionOptions
+- ✅ **Architecture Simplification**: Clear separation between validation and transcription processing
+- ✅ **Memory Optimization**: Eliminated double-conversion reducing temporary file overhead
+
+**Technical Resolution**:
+```csharp
+// Single conversion point in AzureConversationTranscriptionService
+private async Task<string> ConvertAudioToWavAsync(Stream audioStream, string fileName, string correlationId, CancellationToken cancellationToken)
+{
+    var fileExtension = Path.GetExtension(fileName).ToLowerInvariant();
+    
+    // If already WAV, use directly
+    if (fileExtension == ".wav") return tempWavPath;
+    
+    // Convert using FFmpeg: M4A, MP3, FLAC, OGG, WEBM → WAV (PCM 16kHz mono)
+    var ffmpegArgs = $"-y -i \"{tempInputPath}\" -ar 16000 -ac 1 -acodec pcm_s16le -f wav -map_metadata -1 \"{tempOutputPath}\"";
+}
+```
+
+**Impact Resolved**:
+- **Code Maintainability**: Single conversion implementation eliminates confusion and potential bugs
+- **Memory Efficiency**: No more double-conversion pattern reducing resource usage
+- **Architecture Clarity**: Clear separation of concerns between validation and transcription services
+- **Legacy Elimination**: 500+ lines of dead code removed improving codebase health
+
 ### S5.4 Testing Strategy & Coverage Debt ✅ RESOLVED
 
 **Date Identified**: September 6, 2025  

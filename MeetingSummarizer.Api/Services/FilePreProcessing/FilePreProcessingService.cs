@@ -194,85 +194,16 @@ public class FilePreProcessingService : IFilePreProcessingService
                 warnings.Add($"Format may not be optimal for Azure Speech Services. {compatibility.RecommendedFormat}");
             }
 
-            // --- WAV Conversion Step ---
-            string? processedFilePath = null;
-            string? tempInputPath = null;
-            string? tempOutputPath = null;
-            try
-            {
-                var ext = Path.GetExtension(audioFile.FileName).ToLowerInvariant();
-                if (ext != ".wav")
-                {
-                    // Save input file to temp
-                    tempInputPath = Path.Combine(Path.GetTempPath(), $"msio_{Guid.NewGuid()}{ext}");
-                    using (var fs = new FileStream(tempInputPath, FileMode.Create, FileAccess.Write))
-                    {
-                        await audioFile.CopyToAsync(fs, cancellationToken);
-                    }
-                    // Prepare output path
-                    tempOutputPath = Path.Combine(Path.GetTempPath(), $"msio_{Guid.NewGuid()}.wav");
-                    // Run ffmpeg to convert to WAV (PCM 16kHz mono)
-                    var ffmpegArgs = $"-y -i \"{tempInputPath}\" -ar 16000 -ac 1 -acodec pcm_s16le -f wav -map_metadata -1 \"{tempOutputPath}\"";
-                    _logger.LogInformation("[WAV CONVERT] Converting audio file to WAV format");
-                    var proc = new Process
-                    {
-                        StartInfo = new ProcessStartInfo
-                        {
-                            FileName = "ffmpeg",
-                            Arguments = ffmpegArgs,
-                            RedirectStandardOutput = true,
-                            RedirectStandardError = true,
-                            UseShellExecute = false,
-                            CreateNoWindow = true
-                        }
-                    };
-                    proc.Start();
-                    string stdOut = await proc.StandardOutput.ReadToEndAsync();
-                    string stdErr = await proc.StandardError.ReadToEndAsync();
-                    proc.WaitForExit();
-                    if (proc.ExitCode != 0 || !File.Exists(tempOutputPath))
-                    {
-                        _logger.LogError("[WAV CONVERT] FFmpeg conversion failed: {Error}", stdErr);
-                        errors.Add($"Failed to convert file to WAV. ffmpeg error: {stdErr}");
-                    }
-                    else
-                    {
-                        _logger.LogInformation("[WAV CONVERT] Audio conversion successful");
-                        processedFilePath = tempOutputPath;
-                        warnings.Add("Input file was converted to WAV for optimal transcription.");
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Exception during WAV conversion: {ex.Message}");
-            }
-            finally
-            {
-                // Clean up temp input file
-                if (tempInputPath != null && File.Exists(tempInputPath))
-                {
-                    try { File.Delete(tempInputPath); } catch { }
-                }
-            }
-
             _logger.LogInformation("Audio file validation completed [CorrelationId: {CorrelationId}] - " +
                 "Valid: {IsValid}, Duration: {Duration}ms, Memory: {Memory}",
                 correlationId, errors.Count == 0, stopwatch.ElapsedMilliseconds, metrics.PeakMemoryUsageBytes);
 
             if (errors.Any())
             {
-                // Clean up temp output file if conversion failed
-                if (tempOutputPath != null && File.Exists(tempOutputPath))
-                {
-                    try { File.Delete(tempOutputPath); } catch { }
-                }
                 return FileProcessingResult.Failure(
                     "Audio file validation failed", errors, validationDetails, metrics, warnings);
             }
 
-            // TODO: Pass processedFilePath to downstream transcription (not just validation)
-            // For now, just return success and note conversion in warnings
             return FileProcessingResult.Success(
                 "Audio file validation passed", validationDetails, metrics, warnings.Any() ? warnings : null);
         }
@@ -553,7 +484,7 @@ public class FilePreProcessingService : IFilePreProcessingService
 
         if (audioFile.Length > 500 * 1024 * 1024) // 500MB
         {
-            suggestions.Add("Very large file - consider using batch transcription API for better reliability");
+            suggestions.Add("Very large file - may require longer processing time");
         }
 
         return new FormatCompatibility(azureCompatible, recommendedFormat, suggestions);
