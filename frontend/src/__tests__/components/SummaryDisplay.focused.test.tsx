@@ -6,8 +6,7 @@
  * providing solid coverage while avoiding complex integration testing that would require extensive setup.
  */
 
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import SummaryDisplay from '../../components/SummaryDisplay';
@@ -108,7 +107,6 @@ vi.mock('../../components/ActionItemsSection', () => {
     default: ({ 
       actionItems, 
       onCreateActionItem,
-      onEditActionItem,
       onDeleteActionItem,
       onUpdateActionItem
     }: any) => {
