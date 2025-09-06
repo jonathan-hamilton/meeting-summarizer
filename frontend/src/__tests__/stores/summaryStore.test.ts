@@ -6,7 +6,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MeetingSummary, SpeakerMapping, ActionItem } from '../../types';
-import type { AppMode } from '../../contexts/AppModeContext';
 
 // Mock crypto.randomUUID for consistent test results
 const mockUUID = vi.fn();

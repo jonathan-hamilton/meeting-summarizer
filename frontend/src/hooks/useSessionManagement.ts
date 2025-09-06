@@ -30,24 +30,19 @@ export interface UseSessionManagementReturn {
  */
 export const useSessionManagement = (): UseSessionManagementReturn => {
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>({
-    isActive: true,
+    isActive: false,
+    timeRemaining: 0,
     sessionId: '',
-    sessionDuration: 0,
-    lastActivity: new Date(),
-    dataSize: '0 B',
-    hasOverrides: false,
-    overrideCount: 0
+    canExtend: false
   });
 
   const [privacyControls, setPrivacyControls] = useState<PrivacyControls>({
-    sessionStatus: 'active',
+    dataRetention: 30,
+    allowAnalytics: false,
+    shareWithTeam: false,
+    sessionStatus: 'expired',
     sessionDuration: 0,
-    lastActivity: new Date(),
-    dataSize: '0 B',
-    clearAllData: async () => {},
-    extendSession: () => {},
-    extendSessionByMinutes: () => {},
-    exportBeforeClear: async () => {}
+    dataSize: '0 MB'
   });
 
   const [isLoading, setIsLoading] = useState(false);

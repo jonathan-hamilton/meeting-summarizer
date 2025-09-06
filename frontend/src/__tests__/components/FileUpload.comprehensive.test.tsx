@@ -20,7 +20,13 @@ vi.mock("../../services/apiServiceFactory", () => ({
   createApiService: vi.fn(),
 }));
 
+// Mock react-dropzone
+vi.mock("react-dropzone", () => ({
+  useDropzone: vi.fn(),
+}));
+
 const mockCreateApiService = createApiService as unknown as ReturnType<typeof vi.fn>;
+const mockUseDropzone = vi.mocked((await import("react-dropzone")).useDropzone);
 
 // Mock file for testing
 const createMockFile = (name: string, size: number, type: string) => {

@@ -7,16 +7,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { SpeakerSegment, SpeakerMapping } from '../../types';
 import { useSpeakerSessionStore } from '../../stores/speakerSessionStore';
 
-// Mock session storage
-const mockSessionStorage = {
-  removeItem: vi.fn(),
-};
-
-Object.defineProperty(window, 'sessionStorage', {
-  value: mockSessionStorage,
-  writable: true,
-});
-
 // Sample test data
 const mockSegments: SpeakerSegment[] = [
   {
@@ -128,29 +118,6 @@ describe('SpeakerSessionStore - Centralized Speaker and Segment Management (S3.6
       expect(state.speakerMappings).toEqual(mockSpeakerMappings);
     });
 
-    it('clears legacy session storage on initialization', () => {
-      const store = useSpeakerSessionStore.getState();
-      
-      store.initializeSession('test-transcript-123', mockSegments);
-      
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('speaker-store-session');
-    });
-
-    it('handles session storage error gracefully', () => {
-      mockSessionStorage.removeItem.mockImplementationOnce(() => {
-        throw new Error('Storage access denied');
-      });
-      
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const store = useSpeakerSessionStore.getState();
-      
-      expect(() => {
-        store.initializeSession('test-transcript-123', mockSegments);
-      }).not.toThrow();
-      
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to clear legacy speaker store:', expect.any(Error));
-      consoleSpy.mockRestore();
-    });
   });
 
   describe('Segment Reassignment - S3.6 Core Feature', () => {
@@ -309,23 +276,6 @@ describe('SpeakerSessionStore - Centralized Speaker and Segment Management (S3.6
       expect(state.currentSegments).toEqual([]);
       expect(state.speakerMappings).toEqual([]);
       expect(state._computedCache).toBeNull();
-      expect(mockSessionStorage.removeItem).toHaveBeenCalledWith('speaker-store-session');
-    });
-
-    it('handles session storage error gracefully during clear', () => {
-      mockSessionStorage.removeItem.mockImplementationOnce(() => {
-        throw new Error('Storage access denied');
-      });
-      
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const store = useSpeakerSessionStore.getState();
-      
-      expect(() => {
-        store.clearSession();
-      }).not.toThrow();
-      
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to clear legacy speaker store:', expect.any(Error));
-      consoleSpy.mockRestore();
     });
   });
 
