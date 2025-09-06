@@ -1,9 +1,21 @@
-﻿import { expect, afterEach, vi } from 'vitest'
+﻿import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import * as matchers from '@testing-library/jest-dom/matchers'
+import '@testing-library/jest-dom/vitest'
 
-// Extend Vitest expect with jest-dom matchers
-expect.extend(matchers)
+// Mock localStorage for theme and environment preferences
+const mockStorage = () => ({
+  getItem: vi.fn(() => null),
+  setItem: vi.fn(() => null),
+  removeItem: vi.fn(() => null),
+  clear: vi.fn(() => null),
+  length: 0,
+  key: vi.fn(() => null),
+});
+
+Object.defineProperty(window, 'localStorage', {
+  value: mockStorage(),
+  writable: true,
+});
 
 // Mock window.matchMedia for Material-UI and theme context
 Object.defineProperty(window, 'matchMedia', {

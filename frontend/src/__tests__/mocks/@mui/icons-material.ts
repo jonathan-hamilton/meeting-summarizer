@@ -26,7 +26,6 @@ export const Mic = createMockIcon('Mic')
 export const PersonAdd = createMockIcon('PersonAdd')
 export const Close = createMockIcon('Close')
 export const CloseIcon = createMockIcon('Close')
-export default Close // Default export for 'import Icon from @mui/icons-material/IconName'
 export const Save = createMockIcon('Save')
 export const Delete = createMockIcon('Delete')
 export const AudioFile = createMockIcon('AudioFile')
@@ -34,8 +33,8 @@ export const DragIndicator = createMockIcon('DragIndicator')
 export const MoreVert = createMockIcon('MoreVert')
 export const Add = createMockIcon('Add')
 
-// Default export as an object (in case any components import the entire module)
-export default {
+// Default export as an object (supports both named and default imports)
+const IconsModule = {
   ContentCopy,
   CheckCircle,
   Error,
@@ -57,3 +56,5 @@ export default {
   MoreVert,
   Add,
 }
+
+export default IconsModule

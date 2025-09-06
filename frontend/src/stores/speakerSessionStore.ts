@@ -150,13 +150,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
 
       // Initialize a new session
       initializeSession: (transcriptionId, segments, mappings = []) => {
-        // Clear any persisted legacy speaker store data to ensure fresh state
-        try {
-          sessionStorage.removeItem('speaker-store-session');
-        } catch (error) {
-          console.warn('Failed to clear legacy speaker store:', error);
-        }
-        
         const newState = {
           transcriptionId,
           originalSegments: [...segments],
@@ -264,14 +257,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
 
       // Clear entire session
       clearSession: () => {
-        
-        // Clear any persisted legacy speaker store data
-        try {
-          sessionStorage.removeItem('speaker-store-session');
-        } catch (error) {
-          console.warn('Failed to clear legacy speaker store:', error);
-        }
-        
         set({
           transcriptionId: null,
           originalSegments: [],
