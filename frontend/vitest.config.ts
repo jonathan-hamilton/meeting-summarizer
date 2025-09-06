@@ -23,6 +23,26 @@ export default defineConfig({
       'src/__tests__/disabled-legacy/**',
       'src/__tests__/setup.ts'
     ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/',
+        'src/__tests__/',
+        '**/*.d.ts',
+        '**/*.config.{js,ts}',
+        'src/vite-env.d.ts'
+      ],
+      include: ['src/**/*.{js,ts,jsx,tsx}'],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
+      }
+    }
   },
   resolve: {
     alias: {

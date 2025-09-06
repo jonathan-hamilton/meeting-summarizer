@@ -23,7 +23,9 @@ export const mockTourStoreState = {
   getCurrentStepConfig: vi.fn().mockReturnValue({
     title: 'Test Step',
     description: 'Test step description',
-    target: 'test-target'
+    target: 'test-target',
+    type: 'acknowledgment',
+    component: 'FileUpload'
   }),
   isCurrentStep: vi.fn().mockReturnValue(false),
   isActionDisabledDuringTour: vi.fn().mockReturnValue(false),
@@ -39,9 +41,14 @@ export const mockTourStoreState = {
 };
 
 // Create the Zustand store mock
-export const mockUseTourStore = vi.fn(() => mockTourStoreState);
+export const mockUseTourStore = vi.fn((selector?: any) => {
+  if (selector) {
+    return selector(mockTourStoreState);
+  }
+  return mockTourStoreState;
+});
 
-// Create getState mock for store access
+// Create getState mock for direct store access (like useTourStore.getState())
 (mockUseTourStore as any).getState = vi.fn(() => mockTourStoreState);
 
 // Mock the tour store module
