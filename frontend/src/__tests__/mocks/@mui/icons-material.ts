@@ -26,6 +26,7 @@ export const Mic = createMockIcon('Mic')
 export const PersonAdd = createMockIcon('PersonAdd')
 export const Close = createMockIcon('Close')
 export const CloseIcon = createMockIcon('Close')
+export default Close // Default export for 'import Icon from @mui/icons-material/IconName'
 export const Save = createMockIcon('Save')
 export const Delete = createMockIcon('Delete')
 export const AudioFile = createMockIcon('AudioFile')
