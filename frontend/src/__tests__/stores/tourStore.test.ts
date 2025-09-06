@@ -40,7 +40,8 @@ describe("TourStore - Comprehensive Tour System", () => {
       
       act(() => {
         result.current.startTour();
-        result.current.nextStep();
+        // Step 1 requires user action (file-select) before advancing
+        result.current.triggerStepAction('file-select');
       });
       
       expect(result.current.currentStep).toBe(2);
@@ -51,7 +52,8 @@ describe("TourStore - Comprehensive Tour System", () => {
       
       act(() => {
         result.current.startTour();
-        result.current.nextStep();
+        // Perform valid action first, then stop
+        result.current.triggerStepAction('file-select');
         result.current.stopTour();
       });
       
@@ -85,11 +87,12 @@ describe("TourStore - Comprehensive Tour System", () => {
       const { result } = renderHook(() => useTourStore());
       
       act(() => {
-        result.current.startTour();
-        result.current.nextStep(); // Step 2
-        result.current.nextStep(); // Step 3
+        result.current.startTour(); // Step 1 (user-action: file-select)
+        result.current.triggerStepAction('file-select'); // Step 2 (acknowledgment)
+        result.current.nextStep(); // Step 3 (user-action: manage-names)
       });
       
+      expect(result.current.currentStep).toBe(3);
       expect(result.current.isActionDisabledDuringTour("manage-speakers")).toBe(false);
       expect(result.current.isActionDisabledDuringTour("add-speaker")).toBe(true);
       expect(result.current.isActionDisabledDuringTour("generate-summary")).toBe(true);
@@ -99,11 +102,12 @@ describe("TourStore - Comprehensive Tour System", () => {
       const { result } = renderHook(() => useTourStore());
       
       act(() => {
-        result.current.startTour();
-        // Advance to step 6
-        for (let i = 0; i < 5; i++) {
-          result.current.nextStep();
-        }
+        result.current.startTour(); // Step 1 (user-action: file-select)
+        result.current.triggerStepAction('file-select'); // Step 2 (acknowledgment)
+        result.current.nextStep(); // Step 3 (user-action: manage-names)
+        result.current.triggerStepAction('manage-names'); // Step 4 (user-action: add-speaker)
+        result.current.triggerStepAction('add-speaker'); // Step 5 (acknowledgment)
+        result.current.nextStep(); // Step 6 (user-action: edit-speaker)
       });
       
       // Should allow edit on first row only
@@ -116,11 +120,13 @@ describe("TourStore - Comprehensive Tour System", () => {
       const { result } = renderHook(() => useTourStore());
       
       act(() => {
-        result.current.startTour();
-        // Advance to step 7
-        for (let i = 0; i < 6; i++) {
-          result.current.nextStep();
-        }
+        result.current.startTour(); // Step 1 (user-action: file-select)
+        result.current.triggerStepAction('file-select'); // Step 2 (acknowledgment)
+        result.current.nextStep(); // Step 3 (user-action: manage-names)
+        result.current.triggerStepAction('manage-names'); // Step 4 (user-action: add-speaker)
+        result.current.triggerStepAction('add-speaker'); // Step 5 (acknowledgment)
+        result.current.nextStep(); // Step 6 (user-action: edit-speaker)
+        result.current.triggerStepAction('edit-speaker'); // Step 7 (user-action: save-speaker)
       });
       
       expect(result.current.isActionDisabledDuringTour("save-speaker")).toBe(false);
@@ -132,11 +138,17 @@ describe("TourStore - Comprehensive Tour System", () => {
       const { result } = renderHook(() => useTourStore());
       
       act(() => {
-        result.current.startTour();
-        // Advance to step 11
-        for (let i = 0; i < 10; i++) {
-          result.current.nextStep();
-        }
+        result.current.startTour(); // Step 1 (user-action: file-select)
+        result.current.triggerStepAction('file-select'); // Step 2 (acknowledgment)
+        result.current.nextStep(); // Step 3 (user-action: manage-names)
+        result.current.triggerStepAction('manage-names'); // Step 4 (user-action: add-speaker)
+        result.current.triggerStepAction('add-speaker'); // Step 5 (acknowledgment)
+        result.current.nextStep(); // Step 6 (user-action: edit-speaker)
+        result.current.triggerStepAction('edit-speaker'); // Step 7 (user-action: save-speaker)
+        result.current.triggerStepAction('save-speaker'); // Step 8 (acknowledgment)
+        result.current.nextStep(); // Step 9 (acknowledgment)
+        result.current.nextStep(); // Step 10 (user-action: generate-summary)
+        result.current.triggerStepAction('generate-summary'); // Step 11 (user-action: expand-action-items)
       });
       
       expect(result.current.isActionDisabledDuringTour("share-email")).toBe(false);
@@ -184,8 +196,8 @@ describe("TourStore - Comprehensive Tour System", () => {
       const { result } = renderHook(() => useTourStore());
       
       act(() => {
-        result.current.startTour(); // Step 1
-        result.current.nextStep(); // Step 2
+        result.current.startTour(); // Step 1 (user-action: file-select)
+        result.current.triggerStepAction('file-select'); // Step 2 (acknowledgment)
       });
       
       expect(result.current.isCurrentStep(1)).toBe(false);
@@ -197,12 +209,26 @@ describe("TourStore - Comprehensive Tour System", () => {
     it("has complete step configuration for all 18 steps", () => {
       const { result } = renderHook(() => useTourStore());
       
-      // Tour should support steps 1-18
+      // Tour should support steps 1-18 - Use proper advancement based on step type
       act(() => {
-        result.current.startTour();
-        for (let i = 1; i <= 17; i++) {
-          result.current.nextStep();
-        }
+        result.current.startTour(); // Step 1 (user-action: file-select)
+        result.current.triggerStepAction('file-select'); // Step 2 (acknowledgment)
+        result.current.nextStep(); // Step 3 (user-action: manage-names)
+        result.current.triggerStepAction('manage-names'); // Step 4 (user-action: add-speaker)
+        result.current.triggerStepAction('add-speaker'); // Step 5 (acknowledgment)
+        result.current.nextStep(); // Step 6 (user-action: edit-speaker)
+        result.current.triggerStepAction('edit-speaker'); // Step 7 (user-action: save-row)
+        result.current.triggerStepAction('save-row'); // Step 8 (user-action: final-save)
+        result.current.triggerStepAction('final-save'); // Step 9 (acknowledgment)
+        result.current.nextStep(); // Step 10 (user-action: generate-summary)
+        result.current.triggerStepAction('generate-summary'); // Step 11 (user-action: expand-action-items)
+        result.current.triggerStepAction('expand-action-items'); // Step 12 (acknowledgment)
+        result.current.nextStep(); // Step 13 (user-action: open-email-dialog)
+        result.current.triggerStepAction('open-email-dialog'); // Step 14 (user-action: add-email-recipient)
+        result.current.triggerStepAction('add-email-recipient'); // Step 15 (acknowledgment)
+        result.current.nextStep(); // Step 16 (user-action: preview-email)
+        result.current.triggerStepAction('preview-email'); // Step 17 (user-action: send-email)
+        result.current.triggerStepAction('send-email'); // Step 18 (acknowledgment)
       });
       
       expect(result.current.currentStep).toBe(18);

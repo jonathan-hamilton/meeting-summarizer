@@ -25,6 +25,7 @@ export const Edit = createMockIcon('Edit')
 export const Mic = createMockIcon('Mic')
 export const PersonAdd = createMockIcon('PersonAdd')
 export const Close = createMockIcon('Close')
+export const CloseIcon = createMockIcon('Close')
 export const Save = createMockIcon('Save')
 export const Delete = createMockIcon('Delete')
 export const AudioFile = createMockIcon('AudioFile')
@@ -47,6 +48,7 @@ export default {
   Mic,
   PersonAdd,
   Close,
+  CloseIcon,
   Save,
   Delete,
   AudioFile,
