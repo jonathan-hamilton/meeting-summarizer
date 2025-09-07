@@ -34,25 +34,32 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 1. **Progress Tracker Synchronization** 🎯
    - **CRITICAL**: Update ALL Progress Tracker tables across the documentation ecosystem
-   - Update `docs/sprints/sprint_*_stories.md` Progress Tracker table (at top of file)
+   - Update Sprint Progress Tracker (use smart file detection):
+     - **First**: Look for single file: `docs/sprints/sprint_*_stories.md`
+     - **If not found**: Look for directory structure: `docs/sprints/sprint_*/stories.md` 
+     - **Priority**: Directory-based structure takes precedence if both exist
+     - Update Progress Tracker table (at top of main stories file)
    - Update `README.md` Sprint status sections to reflect current story completion percentages
    - Update `docs/requirements/requirements-roadmap.md` sprint progress status
    - Ensure all tables show consistent status: PENDING ⏸️, IN PROGRESS ⚙️, X% COMPLETE 🏗️, COMPLETE ✅
    - Verify completion percentages match across all files (README, sprint stories, requirements roadmap)
 
 2. **Sprint Progress Documentation**
-   - Update the appropriate `docs/sprints/sprint_*_stories.md` file
+   - Update the appropriate sprint stories file (use smart file detection):
+     - **First**: Look for single file: `docs/sprints/sprint_*_stories.md`
+     - **If not found**: Look for directory structure: `docs/sprints/sprint_*/stories.md`
+     - **Priority**: Directory-based structure takes precedence if both exist
    - Mark story status as COMPLETE with ✅
    - Add completion timestamp and summary details
    - Update implementation progress section
    - Document any technical notes or deviations from original plan
 
-2. **Project Status Dashboard**
+3. **Project Status Dashboard**
    - Update the **root README.md** file to reflect current sprint status
    - Update feature completion status and current sprint progress
    - Ensure status section reflects latest accomplishments
 
-3. **Requirements Tracking & Sprint Planning**
+4. **Requirements Tracking & Sprint Planning**
    - Update `docs/requirements/requirements-roadmap.md` to reflect implemented requirements and sprint progress
    - Mark completed requirements and update progress tracking
    - Update completion percentages and story progress tracking

@@ -5,6 +5,7 @@ using Azure.Storage.Sas;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Text;
 
 namespace MeetingSummarizer.Api.Services.Storage;
@@ -29,12 +30,12 @@ public class UserStorageService : IUserStorageService
         BlobServiceClient blobServiceClient,
         IAzureConfigurationService configService,
         ILogger<UserStorageService> logger,
-        AzureStorageOptions storageOptions)
+        IOptions<AzureStorageOptions> storageOptions)
     {
         _blobServiceClient = blobServiceClient;
         _configService = configService;
         _logger = logger;
-        _storageOptions = storageOptions;
+        _storageOptions = storageOptions.Value;
     }
 
     public async Task<StorageUploadResult> UploadAudioFileAsync(Guid userId, string fileName, Stream fileStream, string contentType)
