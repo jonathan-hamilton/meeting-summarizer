@@ -55,13 +55,19 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 - Backend: 75/100 (API ready, some mobile optimizations needed)
 - Infrastructure: 70/100 (deployment ready, mobile features needed)
 
-### 📱 NEW STRATEGIC INITIATIVE: MOBILE DEPLOYMENT
+### 📱 STRATEGIC INITIATIVE UPDATE: USER MANAGEMENT & INFRASTRUCTURE PRIORITY
 
-**Sprint 6-8: Mobile PWA Strategy** (Added September 5, 2025)
-- **Timeline:** 6-8 weeks to iOS/Android app stores
-- **Approach:** PWA-first leveraging existing React foundation
-- **Investment:** 1 FTE developer, ~$200/month infrastructure
-- **Market Opportunity:** 70%+ B2B tools accessed via mobile
+**Sprint 6: User Management & Infrastructure** (Updated September 6, 2025)
+- **Business Priority:** Token-based monetization with persistent storage competitive advantage
+- **Timeline:** 4-5 weeks for production-ready user accounts and data persistence
+- **Investment:** Azure storage infrastructure (~$0.15/month per user), 10-15% token price increase
+- **Market Value:** 365-day meeting retention competitive with Otter.ai, Zoom, and enterprise tools
+
+**Sprint 7-9: Mobile PWA Strategy** (Moved from Sprint 6-8)  
+- **Timeline:** 6-8 weeks to iOS/Android app stores (following user infrastructure)
+- **Approach:** PWA-first leveraging existing React foundation + persistent user data
+- **Investment:** 1 FTE developer, ~$200/month infrastructure  
+- **Market Opportunity:** 70%+ B2B tools accessed via mobile, requires user accounts foundation
 
 ---
 
@@ -322,8 +328,31 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 
 ---
 
+## Sprint 6 (User Management & Infrastructure)
+**Requirements Finalized (September 6, 2025) - Implementation Ready:**
+  - **REQ-AZURE-1**: Azure Blob Storage for persistent user file storage with tier management
+  - **REQ-AZURE-2**: Azure SQL Database/Cosmos DB for user metadata and meeting history  
+  - **REQ-AZURE-3**: Secure authentication with Azure AD and least-privilege access control
+  - **REQ-AZURE-4**: Data encryption at rest and in transit for all user information
+  - **REQ-AZURE-5**: GDPR-compliant data handling with export/deletion capabilities
+  - **REQ-PAY-TOKEN-1**: Token pricing includes 365-day storage costs (10-15% price increase)
+  - **REQ-PAY-TOKEN-2**: Stripe integration with storage-inclusive messaging
+  - **REQ-PAY-TOKEN-3**: User dashboard showing token balance + meeting history + storage usage
+  - **REQ-RETENTION-1**: 365-day data retention policy for paid users (industry competitive)
+  - **REQ-RETENTION-2**: Automated tier migration (Hot→Cool→Archive) for cost optimization
+  - **REQ-RETENTION-3**: 30-day deletion warnings and automated cleanup processes
+  - **REQ-FOOTER-1**: Legal footer with "© 2025 Vertec Solutions LLC" and support contact
+  - **REQ-FOOTER-2**: Terms of Service and Privacy Policy links (retention policy included)
+  - **REQ-FOOTER-3**: Responsive design with accessibility compliance
+  - **REQ-ACCESS-1**: WCAG 2.1 Level AA compliance across all components
+  - **REQ-ACCESS-2**: Automated accessibility testing in CI/CD pipeline
 
-## Sprint 6 (Mobile Foundation)
+**Sprint 6 Business Model:** Token-only pricing with persistent storage value (~$3.30 for 60min + 365-day storage)
+**Sprint 6 Target:** Production-ready user accounts and persistent data infrastructure (4-5 weeks)
+
+---
+
+## Sprint 7 (Mobile Foundation)
 **Planned - Mobile PWA Foundation:**
   - REQ-MOB-1: Platform Compatibility (iOS Safari 15+, Android Chrome 90+)
   - REQ-MOB-1.1: Support iOS Safari 15+ and Chrome for iOS
@@ -349,12 +378,12 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
   - REQ-TECH-MOB-1.2: Web App Manifest with complete configuration
   - REQ-TECH-MOB-1.3: Background sync for offline functionality
 
-**Sprint 6 Target:** Complete PWA foundation and mobile UI patterns (3-4 weeks)
+**Sprint 7 Target:** Complete PWA foundation and mobile UI patterns (3-4 weeks)
 
 ---
 
 
-## Sprint 7 (Mobile App Store Deployment)
+## Sprint 8 (Mobile App Store Deployment)
 **Planned - App Store Preparation:**
   - REQ-STORE-1: iOS App Store
   - REQ-STORE-1.1: Meet iOS App Store Review Guidelines
@@ -404,13 +433,13 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 ## 📊 COMPLEXITY & EFFORT ANALYSIS
 
 ### High Complexity (4-6 weeks each)
-1. **Mobile PWA Foundation (Sprint 6-8)** - New platform deployment, app store requirements
-2. **Monetization System (Future)** - Payment processing, user management, security
-3. **Bulk Operations (Future)** - Complex UI interactions, multi-selection state management
+1. **User Management & Infrastructure (Sprint 6)** - Azure storage, persistent data, token pricing integration
+2. **Mobile PWA Foundation (Sprint 7-9)** - New platform deployment, app store requirements  
+3. **Monetization System Enhancement (Future)** - Advanced payment features, subscription tiers, enterprise features
 
 ### Medium Complexity (2-3 weeks each)  
 1. **Advanced Email Controls (Future)** - Extends existing functionality, send history
-2. **User Authentication (Future)** - Standard patterns, JWT implementation
+2. **User Authentication Enhancement (Future)** - Advanced user management, team features
 3. **Performance Optimization (S5.3)** - ✅ COMPLETE with exceptional results
 
 ### Low Complexity (1-2 weeks each)
@@ -420,12 +449,17 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 
 ## 🎯 STRATEGIC PRIORITIES
 
-### Phase 1: Mobile Foundation (Sprint 6-8) - CURRENT FOCUS
-**Goal:** Expand to mobile platforms via PWA deployment
-**Timeline:** 6-8 weeks
-**Business Impact:** Access mobile-first user segments, competitive differentiation
+### Phase 1: User Infrastructure Foundation (Sprint 6) - CURRENT FOCUS
+**Goal:** Enable persistent user accounts and competitive data retention
+**Timeline:** 4-5 weeks  
+**Business Impact:** Token-based monetization, 365-day storage competitive advantage, user retention
 
-### Phase 2: Advanced Features (Future Sprints)
+### Phase 2: Mobile Platform Expansion (Sprint 7-9)
+**Goal:** Expand to mobile platforms via PWA deployment leveraging persistent user data
+**Timeline:** 6-8 weeks
+**Business Impact:** Access mobile-first user segments, competitive differentiation with full-featured mobile experience
+
+### Phase 3: Advanced Features (Future Sprints)
 **Goal:** Enhanced productivity and usability
 - Advanced email controls and send history
 - Bulk operations for power users
