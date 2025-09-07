@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MeetingSummarizer.Api.Models;
 using System.Reflection;
+using System.IO;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -197,9 +198,9 @@ public class EnvironmentController : ControllerBase
             
             // Fallback to file creation time
             var location = assembly.Location;
-            if (!string.IsNullOrEmpty(location) && File.Exists(location))
+            if (!string.IsNullOrEmpty(location) && System.IO.File.Exists(location))
             {
-                return File.GetCreationTimeUtc(location);
+                return System.IO.File.GetCreationTimeUtc(location);
             }
         }
         catch (Exception ex)
