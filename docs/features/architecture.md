@@ -99,9 +99,49 @@ const EmailCompositionDialog = React.lazy(() => import("./EmailCompositionDialog
 
 ### (Future) Storage Layer
 
-- Optional SQLite or Postgres integration.
-- Will store: transcript text, mapped roles, summary, filename, timestamp.
-- Enables `/api/summary/history` endpoint for past meetings.
+The storage layer will be implemented in **Sprint 6** to provide persistent user data and meeting history with Azure cloud infrastructure.
+
+---
+
+## Sprint 6: Azure Storage Architecture (Implementation Ready)
+
+### Persistent Data Infrastructure
+
+**Azure Blob Storage Configuration**:
+- **Hot Tier**: Recent meetings (0-30 days) for immediate access
+- **Cool Tier**: Older meetings (30-180 days) for cost optimization  
+- **Archive Tier**: Long-term storage (180-365 days) for maximum cost efficiency
+- **Security**: Azure AD authentication with least-privilege access per user
+- **Encryption**: At rest and in transit for all user data
+
+**Azure Database Architecture**:
+- **Service**: Azure SQL Database or Cosmos DB for metadata
+- **User Data**: Account information, token balances, meeting metadata
+- **Meeting History**: File references, transcription status, processing timestamps
+- **Storage Mapping**: Logical isolation per user account for data security
+
+### Token-Based Pricing Integration
+
+**Cost Recovery Strategy**:
+- **Storage Cost**: ~$0.15/month per typical user (60-80MB meetings)  
+- **Token Pricing**: 10-15% increase covers full storage costs (~$3.30 for 60min meeting + 365-day storage)
+- **Value Proposition**: "Your meetings stored safely for 365 days" included with token purchase
+- **Competitive Advantage**: Industry-standard retention comparable to Otter.ai, Zoom
+
+**Automated Storage Management**:
+- **Tier Migration**: Automated Hot→Cool→Archive based on access patterns
+- **Cleanup Jobs**: 30-day deletion warnings, automated removal after 365 days
+- **Cost Monitoring**: Usage tracking and cost alerts for operational visibility
+
+### Data Retention Policy
+
+**User Data Lifecycle**:
+- **Demo Users**: No persistent storage (current behavior maintained)
+- **Paid Users**: 365-day retention with automatic tier optimization
+- **Deletion Process**: GDPR-compliant with user export/deletion capabilities
+- **Audit Logging**: All storage operations logged for compliance
+
+---
 
 ### (Future) Authentication & Authorization
 
