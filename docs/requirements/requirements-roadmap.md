@@ -62,12 +62,13 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 - **Timeline:** 4-5 weeks for production-ready user accounts and data persistence
 - **Investment:** Azure storage infrastructure (~$0.15/month per user), 10-15% token price increase
 - **Market Value:** 365-day meeting retention competitive with Otter.ai, Zoom, and enterprise tools
+- **⚠️ CRITICAL ADDITION:** Azure web hosting deployment must be included for production readiness
 
-**Sprint 7-9: Mobile PWA Strategy** (Moved from Sprint 6-8)  
-- **Timeline:** 6-8 weeks to iOS/Android app stores (following user infrastructure)
-- **Approach:** PWA-first leveraging existing React foundation + persistent user data
-- **Investment:** 1 FTE developer, ~$200/month infrastructure  
-- **Market Opportunity:** 70%+ B2B tools accessed via mobile, requires user accounts foundation
+**Sprint 7: Mobile PWA Foundation + Production Hosting** (Moved from Sprint 6-8)  
+- **Timeline:** 4-5 weeks (extended to include Azure App Service deployment)
+- **Approach:** PWA-first leveraging existing React foundation + persistent user data + Azure hosting
+- **Investment:** 1 FTE developer, ~$200/month infrastructure (includes App Service hosting costs)
+- **Market Opportunity:** 70%+ B2B tools accessed via mobile, requires both user accounts AND hosted backend
 
 ---
 
@@ -335,6 +336,23 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
   - **REQ-AZURE-3**: Secure authentication with Azure AD and least-privilege access control
   - **REQ-AZURE-4**: Data encryption at rest and in transit for all user information
   - **REQ-AZURE-5**: GDPR-compliant data handling with export/deletion capabilities
+  - **REQ-HOSTING-1**: Azure App Service deployment for .NET 9 Web API backend
+  - **REQ-HOSTING-2**: Azure Static Web Apps or App Service for React frontend hosting
+  - **REQ-HOSTING-3**: Azure Key Vault integration for secure API key management
+  - **REQ-HOSTING-4**: Azure Application Insights for monitoring and telemetry
+  - **REQ-HOSTING-5**: Custom domain setup with SSL/TLS certificates
+  - **REQ-HOSTING-6**: Production environment configuration with proper scaling
+  - **REQ-HOSTING-7**: CI/CD pipeline integration with GitHub Actions for automated deployment
+  - **REQ-MONITOR-1**: Azure Application Insights integration for application performance monitoring (APM)
+  - **REQ-MONITOR-2**: Real-time application dashboards showing key metrics and system health
+  - **REQ-MONITOR-3**: Custom telemetry tracking for business metrics (audio processing, token usage, user activity)
+  - **REQ-MONITOR-4**: Azure Log Analytics for centralized logging with structured log correlation
+  - **REQ-MONITOR-5**: Alert configuration for critical system events (API failures, storage issues, high latency)
+  - **REQ-MONITOR-6**: Performance monitoring for audio processing pipeline (transcription time, file sizes, success rates)
+  - **REQ-MONITOR-7**: Cost monitoring and alerts for Azure services (storage, compute, AI services)
+  - **REQ-MONITOR-8**: User experience monitoring (page load times, API response times, error rates)
+  - **REQ-MONITOR-9**: Security monitoring (failed authentication attempts, suspicious activity patterns)
+  - **REQ-MONITOR-10**: Health check endpoints for all critical services (database, storage, AI services)
   - **REQ-PAY-TOKEN-1**: Token pricing includes 365-day storage costs (10-15% price increase)
   - **REQ-PAY-TOKEN-2**: Stripe integration with storage-inclusive messaging
   - **REQ-PAY-TOKEN-3**: User dashboard showing token balance + meeting history + storage usage
@@ -348,7 +366,8 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
   - **REQ-ACCESS-2**: Automated accessibility testing in CI/CD pipeline
 
 **Sprint 6 Business Model:** Token-only pricing with persistent storage value (~$3.30 for 60min + 365-day storage)
-**Sprint 6 Target:** Production-ready user accounts and persistent data infrastructure (4-5 weeks)
+**Sprint 6 Target:** Production-ready user accounts, persistent data infrastructure, and Azure hosting (5-6 weeks)
+**Sprint 6 Infrastructure:** Complete Azure deployment ready for public users and mobile app backend
 
 ---
 
@@ -432,9 +451,9 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 
 ## 📊 COMPLEXITY & EFFORT ANALYSIS
 
-### High Complexity (4-6 weeks each)
-1. **User Management & Infrastructure (Sprint 6)** - Azure storage, persistent data, token pricing integration
-2. **Mobile PWA Foundation (Sprint 7-9)** - New platform deployment, app store requirements  
+### High Complexity (5-7 weeks each)
+1. **User Management & Infrastructure + Azure Hosting (Sprint 6)** - Azure storage, persistent data, token pricing integration, AND production web hosting deployment
+2. **Mobile PWA Foundation (Sprint 7)** - New platform deployment, app store requirements, leveraging hosted backend
 3. **Monetization System Enhancement (Future)** - Advanced payment features, subscription tiers, enterprise features
 
 ### Medium Complexity (2-3 weeks each)  
@@ -449,14 +468,14 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 
 ## 🎯 STRATEGIC PRIORITIES
 
-### Phase 1: User Infrastructure Foundation (Sprint 6) - CURRENT FOCUS
-**Goal:** Enable persistent user accounts and competitive data retention
-**Timeline:** 4-5 weeks  
-**Business Impact:** Token-based monetization, 365-day storage competitive advantage, user retention
+### Phase 1: User Infrastructure Foundation + Production Hosting (Sprint 6) - CURRENT FOCUS
+**Goal:** Enable persistent user accounts, competitive data retention, AND production Azure hosting
+**Timeline:** 5-6 weeks (extended to include complete hosting deployment)
+**Business Impact:** Token-based monetization, 365-day storage competitive advantage, user retention, AND public production access
 
-### Phase 2: Mobile Platform Expansion (Sprint 7-9)
-**Goal:** Expand to mobile platforms via PWA deployment leveraging persistent user data
-**Timeline:** 6-8 weeks
+### Phase 2: Mobile Platform Expansion (Sprint 7-8)
+**Goal:** Expand to mobile platforms via PWA deployment leveraging hosted backend infrastructure
+**Timeline:** 5-6 weeks (reduced since hosting backend already complete)
 **Business Impact:** Access mobile-first user segments, competitive differentiation with full-featured mobile experience
 
 ### Phase 3: Advanced Features (Future Sprints)
