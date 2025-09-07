@@ -5,8 +5,13 @@ using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Services.Validation;
 using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Configuration;
+using MeetingSummarizer.Api.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add Azure Key Vault configuration if enabled (S6.1 Increment 2)
+builder.Configuration.AddAzureKeyVault(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddControllers()
@@ -42,6 +47,27 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+
+// Configure Entity Framework for user data persistence (S6.1)
+builder.Services.AddDbContext<MeetingSummarizerDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.UseSqlServer(connectionString, sqlServerOptions =>
+        {
+            sqlServerOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+        });
+    }
+    // If no connection string, EF will be registered but not functional
+    // This maintains backward compatibility for existing functionality
+});
+
+// Add Azure configuration services (S6.1 Increment 2)
+builder.Services.AddAzureConfigurationServices(builder.Configuration);
 
 // Add dependency injection for services
 // Configure Azure Speech Services (S4.1)
@@ -91,6 +117,9 @@ using (var scope = app.Services.CreateScope())
 
     // Validate Azure Speech Services configuration (S4.1)
     scope.ServiceProvider.ValidateAzureSpeechConfiguration();
+    
+    // Validate Azure configuration services (S6.1 Increment 2)
+    await scope.ValidateAzureConfigurationAsync(logger);
 
     // Perform comprehensive startup validation (S4.3)
     var validationService = scope.ServiceProvider.GetService<IConfigurationValidationService>();
