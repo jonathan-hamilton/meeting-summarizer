@@ -32,12 +32,23 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 #### Core Documentation Updates (Always Update):
 
-1. **Progress Tracker Synchronization** 🎯
+1. **Directory Structure Validation** 🏗️
+   - **CRITICAL**: Enforce consistent directory naming conventions
+   - **Sprint directories MUST use underscores**: `docs/sprints/sprint_X/` (NOT `sprint-X`)
+   - Before creating any files in sprint directories, verify correct naming:
+     - ✅ Correct: `docs/sprints/sprint_6/stories.md`
+     - ❌ Wrong: `docs/sprints/sprint-6/stories.md`
+   - If incorrect directory detected, move files to correct location and remove duplicate
+   - Check for duplicate sprint directories and consolidate into underscore format
+
+2. **Progress Tracker Synchronization** 🎯
    - **CRITICAL**: Update ALL Progress Tracker tables across the documentation ecosystem
-   - Update Sprint Progress Tracker (use smart file detection):
+   - Update Sprint Progress Tracker (use smart file detection with naming validation):
+     - **NAMING RULE**: Sprint directories MUST use underscores: `sprint_X` (NOT `sprint-X`)
      - **First**: Look for single file: `docs/sprints/sprint_*_stories.md`
      - **If not found**: Look for directory structure: `docs/sprints/sprint_*/stories.md` 
      - **Priority**: Directory-based structure takes precedence if both exist
+     - **Validation**: If both `sprint_X` and `sprint-X` exist, consolidate into `sprint_X` format
      - Update Progress Tracker table (at top of main stories file)
    - Update `README.md` Sprint status sections to reflect current story completion percentages
    - Update `docs/requirements/requirements-roadmap.md` sprint progress status
@@ -45,10 +56,13 @@ This prompt handles the complete workflow for updating sprint documentation and 
    - Verify completion percentages match across all files (README, sprint stories, requirements roadmap)
 
 2. **Sprint Progress Documentation**
-   - Update the appropriate sprint stories file (use smart file detection):
+   - Update the appropriate sprint stories file (use smart file detection with duplicate prevention):
+     - **NAMING ENFORCEMENT**: Always use underscore format: `docs/sprints/sprint_X/stories.md`
      - **First**: Look for single file: `docs/sprints/sprint_*_stories.md`
      - **If not found**: Look for directory structure: `docs/sprints/sprint_*/stories.md`
      - **Priority**: Directory-based structure takes precedence if both exist
+     - **DUPLICATE CHECK**: Before creating files, check for both `sprint_X` and `sprint-X` directories
+     - **CONSOLIDATION**: If duplicates exist, move all files to `sprint_X` format and remove `sprint-X`
    - Mark story status as COMPLETE with ✅
    - Add completion timestamp and summary details
    - Update implementation progress section
