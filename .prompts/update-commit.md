@@ -1,4 +1,16 @@
-# Update Documentation and Commit Workflow
+# Update Documentation and Com2. **Sprint Progress Documentation**
+   - Update the appropriate `docs/sprints/sprint_*_stories.md` file
+   - Mark story status as COMPLETE with ✅
+   - Add completion timestamp and summary details
+   - Update implementation progress section
+   - Document any technical notes or deviations from original plan
+
+3. **Project Status Dashboard**
+   - Update the **root README.md** file to reflect current sprint status
+   - Update feature completion status and current sprint progress
+   - Ensure status section reflects latest accomplishments
+
+4. **Requirements Tracking & Sprint Planning**
 
 ## Command: `update-commit`
 
@@ -20,7 +32,15 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 #### Core Documentation Updates (Always Update):
 
-1. **Sprint Progress Documentation**
+1. **Progress Tracker Synchronization** 🎯
+   - **CRITICAL**: Update ALL Progress Tracker tables across the documentation ecosystem
+   - Update `docs/sprints/sprint_*_stories.md` Progress Tracker table (at top of file)
+   - Update `README.md` Sprint status sections to reflect current story completion percentages
+   - Update `docs/requirements/requirements-roadmap.md` sprint progress status
+   - Ensure all tables show consistent status: PENDING ⏸️, IN PROGRESS ⚙️, X% COMPLETE 🏗️, COMPLETE ✅
+   - Verify completion percentages match across all files (README, sprint stories, requirements roadmap)
+
+2. **Sprint Progress Documentation**
    - Update the appropriate `docs/sprints/sprint_*_stories.md` file
    - Mark story status as COMPLETE with ✅
    - Add completion timestamp and summary details
@@ -42,54 +62,54 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 #### Technical Documentation Updates (Update If Applicable):
 
-4. **Technical Health Tracking**
+5. **Technical Health Tracking**
    - Update `docs/features/technical-debt.md` if technical debt was addressed or created
    - Update `docs/features/technical-improvements.md` if improvements were implemented
    - Document performance optimizations or refactoring completed
 
-5. **Architecture Documentation**
+6. **Architecture Documentation**
    - Update `docs/features/architecture.md` if architectural changes were made
    - Document new components, services, or integration patterns
    - Update system diagrams if structure changed
 
 #### Feature-Specific Documentation Updates (Check If Story-Related):
 
-6. **Feature Requirements**
+7. **Feature Requirements**
    - Review and update relevant files in `docs/features/` that relate to the completed story:
      - `speaker-*-requirements.md` for speaker management stories
      - `state-management-redesign.md` for state architecture changes
      - `transcription-alternatives.md` for audio processing stories
    
-7. **Detailed Requirements**
+8. **Detailed Requirements**
    - Check relevant files in `docs/requirements/` for updates:
      - `speaker-management.md`, `audio-processing-and-file-handling.md`, etc.
    - Update specific requirement status and implementation notes
 
 #### Strategic Documentation Updates (Update If Vision/Planning Affected):
 
-8. **Vision & Strategic Planning**
+9. **Vision & Strategic Planning**
    - Update `docs/planning/vision.md` if story completion represents major feature milestone or strategic achievement
    - Update competitive advantages, current status section, or technical architecture summaries
    - Ensure vision reflects actual implemented capabilities, not just planned ones
 
-9. **Mobile Strategy Documentation** (Update If Mobile-Related Work)
+10. **Mobile Strategy Documentation** (Update If Mobile-Related Work)
    - Update `docs/planning/mobile-deployment-strategy-summary.md` if mobile work affects timeline or strategy
    - Update `docs/technical-improvements/mobile-technical-assessment.md` if technical readiness changes
    - Update `docs/requirements/mobile-application-requirements.md` if mobile requirements are implemented
 
-10. **Requirements Index & Navigation**
+11. **Requirements Index & Navigation**
    - Update `docs/requirements/README.md` if new requirement categories are added or structure changes
    - Update `docs/DOCUMENTATION_MAP.md` if new documentation files are created or major changes affect traceability
    - Ensure all new documents are properly linked in the navigation hierarchy
 
-11. **Planning & Monetization Documentation**
+12. **Planning & Monetization Documentation**
    - Update `docs/planning/demo-tour-steps.md` if demo functionality was modified
    - Review `docs/planning/monetization-analysis.md` if business features were implemented
    - Update any strategic planning documents if market positioning or business model is affected
 
 #### Documentation Ecosystem Health Check:
 
-12. **Traceability Validation**
+13. **Traceability Validation**
    - Verify vision achievements match requirements roadmap completion status
    - Ensure all REQ-IDs mentioned in roadmap have corresponding definitions
    - Check that sprint documentation traces properly to requirements
@@ -189,8 +209,12 @@ The system will determine which documentation to update by:
 ## Documentation Update Checklist
 
 ### Always Update:
-- [ ] `docs/sprints/sprint_X_stories.md` - Story completion status
-- [ ] `README.md` - Project status dashboard
+- [ ] **PROGRESS TRACKERS** - Update ALL Progress Tracker tables for consistency 🎯
+  - [ ] `docs/sprints/sprint_X_stories.md` - Progress Tracker table at top of file
+  - [ ] `README.md` - Sprint status sections with completion percentages  
+  - [ ] `docs/requirements/requirements-roadmap.md` - Sprint progress status
+- [ ] `docs/sprints/sprint_X_stories.md` - Story completion status and implementation details
+- [ ] `README.md` - Project status dashboard and feature completion status
 - [ ] `docs/requirements/requirements-roadmap.md` - Requirements tracking and strategic sprint planning
 
 ### Core Technical Documentation (Update If Applicable):
