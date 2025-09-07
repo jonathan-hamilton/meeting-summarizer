@@ -111,38 +111,153 @@ This story establishes the infrastructure foundation for paid user accounts with
 ---
 
 ### Story S6.2: Payment & Token System Setup
-As a user, I want to purchase tokens that include persistent storage so that I can process meetings and access my results for a full year.
+As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
 
 **Status: PENDING ⏸️**
 
 **Dependencies**: None
 
 **Implementation Summary:**
-This story implements token-based pricing with integrated storage costs, allowing users to pay per use while receiving 365-day data persistence as part of the service value.
+This story implements a duration-based token system with volume discounts, where users pay proportionally to meeting length. The system uses mock payment processing for development while providing complete functionality and a seamless upgrade path to real payment providers.
+
+## Token System Specification
+
+### Core Token Structure
+- **Base Unit**: 1 token = $0.05 (100 tokens = $5.00)
+- **Duration-Based Pricing**: Tokens calculated by meeting length with automatic volume discounts
+- **Fair Pricing Model**: Users pay proportionally to actual processing costs
+
+### Token Calculation Formula
+```
+Base tokens = Math.Ceiling(duration_minutes / 15.0) * 100
+Final tokens = Base tokens * volume_discount_multiplier
+
+Volume Discount Multipliers:
+- 15 minutes: 1.0 (no discount)
+- 30 minutes: 0.9 (10% discount) 
+- 45 minutes: 0.8 (20% discount)
+- 60+ minutes: 0.7 (30% discount for 60+ minutes)
+```
+
+### Pricing Structure
+
+| Meeting Duration | Base Calculation | Volume Discount | Tokens Required | Cost | Per-Minute Cost |
+|-----------------|------------------|-----------------|----------------|------|-----------------|
+| 15 minutes      | 100 tokens      | None           | 100 tokens     | $5.00| $0.33          |
+| 30 minutes      | 200 tokens      | 10%            | 180 tokens     | $9.00| $0.30          |
+| 45 minutes      | 300 tokens      | 20%            | 240 tokens     | $12.00| $0.27         |
+| 60 minutes      | 400 tokens      | 30%            | 280 tokens     | $14.00| $0.23         |
+| 75 minutes      | 500 tokens      | 30%            | 350 tokens     | $17.50| $0.23         |
+| 90 minutes      | 600 tokens      | 30%            | 420 tokens     | $21.00| $0.23         |
+
+### Business Model Benefits
+- **Fair Cost Alignment**: Users pay proportionally to actual processing costs
+- **Strong Profitability**: 73-76% profit margins across all meeting lengths
+- **Competitive Advantage**: 3-5x cheaper than Rev.ai with no monthly subscriptions
+- **Volume Rewards**: Automatic discounts for longer meetings
 
 **Acceptance Criteria:**
-- ✓ PCI-compliant payment provider account (Stripe) configured with API keys and webhook endpoints
-- ✓ **Token pricing includes 365-day storage costs** (10-15% price increase to cover ~$0.15/month storage)
-- ✓ Backend implements secure webhook endpoints for payment confirmation, refunds, and token balance updates
-- ✓ **User messaging**: "Your meetings stored safely for 365 days" included with token purchase
-- ✓ Token consumption tracking per meeting with storage cost factored into pricing
-- ✓ Admin tools for reconciling transactions, managing token packages, and auditing payment events
-- ✓ Email notifications for successful payments, failed transactions, and refunds
-- ✓ Fraud detection and chargeback protection integrated
-- ✓ **Value proposition**: Token purchase includes both processing and long-term storage
-- ✓ Multiple currency support for international users
+
+### Core Token System
+- ✓ **TokenCalculationService** implemented with duration-based pricing logic
+- ✓ **Volume discount calculations** automatically applied (10%, 20%, 30%)
+- ✓ **Token balance management** integrated with existing user accounts
+- ✓ **Pre-processing cost estimation** shows users exact token requirements before processing
+- ✓ **Mock payment system** simulates successful payments for development and testing
+
+### User Experience
+- ✓ **Duration analysis**: System analyzes uploaded audio and displays required tokens
+- ✓ **Cost transparency**: "This 23-minute meeting requires 180 tokens ($9.00)" messaging
+- ✓ **Token balance display**: Current balance prominently shown in user dashboard
+- ✓ **Purchase flow**: Simple token buying interface with clear pricing
+- ✓ **Usage tracking**: Complete history of tokens spent per meeting
+
+### Payment Integration
+- ✓ **Mock payment processor** for development with interface-based design
+- ✓ **Token purchase API endpoints** handle payment processing and balance updates
+- ✓ **Payment webhook simulation** for transaction confirmation
+- ✓ **Refund handling** for failed processing or user dissatisfaction
+- ✓ **Transaction audit trail** for all token purchases and usage
+
+### Database Extensions
+- ✓ **UserAccount.TokenBalance** field added for balance tracking
+- ✓ **TokenPurchases table** for purchase history and reconciliation
+- ✓ **TokenUsage table** for per-meeting consumption tracking
+- ✓ **Payment integration** ready for future real processor migration
+
+### Administrative Tools
+- ✓ **Admin dashboard** for token system monitoring and management
+- ✓ **Usage analytics** showing system-wide token consumption patterns
+- ✓ **Payment reconciliation** tools for transaction management
+- ✓ **Token adjustment** capabilities for customer service issues
+
+**Technical Implementation Requirements:**
+
+### Token Calculation Service
+```csharp
+public class TokenCalculationService
+{
+    public int CalculateTokensRequired(int durationMinutes)
+    {
+        // Base: 100 tokens per 15-minute increment
+        int baseTokens = (int)Math.Ceiling(durationMinutes / 15.0) * 100;
+        
+        // Apply volume discount
+        double multiplier = GetVolumeDiscountMultiplier(durationMinutes);
+        return (int)(baseTokens * multiplier);
+    }
+    
+    private double GetVolumeDiscountMultiplier(int minutes)
+    {
+        return minutes switch
+        {
+            <= 15 => 1.0,    // No discount
+            <= 30 => 0.9,    // 10% discount
+            <= 45 => 0.8,    // 20% discount
+            _ => 0.7          // 30% discount for 60+ minutes
+        };
+    }
+}
+```
+
+### Database Schema Extensions
+```sql
+-- Add to existing UserAccount table
+ALTER TABLE UserAccount ADD TokenBalance INT DEFAULT 0;
+
+-- New tables
+CREATE TABLE TokenPurchases (
+    Id INT IDENTITY PRIMARY KEY,
+    UserId INT FOREIGN KEY REFERENCES UserAccount(Id),
+    TokensPurchased INT,
+    AmountPaid DECIMAL(10,2),
+    PaymentId VARCHAR(255),
+    PurchaseDate DATETIME2,
+    PaymentStatus VARCHAR(50)
+);
+
+CREATE TABLE TokenUsage (
+    Id INT IDENTITY PRIMARY KEY,
+    UserId INT FOREIGN KEY REFERENCES UserAccount(Id),
+    MeetingId INT FOREIGN KEY REFERENCES Meeting(Id),
+    TokensUsed INT,
+    MeetingDurationMinutes INT,
+    UsageDate DATETIME2
+);
+```
 
 **Technical Notes:**
-- Follow REQ-PAY-SETUP-1 through REQ-PAY-SETUP-5 and REQ-PAY-1 through REQ-PAY-11 in requirements
-- Implement webhook signature verification for security
-- Use Stripe Customer Portal for user self-service billing management
-- Design token pricing with minimum 200% margin over API costs
+- Mock payment system provides complete functionality except live credit card processing
+- Interface-based design enables seamless migration to real payment processors
+- Token pricing includes 365-day storage costs (factored into profit margins)
+- System maintains 73-76% profit margins across all meeting durations
+- Volume discounts encourage longer meeting usage while maintaining profitability
 
 **Integration Points:**
-- Integrates with user authentication for account-based token management
-- Connects with Azure storage for paid user data persistence
-- Enables upgrade path from demo mode to paid accounts
-- Supports business analytics and revenue tracking
+- Extends existing S6.1 user management and storage infrastructure
+- Integrates with meeting processing workflow for token consumption
+- Provides foundation for S6.3 persistent meeting history
+- Enables business analytics and revenue tracking capabilities
 
 ---
 
