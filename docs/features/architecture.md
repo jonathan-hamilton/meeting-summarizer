@@ -103,22 +103,40 @@ The storage layer will be implemented in **Sprint 6** to provide persistent user
 
 ---
 
-## Sprint 6: Azure Storage Architecture + Production Hosting (Implementation Ready)
+## Sprint 6: Azure Storage Architecture + Production Hosting (Infrastructure Complete ✅)
+
+### Modern Terraform Infrastructure Foundation
+
+**September 7, 2025 - Infrastructure as Code Complete ✅:**
+- ✅ **Modular Terraform Architecture**: Complete migration from Bicep with 5 dedicated modules
+- ✅ **Multi-Environment Support**: Development, Staging, Production configurations with automated deployment
+- ✅ **Security Framework**: Key Vault integration, network restrictions, environment-specific security controls
+- ✅ **Deployment Automation**: PowerShell/Bash scripts with validation and comprehensive error handling
+- ✅ **Cost Optimization**: Environment-appropriate resource sizing and storage lifecycle policies
 
 ### Azure Production Hosting Infrastructure
 
-**Azure App Service Configuration**:
+**Azure App Service Configuration** (Terraform Module: `app-service`):
 - **Backend Hosting**: .NET 9 Web API deployed to Azure App Service (Linux)
 - **Frontend Hosting**: React SPA deployed to Azure Static Web Apps or App Service
-- **Scaling**: Automatic scaling based on CPU/memory usage and request volume
+- **Scaling**: Environment-specific SKUs (B1 for dev, P1v3 for production)
 - **SSL/TLS**: Custom domain with Azure-managed SSL certificates
-- **Environment**: Production configuration with proper connection strings and API keys
+- **Environment**: Production configuration with automated secret injection from Key Vault
 
-**Azure Key Vault Integration**:
+**Azure Key Vault Integration** (Terraform Module: `key-vault`):
 - **API Keys**: Secure storage for OpenAI, Azure Speech Services, SendGrid keys
-- **Connection Strings**: Database and storage account connection strings  
-- **Secrets Management**: Automatic rotation and secure access via Managed Identity
-- **Configuration**: Environment-specific settings with proper access controls
+- **Connection Strings**: Database and storage account connection strings automatically stored
+- **Secrets Management**: Automated secret provisioning during infrastructure deployment
+- **Configuration**: Environment-specific settings with RBAC and network access controls
+
+**Infrastructure Modules**:
+- **`cognitive-services/`**: Azure Speech Services with environment-appropriate SKUs (F0 for dev, S0 for prod)
+- **`sql-database/`**: Azure SQL Server and Database with firewall rules and connection string management
+- **`storage/`**: Azure Storage Account with blob containers, lifecycle policies, and cost-optimized replication
+- **`key-vault/`**: Centralized secrets management with access policies and automated secret provisioning
+- **`app-service/`**: App Service Plan and Linux Web App with environment-specific configurations
+
+**Deployment Ready**: Complete infrastructure can be deployed with `./deploy.ps1` script and `terraform.tfvars` configuration.
 
 **CI/CD Pipeline (GitHub Actions)**:
 - **Automated Deployment**: Push to main branch triggers production deployment
