@@ -5,6 +5,8 @@ using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Services.Validation;
 using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Services.Storage;
+using MeetingSummarizer.Api.Services.UserManagement;
+using MeetingSummarizer.Api.Services.DataRetention;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
 using Microsoft.EntityFrameworkCore;
@@ -120,6 +122,12 @@ builder.Services.AddScoped<IFilePreProcessingService, FilePreProcessingService>(
 
 // Register User Storage Service (S6.1 Increment 3)
 builder.Services.AddScoped<IUserStorageService, UserStorageService>();
+
+// Register User Management Service (S6.1 Increment 4)
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+
+// Register Data Retention Service (S6.1 Increment 4)
+builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
 
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
