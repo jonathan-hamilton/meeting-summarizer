@@ -17,6 +17,12 @@ This folder contains comprehensive Sprint 6 documentation:
   - Implementation roadmap and success metrics
 - **[implementation_summary.md](./implementation_summary.md)** - Technical implementation details and progress tracking
 
+### Implementation Plans
+- **[S6.1 Implementation Plan](../implementations/s6.1-implementation-plan.md)** - Azure Storage & Persistent Data Setup
+  - 6 incremental implementation steps
+  - Database models, Azure configuration, user storage isolation
+  - GDPR compliance and API endpoints
+
 ## Sprint Overview
 
 **Timeline**: 5-6 weeks (extended from 4-5 weeks)  
