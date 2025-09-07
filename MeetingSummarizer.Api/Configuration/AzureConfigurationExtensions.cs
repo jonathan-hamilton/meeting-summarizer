@@ -1,8 +1,10 @@
 using Azure.Core;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
+using Azure.Storage.Blobs;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Configuration;
+using Microsoft.Extensions.Azure;
 
 namespace MeetingSummarizer.Api.Configuration;
 
@@ -131,5 +133,44 @@ public static class AzureConfigurationExtensions
         {
             logger.LogError(ex, "Failed to validate Azure configuration");
         }
+    }
+
+    /// <summary>
+    /// Adds Azure Blob Storage client with managed identity support
+    /// </summary>
+    public static IServiceCollection AddAzureBlobStorage(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var azureStorageOptions = new AzureStorageOptions();
+        configuration.GetSection("AzureStorage").Bind(azureStorageOptions);
+
+        if (string.IsNullOrEmpty(azureStorageOptions.ConnectionString) && 
+            string.IsNullOrEmpty(azureStorageOptions.AccountName))
+        {
+            // No storage configuration - register a placeholder that will log warnings
+            services.AddSingleton<BlobServiceClient>(provider =>
+            {
+                var logger = provider.GetService<ILogger<BlobServiceClient>>();
+                logger?.LogWarning("Azure Blob Storage is not configured. User storage features will not be available.");
+                // Return a client that will fail gracefully
+                return new BlobServiceClient("UseDevelopmentStorage=true"); // Azure Storage Emulator
+            });
+        }
+        else if (!string.IsNullOrEmpty(azureStorageOptions.ConnectionString))
+        {
+            // Use connection string (development/testing)
+            services.AddSingleton<BlobServiceClient>(provider =>
+                new BlobServiceClient(azureStorageOptions.ConnectionString));
+        }
+        else
+        {
+            // Use managed identity (production)
+            var storageUri = $"https://{azureStorageOptions.AccountName}.blob.core.windows.net";
+            services.AddSingleton<BlobServiceClient>(provider =>
+                new BlobServiceClient(new Uri(storageUri), new DefaultAzureCredential()));
+        }
+
+        return services;
     }
 }

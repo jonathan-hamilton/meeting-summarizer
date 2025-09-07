@@ -13,6 +13,11 @@ public class AzureStorageOptions
     public string ConnectionString { get; set; } = string.Empty;
     
     /// <summary>
+    /// Azure Storage account name (for managed identity authentication)
+    /// </summary>
+    public string AccountName { get; set; } = string.Empty;
+    
+    /// <summary>
     /// Default container name for audio files
     /// </summary>
     public string ContainerName { get; set; } = "audio-files";
@@ -42,7 +47,8 @@ public class AzureStorageOptions
     /// </summary>
     public bool IsValid()
     {
-        return !string.IsNullOrWhiteSpace(ConnectionString) &&
+        return (!string.IsNullOrWhiteSpace(ConnectionString) ||
+                !string.IsNullOrWhiteSpace(AccountName)) &&
                !string.IsNullOrWhiteSpace(ContainerName) &&
                !string.IsNullOrWhiteSpace(UserDataContainer);
     }
