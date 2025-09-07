@@ -4,6 +4,7 @@ using MeetingSummarizer.Api.Services.Transcription;
 using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Services.Validation;
 using MeetingSummarizer.Api.Services.FileProcessing;
+using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
 using Microsoft.EntityFrameworkCore;
@@ -31,20 +32,42 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<SwaggerFileOperationFilter>();
 });
 
-// Configure CORS for React frontend development
+// Configure environment-specific settings
+builder.Services.Configure<EnvironmentOptions>(builder.Configuration.GetSection(EnvironmentOptions.SectionName));
+builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
+
+// Configure CORS based on environment
+var corsOptions = new CorsOptions();
+builder.Configuration.GetSection(CorsOptions.SectionName).Bind(corsOptions);
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("DevelopmentCorsPolicy", policy =>
+    options.AddPolicy("EnvironmentCorsPolicy", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",  // Default Vite React dev server
-                "http://localhost:5173",  // Alternative Vite port
-                "http://localhost:5174",  // Current Vite port
-                "http://localhost:3001"   // Alternative React dev server port
-            )
-            .AllowAnyMethod()
-            .AllowAnyHeader()
-            .AllowCredentials();
+        if (corsOptions.AllowedOrigins.Any())
+        {
+            policy.WithOrigins(corsOptions.AllowedOrigins.ToArray())
+                .WithMethods(corsOptions.AllowedMethods.ToArray())
+                .WithHeaders(corsOptions.AllowedHeaders.ToArray());
+
+            if (corsOptions.AllowCredentials)
+                policy.AllowCredentials();
+
+            policy.SetPreflightMaxAge(TimeSpan.FromSeconds(corsOptions.MaxAge));
+        }
+        else
+        {
+            // Fallback for development
+            policy.WithOrigins(
+                    "http://localhost:3000",  // Default Vite React dev server
+                    "http://localhost:5173",  // Alternative Vite port
+                    "http://localhost:5174",  // Current Vite port
+                    "http://localhost:3001"   // Alternative React dev server port
+                )
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        }
     });
 });
 
@@ -69,6 +92,9 @@ builder.Services.AddDbContext<MeetingSummarizerDbContext>(options =>
 // Add Azure configuration services (S6.1 Increment 2)
 builder.Services.AddAzureConfigurationServices(builder.Configuration);
 
+// Add Azure Blob Storage client (S6.1 Increment 3)
+builder.Services.AddAzureBlobStorage(builder.Configuration);
+
 // Add dependency injection for services
 // Configure Azure Speech Services (S4.1)
 builder.Services.AddAzureSpeechServices(builder.Configuration);
@@ -91,6 +117,9 @@ builder.Services.AddScoped<IConfigurationValidationService, ConfigurationValidat
 
 // Register enhanced file processing service (S4.3)
 builder.Services.AddScoped<IFilePreProcessingService, FilePreProcessingService>();
+
+// Register User Storage Service (S6.1 Increment 3)
+builder.Services.AddScoped<IUserStorageService, UserStorageService>();
 
 // Note: Additional service registrations will be added in future increments
 // builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
@@ -178,11 +207,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Enable CORS for development
-if (app.Environment.IsDevelopment())
-{
-    app.UseCors("DevelopmentCorsPolicy");
-}
+// Enable environment-specific CORS policy
+app.UseCors("EnvironmentCorsPolicy");
 
 app.UseAuthorization();
 
