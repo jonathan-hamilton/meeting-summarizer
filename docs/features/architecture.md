@@ -103,7 +103,57 @@ The storage layer will be implemented in **Sprint 6** to provide persistent user
 
 ---
 
-## Sprint 6: Azure Storage Architecture (Implementation Ready)
+## Sprint 6: Azure Storage Architecture + Production Hosting (Implementation Ready)
+
+### Azure Production Hosting Infrastructure
+
+**Azure App Service Configuration**:
+- **Backend Hosting**: .NET 9 Web API deployed to Azure App Service (Linux)
+- **Frontend Hosting**: React SPA deployed to Azure Static Web Apps or App Service
+- **Scaling**: Automatic scaling based on CPU/memory usage and request volume
+- **SSL/TLS**: Custom domain with Azure-managed SSL certificates
+- **Environment**: Production configuration with proper connection strings and API keys
+
+**Azure Key Vault Integration**:
+- **API Keys**: Secure storage for OpenAI, Azure Speech Services, SendGrid keys
+- **Connection Strings**: Database and storage account connection strings  
+- **Secrets Management**: Automatic rotation and secure access via Managed Identity
+- **Configuration**: Environment-specific settings with proper access controls
+
+**CI/CD Pipeline (GitHub Actions)**:
+- **Automated Deployment**: Push to main branch triggers production deployment
+- **Build Process**: .NET build, React build, automated testing, deployment
+- **Environment Management**: Staging and production environment separation
+- **Monitoring**: Application Insights integration for telemetry and error tracking
+
+### Production Monitoring & Observability
+
+**Azure Application Insights Integration**:
+- **Performance Monitoring**: API response times, throughput, dependency tracking
+- **Custom Telemetry**: Audio processing metrics (file size, duration, success rate)
+- **Business Metrics**: Token usage, user activity, storage consumption, revenue tracking
+- **Error Tracking**: Exception logging with stack traces and correlation IDs
+- **Dependency Monitoring**: Azure Speech Services, OpenAI API, database performance
+
+**Real-time Dashboards & Alerting**:
+- **System Health Dashboard**: Overall application status, service availability, error rates
+- **Business Metrics Dashboard**: Daily/weekly processing volume, user growth, token consumption
+- **Performance Dashboard**: Response times, throughput, resource utilization
+- **Critical Alerts**: API failures, storage quota warnings, high error rates, cost threshold breaches
+- **User Experience Alerts**: Slow page loads, processing timeouts, authentication failures
+
+**Structured Logging Strategy**:
+- **Correlation IDs**: Track requests across all services for troubleshooting
+- **Business Event Logging**: File uploads, transcription starts/completions, token purchases
+- **Security Logging**: Authentication events, suspicious activity, access patterns
+- **Performance Logging**: Processing times, memory usage, API call metrics
+- **Integration Logging**: Azure Speech Services calls, OpenAI API usage, database operations
+
+**Cost & Resource Monitoring**:
+- **Azure Cost Alerts**: Daily/monthly spending thresholds with automatic notifications
+- **Storage Usage Tracking**: Blob storage consumption per user and aggregate
+- **Compute Resource Monitoring**: App Service CPU/memory usage with auto-scaling triggers
+- **AI Service Usage**: Azure Speech Services and OpenAI token consumption tracking
 
 ### Persistent Data Infrastructure
 
@@ -211,11 +261,15 @@ The storage layer will be implemented in **Sprint 6** to provide persistent user
 - **Git**: Version control
 - **ESLint/Prettier**: Code formatting and linting for frontend
 
-### Deployment (Future)
+### Deployment (Production Ready - Sprint 6)
 
-- **Azure App Service**: Hosting for both backend and frontend
-- **Azure Key Vault**: Secure storage for OpenAI API keys
-- **Azure Storage**: File storage for uploaded audio files
+- **Azure App Service**: Production hosting for .NET 9 Web API backend with Linux containers
+- **Azure Static Web Apps**: Optimized React frontend hosting with global CDN
+- **Azure Key Vault**: Secure storage for OpenAI API keys, database connections, and secrets
+- **Azure Storage**: Blob storage for uploaded audio files with automated tier management
+- **Azure Application Insights**: Real-time monitoring, logging, and performance telemetry
+- **Custom Domain**: Professional domain setup (meeting-summary.io) with SSL certificates
+- **GitHub Actions**: Automated CI/CD pipeline for continuous deployment
 
 ---
 
