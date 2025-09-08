@@ -202,7 +202,7 @@ namespace MeetingSummarizer.Api.Migrations
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
                         .WithMany("Meetings")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -219,7 +219,7 @@ namespace MeetingSummarizer.Api.Migrations
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "PerformedBy")
                         .WithMany()
                         .HasForeignKey("PerformedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Meeting");
 

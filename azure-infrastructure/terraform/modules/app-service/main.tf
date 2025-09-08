@@ -28,7 +28,7 @@ variable "key_vault_id" {
 # Local values
 locals {
   is_production = var.environment == "prod"
-  sku_size = local.is_production ? "P1v3" : "B1"
+  sku_size = local.is_production ? "P1v3" : "F1"  # Use Free tier for dev to avoid quota issues
 }
 
 # App Service Plan
@@ -68,12 +68,4 @@ resource "azurerm_linux_web_app" "main" {
     Environment = var.environment
     Application = "MeetingSummary"
   }
-}
-
-output "app_service_name" {
-  value = azurerm_linux_web_app.main.name
-}
-
-output "app_service_url" {
-  value = "https://${azurerm_linux_web_app.main.default_hostname}"
 }
