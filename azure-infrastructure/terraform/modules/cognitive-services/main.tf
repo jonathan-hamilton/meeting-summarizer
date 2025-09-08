@@ -35,6 +35,7 @@ resource "azurerm_cognitive_account" "speech" {
   sku_name            = local.sku_name
 
   public_network_access_enabled = !local.is_production
+  custom_subdomain_name         = var.speech_service_name
 
   dynamic "network_acls" {
     for_each = local.is_production ? [1] : []

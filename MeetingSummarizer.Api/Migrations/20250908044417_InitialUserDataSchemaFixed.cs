@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace MeetingSummarizer.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialUserDataSchema : Migration
+    public partial class InitialUserDataSchemaFixed : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -62,8 +62,7 @@ namespace MeetingSummarizer.Api.Migrations
                         name: "FK_Meetings_Users_UserId",
                         column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -91,8 +90,7 @@ namespace MeetingSummarizer.Api.Migrations
                         name: "FK_MeetingHistory_Users_PerformedByUserId",
                         column: x => x.PerformedByUserId,
                         principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(

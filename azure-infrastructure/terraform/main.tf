@@ -20,54 +20,6 @@ provider "azurerm" {
   }
 }
 
-# Variables
-variable "environment" {
-  description = "Environment name (dev, staging, prod)"
-  type        = string
-  validation {
-    condition = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, staging, prod."
-  }
-}
-
-variable "location" {
-  description = "Location for all resources"
-  type        = string
-  default     = "East US"
-}
-
-variable "app_name" {
-  description = "Application name prefix"
-  type        = string
-  default     = "meetingsummary"
-}
-
-variable "sql_admin_login" {
-  description = "SQL Administrator login"
-  type        = string
-  sensitive   = true
-}
-
-variable "sql_admin_password" {
-  description = "SQL Administrator password"
-  type        = string
-  sensitive   = true
-}
-
-variable "openai_api_key" {
-  description = "OpenAI API Key"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "sendgrid_api_key" {
-  description = "SendGrid API Key"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 # Local values for resource naming
 locals {
   resource_suffix        = "${var.app_name}-${var.environment}"
@@ -78,9 +30,16 @@ locals {
 # Data source for current client configuration
 data "azurerm_client_config" "current" {}
 
-# Resource Group (assuming it exists)
-data "azurerm_resource_group" "main" {
-  name = "rg-${local.resource_suffix}"
+# Resource Group - Create instead of assuming it exists
+resource "azurerm_resource_group" "main" {
+  name     = "rg-${local.resource_suffix}"
+  location = var.location
+
+  tags = {
+    Environment = var.environment
+    Application = var.app_name
+    CreatedBy   = "Terraform"
+  }
 }
 
 # Key Vault Module
@@ -90,7 +49,7 @@ module "key_vault" {
   key_vault_name = "${local.resource_suffix}-kv"
   location       = var.location
   environment    = var.environment
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
 }
 
 # Storage Account Module
@@ -100,7 +59,7 @@ module "storage" {
   storage_account_name = local.storage_account_name
   location            = var.location
   environment         = var.environment
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
 }
 
 # SQL Database Module
@@ -111,7 +70,7 @@ module "sql_database" {
   database_name       = "${local.resource_suffix}-db"
   location           = var.location
   environment        = var.environment
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
   administrator_login = var.sql_admin_login
   administrator_login_password = var.sql_admin_password
 }
@@ -123,7 +82,7 @@ module "app_service" {
   app_service_name    = "${local.resource_suffix}-api"
   location           = var.location
   environment        = var.environment
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
   key_vault_id       = module.key_vault.key_vault_id
 }
 
@@ -134,36 +93,16 @@ module "cognitive_services" {
   speech_service_name = "${local.resource_suffix}-speech"
   location           = var.location
   environment        = var.environment
-  resource_group_name = data.azurerm_resource_group.main.name
+  resource_group_name = azurerm_resource_group.main.name
 }
 
-# Store secrets in Key Vault
-resource "azurerm_key_vault_secret" "openai_api_key" {
-  count = var.openai_api_key != "" ? 1 : 0
-  
-  name         = "OpenAIApiKey-${local.environment_title_case}"
-  value        = var.openai_api_key
-  key_vault_id = module.key_vault.key_vault_id
-
-  depends_on = [module.key_vault]
-}
-
-resource "azurerm_key_vault_secret" "sendgrid_api_key" {
-  count = var.sendgrid_api_key != "" ? 1 : 0
-  
-  name         = "SendGridApiKey-${local.environment_title_case}"
-  value        = var.sendgrid_api_key
-  key_vault_id = module.key_vault.key_vault_id
-
-  depends_on = [module.key_vault]
-}
-
+# Store secrets in Key Vault (with dependency on access policy)
 resource "azurerm_key_vault_secret" "storage_connection_string" {
   name         = "AzureStorageConnectionString-${local.environment_title_case}"
   value        = module.storage.connection_string
   key_vault_id = module.key_vault.key_vault_id
 
-  depends_on = [module.key_vault, module.storage]
+  depends_on = [module.key_vault.azurerm_key_vault_access_policy_current_user]
 }
 
 resource "azurerm_key_vault_secret" "database_connection_string" {
@@ -171,7 +110,7 @@ resource "azurerm_key_vault_secret" "database_connection_string" {
   value        = module.sql_database.connection_string
   key_vault_id = module.key_vault.key_vault_id
 
-  depends_on = [module.key_vault, module.sql_database]
+  depends_on = [module.key_vault.azurerm_key_vault_access_policy_current_user]
 }
 
 resource "azurerm_key_vault_secret" "speech_key" {
@@ -179,5 +118,5 @@ resource "azurerm_key_vault_secret" "speech_key" {
   value        = module.cognitive_services.speech_key
   key_vault_id = module.key_vault.key_vault_id
 
-  depends_on = [module.key_vault, module.cognitive_services]
+  depends_on = [module.key_vault.azurerm_key_vault_access_policy_current_user]
 }

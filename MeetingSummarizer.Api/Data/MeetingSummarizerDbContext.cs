@@ -62,7 +62,7 @@ public class MeetingSummarizerDbContext : DbContext
             entity.HasOne(m => m.User)
                 .WithMany(u => u.Meetings)
                 .HasForeignKey(m => m.UserId)
-                .OnDelete(DeleteBehavior.Cascade); // When user deleted, delete their meetings
+                .OnDelete(DeleteBehavior.NoAction); // Prevent multiple cascade paths issue
         });
         
         // Configure MeetingHistory entity
@@ -84,7 +84,7 @@ public class MeetingSummarizerDbContext : DbContext
             entity.HasOne(h => h.PerformedBy)
                 .WithMany()
                 .HasForeignKey(h => h.PerformedByUserId)
-                .OnDelete(DeleteBehavior.SetNull); // When user deleted, keep history but clear performer
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflict
         });
         
         // Configure enums

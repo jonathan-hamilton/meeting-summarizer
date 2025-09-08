@@ -15,7 +15,13 @@ import {
   DialogContent,
   DialogActions,
 } from "@mui/material";
-import { Brightness4, Brightness7, HealthAndSafety, Help as HelpIcon } from "@mui/icons-material";
+import { 
+  Brightness4, 
+  Brightness7, 
+  HealthAndSafety, 
+  Help as HelpIcon,
+  AccountCircle as AccountIcon,
+} from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import { useAppMode } from "./contexts/AppModeContext";
@@ -23,12 +29,14 @@ import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
 import { useTourStore } from "./stores/tourStore";
+import { useUserProfileDialogOpen } from "./stores/userProfileStore";
 
 // Lazy load dialog components to reduce initial bundle size
 const HealthDialog = React.lazy(() => import("./components/HealthDialog").then(m => ({ default: m.HealthDialog })));
 const SessionTimeoutWarningDialog = React.lazy(() => import("./components/SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
 const PrivacyPolicyDialog = React.lazy(() => import("./components/PrivacyPolicyDialog").then(m => ({ default: m.PrivacyPolicyDialog })));
 const HelpDialog = React.lazy(() => import("./components/HelpDialog").then(m => ({ default: m.HelpDialog })));
+const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
 
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
@@ -62,6 +70,7 @@ const AppContent: React.FC = () => {
   const { privacyControls } = useSessionManagement();
   const { addTranscript } = useSessionStore();
   const { isActive: isTourActive, isCurrentStep } = useTourStore();
+  const openProfileDialog = useUserProfileDialogOpen();
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -344,6 +353,15 @@ const AppContent: React.FC = () => {
                   <SessionIndicator status={privacyControls.sessionStatus} />
                 )}
                 
+                {/* User Profile Button - Only in production mode */}
+                {appMode === 'production' && (
+                  <Tooltip title="My Account">
+                    <IconButton color="inherit" onClick={openProfileDialog}>
+                      <AccountIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                
                 {/* Sign-In/Sign-Out Button */}
                 <Button
                   variant="contained"
@@ -405,6 +423,11 @@ const AppContent: React.FC = () => {
               open={helpDialogOpen}
               onClose={() => setHelpDialogOpen(false)}
             />
+          </Suspense>
+
+          {/* User Profile dialog */}
+          <Suspense fallback={null}>
+            <UserProfileDialog />
           </Suspense>
 
           {/* Development mode sign-in dialog */}
