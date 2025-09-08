@@ -12,6 +12,11 @@ x64/
 # Debug logs (temporary, auto-cleaned)
 api-debug.log
 console-logs.txt
+
+# Large installer files
+*.msi
+*.exe
+*.dmg
 x86/
 build/
 [Bb]in/
