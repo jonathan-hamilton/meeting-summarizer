@@ -20,12 +20,13 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
 | S6.1     | Azure Storage & Persistent Data Setup              | COMPLETE ✅   | None                 |
-| S6.2     | Payment & Token System Setup                       | PENDING ⏸️    | None                 |
-| S6.3     | Persistent Upload Progress & Meeting History        | PENDING ⏸️    | S6.1, S6.2           |
-| S6.4     | Accessibility Compliance Enhancements              | PENDING ⏸️    | None                 |
-| S6.5     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
-| S6.6     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.2           |
-| S6.7     | Production Monitoring & Observability Setup        | PENDING ⏸️    | S6.6                 |
+| S6.2     | User Management Interface & Token UI Components    | PENDING ⏸️    | S6.1                 |
+| S6.3     | Payment & Token System Setup                       | PENDING ⏸️    | S6.1, S6.2           |
+| S6.4     | Persistent Upload Progress & Meeting History        | PENDING ⏸️    | S6.1, S6.3           |
+| S6.5     | Accessibility Compliance Enhancements              | PENDING ⏸️    | None                 |
+| S6.6     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
+| S6.7     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.3           |
+| S6.8     | Production Monitoring & Observability Setup        | PENDING ⏸️    | S6.7                 |
 
 ## User Stories
 
@@ -110,7 +111,123 @@ This story establishes the infrastructure foundation for paid user accounts with
 
 ---
 
-### Story S6.2: Payment & Token System Setup
+### Story S6.2: User Management Interface & Token UI Components
+As a user, I want to access my account information and manage my tokens so that I can view my profile, check my token balance, and prepare for token purchases.
+
+**Status: PENDING ⏸️**
+
+**Dependencies**: S6.1 (Azure Storage & Persistent Data Setup)
+
+**Implementation Summary:**
+This story creates the essential user interface components for account management and token system preparation. It provides users with access to their profile information, token balance display, and the foundational UI components needed for the token purchase system in S6.3.
+
+**Acceptance Criteria:**
+
+### Core User Profile Interface
+- ✓ **User Profile Dialog** accessible from AppBar user menu/icon
+- ✓ **Profile displays**: User name, email, account creation date, account type (paid/demo)
+- ✓ **Profile editing**: Allow users to update name and email with validation
+- ✓ **Token balance display** prominently shown in profile dialog
+- ✓ **Account actions**: Access to purchase history and account settings
+- ✓ **Account deletion** option with GDPR-compliant data removal confirmation
+
+### Token Balance Display Components  
+- ✓ **AppBar token indicator**: Small, always-visible token balance component in header
+- ✓ **Responsive design**: Shows full balance on desktop, abbreviated on mobile
+- ✓ **Real-time updates**: Token balance updates across all components when changed
+- ✓ **Visual states**: Different styling for sufficient/low/insufficient token balances
+- ✓ **Click-through functionality**: Token balance component links to purchase dialog
+
+### Token Purchase Preparation Dialog
+- ✓ **Token Purchase Dialog** accessible from profile and AppBar token indicator
+- ✓ **Package selection**: Display token packages with volume discount pricing
+- ✓ **Pricing transparency**: Clear cost breakdown and per-token value display
+- ✓ **Mock purchase interface**: Form fields for payment information (development mode)
+- ✓ **Purchase confirmation**: Success/failure states with balance update display
+- ✓ **Integration ready**: Interface-based design ready for real payment processor in S6.3
+
+### Cost Estimation & Confirmation Dialog
+- ✓ **Pre-processing estimation**: Dialog appears before meeting transcription begins
+- ✓ **Duration analysis**: "This 23-minute meeting requires 180 tokens ($9.00)" display
+- ✓ **Balance validation**: Shows current balance and confirms sufficient tokens
+- ✓ **Proceed/Cancel options**: Allow user to continue or abort processing
+- ✓ **Integration with FileUpload**: Seamlessly integrated into existing upload workflow
+
+### Insufficient Tokens Handling
+- ✓ **Insufficient Tokens Dialog**: Appears when user lacks required tokens
+- ✓ **Clear messaging**: Shows shortfall - "You need 180 tokens but have 50"
+- ✓ **Purchase prompt**: Direct link to token purchase dialog
+- ✓ **Alternative options**: Cancel processing or purchase exact tokens needed
+- ✓ **Graceful fallback**: Prevents processing without breaking user experience
+
+### Navigation & Menu Integration
+- ✓ **AppBar user menu**: Dropdown/menu icon for accessing profile and account features
+- ✓ **Menu items**: Profile, Token Balance, Purchase History, Account Settings
+- ✓ **Visual hierarchy**: Clear organization of user-related functionality
+- ✓ **Responsive behavior**: Appropriate menu behavior across device sizes
+- ✓ **Sign out functionality**: Integrated logout with session cleanup
+
+**Technical Implementation Requirements:**
+
+### User Profile Components
+```typescript
+// User Profile Dialog
+- UserProfileDialog.tsx
+- UserProfileForm.tsx  
+- AccountActions.tsx
+
+// Profile State Management
+- userProfileStore.ts (Zustand)
+- userProfileService.ts
+```
+
+### Token Balance Components
+```typescript
+// Token Display Components
+- TokenBalance.tsx (AppBar indicator)
+- TokenBalanceWidget.tsx (detailed display)
+- TokenStatus.tsx (visual status indicator)
+
+// Token State Management
+- tokenStore.ts (Zustand)
+- tokenService.ts (API integration)
+```
+
+### Purchase & Estimation Dialogs
+```typescript
+// Purchase Flow
+- TokenPurchaseDialog.tsx
+- TokenPackageSelector.tsx
+- MockPaymentForm.tsx
+
+// Estimation & Confirmation
+- CostEstimationDialog.tsx
+- InsufficientTokensDialog.tsx
+- ProcessingConfirmationDialog.tsx
+```
+
+### Integration Points
+- Extends existing AppBar component with user menu
+- Integrates with existing FileUpload workflow for cost estimation
+- Uses existing UserManagementService APIs from S6.1
+- Prepares foundation for S6.3 payment system integration
+
+**Technical Notes:**
+- Uses existing Zustand state management pattern
+- Leverages Material-UI components for consistency
+- Implements responsive design for mobile compatibility
+- Interface-based design enables easy S6.3 payment integration
+- Mock payment functionality for development and testing
+
+**Integration Points:**
+- Extends S6.1 user management infrastructure
+- Provides UI foundation for S6.3 payment system
+- Integrates with existing demo/production mode switching
+- Enhances existing FileUpload workflow with cost estimation
+
+---
+
+### Story S6.3: Payment & Token System Setup
 As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
 
 **Status: PENDING ⏸️**
@@ -253,15 +370,158 @@ CREATE TABLE TokenUsage (
 - System maintains 73-76% profit margins across all meeting durations
 - Volume discounts encourage longer meeting usage while maintaining profitability
 
+### Story S6.3: Payment & Token System Setup
+As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
+
+**Status: PENDING ⏸️**
+
+**Dependencies**: S6.1 (Azure Storage), S6.2 (User Management Interface)
+
+**Implementation Summary:**
+This story implements the backend duration-based token system with volume discounts, integrating with the UI components created in S6.2. The system uses mock payment processing for development while providing complete functionality and a seamless upgrade path to real payment providers.
+
+## Token System Specification
+
+### Core Token Structure
+- **Base Unit**: 1 token = $0.05 (100 tokens = $5.00)
+- **Duration-Based Pricing**: Tokens calculated by meeting length with automatic volume discounts
+- **Fair Pricing Model**: Users pay proportionally to actual processing costs
+
+### Token Calculation Formula
+```
+Base tokens = Math.Ceiling(duration_minutes / 15.0) * 100
+Final tokens = Base tokens * volume_discount_multiplier
+
+Volume Discount Multipliers:
+- 15 minutes: 1.0 (no discount)
+- 30 minutes: 0.9 (10% discount) 
+- 45 minutes: 0.8 (20% discount)
+- 60+ minutes: 0.7 (30% discount for 60+ minutes)
+```
+
+### Pricing Structure
+
+| Meeting Duration | Base Calculation | Volume Discount | Tokens Required | Cost | Per-Minute Cost |
+|-----------------|------------------|-----------------|----------------|------|-----------------|
+| 15 minutes      | 100 tokens      | None           | 100 tokens     | $5.00| $0.33          |
+| 30 minutes      | 200 tokens      | 10%            | 180 tokens     | $9.00| $0.30          |
+| 45 minutes      | 300 tokens      | 20%            | 240 tokens     | $12.00| $0.27         |
+| 60 minutes      | 400 tokens      | 30%            | 280 tokens     | $14.00| $0.23         |
+| 75 minutes      | 500 tokens      | 30%            | 350 tokens     | $17.50| $0.23         |
+| 90 minutes      | 600 tokens      | 30%            | 420 tokens     | $21.00| $0.23         |
+
+### Business Model Benefits
+- **Fair Cost Alignment**: Users pay proportionally to actual processing costs
+- **Strong Profitability**: 73-76% profit margins across all meeting lengths
+- **Competitive Advantage**: 3-5x cheaper than Rev.ai with no monthly subscriptions
+- **Volume Rewards**: Automatic discounts for longer meetings
+
+**Acceptance Criteria:**
+
+### Core Token System
+- ✓ **TokenCalculationService** implemented with duration-based pricing logic
+- ✓ **Volume discount calculations** automatically applied (10%, 20%, 30%)
+- ✓ **Token balance management** integrated with existing user accounts
+- ✓ **Pre-processing cost estimation** integrates with S6.2 cost estimation dialog
+- ✓ **Mock payment system** simulates successful payments for development and testing
+
+### User Experience Integration
+- ✓ **Duration analysis**: System analyzes uploaded audio and displays required tokens in S6.2 dialogs
+- ✓ **Cost transparency**: Backend provides pricing data for S6.2 UI components
+- ✓ **Token balance updates**: Real-time balance updates to S6.2 token display components
+- ✓ **Purchase processing**: Backend handles token purchases initiated from S6.2 purchase dialog
+- ✓ **Usage tracking**: Complete history accessible through S6.2 profile interface
+
+### Payment Integration
+- ✓ **Mock payment processor** for development with interface-based design
+- ✓ **Token purchase API endpoints** handle payment processing and balance updates
+- ✓ **Payment webhook simulation** for transaction confirmation
+- ✓ **Refund handling** for failed processing or user dissatisfaction
+- ✓ **Transaction audit trail** for all token purchases and usage
+
+### Database Extensions
+- ✓ **UserAccount.TokenBalance** field added for balance tracking
+- ✓ **TokenPurchases table** for purchase history and reconciliation
+- ✓ **TokenUsage table** for per-meeting consumption tracking
+- ✓ **Payment integration** ready for future real processor migration
+
+### Administrative Tools
+- ✓ **Admin dashboard** for token system monitoring and management
+- ✓ **Usage analytics** showing system-wide token consumption patterns
+- ✓ **Payment reconciliation** tools for transaction management
+- ✓ **Token adjustment** capabilities for customer service issues
+
+**Technical Implementation Requirements:**
+
+### Token Calculation Service
+```csharp
+public class TokenCalculationService
+{
+    public int CalculateTokensRequired(int durationMinutes)
+    {
+        // Base: 100 tokens per 15-minute increment
+        int baseTokens = (int)Math.Ceiling(durationMinutes / 15.0) * 100;
+        
+        // Apply volume discount
+        double multiplier = GetVolumeDiscountMultiplier(durationMinutes);
+        return (int)(baseTokens * multiplier);
+    }
+    
+    private double GetVolumeDiscountMultiplier(int minutes)
+    {
+        return minutes switch
+        {
+            <= 15 => 1.0,    // No discount
+            <= 30 => 0.9,    // 10% discount
+            <= 45 => 0.8,    // 20% discount
+            _ => 0.7          // 30% discount for 60+ minutes
+        };
+    }
+}
+```
+
+### Database Schema Extensions
+```sql
+-- Add to existing UserAccount table
+ALTER TABLE UserAccount ADD TokenBalance INT DEFAULT 0;
+
+-- New tables
+CREATE TABLE TokenPurchases (
+    Id INT IDENTITY PRIMARY KEY,
+    UserId INT FOREIGN KEY REFERENCES UserAccount(Id),
+    TokensPurchased INT,
+    AmountPaid DECIMAL(10,2),
+    PaymentId VARCHAR(255),
+    PurchaseDate DATETIME2,
+    PaymentStatus VARCHAR(50)
+);
+
+CREATE TABLE TokenUsage (
+    Id INT IDENTITY PRIMARY KEY,
+    UserId INT FOREIGN KEY REFERENCES UserAccount(Id),
+    MeetingId INT FOREIGN KEY REFERENCES Meeting(Id),
+    TokensUsed INT,
+    MeetingDurationMinutes INT,
+    UsageDate DATETIME2
+);
+```
+
+**Technical Notes:**
+- Mock payment system provides complete functionality except live credit card processing
+- Interface-based design enables seamless migration to real payment processors
+- Token pricing includes 365-day storage costs (factored into profit margins)
+- System maintains 73-76% profit margins across all meeting durations
+- Volume discounts encourage longer meeting usage while maintaining profitability
+
 **Integration Points:**
 - Extends existing S6.1 user management and storage infrastructure
-- Integrates with meeting processing workflow for token consumption
-- Provides foundation for S6.3 persistent meeting history
+- Integrates with S6.2 user interface components for seamless user experience
+- Provides backend services for S6.2 dialogs and token display components
 - Enables business analytics and revenue tracking capabilities
 
 ---
 
-### Story S6.3: Persistent Upload Progress & Meeting History (Paid Users)
+### Story S6.4: Persistent Upload Progress & Meeting History (Paid Users)
 As a paid user, I want my upload progress and meeting history to persist across browser refreshes and sessions so that I can resume work and access past meetings.
 
 **Status: PENDING ⏸️**
@@ -296,7 +556,42 @@ This story provides paid users with persistent meeting data, upload progress tra
 
 ---
 
-### Story S6.4: Accessibility Compliance Enhancements
+### Story S6.4: Persistent Upload Progress & Meeting History (Paid Users)
+As a paid user, I want my upload progress and meeting history to persist across browser refreshes and sessions so that I can resume work and access past meetings.
+
+**Status: PENDING ⏸️**
+
+**Dependencies**: S6.1 (Azure Storage), S6.3 (Payment & Token System)
+
+**Implementation Summary:**
+This story provides paid users with persistent meeting data, upload progress tracking, and comprehensive meeting history management that survives browser sessions and device changes.
+
+**Acceptance Criteria:**
+- ✓ Upload progress and meeting history saved to user account in backend (Paid mode only)
+- ✓ Data restored on login or page refresh for paid users with seamless experience
+- ✓ Real-time updates to progress and history across multiple browser tabs/devices
+- ✓ Error handling for data sync failures with offline capability and conflict resolution
+- ✓ Meeting history includes transcripts, summaries, action items, and speaker mappings
+- ✓ Search functionality across meeting history by date, participants, keywords, or action items
+- ✓ Export capabilities for meeting data (PDF, Word, JSON) with user-controlled access
+- ✓ Meeting sharing capabilities between authenticated users
+- ✓ Data retention policies with user control over meeting deletion and archival
+
+**Technical Notes:**
+- Use Azure SQL/Cosmos DB for persistent storage with proper indexing for search
+- Implement backend APIs for progress/history management with caching for performance
+- Design for eventual consistency and offline-first experience
+- Implement WebSocket or Server-Sent Events for real-time updates
+
+**Integration Points:**
+- Requires user authentication from payment system integration
+- Uses Azure storage infrastructure for persistent data
+- Enhances demo mode tour with paid feature demonstrations
+- Enables advanced search and analytics capabilities
+
+---
+
+### Story S6.5: Accessibility Compliance Enhancements
 As a user with accessibility needs, I want all interactive UI components to be fully accessible so that I can use the application with assistive technologies.
 
 **Status: PENDING ⏸️**
