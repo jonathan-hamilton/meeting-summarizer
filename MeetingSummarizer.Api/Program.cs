@@ -138,6 +138,9 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAut
 // Register Token Calculation Service (S6.3 Increment 2)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.ITokenCalculationService, MeetingSummarizer.Api.Services.TokenManagement.TokenCalculationService>();
 
+// Register Token Service (S6.3 Increment 3)
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.ITokenService, MeetingSummarizer.Api.Services.TokenManagement.TokenService>();
+
 // Note: Additional service registrations will be added in future increments
 
 var app = builder.Build();
