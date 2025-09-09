@@ -17,6 +17,7 @@ import {
   Link
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
 interface RegisterDialogProps {
@@ -31,6 +32,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   onSwitchToLogin 
 }) => {
   const { register, isLoading, error, clearError } = useAuthStore();
+  const navigate = useNavigate();
   
   // Keep dialog open if there's an error to show, even if parent tries to close it
   const shouldBeOpen = Boolean(open || (error && !isLoading));
@@ -131,8 +133,8 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       setFormErrors({});
       onClose();
       
-      // Redirect to /app page after successful registration
-      window.location.href = '/app';
+      // Navigate to /app page using React Router (no page refresh)
+      navigate('/app');
     }
     // If result.success is false, dialog stays open and error will be shown via the error state from auth store
     // If result.success is false, dialog stays open and error will be shown via the error state from auth store

@@ -6,7 +6,7 @@ using Moq;
 using MeetingSummarizer.Api.Tests.Infrastructure;
 using MeetingSummarizer.Api.Tests.TestData;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Transcription;
 
 namespace MeetingSummarizer.Api.Tests.Integration;
 

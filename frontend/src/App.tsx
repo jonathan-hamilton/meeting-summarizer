@@ -68,7 +68,7 @@ const SummaryDisplayDemo = React.lazy(
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
-  const { mode: appMode, setMode: setAppMode } = useAppMode();
+  const { mode: appMode, setMode: setAppMode, signOut: goToDemo } = useAppMode();
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
   const { addTranscript } = useSessionStore();
@@ -76,7 +76,7 @@ const AppContent: React.FC = () => {
   const openProfileDialog = useUserProfileDialogOpen();
   
   // Authentication integration  
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -287,45 +287,70 @@ const AppContent: React.FC = () => {
             sx={getAppBarSx()}
           >
             <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
-              {/* Development controls - only visible in local development environment */}
-              {import.meta.env.DEV && (
-                <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
-                  {/* Mode Toggle Switch - Toggle between development and production modes */}
-                  <Tooltip
-                    title={
-                      appMode === 'production'
-                        ? "Production mode (real API calls, Privacy Policy enabled)"
-                        : "Development mode (mocked API calls) - Double-click to test Privacy Policy"
-                    }
+              {/* Left-aligned controls */}
+              <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
+                {/* TRY DEMO button - for non-demo modes and when not authenticated */}
+                {appMode !== 'demo' && !isAuthenticated && (
+                  <Button
+                    variant="outlined"
+                    onClick={goToDemo}
+                    sx={{ 
+                      ml: 1,
+                      minWidth: '100px',
+                      fontWeight: 'bold',
+                      borderColor: '#6B46C1',
+                      color: '#6B46C1',
+                      '&:hover': {
+                        backgroundColor: '#6B46C1',
+                        color: 'white',
+                        borderColor: '#6B46C1'
+                      }
+                    }}
                   >
-                    <Switch
-                      checked={appMode === 'production'}
-                      onChange={handleModeToggle}
-                      onDoubleClick={handleModeDoubleClick}
-                      color="default"
-                      sx={{ mr: 1, cursor: 'pointer' }}
-                    />
-                  </Tooltip>
+                    TRY DEMO
+                  </Button>
+                )}
 
-                  {/* Server Health Status Button - Hidden in production mode */}
-                  {appMode === 'development' && (
-                    <IconButton
-                      color={getHealthButtonColor()}
-                      onClick={openHealthDialog}
-                      sx={{ mr: 1 }}
+                {/* Development controls - only visible in local development environment */}
+                {import.meta.env.DEV && (
+                  <>
+                    {/* Mode Toggle Switch - Toggle between development and production modes */}
+                    <Tooltip
                       title={
-                        isServerHealthy === null
-                          ? "Checking server status..."
-                          : isServerHealthy
-                          ? "Server is healthy"
-                          : "Server is unhealthy"
+                        appMode === 'production'
+                          ? "Production mode (real API calls, Privacy Policy enabled)"
+                          : "Development mode (mocked API calls) - Double-click to test Privacy Policy"
                       }
                     >
-                      <HealthAndSafety />
-                    </IconButton>
-                  )}
-                </Box>
-              )}
+                      <Switch
+                        checked={appMode === 'production'}
+                        onChange={handleModeToggle}
+                        onDoubleClick={handleModeDoubleClick}
+                        color="default"
+                        sx={{ mr: 1, cursor: 'pointer' }}
+                      />
+                    </Tooltip>
+
+                    {/* Server Health Status Button - Hidden in production mode */}
+                    {appMode === 'development' && (
+                      <IconButton
+                        color={getHealthButtonColor()}
+                        onClick={openHealthDialog}
+                        sx={{ mr: 1 }}
+                        title={
+                          isServerHealthy === null
+                            ? "Checking server status..."
+                            : isServerHealthy
+                            ? "Server is healthy"
+                            : "Server is unhealthy"
+                        }
+                      >
+                        <HealthAndSafety />
+                      </IconButton>
+                    )}
+                  </>
+                )}
+              </Box>
               
               {/* Centered title */}
               <Typography variant="h4" component="div" sx={{ 
@@ -368,28 +393,6 @@ const AppContent: React.FC = () => {
                     }}
                   >
                     SIGN OUT
-                  </Button>
-                )}
-                
-                {/* TRY DEMO button - for non-demo modes and when not authenticated */}
-                {appMode !== 'demo' && !isAuthenticated && (
-                  <Button
-                    variant="outlined"
-                    onClick={() => window.location.href = '/demo'}
-                    sx={{ 
-                      ml: 1,
-                      minWidth: '100px',
-                      fontWeight: 'bold',
-                      borderColor: '#6B46C1',
-                      color: '#6B46C1',
-                      '&:hover': {
-                        backgroundColor: '#6B46C1',
-                        color: 'white',
-                        borderColor: '#6B46C1'
-                      }
-                    }}
-                  >
-                    TRY DEMO
                   </Button>
                 )}
 
@@ -562,8 +565,8 @@ const AppContent: React.FC = () => {
                   <Typography variant="h4" component="h2" id="upload-heading" gutterBottom>
                     Upload Audio File
                   </Typography>
-                  {/* Show upload component only if not in production mode or if authenticated */}
-                  {(appMode !== 'production' || isAuthenticated) ? (
+                  {/* Show upload component only if not in production mode or if authenticated AND not currently loading */}
+                  {(appMode !== 'production' || (isAuthenticated && !isAuthLoading)) ? (
                     <FileUpload
                       onTranscriptionComplete={handleTranscriptionComplete}
                       isAuthDialogOpen={loginDialogOpen || registerDialogOpen}

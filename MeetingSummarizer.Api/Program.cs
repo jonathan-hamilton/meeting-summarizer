@@ -8,6 +8,7 @@ using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Services.UserManagement;
 using MeetingSummarizer.Api.Services.DataRetention;
 using MeetingSummarizer.Api.Services.Authentication;
+using MeetingSummarizer.Api.Services.TokenManagement;
 using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
@@ -133,6 +134,9 @@ builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
 
 // Register JWT Authentication Service (S6.2 Increment 1)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAuthenticationService, MeetingSummarizer.Api.Services.Authentication.JwtAuthenticationService>();
+
+// Register Token Calculation Service (S6.3 Increment 2)
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.ITokenCalculationService, MeetingSummarizer.Api.Services.TokenManagement.TokenCalculationService>();
 
 // Note: Additional service registrations will be added in future increments
 

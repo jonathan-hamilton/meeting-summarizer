@@ -27,6 +27,16 @@ public class MeetingSummarizerDbContext : DbContext
     /// </summary>
     public DbSet<MeetingHistory> MeetingHistory { get; set; } = null!;
     
+    /// <summary>
+    /// Token purchases made by users
+    /// </summary>
+    public DbSet<TokenPurchase> TokenPurchases { get; set; } = null!;
+    
+    /// <summary>
+    /// Token usage for meeting processing
+    /// </summary>
+    public DbSet<TokenUsage> TokenUsages { get; set; } = null!;
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -87,6 +97,48 @@ public class MeetingSummarizerDbContext : DbContext
                 .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflict
         });
         
+        // Configure TokenPurchase entity
+        modelBuilder.Entity<TokenPurchase>(entity =>
+        {
+            entity.HasKey(tp => tp.Id);
+            entity.HasIndex(tp => new { tp.UserId, tp.PurchaseDate }); // For efficient user purchase queries
+            entity.HasIndex(tp => tp.PaymentId).IsUnique(); // Ensure unique payment IDs
+            entity.HasIndex(tp => tp.StripeSessionId); // For Stripe webhook lookups
+            entity.Property(tp => tp.AmountPaid).HasColumnType("decimal(10,2)");
+            entity.Property(tp => tp.PaymentStatus).IsRequired().HasMaxLength(50);
+            entity.Property(tp => tp.PurchaseDate).HasDefaultValueSql("GETUTCDATE()");
+            
+            // Configure relationship with User
+            entity.HasOne(tp => tp.User)
+                .WithMany(u => u.TokenPurchases)
+                .HasForeignKey(tp => tp.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+        });
+        
+        // Configure TokenUsage entity
+        modelBuilder.Entity<TokenUsage>(entity =>
+        {
+            entity.HasKey(tu => tu.Id);
+            entity.HasIndex(tu => new { tu.UserId, tu.UsageDate }); // For efficient user usage queries
+            entity.HasIndex(tu => tu.MeetingId); // For meeting-specific usage lookups
+            entity.Property(tu => tu.CostInUsd).HasColumnType("decimal(10,2)");
+            entity.Property(tu => tu.VolumeDiscountApplied).HasColumnType("decimal(5,2)");
+            entity.Property(tu => tu.ProcessingType).IsRequired().HasMaxLength(100);
+            entity.Property(tu => tu.UsageDate).HasDefaultValueSql("GETUTCDATE()");
+            
+            // Configure relationship with User
+            entity.HasOne(tu => tu.User)
+                .WithMany(u => u.TokenUsages)
+                .HasForeignKey(tu => tu.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+                
+            // Configure relationship with Meeting
+            entity.HasOne(tu => tu.Meeting)
+                .WithMany()
+                .HasForeignKey(tu => tu.MeetingId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+        });
+
         // Configure enums
         modelBuilder.Entity<Meeting>()
             .Property(m => m.Status)

@@ -33,6 +33,14 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   
   const [mode, setMode] = useState<AppMode>(getInitialMode());
   
+  // Sync mode with current route changes
+  useEffect(() => {
+    const newMode = getInitialMode();
+    if (newMode !== mode) {
+      setMode(newMode);
+    }
+  }, [location.pathname, mode]);
+  
   // Auto-start tour when entering demo mode
   useEffect(() => {
     if (mode === 'demo') {

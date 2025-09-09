@@ -14,6 +14,7 @@ import {
   InputAdornment
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
 interface LoginDialogProps {
@@ -28,6 +29,7 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
   onSwitchToRegister 
 }) => {
   const { login, isLoading, error, clearError } = useAuthStore();
+  const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -83,8 +85,8 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
       setFormErrors({});
       onClose();
       
-      // Redirect to /app page after successful login
-      window.location.href = '/app';
+      // Navigate to /app page using React Router (no page refresh)
+      navigate('/app');
     }
   };
 

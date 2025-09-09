@@ -28,4 +28,11 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Exclude disabled test files from compilation -->
+    <Compile Remove="disabled_tests\**" />
+    <EmbeddedResource Remove="disabled_tests\**" />
+    <None Remove="disabled_tests\**" />
+  </ItemGroup>
+
 </Project>

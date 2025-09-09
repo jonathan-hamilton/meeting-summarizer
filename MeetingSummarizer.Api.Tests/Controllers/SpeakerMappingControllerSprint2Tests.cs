@@ -4,7 +4,7 @@ using Moq;
 using FluentAssertions;
 using MeetingSummarizer.Api.Controllers;
 using MeetingSummarizer.Api.Models;
-using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Tests.TestData;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
