@@ -105,6 +105,7 @@ public class UserManagementService : IUserManagementService
             TokenBalance = request.InitialTokenBalance,
             HasConsentedToDataProcessing = request.HasConsentedToDataProcessing,
             ConsentDate = request.HasConsentedToDataProcessing ? DateTime.UtcNow : null,
+            Role = request.Role,
             CreatedAt = DateTime.UtcNow,
             LastActivityAt = DateTime.UtcNow
         };

@@ -417,7 +417,8 @@ public class UserManagementController : ControllerBase
             ConsentDate = user.ConsentDate,
             CreatedAt = user.CreatedAt,
             LastActivityAt = user.LastActivityAt,
-            TotalMeetings = user.Meetings?.Count ?? 0
+            TotalMeetings = user.Meetings?.Count ?? 0,
+            Role = user.Role
         };
     }
 

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using MeetingSummarizer.Api.Data.Enums;
 
 namespace MeetingSummarizer.Api.Data.Entities;
 
@@ -33,6 +34,11 @@ public class User
     /// Indicates if user is in paid mode or demo mode
     /// </summary>
     public bool IsPaidUser { get; set; } = false;
+    
+    /// <summary>
+    /// User role for access control (User, Admin, SuperAdmin)
+    /// </summary>
+    public UserRole Role { get; set; } = UserRole.User;
     
     /// <summary>
     /// User consent for data processing (GDPR)

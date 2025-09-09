@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using MeetingSummarizer.Api.Data.Entities;
+using MeetingSummarizer.Api.Data.Enums;
 
 namespace MeetingSummarizer.Api.Models;
 
@@ -28,6 +29,11 @@ public class CreateUserRequest
 
     [Required]
     public bool HasConsentedToDataProcessing { get; set; }
+
+    /// <summary>
+    /// User role - defaults to User. Admin/SuperAdmin roles should be set explicitly.
+    /// </summary>
+    public UserRole Role { get; set; } = UserRole.User;
 }
 
 /// <summary>
@@ -115,6 +121,7 @@ public class UserResponse
     public DateTime CreatedAt { get; set; }
     public DateTime LastActivityAt { get; set; }
     public int TotalMeetings { get; set; }
+    public UserRole Role { get; set; }
 }
 
 /// <summary>

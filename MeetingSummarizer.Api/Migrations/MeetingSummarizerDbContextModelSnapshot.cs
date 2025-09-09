@@ -186,6 +186,9 @@ namespace MeetingSummarizer.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("TokenBalance")
                         .HasColumnType("decimal(18,2)");
 
