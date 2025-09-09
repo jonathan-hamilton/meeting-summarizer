@@ -76,4 +76,14 @@ public class User
     /// Navigation property for user's meetings
     /// </summary>
     public virtual ICollection<Meeting> Meetings { get; set; } = new List<Meeting>();
+    
+    /// <summary>
+    /// Navigation property for user's token purchases
+    /// </summary>
+    public virtual ICollection<TokenPurchase> TokenPurchases { get; set; } = new List<TokenPurchase>();
+    
+    /// <summary>
+    /// Navigation property for user's token usage
+    /// </summary>
+    public virtual ICollection<TokenUsage> TokenUsages { get; set; } = new List<TokenUsage>();
 }

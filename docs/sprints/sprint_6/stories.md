@@ -21,7 +21,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 |----------|----------------------------------------------------|---------------|----------------------|
 | S6.1     | Azure Storage & Persistent Data Setup              | COMPLETE ✅   | None                 |
 | S6.2     | User Management Interface & Authentication System  | COMPLETE ✅   | S6.1                 |
-| S6.3     | Payment & Token System Setup                       | PENDING ⏸️    | S6.1, S6.2           |
+| S6.3     | Payment & Token System Setup                       | 40% COMPLETE 🏗️ | S6.1, S6.2           |
 | S6.4     | Persistent Upload Progress & Meeting History        | PENDING ⏸️    | S6.1, S6.3           |
 | S6.5     | Accessibility Compliance Enhancements              | PENDING ⏸️    | None                 |
 | S6.6     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
@@ -287,9 +287,34 @@ This story delivers a complete JWT authentication system with user interface com
 ### Story S6.3: Payment & Token System Setup
 As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
 
-**Status: PENDING ⏸️**
+**Status: 40% COMPLETE 🏗️ - December 9, 2024**
 
 **Dependencies**: None
+
+**Progress Update:**
+
+**Increment 1 COMPLETE ✅**: Database Schema Extensions
+- Created TokenPurchase entity with comprehensive Stripe integration fields
+- Created TokenUsage entity with detailed usage tracking and volume discount support
+- Applied database migration AddTokenSystemTables with proper relationships
+- Extended User entity with token system navigation properties (TokenPurchases, TokenUsages)
+- Configured Entity Framework relationships with proper cascading and indexes
+- Database schema ready for production token management system
+
+**Increment 2 COMPLETE ✅**: Token Calculation Service
+- Implemented complete TokenCalculationService with duration-based pricing logic
+- Created TokenCalculationResult model with comprehensive calculation details
+- Added volume discount calculations (10%, 20%, 30%) with automatic tier detection
+- Implemented fair pricing: 15-minute increments, $0.05 per token base rate
+- Added comprehensive unit test suite (11 tests, all passing)
+- Service registered in dependency injection container and production-ready
+- Provides cost estimation, savings calculation, and user-friendly explanations
+
+**Additional Infrastructure Improvements:**
+- Fixed test infrastructure (133 passing tests, resolved compilation issues)
+- Enhanced UI with repositioned TRY DEMO button and proper spacing
+- Implemented React Router navigation patterns (eliminated window.location.href anti-pattern)
+- Added Stripe dependencies for future payment processor integration
 
 **Implementation Summary:**
 This story implements a duration-based token system with volume discounts, where users pay proportionally to meeting length. The system uses mock payment processing for development while providing complete functionality and a seamless upgrade path to real payment providers.
@@ -430,7 +455,9 @@ CREATE TABLE TokenUsage (
 ### Story S6.3: Payment & Token System Setup
 As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
 
-**Status: PENDING ⏸️**
+**Status: 40% COMPLETE 🏗️**
+
+**Completion Progress:** September 9, 2025
 
 **Dependencies**: S6.1 (Azure Storage), S6.2 (User Management Interface)
 

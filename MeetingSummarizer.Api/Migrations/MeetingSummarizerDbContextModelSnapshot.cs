@@ -146,6 +146,103 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("MeetingHistory");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenPurchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("AmountPaid")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("PaymentId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("StripeSessionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("TokensPurchased")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId")
+                        .IsUnique()
+                        .HasFilter("[PaymentId] IS NOT NULL");
+
+                    b.HasIndex("StripeSessionId");
+
+                    b.HasIndex("UserId", "PurchaseDate");
+
+                    b.ToTable("TokenPurchases");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("CostInUsd")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("MeetingDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("MeetingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ProcessingType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("TokensUsed")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UsageDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("VolumeDiscountApplied")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MeetingId");
+
+                    b.HasIndex("UserId", "UsageDate");
+
+                    b.ToTable("TokenUsages");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -237,6 +334,36 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Navigation("PerformedBy");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenPurchase", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
+                        .WithMany("TokenPurchases")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenUsage", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.Meeting", "Meeting")
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
+                        .WithMany("TokenUsages")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Meeting");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.Navigation("History");
@@ -245,6 +372,10 @@ namespace MeetingSummarizer.Api.Migrations
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.User", b =>
                 {
                     b.Navigation("Meetings");
+
+                    b.Navigation("TokenPurchases");
+
+                    b.Navigation("TokenUsages");
                 });
 #pragma warning restore 612, 618
         }
