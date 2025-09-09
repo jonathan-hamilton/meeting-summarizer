@@ -30,6 +30,8 @@ import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
 import { useTourStore } from "./stores/tourStore";
 import { useUserProfileDialogOpen } from "./stores/userProfileStore";
+import { useAuthStore } from "./stores/authStore";
+import { useAuthInitialization } from "./hooks/useAuthInitialization";
 
 // Lazy load dialog components to reduce initial bundle size
 const HealthDialog = React.lazy(() => import("./components/HealthDialog").then(m => ({ default: m.HealthDialog })));
@@ -37,6 +39,7 @@ const SessionTimeoutWarningDialog = React.lazy(() => import("./components/Sessio
 const PrivacyPolicyDialog = React.lazy(() => import("./components/PrivacyPolicyDialog").then(m => ({ default: m.PrivacyPolicyDialog })));
 const HelpDialog = React.lazy(() => import("./components/HelpDialog").then(m => ({ default: m.HelpDialog })));
 const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
+const AuthManager = React.lazy(() => import("./components/auth").then(m => ({ default: m.AuthManager })));
 
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
@@ -65,12 +68,15 @@ const SummaryDisplayDemo = React.lazy(
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
-  const { mode: appMode, setMode: setAppMode, signIn, signOut } = useAppMode();
+  const { mode: appMode, setMode: setAppMode } = useAppMode();
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
   const { addTranscript } = useSessionStore();
   const { isActive: isTourActive, isCurrentStep } = useTourStore();
   const openProfileDialog = useUserProfileDialogOpen();
+  
+  // Authentication integration  
+  const { isAuthenticated } = useAuthStore();
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -91,6 +97,10 @@ const AppContent: React.FC = () => {
   
   // State for development mode sign-in dialog
   const [devSignInDialogOpen, setDevSignInDialogOpen] = useState(false);
+  
+  // Authentication dialog states
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
 
   // Listen for session expiry events
   useEffect(() => {
@@ -197,36 +207,15 @@ const AppContent: React.FC = () => {
     setHealthDialogOpen(false);
   };
 
-  // Sign-In/Sign-Out button handlers
-  const handleSignInClick = async () => {
-    if (appMode === 'demo') {
-      // Demo mode: navigate to production mode
-      await signIn();
-    } else if (appMode === 'development') {
-      // Development mode: show stub dialog
-      setDevSignInDialogOpen(true);
-    }
-    // Production mode: this shouldn't happen as button shows "SIGN OUT"
+  // Sign-Out button handler
+  const handleSignOutClick = async () => {
+    // Production mode: sign out from auth system but stay on current page
+    const { logout } = useAuthStore.getState();
+    await logout();
+    // Don't call signOut() which redirects to demo - just clear auth state
   };
 
-  const handleSignOutClick = () => {
-    // Production mode: navigate back to demo mode
-    signOut();
-  };
 
-  const getSignInButtonText = () => {
-    if (appMode === 'demo') return 'SIGN IN';
-    if (appMode === 'production') return 'SIGN OUT';
-    return 'SIGN IN'; // Development mode
-  };
-
-  const handleSignInButtonClick = () => {
-    if (appMode === 'production') {
-      handleSignOutClick();
-    } else {
-      handleSignInClick();
-    }
-  };
 
   // Check server health and OpenAI status on component mount and periodically
   useEffect(() => {
@@ -298,8 +287,8 @@ const AppContent: React.FC = () => {
             sx={getAppBarSx()}
           >
             <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
-              {/* Development controls - positioned on left, hidden in demo mode OR production mode */}
-              {import.meta.env.DEV && appMode !== 'demo' && (
+              {/* Development controls - only visible in local development environment */}
+              {import.meta.env.DEV && (
                 <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
                   {/* Mode Toggle Switch - Toggle between development and production modes */}
                   <Tooltip
@@ -353,8 +342,8 @@ const AppContent: React.FC = () => {
                   <SessionIndicator status={privacyControls.sessionStatus} />
                 )}
                 
-                {/* User Profile Button - Only in production mode */}
-                {appMode === 'production' && (
+                {/* User Profile Button - Only when authenticated in production mode */}
+                {appMode === 'production' && isAuthenticated && (
                   <Tooltip title="My Account">
                     <IconButton color="inherit" onClick={openProfileDialog}>
                       <AccountIcon />
@@ -362,23 +351,67 @@ const AppContent: React.FC = () => {
                   </Tooltip>
                 )}
                 
-                {/* Sign-In/Sign-Out Button */}
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  onClick={handleSignInButtonClick}
-                  sx={{ 
-                    ml: 1,
-                    minWidth: '80px',
-                    fontWeight: 'bold',
-                    backgroundColor: appMode === 'demo' ? '#9C27B0' : '#1976d2',
-                    '&:hover': {
-                      backgroundColor: appMode === 'demo' ? '#7B1FA2' : '#1565C0'
-                    }
-                  }}
-                >
-                  {getSignInButtonText()}
-                </Button>
+                {/* Authentication Button - Only show SIGN OUT when authenticated in production mode */}
+                {appMode === 'production' && isAuthenticated && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleSignOutClick}
+                    sx={{ 
+                      ml: 1,
+                      minWidth: '80px',
+                      fontWeight: 'bold',
+                      backgroundColor: '#1976d2',
+                      '&:hover': {
+                        backgroundColor: '#1565C0'
+                      }
+                    }}
+                  >
+                    SIGN OUT
+                  </Button>
+                )}
+                
+                {/* TRY DEMO button - for non-demo modes and when not authenticated */}
+                {appMode !== 'demo' && !isAuthenticated && (
+                  <Button
+                    variant="outlined"
+                    onClick={() => window.location.href = '/demo'}
+                    sx={{ 
+                      ml: 1,
+                      minWidth: '100px',
+                      fontWeight: 'bold',
+                      borderColor: '#6B46C1',
+                      color: '#6B46C1',
+                      '&:hover': {
+                        backgroundColor: '#6B46C1',
+                        color: 'white',
+                        borderColor: '#6B46C1'
+                      }
+                    }}
+                  >
+                    TRY DEMO
+                  </Button>
+                )}
+
+                {/* Demo mode button - changed to SIGN UP for demo mode */}
+                {appMode === 'demo' && (
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={() => setRegisterDialogOpen(true)}
+                    sx={{ 
+                      ml: 1,
+                      minWidth: '80px',
+                      fontWeight: 'bold',
+                      backgroundColor: '#9C27B0',
+                      '&:hover': {
+                        backgroundColor: '#7B1FA2'
+                      }
+                    }}
+                  >
+                    SIGN UP
+                  </Button>
+                )}
                 
                 <Tooltip title="Help & Privacy FAQ">
                   <IconButton color="inherit" onClick={() => setHelpDialogOpen(true)} sx={{ ml: 1 }}>
@@ -430,6 +463,24 @@ const AppContent: React.FC = () => {
             <UserProfileDialog />
           </Suspense>
 
+          {/* Authentication dialogs */}
+          <Suspense fallback={null}>
+            <AuthManager 
+              loginOpen={loginDialogOpen}
+              registerOpen={registerDialogOpen}
+              onCloseLogin={() => setLoginDialogOpen(false)}
+              onCloseRegister={() => setRegisterDialogOpen(false)}
+              onSwitchToLogin={() => {
+                setRegisterDialogOpen(false);
+                setLoginDialogOpen(true);
+              }}
+              onSwitchToRegister={() => {
+                setLoginDialogOpen(false);
+                setRegisterDialogOpen(true);
+              }}
+            />
+          </Suspense>
+
           {/* Development mode sign-in dialog */}
           <Dialog
             open={devSignInDialogOpen}
@@ -466,6 +517,41 @@ const AppContent: React.FC = () => {
                 AI-Powered Meeting Transcription and Summarization
               </Typography>
 
+              {/* Authentication Notice for Production Mode */}
+              {appMode === 'production' && !isAuthenticated && (
+                <Box sx={{ 
+                  mt: 3, 
+                  p: 3, 
+                  border: '2px solid #1976d2', 
+                  borderRadius: 2, 
+                  backgroundColor: 'rgba(25, 118, 210, 0.04)',
+                  textAlign: 'center' 
+                }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Sign in to access full features
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    Create an account or sign in to upload audio files, process meetings, and manage your transcriptions.
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    <Button 
+                      variant="contained" 
+                      onClick={() => setLoginDialogOpen(true)}
+                      sx={{ minWidth: '120px' }}
+                    >
+                      Sign In
+                    </Button>
+                    <Button 
+                      variant="outlined" 
+                      onClick={() => setRegisterDialogOpen(true)}
+                      sx={{ minWidth: '120px' }}
+                    >
+                      Register
+                    </Button>
+                  </Box>
+                </Box>
+              )}
+
             <Grid
               container
               spacing={4}
@@ -476,9 +562,25 @@ const AppContent: React.FC = () => {
                   <Typography variant="h4" component="h2" id="upload-heading" gutterBottom>
                     Upload Audio File
                   </Typography>
-                  <FileUpload
-                    onTranscriptionComplete={handleTranscriptionComplete}
-                  />
+                  {/* Show upload component only if not in production mode or if authenticated */}
+                  {(appMode !== 'production' || isAuthenticated) ? (
+                    <FileUpload
+                      onTranscriptionComplete={handleTranscriptionComplete}
+                      isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
+                    />
+                  ) : (
+                    <Box sx={{ 
+                      p: 4, 
+                      textAlign: 'center', 
+                      border: '1px dashed #ccc', 
+                      borderRadius: 2,
+                      backgroundColor: '#f5f5f5'
+                    }}>
+                      <Typography variant="body1" color="text.secondary">
+                        Please sign in to upload and process audio files.
+                      </Typography>
+                    </Box>
+                  )}
                 </section>
               </Grid>
 
@@ -528,11 +630,33 @@ const AppContent: React.FC = () => {
   );
 };
 
+// Loading component for authentication initialization
+const AuthLoadingComponent: React.FC = () => {
+  return (
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      height: '100vh',
+      flexDirection: 'column',
+      gap: 2
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h6" color="text.secondary">
+          Initializing...
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+
 // Main app component with theme and environment providers
 const App: React.FC = () => {
+  const { isInitializing } = useAuthInitialization();
+  
   return (
     <ThemeProvider>
-      <AppContent />
+      {isInitializing ? <AuthLoadingComponent /> : <AppContent />}
     </ThemeProvider>
   );
 };

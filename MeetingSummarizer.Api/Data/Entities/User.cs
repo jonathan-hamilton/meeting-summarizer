@@ -41,6 +41,18 @@ public class User
     public UserRole Role { get; set; } = UserRole.User;
     
     /// <summary>
+    /// Hashed password for authentication (bcrypt)
+    /// </summary>
+    [MaxLength(255)]
+    public string? PasswordHash { get; set; }
+    
+    /// <summary>
+    /// Password salt for additional security
+    /// </summary>
+    [MaxLength(255)]
+    public string? Salt { get; set; }
+    
+    /// <summary>
     /// User consent for data processing (GDPR)
     /// </summary>
     public bool HasConsentedToDataProcessing { get; set; } = false;

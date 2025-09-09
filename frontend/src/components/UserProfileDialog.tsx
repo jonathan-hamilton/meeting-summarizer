@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -20,7 +20,7 @@ import {
   CalendarToday as CalendarIcon,
 } from '@mui/icons-material';
 import { useUserProfileStore, useUserProfileDialogState, useUserProfileDialogClose } from '../stores/userProfileStore';
-import { userProfileService } from '../services/userProfileService';
+import { useAuthStore } from '../stores/authStore';
 import { UserProfileForm } from './UserProfileForm';
 
 export const UserProfileDialog: React.FC = () => {
@@ -31,73 +31,24 @@ export const UserProfileDialog: React.FC = () => {
   const isLoading = useUserProfileStore((state) => state.isLoading);
   const error = useUserProfileStore((state) => state.error);
   
+  // Get authenticated user from auth store
+  const authUser = useAuthStore((state) => state.user);
+  
   // Get actions separately to avoid re-renders
   const setProfile = useUserProfileStore((state) => state.setProfile);
-  const setStats = useUserProfileStore((state) => state.setStats);
-  const setLoading = useUserProfileStore((state) => state.setLoading);
   const setError = useUserProfileStore((state) => state.setError);
   
   const [isEditing, setIsEditing] = useState(false);
 
-  // Memoize loadUserData to prevent infinite re-renders
-  const loadUserData = useCallback(async (userId: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const [userProfile, userStats] = await Promise.all([
-        userProfileService.getUserProfile(userId),
-        userProfileService.getUserStats(userId),
-      ]);
-      
-      setProfile(userProfile);
-      setStats(userStats);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load user data');
-    } finally {
-      setLoading(false);
-    }
-  }, [setLoading, setError, setProfile, setStats]);
+  // TODO: Add function to load additional user stats from API when endpoints are available
 
-  // Load user data when dialog opens - only if we have a profile but no stats
+  // Clear any demo profile data when component mounts if we have real auth user
   useEffect(() => {
-    // If dialog is opening and we don't have a profile, create a demo profile
-    if (isOpen && !profile) {
-      const demoProfile = {
-        id: 'demo-user-001',
-        email: 'demo@meetingsummary.io',
-        firstName: 'Demo',
-        lastName: 'User',
-        isPaidUser: false,
-        tokenBalance: 250,
-        createdAt: new Date().toISOString(),
-        lastActivityAt: new Date().toISOString(),
-      };
-      
-      const demoStats = {
-        userId: 'demo-user-001',
-        tokenBalance: 250,
-        isPaidUser: false,
-        totalMeetings: 12,
-        completedMeetings: 10,
-        pendingMeetings: 2,
-        totalStorageUsed: 1024 * 1024 * 45, // 45 MB
-        lastActivityAt: new Date().toISOString(),
-        accountCreatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
-      };
-      
-      setProfile(demoProfile);
-      setStats(demoStats);
+    if (authUser && profile && profile.email === 'demo@meetingsummary.io') {
+      // Clear demo profile so we use auth user data instead
+      setProfile(null);
     }
-    
-    // Temporarily disable automatic loading to prevent infinite loops
-    // TODO: Re-enable once proper authentication is implemented
-    /*
-    if (isOpen && profile?.id && !stats && !isLoading) {
-      loadUserData(profile.id);
-    }
-    */
-  }, [isOpen, profile, setProfile, setStats, loadUserData]);
+  }, [authUser, profile, setProfile]);
 
   const handleClose = () => {
     setIsEditing(false);
@@ -128,7 +79,10 @@ export const UserProfileDialog: React.FC = () => {
     });
   };
 
-  if (!profile) {
+  // Use authUser as the primary data source, fall back to profile store if needed
+  const displayUser = authUser || profile;
+
+  if (!displayUser) {
     return null;
   }
 
@@ -172,7 +126,7 @@ export const UserProfileDialog: React.FC = () => {
           </Box>
         ) : isEditing ? (
           <UserProfileForm 
-            profile={profile}
+            profile={displayUser}
             onCancel={() => setIsEditing(false)}
             onSave={handleEditComplete}
           />
@@ -190,7 +144,7 @@ export const UserProfileDialog: React.FC = () => {
                     Name
                   </Typography>
                   <Typography variant="body1">
-                    {profile.firstName} {profile.lastName}
+                    {displayUser.firstName} {displayUser.lastName}
                   </Typography>
                 </Box>
                 
@@ -199,7 +153,7 @@ export const UserProfileDialog: React.FC = () => {
                     Email
                   </Typography>
                   <Typography variant="body1">
-                    {profile.email}
+                    {displayUser.email}
                   </Typography>
                 </Box>
                 
@@ -208,8 +162,8 @@ export const UserProfileDialog: React.FC = () => {
                     Account Type
                   </Typography>
                   <Chip 
-                    label={profile.isPaidUser ? 'Paid User' : 'Demo User'}
-                    color={profile.isPaidUser ? 'primary' : 'default'}
+                    label={displayUser.isPaidUser ? 'Paid User' : 'Demo User'}
+                    color={displayUser.isPaidUser ? 'primary' : 'default'}
                     size="small"
                     sx={{ width: 'fit-content' }}
                   />
@@ -238,7 +192,7 @@ export const UserProfileDialog: React.FC = () => {
                 color: 'primary.contrastText'
               }}>
                 <Typography variant="h4" component="span">
-                  {profile.tokenBalance.toLocaleString()}
+                  {displayUser.tokenBalance.toLocaleString()}
                 </Typography>
                 <Typography variant="body1">
                   tokens available
@@ -307,7 +261,7 @@ export const UserProfileDialog: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <CalendarIcon color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  Member since {formatDate(profile.createdAt)}
+                  Member since {formatDate(displayUser.createdAt)}
                 </Typography>
               </Box>
             </Box>

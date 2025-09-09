@@ -7,6 +7,8 @@ using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Services.UserManagement;
 using MeetingSummarizer.Api.Services.DataRetention;
+using MeetingSummarizer.Api.Services.Authentication;
+using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
 using Microsoft.EntityFrameworkCore;
@@ -129,8 +131,10 @@ builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 // Register Data Retention Service (S6.1 Increment 4)
 builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
 
+// Register JWT Authentication Service (S6.2 Increment 1)
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAuthenticationService, MeetingSummarizer.Api.Services.Authentication.JwtAuthenticationService>();
+
 // Note: Additional service registrations will be added in future increments
-// builder.Services.AddScoped<ITranscriptionService, TranscriptionService>();
 
 var app = builder.Build();
 
@@ -217,6 +221,9 @@ app.UseHttpsRedirection();
 
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
+
+// Add JWT authentication middleware (S6.2 Increment 2)
+app.UseJwtAuthentication();
 
 app.UseAuthorization();
 
