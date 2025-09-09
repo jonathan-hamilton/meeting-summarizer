@@ -55,3 +55,59 @@ public class TokenCalculationResult
     /// </summary>
     public string Explanation { get; set; } = string.Empty;
 }
+
+/// <summary>
+/// Comprehensive token statistics for a user
+/// </summary>
+public class TokenStatistics
+{
+    /// <summary>
+    /// Current token balance
+    /// </summary>
+    public decimal CurrentBalance { get; set; }
+    
+    /// <summary>
+    /// Total tokens purchased (lifetime)
+    /// </summary>
+    public int TotalPurchased { get; set; }
+    
+    /// <summary>
+    /// Total tokens used (lifetime)
+    /// </summary>
+    public int TotalUsed { get; set; }
+    
+    /// <summary>
+    /// Total amount spent on tokens (lifetime)
+    /// </summary>
+    public decimal TotalSpent { get; set; }
+    
+    /// <summary>
+    /// Number of meetings processed
+    /// </summary>
+    public int MeetingsProcessed { get; set; }
+    
+    /// <summary>
+    /// Total meeting minutes processed
+    /// </summary>
+    public int TotalMinutesProcessed { get; set; }
+    
+    /// <summary>
+    /// Average tokens per meeting
+    /// </summary>
+    public decimal AverageTokensPerMeeting { get; set; }
+    
+    /// <summary>
+    /// Most recent purchase date
+    /// </summary>
+    public DateTime? LastPurchaseDate { get; set; }
+    
+    /// <summary>
+    /// Most recent usage date
+    /// </summary>
+    public DateTime? LastUsageDate { get; set; }
+    
+    /// <summary>
+    /// Total savings from volume discounts
+    /// </summary>
+    public decimal TotalSavingsFromDiscounts { get; set; }
+}
