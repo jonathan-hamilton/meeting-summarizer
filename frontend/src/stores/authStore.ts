@@ -1,0 +1,267 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { jwtDecode } from 'jwt-decode';
+import type { AuthState, AuthActions, User, JwtPayload } from '../types/auth';
+import AuthService from '../services/authService';
+
+type AuthStore = AuthState & AuthActions;
+
+const authService = AuthService.getInstance();
+
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set, get) => ({
+      // State
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+
+      // Actions
+      login: async (email: string, password: string) => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const response = await authService.login({ email, password });
+          
+          // Decode user info from access token
+          const decodedToken = jwtDecode<JwtPayload>(response.accessToken);
+          // console.log('Decoded token:', decodedToken);
+          // console.log('Raw login response:', response);
+          
+          // Extract user data from JWT claims - cast to any to access all possible claim fields
+          const tokenClaims = decodedToken as any;
+          
+          // Try different possible claim field names
+          const userId = tokenClaims.sub || tokenClaims.userId || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+          const userEmail = tokenClaims.email || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+          const fullName = tokenClaims.name || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '';
+          const userRole = tokenClaims.role || tokenClaims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+          
+          // Split full name into first and last name
+          const nameParts = fullName.split(' ');
+          const firstName = nameParts[0] || '';
+          const lastName = nameParts.slice(1).join(' ') || '';
+          
+          const user: User = {
+            id: userId,
+            email: userEmail,
+            firstName: firstName,
+            lastName: lastName,
+            role: userRole as 'User' | 'Admin' | 'SuperAdmin',
+            isPaidUser: tokenClaims.isPaidUser === 'true',
+            tokenBalance: parseInt(tokenClaims.tokenBalance) || 0,
+            hasConsentedToDataProcessing: true, // If they logged in, they must have consented
+            createdAt: new Date().toISOString(), // Will be updated from backend later
+            lastActivityAt: new Date().toISOString(),
+            totalMeetings: 0 // Will be updated from backend later
+          };
+
+          // console.log('Created user object:', user);
+
+          // Store tokens in localStorage
+          authService.setTokens(response.accessToken, response.refreshToken);
+          authService.setUser(user);
+
+          set({
+            user,
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+
+          return { success: true };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Login failed';
+          set({ 
+            isLoading: false, 
+            error: errorMessage,
+            isAuthenticated: false
+          });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      register: async (firstName: string, lastName: string, email: string, password: string, hasConsentedToDataProcessing: boolean) => {
+        set({ isLoading: true, error: null });
+        
+        try {
+          const response = await authService.register({ 
+            firstName, 
+            lastName, 
+            email, 
+            password,
+            hasConsentedToDataProcessing
+          });
+          
+          // Decode user info from access token
+          const decodedToken = jwtDecode<JwtPayload>(response.accessToken);
+          const user: User = {
+            id: decodedToken.userId,
+            email: decodedToken.email,
+            firstName: decodedToken.firstName,
+            lastName: decodedToken.lastName,
+            role: decodedToken.role as 'User' | 'Admin' | 'SuperAdmin',
+            isPaidUser: decodedToken.isPaidUser === 'true',
+            tokenBalance: parseInt(decodedToken.tokenBalance) || 0,
+            hasConsentedToDataProcessing: hasConsentedToDataProcessing,
+            createdAt: new Date().toISOString(), // Will be updated from backend later
+            lastActivityAt: new Date().toISOString(),
+            totalMeetings: 0 // Will be updated from backend later
+          };
+
+          // Store tokens in localStorage
+          authService.setTokens(response.accessToken, response.refreshToken);
+          authService.setUser(user);
+
+          set({
+            user,
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+
+          return { success: true };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+          set({ 
+            isLoading: false, 
+            error: errorMessage,
+            isAuthenticated: false
+          });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      logout: async () => {
+        // Clear tokens from localStorage
+        authService.clearTokens();
+        
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        });
+      },
+
+      refreshAccessToken: async () => {
+        const { refreshToken } = get();
+        
+        if (!refreshToken) {
+          get().logout();
+          return false;
+        }
+
+        try {
+          const response = await authService.refreshToken(refreshToken);
+          
+          // Decode user info from new access token
+          const decodedToken = jwtDecode<JwtPayload>(response.accessToken);
+          const user: User = {
+            id: decodedToken.userId,
+            email: decodedToken.email,
+            firstName: decodedToken.firstName,
+            lastName: decodedToken.lastName,
+            role: decodedToken.role as 'User' | 'Admin' | 'SuperAdmin',
+            isPaidUser: decodedToken.isPaidUser === 'true',
+            tokenBalance: parseInt(decodedToken.tokenBalance) || 0,
+            hasConsentedToDataProcessing: true, // Preserved from existing session
+            createdAt: new Date().toISOString(), // Will be updated from backend later
+            lastActivityAt: new Date().toISOString(),
+            totalMeetings: 0 // Will be updated from backend later
+          };
+
+          // Update stored tokens
+          authService.setTokens(response.accessToken, response.refreshToken);
+          authService.setUser(user);
+
+          set({
+            user,
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            error: null
+          });
+
+          return true;
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          get().logout();
+          return false;
+        }
+      },
+
+      checkAuthStatus: async () => {
+        set({ isLoading: true });
+        
+        try {
+          // Check if tokens exist in localStorage
+          const storedAccessToken = authService.getAccessToken();
+          const storedRefreshToken = authService.getRefreshToken();
+          const storedUser = authService.getStoredUser();
+
+          // console.log('Auth check:', { storedAccessToken: !!storedAccessToken, storedRefreshToken: !!storedRefreshToken, storedUser });
+
+          if (!storedAccessToken || !storedRefreshToken || !storedUser) {
+            // console.log('Missing auth data, setting as unauthenticated');
+            set({ 
+              isLoading: false, 
+              isAuthenticated: false,
+              user: null,
+              accessToken: null,
+              refreshToken: null
+            });
+            return;
+          }
+
+          // Check if access token is expired
+          if (authService.isTokenExpired(storedAccessToken)) {
+            // Try to refresh the token
+            const refreshed = await get().refreshAccessToken();
+            if (!refreshed) {
+              set({ isLoading: false });
+              return;
+            }
+          } else {
+            // Access token is still valid
+            // console.log('Access token valid, restoring user:', storedUser);
+            set({
+              user: storedUser,
+              accessToken: storedAccessToken,
+              refreshToken: storedRefreshToken,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null
+            });
+          }
+        } catch (error) {
+          console.error('Auth status check failed:', error);
+          get().logout();
+          set({ isLoading: false });
+        }
+      },
+
+      clearError: () => {
+        set({ error: null });
+      }
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated
+      })
+    }
+  )
+);

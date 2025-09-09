@@ -36,6 +36,7 @@ interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
   maxFileSize?: number; // in bytes, default 1GB
   acceptedFileTypes?: string[];
+  isAuthDialogOpen?: boolean; // Hide tour when auth dialogs are open
 }
 
 interface UploadFile {
@@ -113,6 +114,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
   maxFileSize = 1024 * 1024 * 1024, // 1GB
   acceptedFileTypes = [".mp3", ".wav", ".m4a", ".flac", ".ogg"],
+  isAuthDialogOpen = false,
 }) => {
   const { mode, isDemo } = useAppMode();
   const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep } = useTourStore();
@@ -387,7 +389,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         {/* Step 1 Tour Popover - File Upload */}
         <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(1)}
+          open={isDemo && isTourActive && isCurrentStep(1) && !isAuthDialogOpen}
           step={1}
           onClose={() => closeStep(1)}
           position={{ top: '-3px', right: '55px' }}

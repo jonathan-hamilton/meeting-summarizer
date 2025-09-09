@@ -31,6 +31,12 @@ public class CreateUserRequest
     public bool HasConsentedToDataProcessing { get; set; }
 
     /// <summary>
+    /// Password for user authentication (optional for demo users)
+    /// </summary>
+    [StringLength(100, MinimumLength = 6)]
+    public string? Password { get; set; }
+
+    /// <summary>
     /// User role - defaults to User. Admin/SuperAdmin roles should be set explicitly.
     /// </summary>
     public UserRole Role { get; set; } = UserRole.User;

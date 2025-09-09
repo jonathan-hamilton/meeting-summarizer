@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Services.Authentication;
 
 namespace MeetingSummarizer.Api.Services.UserManagement;
 
@@ -78,13 +79,16 @@ public class UserManagementService : IUserManagementService
 {
     private readonly MeetingSummarizerDbContext _context;
     private readonly ILogger<UserManagementService> _logger;
+    private readonly IJwtAuthenticationService _jwtService;
 
     public UserManagementService(
         MeetingSummarizerDbContext context,
-        ILogger<UserManagementService> logger)
+        ILogger<UserManagementService> logger,
+        IJwtAuthenticationService jwtService)
     {
         _context = context;
         _logger = logger;
+        _jwtService = jwtService;
     }
 
     public async Task<User> CreateUserAsync(CreateUserRequest request)
@@ -94,6 +98,14 @@ public class UserManagementService : IUserManagementService
         if (existingUser != null)
         {
             throw new InvalidOperationException($"User with email {request.Email} already exists");
+        }
+
+        // Hash password if provided (for authenticated users)
+        string? passwordHash = null;
+        string? salt = null;
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            (passwordHash, salt) = _jwtService.HashPassword(request.Password);
         }
 
         var user = new User
@@ -106,6 +118,8 @@ public class UserManagementService : IUserManagementService
             HasConsentedToDataProcessing = request.HasConsentedToDataProcessing,
             ConsentDate = request.HasConsentedToDataProcessing ? DateTime.UtcNow : null,
             Role = request.Role,
+            PasswordHash = passwordHash,
+            Salt = salt,
             CreatedAt = DateTime.UtcNow,
             LastActivityAt = DateTime.UtcNow
         };
