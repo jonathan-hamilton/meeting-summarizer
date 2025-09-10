@@ -21,7 +21,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 |----------|----------------------------------------------------|---------------|----------------------|
 | S6.1     | Azure Storage & Persistent Data Setup              | COMPLETE ✅   | None                 |
 | S6.2     | User Management Interface & Authentication System  | COMPLETE ✅   | S6.1                 |
-| S6.3     | Payment & Token System Setup                       | 80% COMPLETE 🏗️ | S6.1, S6.2           |
+| S6.3     | Payment & Token System Setup                       | 67% COMPLETE 🏗️ | S6.1, S6.2           |
 | S6.4     | Persistent Upload Progress & Meeting History        | PENDING ⏸️    | S6.1, S6.3           |
 | S6.5     | Accessibility Compliance Enhancements              | PENDING ⏸️    | None                 |
 | S6.6     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
@@ -287,7 +287,7 @@ This story delivers a complete JWT authentication system with user interface com
 ### Story S6.3: Payment & Token System Setup
 As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
 
-**Status: 80% COMPLETE 🏗️ - September 9, 2025** (4/5 Increments Complete)
+**Status: 67% COMPLETE 🏗️ - September 9, 2025** (4/6 Increments Complete)
 
 **Dependencies**: S6.1 (Azure Storage), S6.2 (User Authentication)
 
@@ -369,6 +369,129 @@ As a user, I want to purchase duration-based tokens to process meetings with fai
   - ✓ Integration with existing token estimation and confirmation dialogs
   - ✓ Production-ready UI/UX with proper loading states and validation
 
+**Increment 6 PENDING ⏸️**: Batch Transcription with Async Processing - **S6.3.6**
+- **Purpose**: Implement Azure Batch Transcription API for longer meetings (5-60 minutes) with true async processing to eliminate timeout issues
+- **Dependencies**: S6.3.1-3 (Token System), S6.1 (Database), S6.3.4 (Auto-refund capability)
+- **Scope**: Add production-ready batch transcription with speaker diarization for meetings over 5 minutes
+- **Critical Problem Solved**: Current 60-minute meeting limit causes timeouts and processing failures, blocking core business model
+- **Implementation Plan**:
+  - Create AzureBatchTranscriptionService implementing Azure Batch Transcription API v3.1+
+  - Add BatchTranscriptionJobs database table for job tracking and status management
+  - Implement duration-based routing: <5min → real-time, 5-60min → batch processing
+  - Build JobStatusController for async job status polling and results retrieval
+  - Create background service for batch job monitoring and completion processing
+  - Add auto-refund mechanism: 3 failed attempts → automatic token refund
+  - Update FileProcessingController for immediate response on long files
+  - Integrate with existing TokenService for cost calculation and refund processing
+- **Backend Components to Implement**:
+  - `Services/Transcription/AzureBatchTranscriptionService.cs` (Azure Batch API integration)
+  - `Controllers/JobStatusController.cs` (async job status and results API)
+  - `Models/BatchTranscription/BatchJobModels.cs` (job request/response DTOs)
+  - `Services/BackgroundServices/BatchJobMonitorService.cs` (job completion monitoring)
+  - `Data/Entities/BatchTranscriptionJob.cs` (job tracking entity)
+  - `Services/Payment/IRefundService.cs` (auto-refund interface extension)
+- **Database Schema**:
+```sql
+CREATE TABLE BatchTranscriptionJobs (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    UserId UNIQUEIDENTIFIER NOT NULL,
+    FileName NVARCHAR(255) NOT NULL,
+    Status NVARCHAR(50) NOT NULL, -- 'submitted', 'processing', 'completed', 'failed'
+    AzureJobId NVARCHAR(255), -- Azure Batch Transcription job ID
+    SubmittedAt DATETIME2 NOT NULL,
+    CompletedAt DATETIME2,
+    EstimatedDurationMinutes INT NOT NULL,
+    ProgressPercentage INT DEFAULT 0,
+    ResultsJson NVARCHAR(MAX), -- Final transcription results
+    ErrorMessage NVARCHAR(MAX),
+    RetryCount INT DEFAULT 0,
+    MaxRetries INT DEFAULT 3,
+    TokensCharged INT NOT NULL,
+    RefundIssued BIT DEFAULT 0,
+    FOREIGN KEY (UserId) REFERENCES Users(Id)
+);
+```
+- **API Design (Async Architecture)**:
+```csharp
+// Duration-based routing with immediate responses
+[HttpPost("upload")]
+public async Task<IActionResult> UploadFile(IFormFile file)
+{
+    var duration = await EstimateDuration(file);
+    
+    if (duration <= 5) {
+        // Synchronous processing (unchanged)
+        var result = await _transcriptionService.TranscribeAsync(file);
+        return Ok(result);
+    } else {
+        // Async processing - IMMEDIATE RESPONSE
+        var jobId = await _batchService.SubmitBatchJobAsync(file, userId);
+        return Ok(new { 
+            jobId, status = "processing", 
+            estimatedTime = "10-15 minutes",
+            checkStatusUrl = $"/api/jobs/{jobId}/status"
+        });
+    }
+}
+
+[HttpGet("jobs/{jobId}/status")]
+public async Task<IActionResult> GetJobStatus(string jobId)
+{
+    var job = await _batchService.GetJobStatusAsync(jobId);
+    return Ok(job);
+}
+```
+- **Auto-Refund Implementation**:
+```csharp
+public async Task ProcessBatchJobWithRetry(BatchTranscriptionJob job)
+{
+    for (int attempt = 1; attempt <= job.MaxRetries; attempt++) {
+        try {
+            await ProcessBatchJob(job);
+            return; // Success
+        } catch (BatchProcessingException ex) {
+            job.RetryCount = attempt;
+            if (attempt == job.MaxRetries) {
+                // Auto-refund after max retries
+                await _refundService.RefundTokensAsync(job.UserId, job.TokensCharged, 
+                    "Auto-refund: Batch processing failed after 3 attempts");
+                job.RefundIssued = true;
+                job.Status = "failed";
+                job.ErrorMessage = "Processing failed, tokens refunded";
+            }
+        }
+    }
+}
+```
+- **Frontend Integration Requirements**:
+  - Update FileUpload component for duration-based flow detection
+  - Create AsyncProgressIndicator component for batch job status polling
+  - Implement JobStatusPoller service for background status checking
+  - Update ProcessingProgress component to handle both sync/async flows
+  - Add job status persistence for browser refresh scenarios
+- **Performance & Scaling Benefits**:
+  - Eliminates HTTP timeout issues for long files (10-18 minute processing)
+  - Enables 60-minute meeting support (current business model requirement)
+  - 3-4x faster processing than real-time transcription for longer files
+  - Proper resource utilization through Azure's batch processing infrastructure
+  - Background job monitoring doesn't block web server resources
+- **Business Impact**:
+  - Fixes critical gap preventing 60-minute meeting monetization
+  - Enables promised volume discount pricing for longer meetings (30% discount)
+  - Provides reliable processing for core business model (73-76% profit margins)
+  - Auto-refund builds customer trust and reduces support overhead
+- **Acceptance Criteria**:
+  - ✓ Meetings 5-60 minutes processed via Azure Batch Transcription API
+  - ✓ Speaker diarization working identically to real-time processing
+  - ✓ Immediate API responses for long files (no timeout issues)
+  - ✓ Job status polling API with real-time progress updates
+  - ✓ Auto-refund after 3 failed processing attempts
+  - ✓ Background job monitoring with completion notifications
+  - ✓ Database job tracking with full audit trail
+  - ✓ Backward compatibility maintained for short files (<5 minutes)
+  - ✓ Token cost calculations accurate for batch vs real-time processing
+  - ✓ Error handling and user feedback for all failure scenarios
+
 **Additional Infrastructure Improvements:**
 - Fixed test infrastructure (133 passing tests, resolved compilation issues)
 - Enhanced UI with repositioned TRY DEMO button and proper spacing
@@ -376,7 +499,7 @@ As a user, I want to purchase duration-based tokens to process meetings with fai
 - Replaced mock payment system with production-ready Stripe integration
 
 **Implementation Summary:**
-This story implements a complete end-to-end duration-based token payment system with volume discounts, where users pay proportionally to meeting length using secure Stripe payment processing with full frontend-to-backend integration.
+This story implements a complete end-to-end duration-based token payment system with volume discounts, where users pay proportionally to meeting length using secure Stripe payment processing. **CRITICAL GAP IDENTIFIED**: S6.3.6 Batch Transcription is required to deliver the promised 5-60 minute meeting processing that enables the core business model's volume discount pricing and profit margins.
 
 ## Token System Specification
 

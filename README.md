@@ -146,7 +146,11 @@ A modern web appli### ✅ **S5.3: Performance Optimization & Accessibility Impro
 
 **Integration Success**: Seamlessly integrates with S6.1 User Management infrastructure and S6.2/S6.3 Token System. Backend complete and ready for S6.3.5 Frontend Integration.
 
-**Next Phase**: S6.3.5 Frontend Stripe Integration - Connect React UI to Stripe backend for complete end-to-end payment processing with Stripe Elements.
+**Next Phases**: 
+- **S6.3.5**: Frontend Stripe Integration - Connect React UI to Stripe backend for complete end-to-end payment processing
+- **S6.3.6**: Batch Transcription with Async Processing - **CRITICAL** - Implement Azure Batch Transcription API for 5-60 minute meetings to eliminate timeout issues and enable core business model
+
+**⚠️ CRITICAL BUSINESS IMPACT**: S6.3.6 addresses timeout failures for longer meetings, enabling the promised 60-minute meeting support with volume discounts that drive 73-76% profit margins.
 
 ---
 
@@ -257,7 +261,7 @@ A modern web appli### ✅ **S5.3: Performance Optimization & Accessibility Impro
 - ✅ **Sprint 3**: Complete speaker management system with test suite recovery (99 passing tests)
 - ✅ **Sprint 4**: Azure Speech Services integration with batch transcription and UI polish
 - ✅ **Sprint 5**: Performance optimization, test framework modernization, and technical debt cleanup
-- ✅ **Sprint 6**: User Management & Infrastructure (78% COMPLETE - S6.1 COMPLETE ✅, S6.2 COMPLETE ✅, S6.3 80% COMPLETE 🏗️)
+- ✅ **Sprint 6**: User Management & Infrastructure (75% COMPLETE - S6.1 COMPLETE ✅, S6.2 COMPLETE ✅, S6.3 67% COMPLETE 🏗️)
   - **Status**: Complete user storage infrastructure and JWT authentication system
   - **Scope**: Azure storage, JWT authentication, user profiles, token management
   - **Business Model**: Token-only pricing (10-15% increase) includes 365-day storage
