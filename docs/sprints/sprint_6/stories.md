@@ -21,7 +21,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 |----------|----------------------------------------------------|---------------|----------------------|
 | S6.1     | Azure Storage & Persistent Data Setup              | COMPLETE ✅   | None                 |
 | S6.2     | User Management Interface & Authentication System  | COMPLETE ✅   | S6.1                 |
-| S6.3     | Payment & Token System Setup                       | 85% COMPLETE 🏗️ | S6.1, S6.2           |
+| S6.3     | Payment & Token System Setup                       | 80% COMPLETE 🏗️ | S6.1, S6.2           |
 | S6.4     | Persistent Upload Progress & Meeting History        | PENDING ⏸️    | S6.1, S6.3           |
 | S6.5     | Accessibility Compliance Enhancements              | PENDING ⏸️    | None                 |
 | S6.6     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
@@ -287,7 +287,7 @@ This story delivers a complete JWT authentication system with user interface com
 ### Story S6.3: Payment & Token System Setup
 As a user, I want to purchase duration-based tokens to process meetings with fair, transparent pricing that scales with meeting length.
 
-**Status: 85% COMPLETE 🏗️ - September 9, 2025**
+**Status: 80% COMPLETE 🏗️ - September 9, 2025** (4/5 Increments Complete)
 
 **Dependencies**: S6.1 (Azure Storage), S6.2 (User Authentication)
 
@@ -334,6 +334,41 @@ As a user, I want to purchase duration-based tokens to process meetings with fai
 - Production-ready implementation tested with real Stripe test credentials and ngrok webhook tunnel
 - **Acceptance Criteria**: All 7 criteria COMPLETE ✅ (Payment Integration, Transaction Audit Trail, Webhook Handling, Refund Support, Security & PCI Compliance, Token Balance Updates, Error Handling)
 
+**Increment 5 PENDING ⏸️**: Frontend Stripe Integration - **S6.3.5**
+- **Purpose**: Connect React frontend to Stripe backend for complete end-to-end payment processing
+- **Dependencies**: S6.3.4 (Stripe Backend), S6.2 (UI Foundation Components)
+- **Scope**: Replace mock payment UI with production Stripe Elements integration
+- **Implementation Plan**:
+  - Update TokenPurchaseDialog with Stripe Elements for secure card input
+  - Create StripePaymentForm component replacing MockPaymentForm
+  - Integrate Stripe publishable key and client-side payment intent confirmation
+  - Connect frontend payment flow to S6.3.4 backend payment endpoints
+  - Implement real-time token balance updates after successful payments
+  - Add comprehensive error handling for payment failures in UI
+  - Update cost estimation dialogs to use real payment processing
+  - Test complete payment flow from frontend through Stripe to token balance update
+- **Frontend Components to Implement/Update**:
+  - `StripePaymentForm.tsx` (replace MockPaymentForm.tsx)
+  - `TokenPurchaseDialog.tsx` (integrate with real Stripe backend)
+  - `PaymentMethodSelector.tsx` (credit card, Google Pay, Apple Pay support)
+  - `PaymentConfirmationDialog.tsx` (success/failure states)
+  - Update `tokenStore.ts` for real-time balance updates
+  - Update `CostEstimationDialog.tsx` for real payment processing
+- **Integration Requirements**:
+  - Stripe Elements React integration (@stripe/stripe-js, @stripe/react-stripe-js)
+  - Environment-specific publishable key configuration (test/live)
+  - Payment intent creation API integration
+  - Webhook-triggered balance update handling in frontend
+  - Error boundary and fallback UI for payment failures
+- **Acceptance Criteria**:
+  - ✓ Complete payment flow from card input to token balance update
+  - ✓ Secure card data handling through Stripe Elements (no PCI scope for frontend)
+  - ✓ Real-time UI updates after successful payments
+  - ✓ Comprehensive error handling with user-friendly messages
+  - ✓ Support for multiple payment methods (card, digital wallets)
+  - ✓ Integration with existing token estimation and confirmation dialogs
+  - ✓ Production-ready UI/UX with proper loading states and validation
+
 **Additional Infrastructure Improvements:**
 - Fixed test infrastructure (133 passing tests, resolved compilation issues)
 - Enhanced UI with repositioned TRY DEMO button and proper spacing
@@ -341,7 +376,7 @@ As a user, I want to purchase duration-based tokens to process meetings with fai
 - Replaced mock payment system with production-ready Stripe integration
 
 **Implementation Summary:**
-This story implements a duration-based token system with volume discounts, where users pay proportionally to meeting length. The system uses mock payment processing for development while providing complete functionality and a seamless upgrade path to real payment providers.
+This story implements a complete end-to-end duration-based token payment system with volume discounts, where users pay proportionally to meeting length using secure Stripe payment processing with full frontend-to-backend integration.
 
 ## Token System Specification
 
