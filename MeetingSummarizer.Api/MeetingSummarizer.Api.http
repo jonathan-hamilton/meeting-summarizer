@@ -1,6 +1,78 @@
 @MeetingSummarizer.Api_HostAddress = http://localhost:5029
+@auth_token = YOUR_JWT_TOKEN_HERE
 
+### 0. Register Test User (run this first)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "TestPassword123!",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### 0b. Login Test User (run this to get JWT token, copy accessToken for @auth_token)
+# @name login
+POST {{MeetingSummarizer.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "TestPassword123!"
+}
+
+### Weather Test
 GET {{MeetingSummarizer.Api_HostAddress}}/weatherforecast/
 Accept: application/json
+
+### 1. Create Payment Intent ✅ WORKING
+POST {{MeetingSummarizer.Api_HostAddress}}/api/payments/create-intent
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "email": "test@example.com",
+  "amount": 10.00,
+  "tokenCount": 100,
+  "userId": "temp"
+}
+
+### 2. Get Payment Details ✅ WORKING (replace with actual payment intent ID from step 1)
+GET {{MeetingSummarizer.Api_HostAddress}}/api/payments/pi_test_1234567890
+Authorization: Bearer {{auth_token}}
+
+### 3. Confirm Payment (replace with actual payment intent ID and payment method)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/payments/confirm
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "paymentIntentId": "pi_test_1234567890",
+  "paymentMethodId": "pm_card_visa"
+}
+
+### 4. Webhook Health Check ✅ WORKING
+GET {{MeetingSummarizer.Api_HostAddress}}/api/webhooks/stripe/health
+
+### 5. Test Stripe Webhook (⚠️ Needs ngrok for real testing)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/webhooks/stripe
+Content-Type: application/json
+stripe-signature: t=1640995200,v1=test_signature
+
+{
+  "id": "evt_test_webhook",
+  "object": "event",
+  "type": "payment_intent.succeeded",
+  "data": {
+    "object": {
+      "id": "pi_test_1234567890",
+      "object": "payment_intent",
+      "amount": 1000,
+      "currency": "usd",
+      "status": "succeeded"
+    }
+  }
+}
 
 ###

@@ -9,6 +9,7 @@ using MeetingSummarizer.Api.Services.UserManagement;
 using MeetingSummarizer.Api.Services.DataRetention;
 using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.TokenManagement;
+using MeetingSummarizer.Api.Services.Payment;
 using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
@@ -141,6 +142,9 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.IToken
 // Register Token Service (S6.3 Increment 3)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.ITokenService, MeetingSummarizer.Api.Services.TokenManagement.TokenService>();
 
+// Register Payment Service (S6.3 Increment 4)
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.Payment.IPaymentService, MeetingSummarizer.Api.Services.Payment.StripePaymentService>();
+
 // Note: Additional service registrations will be added in future increments
 
 var app = builder.Build();
@@ -228,6 +232,9 @@ app.UseHttpsRedirection();
 
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
+
+// Add Stripe webhook middleware (S6.3 Increment 4)
+app.UseMiddleware<StripeWebhookMiddleware>();
 
 // Add JWT authentication middleware (S6.2 Increment 2)
 app.UseJwtAuthentication();
