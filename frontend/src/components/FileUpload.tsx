@@ -15,6 +15,7 @@ import {
   Step,
   StepLabel,
   CircularProgress,
+  LinearProgress,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -28,9 +29,12 @@ import {
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
 import { TourPopover } from "./TourPopover";
+import InsufficientTokensDialog from "./InsufficientTokensDialog";
 import { createApiService } from "../services/apiServiceFactory";
 import { useEnhancedSessionStore } from "../stores/enhancedSessionStore";
+import { useBatchJobPolling } from "../hooks/useBatchJobPolling";
 import type { TranscriptionResponse } from "../types";
+import type { BatchJobStatus } from "../types/batchJob";
 
 interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
@@ -48,36 +52,82 @@ interface UploadFile {
   error?: string;
 }
 
-// Workflow steps for the transcription process
-const getWorkflowSteps = (uploadFile: UploadFile) => [
-  {
-    label: "File Selected",
-    icon: <AudioFile />,
-    completed: true,
-    active: false,
-  },
-  {
-    label: "Uploading",
-    icon: <Upload />,
-    completed: uploadFile.status === "completed" || (uploadFile.status === "uploading" && uploadFile.progress > 90),
-    active: uploadFile.status === "uploading" && uploadFile.progress <= 90,
-    error: uploadFile.status === "error",
-  },
-  {
-    label: "Processing & Transcription",
-    icon: <Psychology />,
-    completed: uploadFile.status === "completed",
-    active: uploadFile.status === "uploading" && uploadFile.progress > 90,
-    error: uploadFile.status === "error",
-  },
-  {
-    label: "Complete",
-    icon: <RadioButtonUnchecked />,
-    completed: uploadFile.status === "completed",
-    active: false,
-    error: uploadFile.status === "error",
-  },
-];
+interface TokenError {
+  required: number;
+  available: number;
+  estimatedDuration: number;
+  fileName: string;
+}
+
+// Unified workflow steps for both regular and batch transcription
+const getUnifiedWorkflowSteps = (uploadFile: UploadFile, batchJob?: BatchJobStatus) => {
+  // For batch jobs (5+ minutes)
+  if (batchJob) {
+    return [
+      {
+        label: "File Uploaded",
+        icon: <AudioFile />,
+        completed: true,
+        active: false,
+        error: false,
+      },
+      {
+        label: "Job Submitted",
+        icon: <Upload />,
+        completed: batchJob.status !== "submitted",
+        active: batchJob.status === "submitted",
+        error: batchJob.status === "failed",
+      },
+      {
+        label: `Azure Processing (${batchJob.progressPercentage}%)`,
+        icon: <Psychology />,
+        completed: batchJob.status === "completed",
+        active: batchJob.status === "processing",
+        error: batchJob.status === "failed",
+        progress: batchJob.progressPercentage,
+      },
+      {
+        label: "Complete",
+        icon: <CheckCircle />,
+        completed: batchJob.status === "completed",
+        active: false,
+        error: batchJob.status === "failed",
+      },
+    ];
+  }
+  
+  // For regular jobs (< 5 minutes) - existing logic
+  return [
+    {
+      label: "File Selected",
+      icon: <AudioFile />,
+      completed: true,
+      active: false,
+      error: false,
+    },
+    {
+      label: "Uploading",
+      icon: <Upload />,
+      completed: uploadFile.status === "completed" || (uploadFile.status === "uploading" && uploadFile.progress > 90),
+      active: uploadFile.status === "uploading" && uploadFile.progress <= 90,
+      error: uploadFile.status === "error",
+    },
+    {
+      label: "Processing & Transcription",
+      icon: <Psychology />,
+      completed: uploadFile.status === "completed",
+      active: uploadFile.status === "uploading" && uploadFile.progress > 90,
+      error: uploadFile.status === "error",
+    },
+    {
+      label: "Complete",
+      icon: <CheckCircle />,
+      completed: uploadFile.status === "completed",
+      active: false,
+      error: uploadFile.status === "error",
+    },
+  ];
+};
 
 // Demo workflow steps for the simulated transcription process
 const getDemoWorkflowSteps = (isSimulating: boolean, progress: number) => [
@@ -130,10 +180,64 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const apiService = createApiService(mode);
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
+  const [tokenError, setTokenError] = useState<TokenError | null>(null);
   const demoCallbackCalledRef = useRef(false);
+
+  // Batch job state and polling
+  const [batchJobId, setBatchJobId] = useState<string | null>(null);
+  const { batchJob, isPolling, error: batchError, startPolling, stopPolling } = useBatchJobPolling({
+    enabled: !!batchJobId,
+    pollInterval: 30000, // 30 seconds
+  });
 
   // Check if there's a completed file to disable upload
   const hasCompletedFile = uploadFiles.some(file => file.status === "completed");
+
+  // Handle batch job completion
+  useEffect(() => {
+    if (batchJob && batchJob.status === 'completed' && batchJob.results) {
+      // Update the upload file status to completed with results
+      setUploadFiles((prev) =>
+        prev.map((f) => 
+          f.status === "uploading" 
+            ? {
+                ...f,
+                status: "completed",
+                progress: 100,
+                result: batchJob.results,
+              }
+            : f
+        )
+      );
+      
+      // Call the completion callback
+      if (onTranscriptionComplete) {
+        onTranscriptionComplete(batchJob.results);
+      }
+      
+      // Stop polling and clear batch job ID
+      stopPolling();
+      setBatchJobId(null);
+    } else if (batchJob && batchJob.status === 'failed') {
+      // Handle batch job failure
+      setUploadFiles((prev) =>
+        prev.map((f) => 
+          f.status === "uploading" 
+            ? {
+                ...f,
+                status: "error",
+                error: batchJob.errorMessage || "Batch processing failed",
+              }
+            : f
+        )
+      );
+      
+      // Stop polling and clear batch job ID
+      stopPolling();
+      setBatchJobId(null);
+    }
+  }, [batchJob, onTranscriptionComplete, stopPolling]);
 
   // Handle demo completion callback
   useEffect(() => {
@@ -177,20 +281,78 @@ const FileUpload: React.FC<FileUploadProps> = ({
             );
           }
         );
-        setUploadFiles((prev) =>
-          prev.map((f) =>
-            f.id === uploadFile.id
-              ? {
-                  ...f,
-                  status: "completed",
-                  progress: 100,
-                  result: response.data,
-                }
-              : f
-          )
-        );
-        if (onTranscriptionComplete && response.data) {
-          onTranscriptionComplete(response.data);
+
+        if (response.success && response.data) {
+          // Check if this is a batch job response (has jobId instead of immediate transcription)
+          if ('jobId' in response.data && typeof response.data.jobId === 'string') {
+            // This is a batch job submission response
+            const batchResponse = response.data as any; // BatchJobSubmissionResponse
+            setBatchJobId(batchResponse.jobId);
+            startPolling(batchResponse.jobId);
+            
+            // Update file status to show it's being processed via batch
+            setUploadFiles((prev) =>
+              prev.map((f) =>
+                f.id === uploadFile.id
+                  ? {
+                      ...f,
+                      status: "uploading", // Keep as uploading until batch completes
+                      progress: 100, // Upload part is complete
+                    }
+                  : f
+              )
+            );
+          } else {
+            // This is a regular transcription response
+            setUploadFiles((prev) =>
+              prev.map((f) =>
+                f.id === uploadFile.id
+                  ? {
+                      ...f,
+                      status: "completed",
+                      progress: 100,
+                      result: response.data,
+                    }
+                  : f
+              )
+            );
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete(response.data);
+            }
+          }
+        } else {
+          // Handle API errors
+          const errorData = response.errors?.[0] || response.message || "Upload failed";
+          
+          // Check if this is an insufficient tokens error
+          if (response.message === "Insufficient tokens for batch processing" || 
+              response.errorData?.error === "Insufficient tokens for batch processing") {
+            // Extract token error details from the structured response
+            const errorData = response.errorData || {};
+            setTokenError({
+              required: errorData.required || 0,
+              available: errorData.available || 0,
+              estimatedDuration: errorData.estimatedDuration || 0,
+              fileName: uploadFile.file.name,
+            });
+            setTokenDialogOpen(true);
+            
+            // Remove the file from upload queue
+            setUploadFiles((prev) => prev.filter((f) => f.id !== uploadFile.id));
+          } else {
+            // Handle other errors normally
+            setUploadFiles((prev) =>
+              prev.map((f) =>
+                f.id === uploadFile.id
+                  ? {
+                      ...f,
+                      status: "error",
+                      error: errorData,
+                    }
+                  : f
+              )
+            );
+          }
         }
       } catch (error: unknown) {
         const errorMessage =
@@ -208,7 +370,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         );
       }
     },
-    [onTranscriptionComplete, apiService]
+    [onTranscriptionComplete, apiService, setBatchJobId, startPolling]
   );
 
   const onDrop = useCallback(
@@ -698,17 +860,28 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     <Box sx={{ mt: 2 }}>
                       <Stepper
                         activeStep={
-                          uploadFile.status === "pending"
-                            ? 0
-                            : uploadFile.status === "uploading"
-                            ? uploadFile.progress > 90
-                              ? 2
-                              : 1
-                            : uploadFile.status === "completed"
-                            ? 3
-                            : uploadFile.status === "error"
-                            ? 1
-                            : 0
+                          // Enhanced stepper logic for batch jobs
+                          (() => {
+                            if (batchJob) {
+                              // Batch job stepper logic
+                              switch (batchJob.status) {
+                                case 'submitted': return 1;
+                                case 'processing': return 2;
+                                case 'completed': return 3;
+                                case 'failed': return 1;
+                                default: return 0;
+                              }
+                            } else {
+                              // Regular upload stepper logic
+                              switch (uploadFile.status) {
+                                case "pending": return 0;
+                                case "uploading": return uploadFile.progress > 90 ? 2 : 1;
+                                case "completed": return 3;
+                                case "error": return 1;
+                                default: return 0;
+                              }
+                            }
+                          })()
                         }
                         orientation="horizontal"
                         sx={{
@@ -726,7 +899,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                           },
                         }}
                       >
-                        {getWorkflowSteps(uploadFile).map((step, index) => (
+                        {getUnifiedWorkflowSteps(uploadFile, batchJob || undefined).map((step, index) => (
                           <Step
                             key={`${uploadFile.id}-step-${index}`}
                             completed={step.completed}
@@ -754,6 +927,66 @@ const FileUpload: React.FC<FileUploadProps> = ({
                         ))}
                       </Stepper>
                     </Box>
+
+                    {/* Batch Job Status Information */}
+                    {batchJob && (
+                      <Box sx={{ mt: 2 }}>
+                        <Alert 
+                          severity={
+                            batchJob.status === 'completed' ? 'success' : 
+                            batchJob.status === 'failed' ? 'error' : 'info'
+                          } 
+                          sx={{ mb: 1 }}
+                        >
+                          <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                            Batch Job: {batchJob.fileName}
+                          </Typography>
+                          <Typography variant="caption" display="block">
+                            Status: {batchJob.status.charAt(0).toUpperCase() + batchJob.status.slice(1)}
+                            {batchJob.status === 'processing' && ` (${batchJob.progressPercentage}%)`}
+                          </Typography>
+                          {batchJob.status === 'processing' && (
+                            <Box sx={{ mt: 1, mb: 1 }}>
+                              <LinearProgress 
+                                variant="determinate" 
+                                value={batchJob.progressPercentage} 
+                                sx={{ height: 8, borderRadius: 4 }}
+                              />
+                            </Box>
+                          )}
+                          <Typography variant="caption" display="block">
+                            Estimated Duration: {batchJob.estimatedDurationMinutes} minutes
+                          </Typography>
+                          {batchJob.status === 'processing' && (
+                            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                              {isPolling ? '🔄 Checking status...' : '⏸️ Monitoring paused'}
+                            </Typography>
+                          )}
+                          {batchJob.status === 'completed' && batchJob.processingDuration && (
+                            <Typography variant="caption" display="block">
+                              Processing Time: {batchJob.processingDuration}
+                            </Typography>
+                          )}
+                          {batchJob.errorMessage && (
+                            <Typography variant="caption" display="block" color="error">
+                              Error: {batchJob.errorMessage}
+                            </Typography>
+                          )}
+                        </Alert>
+                      </Box>
+                    )}
+
+                    {/* Batch Job Error Display */}
+                    {batchError && (
+                      <Alert severity="warning" sx={{ mt: 1 }}>
+                        <Typography variant="body2">
+                          ⚠️ Batch job monitoring error: {batchError}
+                        </Typography>
+                        <Typography variant="caption" display="block">
+                          The batch job may still be processing. Status updates will resume automatically.
+                        </Typography>
+                      </Alert>
+                    )}
 
                     {/* Error Display */}
                     {uploadFile.error && (
@@ -785,6 +1018,25 @@ const FileUpload: React.FC<FileUploadProps> = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Insufficient Tokens Dialog */}
+      <InsufficientTokensDialog
+        open={tokenDialogOpen}
+        onClose={() => setTokenDialogOpen(false)}
+        requiredTokens={tokenError?.required || 0}
+        availableTokens={tokenError?.available || 0}
+        estimatedDuration={tokenError?.estimatedDuration || 0}
+        fileName={tokenError?.fileName}
+        onPurchaseTokens={() => {
+          // TODO: Navigate to token purchase page or open purchase dialog
+          console.log('Navigate to token purchase');
+        }}
+        onTrySmaller={() => {
+          // Clear the current error and allow user to try again
+          setTokenError(null);
+          console.log('User will try a smaller file');
+        }}
+      />
     </Box>
   );
 };

@@ -12,6 +12,7 @@ import type {
   MeetingSummary
 } from '../types';
 import { sessionManager, type SessionOverrideAction } from './sessionManager';
+import { useAuthStore } from '../stores/authStore';
 
 // Session-based override types for S3.1
 export interface SessionOverrideRequest {
@@ -54,6 +55,11 @@ class ApiService {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
+        // Add Authorization header if user is authenticated
+        const authState = useAuthStore.getState();
+        if (authState.isAuthenticated && authState.accessToken) {
+          config.headers.Authorization = `Bearer ${authState.accessToken}`;
+        }
         return config;
       },
       (error) => {
@@ -67,13 +73,25 @@ class ApiService {
       (response: AxiosResponse) => {
         return response;
       },
-      (error) => {
+      async (error) => {
         console.error('❌ Response Error:', {
           status: error.response?.status,
           message: error.message,
           url: error.config?.url,
           data: error.response?.data,
         });
+
+        // Handle 401 Unauthorized - token might be expired
+        if (error.response?.status === 401) {
+          const authState = useAuthStore.getState();
+          if (authState.isAuthenticated) {
+            console.warn('🔄 Access token expired, user will need to re-authenticate');
+            // Note: Automatic token refresh could be implemented here
+            // For now, we'll let the auth store handle re-authentication
+            authState.logout();
+          }
+        }
+
         return Promise.reject(error);
       }
     );
@@ -88,11 +106,13 @@ class ApiService {
         success: true,
       };
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { message?: string; errors?: string[] } }; message?: string };
+      const axiosError = error as { response?: { data?: any }; message?: string };
+      const errorData = axiosError.response?.data || {};
       return {
         success: false,
-        message: axiosError.response?.data?.message || axiosError.message || 'An error occurred',
-        errors: axiosError.response?.data?.errors || [axiosError.message || 'Unknown error'],
+        message: errorData.message || errorData.error || axiosError.message || 'An error occurred',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData, // Include full error response data
       };
     }
   }
@@ -338,6 +358,28 @@ class ApiService {
       url: `/api/summary/${transcriptionId}/summarize`,
       data: request,
       timeout: 60000, // 1 minute for AI generation
+    });
+  }
+
+  // Batch Job Methods
+  async getBatchJobStatus(jobId: string): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus>> {
+    return this.request<import('../types/batchJob').BatchJobStatus>({
+      method: 'GET',
+      url: `/api/batchjob/${jobId}/status`,
+    });
+  }
+
+  async getUserBatchJobs(status?: string, limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (limit) params.append('limit', limit.toString());
+    
+    const queryString = params.toString();
+    const url = queryString ? `/api/batchjob?${queryString}` : '/api/batchjob';
+    
+    return this.request<import('../types/batchJob').BatchJobStatus[]>({
+      method: 'GET',
+      url,
     });
   }
 

@@ -122,7 +122,7 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
       }}
     >
       <DialogTitle>
-        <Typography variant="h5" component="h2" fontWeight="bold">
+        <Typography variant="h5" component="div" fontWeight="bold">
           Sign In
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>

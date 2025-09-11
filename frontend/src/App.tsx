@@ -7,18 +7,18 @@ import {
   IconButton,
   Grid,
   Switch,
-  Tooltip,
   Link,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Tooltip,
 } from "@mui/material";
 import { 
   Brightness4, 
   Brightness7, 
-  HealthAndSafety, 
+ 
   Help as HelpIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
@@ -34,7 +34,7 @@ import { useAuthStore } from "./stores/authStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
 
 // Lazy load dialog components to reduce initial bundle size
-const HealthDialog = React.lazy(() => import("./components/HealthDialog").then(m => ({ default: m.HealthDialog })));
+// Health dialog component removed
 const SessionTimeoutWarningDialog = React.lazy(() => import("./components/SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
 const PrivacyPolicyDialog = React.lazy(() => import("./components/PrivacyPolicyDialog").then(m => ({ default: m.PrivacyPolicyDialog })));
 const HelpDialog = React.lazy(() => import("./components/HelpDialog").then(m => ({ default: m.HelpDialog })));
@@ -44,9 +44,6 @@ const AuthManager = React.lazy(() => import("./components/auth").then(m => ({ de
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import TranscriptDisplay from "./components/TranscriptDisplay";
-import { createApiService } from "./services/apiServiceFactory";
-import realApiService from "./services/apiService";
-import mockApiService from "./services/apiService.mock";
 import { sessionManager } from "./services/sessionManager";
 
 import type { TranscriptionResponse } from "./types";
@@ -80,13 +77,8 @@ const AppContent: React.FC = () => {
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
-  const [healthDialogOpen, setHealthDialogOpen] = useState(false);
-  const [isServerHealthy, setIsServerHealthy] = useState<boolean | null>(null);
-
   // Update OpenAI state based on app mode
   const [isOpenAIEnabled, setIsOpenAIEnabled] = useState<boolean | null>(null);
-  // Use API service factory based on app mode
-  const apiService = createApiService(appMode);
 
   // State for forcing Privacy Policy dialog (for testing in dev mode)
   const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
@@ -146,40 +138,14 @@ const AppContent: React.FC = () => {
     }
   }, [appMode, isTourActive, isCurrentStep]);
 
-  const checkServerHealth = async () => {
-    try {
-      const response = await apiService.getHealth();
-      setIsServerHealthy(
-        response.success && response.data?.status === "Healthy"
-      );
-    } catch {
-      setIsServerHealthy(false);
-    }
-  };
+  // Health status checking removed to reduce console errors
 
-  const checkOpenAIStatus = async () => {
-    try {
-      const response = await apiService.getOpenAIStatus();
-      setIsOpenAIEnabled(
-        response.success ? response.data?.isEnabled ?? null : null
-      );
-    } catch {
-      setIsOpenAIEnabled(null);
-    }
-  };
-
-  // Sync OpenAI state with app mode
+  // Sync OpenAI state with app mode (simplified - no API calls)
   useEffect(() => {
     if (appMode === 'production') {
       setIsOpenAIEnabled(true);
-      realApiService.toggleOpenAI(true).catch(() => {
-        console.warn('Failed to enable real API calls in production mode');
-      });
     } else {
       setIsOpenAIEnabled(false);
-      mockApiService.toggleOpenAI(false).catch(() => {
-        console.warn('Failed to enable mock API calls in development mode');
-      });
     }
   }, [appMode]);
 
@@ -199,13 +165,7 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const openHealthDialog = () => {
-    setHealthDialogOpen(true);
-  };
-
-  const closeHealthDialog = () => {
-    setHealthDialogOpen(false);
-  };
+  // Health dialog functions removed
 
   // Sign-Out button handler
   const handleSignOutClick = async () => {
@@ -217,24 +177,9 @@ const AppContent: React.FC = () => {
 
 
 
-  // Check server health and OpenAI status on component mount and periodically
-  useEffect(() => {
-    // Only check in development mode
-    if (import.meta.env.DEV) {
-      checkServerHealth();
-      checkOpenAIStatus();
-      const interval = setInterval(() => {
-        checkServerHealth();
-        checkOpenAIStatus();
-      }, 30000); // Check every 30 seconds
-      return () => clearInterval(interval);
-    }
-  }, []);
+  // Server health checking removed to reduce console errors
 
-  const getHealthButtonColor = () => {
-    if (isServerHealthy === null) return "inherit"; // Unknown state
-    return isServerHealthy ? "success" : "error";
-  };
+  // Health button color function removed
 
   const getAppBarColor = () => {
     if (isOpenAIEnabled === null) return "primary"; // Default while checking
@@ -331,23 +276,7 @@ const AppContent: React.FC = () => {
                       />
                     </Tooltip>
 
-                    {/* Server Health Status Button - Hidden in production mode */}
-                    {appMode === 'development' && (
-                      <IconButton
-                        color={getHealthButtonColor()}
-                        onClick={openHealthDialog}
-                        sx={{ mr: 1 }}
-                        title={
-                          isServerHealthy === null
-                            ? "Checking server status..."
-                            : isServerHealthy
-                            ? "Server is healthy"
-                            : "Server is unhealthy"
-                        }
-                      >
-                        <HealthAndSafety />
-                      </IconButton>
-                    )}
+                    {/* Server health status button removed */}
                   </>
                 )}
               </Box>
@@ -428,9 +357,7 @@ const AppContent: React.FC = () => {
             </Toolbar>
           </AppBar>
 
-          <Suspense fallback={null}>
-            <HealthDialog open={healthDialogOpen} onClose={closeHealthDialog} />
-          </Suspense>
+          {/* Health dialog removed */}
 
           {/* Global session timeout warning dialog */}
           <Suspense fallback={null}>

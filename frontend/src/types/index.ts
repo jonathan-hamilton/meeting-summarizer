@@ -4,6 +4,7 @@ export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   errors?: string[];
+  errorData?: any; // Full error response data for structured errors
 }
 
 // Health Check Types
@@ -28,6 +29,9 @@ export interface DetailedHealthStatus extends HealthStatus {
     database?: string;
   };
 }
+
+// Batch Job Types
+export * from './batchJob';
 
 // File Upload Types
 export interface SpeakerSegment {

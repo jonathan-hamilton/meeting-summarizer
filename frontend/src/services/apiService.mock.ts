@@ -214,6 +214,53 @@ const apiServiceMock = {
     await delay(100);
     return { data: { isEnabled: !enabled, mode: 'mock', message: 'Mock mode toggled' }, success: true };
   },
+  // Batch Job Methods (Mock Mode)
+  async getBatchJobStatus(jobId: string): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus>> {
+    await delay(300);
+    
+    const mockBatchJob: import('../types/batchJob').BatchJobStatus = {
+      jobId,
+      status: 'processing',
+      progressPercentage: 45,
+      submittedAt: new Date(Date.now() - 180000).toISOString(), // 3 minutes ago
+      estimatedDurationMinutes: 20,
+      fileName: 'mock-long-meeting.wav',
+      retryCount: 0,
+      maxRetries: 3,
+      refundIssued: false
+    };
+    
+    return {
+      success: true,
+      data: mockBatchJob,
+      message: 'Mock batch job status retrieved'
+    };
+  },
+  async getUserBatchJobs(_status?: string, _limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {
+    await delay(300);
+    
+    const mockJobs: import('../types/batchJob').BatchJobStatus[] = [
+      {
+        jobId: 'mock-job-1',
+        status: 'completed',
+        progressPercentage: 100,
+        submittedAt: new Date(Date.now() - 600000).toISOString(), // 10 minutes ago
+        completedAt: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
+        estimatedDurationMinutes: 12,
+        fileName: 'mock-meeting-1.wav',
+        retryCount: 0,
+        maxRetries: 3,
+        refundIssued: false,
+        processingDuration: '00:03:45'
+      }
+    ];
+    
+    return {
+      success: true,
+      data: mockJobs,
+      message: 'Mock batch jobs retrieved'
+    };
+  },
   getBaseURL(): string {
     return 'mock';
   },

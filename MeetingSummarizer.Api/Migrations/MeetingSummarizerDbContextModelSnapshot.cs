@@ -22,6 +22,78 @@ namespace MeetingSummarizer.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.BatchTranscriptionJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AzureJobId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EstimatedDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("MaxRetries")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProgressPercentage")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RefundIssued")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ResultsJson")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("TokensCharged")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AzureJobId")
+                        .IsUnique()
+                        .HasFilter("[AzureJobId] IS NOT NULL");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmittedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("BatchTranscriptionJobs");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -305,6 +377,17 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.BatchTranscriptionJob", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
+                        .WithMany("BatchTranscriptionJobs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
@@ -371,6 +454,8 @@ namespace MeetingSummarizer.Api.Migrations
 
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.User", b =>
                 {
+                    b.Navigation("BatchTranscriptionJobs");
+
                     b.Navigation("Meetings");
 
                     b.Navigation("TokenPurchases");
