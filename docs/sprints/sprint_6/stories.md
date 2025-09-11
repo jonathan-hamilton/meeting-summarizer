@@ -1083,45 +1083,284 @@ This story establishes production Azure hosting infrastructure for both the .NET
 **Integration Points:**
 - Integrates with Azure storage and database infrastructure from S6.1
 - Uses payment system configurations from S6.2
-- Provides hosting foundation for monitoring setup in S6.7
+- Provides hosting foundation for monitoring setup in S6.8
 - Enables public user access and production readiness
 
 ---
 
-### Story S6.7: Production Monitoring & Observability Setup
+### Story S6.7: Azure Production Hosting Deployment
+As a product owner, I want to deploy the application to Azure production hosting so that users can access the service publicly via a custom domain with SSL/TLS security.
+
+**Status: PENDING ⏸️**
+
+**Dependencies**: S6.1 (Azure Storage), S6.3 (Payment System)
+
+**Implementation Summary:**
+This story deploys the complete application stack to Azure production hosting with custom domain, SSL certificates, and proper scaling configuration for public user access.
+
+**Acceptance Criteria:**
+- ✓ Azure App Service configured for .NET 9 Web API backend hosting
+- ✓ Azure Static Web Apps or App Service configured for React frontend hosting  
+- ✓ Custom domain configured with SSL/TLS certificates from Let's Encrypt or Azure
+- ✓ Production environment variables and configurations secured via Azure Key Vault
+- ✓ GitHub Actions CI/CD pipeline for automated deployment from main branch
+- ✓ Production scaling policies configured (auto-scale, load balancing)
+- ✓ Proper CORS configuration for frontend-backend communication
+- ✓ Health check endpoints configured and validated
+- ✓ Database connection strings and storage keys secured in production
+- ✓ Public accessibility validated with performance testing
+
+**Technical Implementation:**
+- Deploy .NET 9 Web API to Azure App Service with proper runtime configuration
+- Deploy React frontend to Azure Static Web Apps with optimized build settings
+- Configure Azure Application Gateway or Front Door for advanced routing
+- Set up Azure CDN for static asset delivery and global performance
+- Implement proper environment separation (staging/production)
+
+**Integration Points:**
+- Uses Azure storage and database infrastructure from S6.1
+- Integrates payment processing configurations from S6.2
+- Provides foundation for monitoring setup in S6.8
+- Enables public user access and production readiness
+
+---
+
+### Story S6.8: Production Monitoring & Observability Setup
 As a system administrator, I want comprehensive monitoring and alerting in place so that I can ensure system reliability, track business metrics, and respond to issues proactively.
 
 **Status: PENDING ⏸️**
 
-**Dependencies**: S6.6 (Azure Hosting)
+**Dependencies**: S6.7 (Azure Production Hosting)
 
 **Implementation Summary:**
-This story implements production-grade monitoring, logging, and alerting infrastructure to ensure operational visibility, business intelligence, and proactive issue resolution for the hosted audio processing service.
+This story implements production-grade monitoring, logging, and alerting infrastructure using Azure Application Insights to ensure operational visibility, business intelligence, and proactive issue resolution for the hosted audio processing service.
 
-**Acceptance Criteria:**
-- ✓ Azure Application Insights integrated for application performance monitoring (APM)
-- ✓ Real-time dashboards showing system health, response times, error rates, and throughput
-- ✓ Custom telemetry events for business metrics (audio processing, token usage, user behavior)
-- ✓ Azure Log Analytics configured for centralized logging with correlation IDs
-- ✓ Alert rules configured for critical system events (API failures, high latency, storage issues)
-- ✓ Audio processing pipeline monitoring (file sizes, transcription times, success/failure rates)
-- ✓ Cost monitoring and spending alerts for Azure services (storage, compute, AI services)
-- ✓ User experience monitoring (page load times, API response times, JavaScript errors)
-- ✓ Security monitoring (failed authentication attempts, suspicious activity patterns)
-- ✓ Health check endpoints for all critical services (database, storage, OpenAI, Azure Speech)
+## Detailed Implementation Specifications
 
-**Technical Notes:**
-- Follow REQ-MONITOR-1 through REQ-MONITOR-10 in requirements roadmap
-- Implement structured logging with correlation IDs for request tracing
-- Set up automated alerting with escalation policies (email → SMS → PagerDuty)
-- Configure cost thresholds with daily/weekly spending alerts
-- Create business intelligence dashboards for revenue and usage analytics
+### Phase 1: Azure Application Insights Setup (REQ-MONITOR-1, REQ-HOSTING-4)
 
-**Integration Points:**
-- Monitors the production hosting infrastructure from S6.6
-- Tracks user behavior and payment processing from S6.2
-- Provides visibility into storage usage and costs from S6.1
-- Enables data-driven optimization and scaling decisions
+**1.1 Application Insights Resource Configuration**
+```bash
+# Create Application Insights resource in Azure
+az monitor app-insights component create \
+  --app meeting-summarizer-ai \
+  --location westus2 \
+  --resource-group meeting-summarizer-rg \
+  --workspace /subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{workspace}
+```
+
+**1.2 .NET Backend Integration**
+- **File**: `MeetingSummarizer.Api/Program.cs`
+- **Changes**:
+  ```csharp
+  // Add Application Insights services
+  builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["ApplicationInsights:ConnectionString"]);
+  
+  // Add custom telemetry initializers
+  builder.Services.AddSingleton<ITelemetryInitializer, CorrelationIdTelemetryInitializer>();
+  builder.Services.AddSingleton<ITelemetryInitializer, UserIdTelemetryInitializer>();
+  ```
+
+**1.3 Configuration Setup**
+- **File**: `MeetingSummarizer.Api/appsettings.Production.json`
+- **Add**:
+  ```json
+  {
+    "ApplicationInsights": {
+      "ConnectionString": "[FROM_AZURE_KEY_VAULT]"
+    },
+    "Logging": {
+      "ApplicationInsights": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      }
+    }
+  }
+  ```
+
+### Phase 2: Custom Telemetry Implementation (REQ-MONITOR-2, REQ-MONITOR-3)
+
+**2.1 Business Metrics Telemetry Service**
+- **New File**: `MeetingSummarizer.Api/Services/TelemetryService.cs`
+- **Implementation**:
+  ```csharp
+  public interface ITelemetryService
+  {
+      void TrackAudioProcessing(string fileName, long fileSizeBytes, TimeSpan processingTime, bool success, string provider);
+      void TrackTokenUsage(string userId, int tokensUsed, decimal cost, string operation);
+      void TrackUserActivity(string userId, string action, Dictionary<string, string> properties = null);
+      void TrackSecurityEvent(string eventType, string userId, string details);
+      void TrackCostMetric(string service, decimal cost, string operation);
+  }
+  ```
+
+**2.2 Audio Processing Pipeline Telemetry (REQ-MONITOR-6)**
+- **Files to modify**:
+  - `Services/OpenAITranscriptionService.cs`
+  - `Services/AzureSpeechTranscriptionService.cs`
+  - `Services/AzureBatchTranscriptionService.cs`
+- **Add telemetry calls**: Processing start/end, file size, duration, success/failure rates
+
+**2.3 Token Usage Tracking (REQ-MONITOR-3)**
+- **Files to modify**:
+  - `Services/TokenService.cs`
+  - `Controllers/PaymentController.cs`
+- **Track**: Token purchases, consumption, balance changes, payment events
+
+### Phase 3: Structured Logging Enhancement (REQ-MONITOR-4, REQ-LOG-1-5)
+
+**3.1 Correlation ID Implementation**
+- **New File**: `MeetingSummarizer.Api/Middleware/CorrelationIdMiddleware.cs`
+- **Purpose**: Add correlation IDs to all requests for distributed tracing
+- **Integration**: Register in Program.cs pipeline
+
+**3.2 Enhanced ILogger Patterns**
+- **Modify existing services** to include structured logging:
+  ```csharp
+  _logger.LogInformation("Audio processing started for {UserId} with file {FileName} ({FileSizeBytes} bytes)", 
+      userId, fileName, fileSizeBytes);
+  
+  _logger.LogError(exception, "Audio processing failed for {UserId} with correlation {CorrelationId}", 
+      userId, correlationId);
+  ```
+
+**3.3 Log Analytics Queries**
+- **Create saved queries** for common troubleshooting patterns
+- **Performance queries**: Response times, error rates, throughput
+- **Business queries**: Token usage, user activity, cost tracking
+
+### Phase 4: Real-time Dashboards (REQ-MONITOR-2, REQ-MONITOR-5)
+
+**4.1 Azure Dashboard Configuration**
+- **Application Performance Dashboard**:
+  - Request rates and response times
+  - Error rates and exception details
+  - Dependency performance (OpenAI, Azure Speech, database)
+  - Server performance (CPU, memory, disk)
+
+**4.2 Business Intelligence Dashboard**
+- **User Activity Metrics**:
+  - Daily/monthly active users
+  - Audio processing volume and success rates
+  - Token consumption patterns
+  - Revenue and conversion tracking
+
+**4.3 Cost Monitoring Dashboard (REQ-MONITOR-7)**
+- **Azure Cost Analysis integration**
+- **Service-specific cost breakdown**: Storage, compute, AI services
+- **Usage correlation**: Cost per transcription, storage costs per user
+
+### Phase 5: Alerting Configuration (REQ-MONITOR-5, REQ-MONITOR-8, REQ-MONITOR-9)
+
+**5.1 Critical System Alerts**
+```json
+{
+  "alerts": [
+    {
+      "name": "High Error Rate",
+      "condition": "exceptions/count > 10 in 5 minutes",
+      "severity": "Critical",
+      "actions": ["email", "webhook"]
+    },
+    {
+      "name": "API Latency",
+      "condition": "requests/duration > 30 seconds (95th percentile)",
+      "severity": "Warning"
+    },
+    {
+      "name": "Storage Failure",
+      "condition": "dependencies/failed > 5 in 10 minutes WHERE target contains 'blob'",
+      "severity": "Critical"
+    }
+  ]
+}
+```
+
+**5.2 Security Monitoring Alerts (REQ-MONITOR-9)**
+- **Failed authentication attempts**: > 10 per user in 15 minutes
+- **Suspicious activity patterns**: Multiple failed payment attempts
+- **API abuse**: Rate limiting violations
+
+**5.3 Cost Threshold Alerts (REQ-MONITOR-7)**
+- **Daily spending**: > $50/day
+- **Monthly projection**: > $1000/month
+- **Per-service thresholds**: Storage > $100, AI services > $500
+
+### Phase 6: Health Checks Integration (REQ-MONITOR-10)
+
+**6.1 Health Check Endpoints**
+- **File**: `MeetingSummarizer.Api/HealthChecks/`
+- **Implement checks for**:
+  - Database connectivity
+  - Azure Blob Storage accessibility
+  - OpenAI API responsiveness
+  - Azure Speech Services availability
+  - Redis cache connectivity (if implemented)
+
+**6.2 Application Insights Health Check Integration**
+```csharp
+builder.Services.AddHealthChecks()
+    .AddApplicationInsightsPublisher()
+    .AddSqlServer(connectionString)
+    .AddAzureBlobStorage(storageConnectionString)
+    .AddCheck<OpenAIHealthCheck>("openai")
+    .AddCheck<AzureSpeechHealthCheck>("azure-speech");
+```
+
+### Phase 7: Frontend Monitoring Integration
+
+**7.1 Browser Telemetry**
+- **Add Application Insights JavaScript SDK** to React frontend
+- **Track**: Page views, user interactions, JavaScript errors, performance metrics
+- **Files to modify**: `frontend/index.html`, `frontend/src/main.tsx`
+
+**7.2 User Experience Monitoring (REQ-MONITOR-8)**
+- **Page load times**
+- **API call performance from client perspective** 
+- **User journey tracking**: Upload → Process → View Results
+- **Error boundary telemetry**: React component errors
+
+## Acceptance Criteria
+
+### Technical Deliverables
+- ✓ Azure Application Insights fully integrated with .NET backend and React frontend
+- ✓ Custom telemetry service tracking business metrics (audio processing, tokens, user activity)
+- ✓ Structured logging with correlation IDs across all services
+- ✓ Real-time dashboards showing system health and business intelligence
+- ✓ Comprehensive alerting rules for critical events with proper escalation
+- ✓ Health check endpoints monitoring all external dependencies
+- ✓ Cost monitoring and spending alerts configured
+- ✓ Security event monitoring for authentication and suspicious activity
+
+### Operational Requirements
+- ✓ All logs searchable and correlatable across services
+- ✓ Alert response procedures documented and tested
+- ✓ Dashboard access configured for development and operations teams
+- ✓ Performance baselines established for all critical metrics
+- ✓ Cost tracking enabled with monthly budget controls
+
+### Compliance & Documentation
+- ✓ REQ-MONITOR-1 through REQ-MONITOR-10 fully implemented
+- ✓ Monitoring runbook created with troubleshooting procedures
+- ✓ Alert escalation procedures documented
+- ✓ Performance optimization recommendations based on telemetry data
+
+## Integration Points
+- **Monitors production hosting infrastructure** from S6.7
+- **Tracks user behavior and payment processing** from S6.2 and S6.3
+- **Provides visibility into storage usage and costs** from S6.1
+- **Enables data-driven optimization** and scaling decisions for future sprints
+- **Supports operational excellence** for public production launch
+
+## Estimated Timeline
+- **Phase 1-2**: 2-3 days (Application Insights setup and basic telemetry)
+- **Phase 3-4**: 2-3 days (Structured logging and dashboards)
+- **Phase 5-6**: 2-3 days (Alerting and health checks)
+- **Phase 7**: 1-2 days (Frontend monitoring)
+- **Testing & Documentation**: 1-2 days
+- **Total**: 8-13 days (1.5-2.5 weeks)
 
 ---
 
