@@ -86,4 +86,9 @@ public class User
     /// Navigation property for user's token usage
     /// </summary>
     public virtual ICollection<TokenUsage> TokenUsages { get; set; } = new List<TokenUsage>();
+    
+    /// <summary>
+    /// Navigation property for user's batch transcription jobs
+    /// </summary>
+    public virtual ICollection<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = new List<BatchTranscriptionJob>();
 }

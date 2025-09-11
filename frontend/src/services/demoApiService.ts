@@ -306,6 +306,56 @@ class DemoApiService {
     console.log('Demo mode: Email simulated', { transcriptionId, emailData });
   }
 
+  // Batch Job Methods (Demo Mode)
+  async getBatchJobStatus(jobId: string): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus>> {
+    await this.mockDelay(500);
+    
+    // In demo mode, simulate a job in progress
+    const mockBatchJob: import('../types/batchJob').BatchJobStatus = {
+      jobId,
+      status: 'processing',
+      progressPercentage: 65,
+      submittedAt: new Date(Date.now() - 120000).toISOString(), // 2 minutes ago
+      estimatedDurationMinutes: 25,
+      fileName: 'demo-long-meeting.wav',
+      retryCount: 0,
+      maxRetries: 3,
+      refundIssued: false
+    };
+    
+    return {
+      success: true,
+      data: mockBatchJob,
+      message: 'Demo batch job status retrieved'
+    };
+  }
+
+  async getUserBatchJobs(_status?: string, _limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {
+    await this.mockDelay(500);
+    
+    const mockJobs: import('../types/batchJob').BatchJobStatus[] = [
+      {
+        jobId: 'demo-job-1',
+        status: 'completed',
+        progressPercentage: 100,
+        submittedAt: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
+        completedAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+        estimatedDurationMinutes: 15,
+        fileName: 'demo-meeting-1.wav',
+        retryCount: 0,
+        maxRetries: 3,
+        refundIssued: false,
+        processingDuration: '00:04:32'
+      }
+    ];
+    
+    return {
+      success: true,
+      data: mockJobs,
+      message: 'Demo batch jobs retrieved'
+    };
+  }
+
   getBaseURL(): string {
     return 'http://demo-api.localhost:5000';
   }

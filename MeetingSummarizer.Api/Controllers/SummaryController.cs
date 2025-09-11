@@ -1,7 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services.Transcription;
 using MeetingSummarizer.Api.Services.Summarization;
+using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Data;
+using MeetingSummarizer.Api.Data.Entities;
 using SpeakerServices = MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Helpers;
 using SpeakerMappingModel = MeetingSummarizer.Api.Models.SpeakerMapping;
@@ -19,17 +26,23 @@ public class SummaryController : ControllerBase
     private readonly ITranscriptionService _transcriptionService;
     private readonly ISummarizationService _summarizationService;
     private readonly ISpeakerMappingService _speakerMappingService;
+    private readonly MeetingSummarizerDbContext _context;
+    private readonly AzureBatchTranscriptionService _batchService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
         ITranscriptionService transcriptionService,
         ISummarizationService summarizationService,
-        ISpeakerMappingService speakerMappingService)
+        ISpeakerMappingService speakerMappingService,
+        MeetingSummarizerDbContext context,
+        AzureBatchTranscriptionService batchService)
     {
         _logger = logger;
         _transcriptionService = transcriptionService;
         _summarizationService = summarizationService;
         _speakerMappingService = speakerMappingService;
+        _context = context;
+        _batchService = batchService;
     }
 
     /// <summary>
@@ -39,6 +52,7 @@ public class SummaryController : ControllerBase
     /// <returns>Transcription result</returns>
     [HttpPost("transcribe")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(1024L * 1024L * 1024L)] // 1GB - matches AudioFileValidator.MaxFileSizeBytes
     [ProducesResponseType(typeof(TranscriptionResponse), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -67,6 +81,39 @@ public class SummaryController : ControllerBase
 
             _logger.LogInformation("File validation passed for {FileName} ({FileSize})",
                 request.AudioFile!.FileName, AudioFileValidator.FormatFileSize(request.AudioFile.Length));
+
+            // S6.3.6: Check if file should be processed with batch transcription (5+ minutes)
+            var estimatedDurationMinutes = EstimateAudioDurationMinutes(request.AudioFile.Length, request.AudioFile.FileName);
+            
+            if (estimatedDurationMinutes >= 5)
+            {
+                // Check if user is authenticated for batch processing
+                var userId = GetCurrentUserId();
+                
+                if (userId.HasValue)
+                {
+                    _logger.LogInformation("File {FileName} estimated at {Duration} minutes - routing to batch processing (authenticated user)", 
+                        request.AudioFile.FileName, estimatedDurationMinutes);
+                    
+                    return await ProcessWithBatchTranscription(request.AudioFile, estimatedDurationMinutes);
+                }
+                else
+                {
+                    _logger.LogWarning("File {FileName} estimated at {Duration} minutes requires batch processing but user not authenticated - suggesting authentication", 
+                        request.AudioFile.FileName, estimatedDurationMinutes);
+                    
+                    return BadRequest(new 
+                    { 
+                        error = "Long audio files (5+ minutes) require user authentication for batch processing",
+                        estimatedDuration = estimatedDurationMinutes,
+                        suggestion = "Please log in or register to process longer audio files",
+                        maxRealTimeDuration = 5
+                    });
+                }
+            }
+
+            _logger.LogInformation("File {FileName} estimated at {Duration} minutes - using real-time processing", 
+                request.AudioFile.FileName, estimatedDurationMinutes);
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -164,6 +211,7 @@ public class SummaryController : ControllerBase
     /// <returns>Enhanced transcription result with speaker segments</returns>
     [HttpPost("transcribe-enhanced")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(1024L * 1024L * 1024L)] // 1GB - matches AudioFileValidator.MaxFileSizeBytes
     [ProducesResponseType(typeof(TranscriptionResponse), 200)]
     [ProducesResponseType(400)]
     [ProducesResponseType(401)]
@@ -589,4 +637,159 @@ public class SummaryController : ControllerBase
             return StatusCode(500, new { error = "An error occurred while generating the meeting summary" });
         }
     }
+
+    #region Batch Processing Helper Methods
+
+    /// <summary>
+    /// Estimate audio duration in minutes from file size and extension
+    /// </summary>
+    /// <param name="fileSizeBytes">File size in bytes</param>
+    /// <param name="fileName">File name with extension</param>
+    /// <returns>Estimated duration in minutes</returns>
+    private int EstimateAudioDurationMinutes(long fileSizeBytes, string fileName)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        
+        // Approximate bitrates by format (kbps)
+        var avgBitrates = new Dictionary<string, int>
+        {
+            { ".mp3", 128 },
+            { ".wav", 1411 }, // Uncompressed
+            { ".m4a", 128 },
+            { ".flac", 800 },
+            { ".ogg", 128 },
+            { ".wma", 128 },
+            { ".aac", 128 }
+        };
+
+        var bitrate = avgBitrates.GetValueOrDefault(extension, 128); // Default to 128 kbps
+        
+        // Calculate duration: file_size_bits / bitrate_per_second = duration_seconds
+        var fileSizeBits = fileSizeBytes * 8;
+        var bitratePerSecond = bitrate * 1000; // Convert kbps to bps
+        var durationSeconds = fileSizeBits / bitratePerSecond;
+        var durationMinutes = (int)Math.Ceiling(durationSeconds / 60.0);
+
+        _logger.LogDebug("Estimated duration for {FileName} ({SizeMB:F1}MB, {Extension}): {Duration} minutes (bitrate: {Bitrate} kbps)",
+            fileName, fileSizeBytes / (1024.0 * 1024), extension, durationMinutes, bitrate);
+
+        return Math.Max(1, durationMinutes); // At least 1 minute
+    }
+
+    /// <summary>
+    /// Get current user ID from JWT token
+    /// </summary>
+    /// <returns>User ID</returns>
+    private Guid? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return null;
+        }
+        return userId;
+    }
+
+    /// <summary>
+    /// Process long audio files using batch transcription service
+    /// </summary>
+    /// <param name="audioFile">The audio file to process</param>
+    /// <param name="estimatedDurationMinutes">Estimated duration in minutes</param>
+    /// <returns>Batch job submission response</returns>
+    private async Task<IActionResult> ProcessWithBatchTranscription(IFormFile audioFile, int estimatedDurationMinutes)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                _logger.LogWarning("Batch transcription requested but user not authenticated");
+                return Unauthorized(new { error = "Authentication required for batch processing" });
+            }
+
+            // Check if user has sufficient tokens (rough estimate: 1 token per minute + 20% buffer)
+            var estimatedTokens = (int)Math.Ceiling(estimatedDurationMinutes * 1.2);
+            var user = await _context.Users.FindAsync(userId.Value);
+            
+            if (user == null)
+            {
+                return NotFound(new { error = "User not found" });
+            }
+
+            if (user.TokenBalance < estimatedTokens)
+            {
+                _logger.LogWarning("User {UserId} has insufficient tokens for batch processing. Required: {Required}, Available: {Available}",
+                    userId, estimatedTokens, user.TokenBalance);
+                
+                return BadRequest(new 
+                { 
+                    error = "Insufficient tokens for batch processing",
+                    required = estimatedTokens,
+                    available = user.TokenBalance,
+                    estimatedDuration = estimatedDurationMinutes
+                });
+            }
+
+            // Create batch job submission request
+            var batchJobRequest = new SubmitBatchJobRequest
+            {
+                FileName = audioFile.FileName,
+                EstimatedDurationMinutes = estimatedDurationMinutes,
+                TokensToCharge = estimatedTokens
+            };
+
+            // Submit to batch processing
+            var batchJob = new BatchTranscriptionJob
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId.Value,
+                FileName = audioFile.FileName,
+                EstimatedDurationMinutes = estimatedDurationMinutes,
+                TokensCharged = estimatedTokens,
+                Status = "submitted",
+                SubmittedAt = DateTime.UtcNow
+            };
+
+            // Deduct tokens immediately
+            user.TokenBalance -= estimatedTokens;
+
+            _context.BatchTranscriptionJobs.Add(batchJob);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Created batch job {JobId} for user {UserId}, file: {FileName}, charged {Tokens} tokens", 
+                batchJob.Id, userId, audioFile.FileName, estimatedTokens);
+
+            // Return batch job response compatible with frontend expecting TranscriptionResponse
+            var response = new 
+            {
+                // Batch-specific fields
+                JobId = batchJob.Id,
+                Status = "batch_submitted",
+                EstimatedTime = $"{estimatedDurationMinutes * 0.3:F0}-{estimatedDurationMinutes * 0.5:F0} minutes",
+                CheckStatusUrl = $"/api/BatchJob/{batchJob.Id}/status",
+                SubmittedAt = batchJob.SubmittedAt,
+                
+                // TranscriptionResponse-compatible fields for frontend compatibility
+                TranscriptionId = batchJob.Id.ToString(),
+                FileName = audioFile.FileName,
+                FileSize = audioFile.Length,
+                ProcessingTimeMs = 0,
+                CreatedAt = batchJob.SubmittedAt,
+                
+                // Batch processing indicators
+                IsBatchProcessing = true,
+                EstimatedDurationMinutes = estimatedDurationMinutes,
+                TokensCharged = estimatedTokens
+            };
+
+            return Accepted(response); // HTTP 202 Accepted for async processing
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error submitting batch transcription job for file: {FileName}", audioFile.FileName);
+            return StatusCode(500, new { error = "Failed to submit batch transcription job" });
+        }
+    }
+
+    #endregion
 }

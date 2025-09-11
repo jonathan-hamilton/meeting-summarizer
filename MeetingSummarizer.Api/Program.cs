@@ -10,6 +10,7 @@ using MeetingSummarizer.Api.Services.DataRetention;
 using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.TokenManagement;
 using MeetingSummarizer.Api.Services.Payment;
+using MeetingSummarizer.Api.Services;
 using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
@@ -27,6 +28,15 @@ builder.Services.AddControllers()
         // S3.4: Configure enum serialization as strings to match frontend
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+
+// Configure form options for large file uploads
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    // Set limits to match AudioFileValidator.MaxFileSizeBytes (1GB)
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 1024L * 1024L * 1024L; // 1GB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 // Configure OpenAPI/Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -145,6 +155,21 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.IToken
 // Register Payment Service (S6.3 Increment 4)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Payment.IPaymentService, MeetingSummarizer.Api.Services.Payment.StripePaymentService>();
 
+// Register Batch Transcription Services (S6.3.6)
+builder.Services.AddHttpClient<AzureBatchTranscriptionService>();
+builder.Services.AddScoped<AzureBatchTranscriptionService>();
+builder.Services.AddHostedService<BatchJobMonitorService>();
+
+// Configure Kestrel server for large file uploads
+builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
+{
+    // Set max request body size to match AudioFileValidator.MaxFileSizeBytes (1GB)
+    options.Limits.MaxRequestBodySize = 1024L * 1024L * 1024L; // 1GB
+    // Increase request timeout for large file processing
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(10);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(2);
+});
+
 // Note: Additional service registrations will be added in future increments
 
 var app = builder.Build();
@@ -228,7 +253,11 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseHttpsRedirection();
+// Only redirect to HTTPS in production to avoid CORS issues in development
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
