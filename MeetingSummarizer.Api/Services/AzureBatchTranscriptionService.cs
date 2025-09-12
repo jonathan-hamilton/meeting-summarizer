@@ -15,15 +15,18 @@ public class AzureBatchTranscriptionService
 {
     private readonly HttpClient _httpClient;
     private readonly IAzureConfigurationService _configService;
+    private readonly AzureSpeechOptions _speechOptions;
     private readonly ILogger<AzureBatchTranscriptionService> _logger;
 
     public AzureBatchTranscriptionService(
         HttpClient httpClient,
         IAzureConfigurationService configService,
+        IOptions<AzureSpeechOptions> speechOptions,
         ILogger<AzureBatchTranscriptionService> logger)
     {
         _httpClient = httpClient;
         _configService = configService;
+        _speechOptions = speechOptions.Value;
         _logger = logger;
 
         // Configure HttpClient for Azure Batch Transcription API
@@ -126,6 +129,14 @@ public class AzureBatchTranscriptionService
         try
         {
             _logger.LogDebug("Checking status for Azure job: {JobId}", azureJobId);
+
+            // Set up the HTTP client for this request
+            var baseAddress = $"https://{_speechOptions.Region}.api.cognitive.microsoft.com/speechtotext/v3.1/";
+            _httpClient.BaseAddress = new Uri(baseAddress);
+            
+            // Clear any existing auth headers and set the new API key
+            _httpClient.DefaultRequestHeaders.Remove("Ocp-Apim-Subscription-Key");
+            _httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _speechOptions.Key);
 
             var response = await _httpClient.GetAsync($"transcriptions/{azureJobId}");
 
@@ -234,6 +245,14 @@ public class AzureBatchTranscriptionService
         {
             _logger.LogInformation("Cancelling Azure batch job: {JobId}", azureJobId);
 
+            // Set up the HTTP client for this request
+            var baseAddress = $"https://{_speechOptions.Region}.api.cognitive.microsoft.com/speechtotext/v3.1/";
+            _httpClient.BaseAddress = new Uri(baseAddress);
+            
+            // Clear any existing auth headers and set the new API key
+            _httpClient.DefaultRequestHeaders.Remove("Ocp-Apim-Subscription-Key");
+            _httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _speechOptions.Key);
+
             var response = await _httpClient.DeleteAsync($"transcriptions/{azureJobId}");
             
             var success = response.IsSuccessStatusCode;
@@ -267,7 +286,28 @@ public class AzureBatchTranscriptionService
         try
         {
             var azureData = JsonSerializer.Deserialize<JsonElement>(azureResultsJson);
-            var combinedResults = azureData.GetProperty("combinedRecognizedPhrases");
+            
+            // Try different possible property names for Azure Speech Services response
+            JsonElement combinedResults;
+            if (azureData.TryGetProperty("combinedRecognizedPhrases", out combinedResults))
+            {
+                // Original expected format
+            }
+            else if (azureData.TryGetProperty("recognizedPhrases", out combinedResults))
+            {
+                // Common Azure Speech Services format
+            }
+            else if (azureData.TryGetProperty("results", out combinedResults))
+            {
+                // Alternative format
+            }
+            else
+            {
+                // Log the actual structure for debugging
+                _logger.LogError("Unable to find recognized phrases in Azure response. Available properties: {Properties}",
+                    string.Join(", ", azureData.EnumerateObject().Select(p => p.Name)));
+                throw new InvalidOperationException($"Unable to find recognized phrases in Azure response. Available properties: {string.Join(", ", azureData.EnumerateObject().Select(p => p.Name))}");
+            }
             
             var segments = new List<SpeakerSegment>();
             var fullText = new StringBuilder();
@@ -277,15 +317,19 @@ public class AzureBatchTranscriptionService
                 var channel = phrase.GetProperty("channel").GetInt32();
                 var speakerId = $"Speaker {channel + 1}";
                 var text = phrase.GetProperty("lexical").GetString() ?? "";
-                var startTicks = phrase.GetProperty("offsetInTicks").GetInt64();
-                var durationTicks = phrase.GetProperty("durationInTicks").GetInt64();
+                
+                // Note: Azure batch transcription doesn't provide individual segment timing
+                // in this format, so we use sequential positioning
+                var segmentIndex = segments.Count;
+                var estimatedStart = segmentIndex * 1.0; // Rough estimate: 1 second per segment
+                var estimatedEnd = estimatedStart + 1.0;
 
                 var segment = new SpeakerSegment
                 {
                     Speaker = speakerId,
                     Text = text,
-                    Start = TimeSpan.FromTicks(startTicks).TotalSeconds,
-                    End = TimeSpan.FromTicks(startTicks + durationTicks).TotalSeconds,
+                    Start = estimatedStart,
+                    End = estimatedEnd,
                     Confidence = phrase.TryGetProperty("confidence", out var conf) ? conf.GetDouble() : 0.95
                 };
 
@@ -303,6 +347,8 @@ public class AzureBatchTranscriptionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error parsing Azure transcription results");
+            _logger.LogError("Azure JSON content (first 2000 chars): {JsonContent}", 
+                azureResultsJson.Length > 2000 ? azureResultsJson[..2000] + "..." : azureResultsJson);
             throw new InvalidOperationException("Failed to parse Azure transcription results", ex);
         }
     }

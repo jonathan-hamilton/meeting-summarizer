@@ -156,7 +156,7 @@ public class MeetingSummarizerDbContext : DbContext
             entity.Property(btj => btj.FileName).IsRequired().HasMaxLength(255);
             entity.Property(btj => btj.Status).IsRequired().HasMaxLength(50);
             entity.Property(btj => btj.AzureJobId).HasMaxLength(100);
-            entity.Property(btj => btj.ResultsJson).HasMaxLength(4000);
+            entity.Property(btj => btj.ResultsJson).HasColumnType("nvarchar(max)");
             entity.Property(btj => btj.ErrorMessage).HasMaxLength(1000);
             entity.Property(btj => btj.SubmittedAt).HasDefaultValueSql("GETUTCDATE()");
             

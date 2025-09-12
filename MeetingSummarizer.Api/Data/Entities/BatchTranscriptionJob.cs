@@ -67,7 +67,7 @@ public class BatchTranscriptionJob
     public int ProgressPercentage { get; set; } = 0;
 
     /// <summary>
-    /// Final transcription results as JSON
+    /// Final transcription results as JSON - can be very large (up to 2MB for long transcriptions)
     /// </summary>
     public string? ResultsJson { get; set; }
 
@@ -98,6 +98,12 @@ public class BatchTranscriptionJob
     /// Whether a refund has been issued for failed processing
     /// </summary>
     public bool RefundIssued { get; set; } = false;
+
+    /// <summary>
+    /// Azure Blob Storage URL for the uploaded audio file
+    /// </summary>
+    [MaxLength(2048)]
+    public string? AudioBlobUrl { get; set; }
 
     /// <summary>
     /// Navigation property to User entity

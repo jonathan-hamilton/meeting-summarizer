@@ -197,6 +197,34 @@ const FileUpload: React.FC<FileUploadProps> = ({
   // Handle batch job completion
   useEffect(() => {
     if (batchJob && batchJob.status === 'completed' && batchJob.results) {
+      // Transform batch job results to TranscriptionResponse format
+      const transformedResult: TranscriptionResponse = {
+        transcriptionId: batchJob.jobId,
+        fileName: batchJob.fileName,
+        fileSize: 0, // Not available in batch job response
+        status: "Completed",
+        transcribedText: batchJob.results.text,
+        speakerSegments: batchJob.results.segments?.map((segment: any) => ({
+          start: segment.start,
+          end: segment.end,
+          text: segment.text,
+          speaker: segment.speaker,
+          confidence: segment.confidence
+        })) || [],
+        errorMessage: undefined,
+        processingTimeMs: batchJob.processingDuration ? 
+          (new Date(batchJob.processingDuration).getTime() - new Date(batchJob.submittedAt).getTime()) : 0,
+        createdAt: batchJob.submittedAt,
+        completedAt: batchJob.completedAt,
+        confidenceScore: batchJob.results.segments?.reduce((acc: number, seg: any) => 
+          acc + (seg.confidence || 0), 0) / (batchJob.results.segments?.length || 1),
+        detectedLanguage: batchJob.results.detectedLanguage,
+        duration: batchJob.results.duration,
+        speakerCount: batchJob.results.segments ? 
+          new Set(batchJob.results.segments.map((s: any) => s.speaker)).size : 0,
+        hasSpeakerDiarization: (batchJob.results.segments?.length || 0) > 0
+      };
+
       // Update the upload file status to completed with results
       setUploadFiles((prev) =>
         prev.map((f) => 
@@ -205,7 +233,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 ...f,
                 status: "completed",
                 progress: 100,
-                result: batchJob.results,
+                result: transformedResult,
               }
             : f
         )
@@ -213,7 +241,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       // Call the completion callback
       if (onTranscriptionComplete) {
-        onTranscriptionComplete(batchJob.results);
+        onTranscriptionComplete(transformedResult);
       }
       
       // Stop polling and clear batch job ID

@@ -7,6 +7,7 @@ using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services.Transcription;
 using MeetingSummarizer.Api.Services.Summarization;
 using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
 using SpeakerServices = MeetingSummarizer.Api.Services.SpeakerMapping;
@@ -28,6 +29,7 @@ public class SummaryController : ControllerBase
     private readonly ISpeakerMappingService _speakerMappingService;
     private readonly MeetingSummarizerDbContext _context;
     private readonly AzureBatchTranscriptionService _batchService;
+    private readonly IUserStorageService _userStorageService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
@@ -35,7 +37,8 @@ public class SummaryController : ControllerBase
         ISummarizationService summarizationService,
         ISpeakerMappingService speakerMappingService,
         MeetingSummarizerDbContext context,
-        AzureBatchTranscriptionService batchService)
+        AzureBatchTranscriptionService batchService,
+        IUserStorageService userStorageService)
     {
         _logger = logger;
         _transcriptionService = transcriptionService;
@@ -43,6 +46,7 @@ public class SummaryController : ControllerBase
         _speakerMappingService = speakerMappingService;
         _context = context;
         _batchService = batchService;
+        _userStorageService = userStorageService;
     }
 
     /// <summary>
@@ -730,15 +734,7 @@ public class SummaryController : ControllerBase
                 });
             }
 
-            // Create batch job submission request
-            var batchJobRequest = new SubmitBatchJobRequest
-            {
-                FileName = audioFile.FileName,
-                EstimatedDurationMinutes = estimatedDurationMinutes,
-                TokensToCharge = estimatedTokens
-            };
-
-            // Submit to batch processing
+            // Create batch job record first
             var batchJob = new BatchTranscriptionJob
             {
                 Id = Guid.NewGuid(),
@@ -749,6 +745,23 @@ public class SummaryController : ControllerBase
                 Status = "submitted",
                 SubmittedAt = DateTime.UtcNow
             };
+
+            // Upload audio file to Azure Blob Storage for batch processing
+            _logger.LogInformation("Uploading audio file to blob storage for batch job {JobId}", batchJob.Id);
+            StorageUploadResult uploadResult;
+            using (var audioStream = audioFile.OpenReadStream())
+            {
+                uploadResult = await _userStorageService.UploadAudioFileAsync(
+                    userId.Value, 
+                    audioFile.FileName, 
+                    audioStream, 
+                    audioFile.ContentType);
+            }
+
+            // Store the blob URL for Azure Speech Services
+            batchJob.AudioBlobUrl = uploadResult.BlobUrl;
+            
+            _logger.LogInformation("Audio file uploaded to blob storage: {BlobUrl}", uploadResult.BlobUrl);
 
             // Deduct tokens immediately
             user.TokenBalance -= estimatedTokens;
@@ -762,24 +775,24 @@ public class SummaryController : ControllerBase
             // Return batch job response compatible with frontend expecting TranscriptionResponse
             var response = new 
             {
-                // Batch-specific fields
-                JobId = batchJob.Id,
-                Status = "batch_submitted",
-                EstimatedTime = $"{estimatedDurationMinutes * 0.3:F0}-{estimatedDurationMinutes * 0.5:F0} minutes",
-                CheckStatusUrl = $"/api/BatchJob/{batchJob.Id}/status",
-                SubmittedAt = batchJob.SubmittedAt,
+                // Batch-specific fields - CRITICAL: Use camelCase for frontend compatibility
+                jobId = batchJob.Id.ToString(), // Frontend expects lowercase 'jobId'
+                status = "batch_submitted",
+                estimatedTime = $"{estimatedDurationMinutes * 0.3:F0}-{estimatedDurationMinutes * 0.5:F0} minutes",
+                checkStatusUrl = $"/api/BatchJob/{batchJob.Id}/status",
+                submittedAt = batchJob.SubmittedAt,
                 
                 // TranscriptionResponse-compatible fields for frontend compatibility
-                TranscriptionId = batchJob.Id.ToString(),
-                FileName = audioFile.FileName,
-                FileSize = audioFile.Length,
-                ProcessingTimeMs = 0,
-                CreatedAt = batchJob.SubmittedAt,
+                transcriptionId = batchJob.Id.ToString(),
+                fileName = audioFile.FileName,
+                fileSize = audioFile.Length,
+                processingTimeMs = 0,
+                createdAt = batchJob.SubmittedAt,
                 
                 // Batch processing indicators
-                IsBatchProcessing = true,
-                EstimatedDurationMinutes = estimatedDurationMinutes,
-                TokensCharged = estimatedTokens
+                isBatchProcessing = true,
+                estimatedDurationMinutes = estimatedDurationMinutes,
+                tokensCharged = estimatedTokens
             };
 
             return Accepted(response); // HTTP 202 Accepted for async processing

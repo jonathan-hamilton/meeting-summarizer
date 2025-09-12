@@ -48,6 +48,20 @@ Content-Type: application/json
 Authorization: Bearer {{auth_token}}
 
 {
+
+### 4. Get Batch Job Status ✅ (replace with your job ID)
+GET {{MeetingSummarizer.Api_HostAddress}}/api/batchjob/e89f1cda-cb86-4766-99ba-4b6e115ee01e/status
+Authorization: Bearer {{auth_token}}
+
+### 5. List All Batch Jobs for User
+GET {{MeetingSummarizer.Api_HostAddress}}/api/batchjob
+Authorization: Bearer {{auth_token}}
+
+### 6. Cancel Batch Job (if needed)
+DELETE {{MeetingSummarizer.Api_HostAddress}}/api/batchjob/e89f1cda-cb86-4766-99ba-4b6e115ee01e
+Authorization: Bearer {{auth_token}}
+
+{
   "paymentIntentId": "pi_test_1234567890",
   "paymentMethodId": "pm_card_visa"
 }
