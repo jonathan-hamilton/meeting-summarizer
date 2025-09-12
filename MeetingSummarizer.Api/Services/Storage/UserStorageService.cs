@@ -71,9 +71,12 @@ public class UserStorageService : IUserStorageService
             _logger.LogInformation("Uploaded audio file for user {UserId}: {FileName} ({Size} bytes)", 
                 userId, fileName, fileStream.Length);
 
+            // Generate SAS token for Azure Speech Services access (24 hour expiry)
+            var sasUrl = await GenerateSecureAccessUrlAsync(userId, blobClient.Uri.ToString(), 24);
+
             return new StorageUploadResult
             {
-                BlobUrl = blobClient.Uri.ToString(),
+                BlobUrl = sasUrl, // Use SAS URL instead of direct URL
                 FileName = sanitizedFileName,
                 FileSizeBytes = fileStream.Length,
                 ContentType = contentType,
@@ -378,7 +381,11 @@ public class UserStorageService : IUserStorageService
     {
         try
         {
-            var blobClient = await GetBlobClientFromUrlAsync(userId, blobUrl);
+            var originalBlobClient = await GetBlobClientFromUrlAsync(userId, blobUrl);
+            
+            // Get a fresh blob client from the service client to ensure SAS generation works
+            var containerClient = _blobServiceClient.GetBlobContainerClient(originalBlobClient.BlobContainerName);
+            var blobClient = containerClient.GetBlobClient(originalBlobClient.Name);
             
             if (!blobClient.CanGenerateSasUri)
             {
@@ -398,6 +405,7 @@ public class UserStorageService : IUserStorageService
             sasBuilder.SetPermissions(BlobSasPermissions.Read);
             
             var sasUri = blobClient.GenerateSasUri(sasBuilder);
+            _logger.LogInformation("Generated SAS token for blob {BlobUrl}, expires in {Hours} hours", blobUrl, expiryHours);
             return sasUri.ToString();
         }
         catch (Exception ex)

@@ -159,13 +159,19 @@ public class BatchJobMonitorService : BackgroundService
     {
         _logger.LogInformation("Processing pending job {JobId} for file {FileName}", job.Id, job.FileName);
 
-        // For now, simulate audio upload to blob storage
-        // In a real implementation, this would be uploaded from the frontend
-        var audioUri = $"https://placeholder-storage.blob.core.windows.net/audio/{job.Id}/{job.FileName}";
+        // Ensure we have a valid audio blob URL
+        if (string.IsNullOrEmpty(job.AudioBlobUrl))
+        {
+            job.Status = "failed";
+            job.ErrorMessage = "Audio file not found in blob storage - missing AudioBlobUrl";
+            job.CompletedAt = DateTime.UtcNow;
+            _logger.LogError("Job {JobId} failed: Missing AudioBlobUrl for uploaded audio file", job.Id);
+            return;
+        }
 
         var azureRequest = new AzureBatchJobRequest
         {
-            AudioFileUri = audioUri,
+            AudioFileUri = job.AudioBlobUrl, // Use the real blob URL
             Language = "en-US",
             DiarizationEnabled = true,
             MaxSpeakers = 10,

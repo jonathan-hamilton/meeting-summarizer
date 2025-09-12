@@ -15,6 +15,7 @@ using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -146,6 +147,30 @@ builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
 // Register JWT Authentication Service (S6.2 Increment 1)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAuthenticationService, MeetingSummarizer.Api.Services.Authentication.JwtAuthenticationService>();
 
+// Configure ASP.NET Core Authentication with JWT Bearer (S6.2 Fix)
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        var jwtKey = builder.Configuration["JWT:SecretKey"] ?? 
+                     Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+                     "your-super-secret-jwt-key-at-least-32-characters-long-for-security";
+        var jwtIssuer = builder.Configuration["JWT:Issuer"] ?? "MeetingSummary.io";
+        var jwtAudience = builder.Configuration["JWT:Audience"] ?? "MeetingSummary.io";
+        
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
 // Register Token Calculation Service (S6.3 Increment 2)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.ITokenCalculationService, MeetingSummarizer.Api.Services.TokenManagement.TokenCalculationService>();
 
@@ -264,6 +289,9 @@ app.UseCors("EnvironmentCorsPolicy");
 
 // Add Stripe webhook middleware (S6.3 Increment 4)
 app.UseMiddleware<StripeWebhookMiddleware>();
+
+// Add ASP.NET Core Authentication middleware (S6.2 Fix)
+app.UseAuthentication();
 
 // Add JWT authentication middleware (S6.2 Increment 2)
 app.UseJwtAuthentication();

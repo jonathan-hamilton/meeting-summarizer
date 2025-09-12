@@ -28,6 +28,10 @@ namespace MeetingSummarizer.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AudioBlobUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
                     b.Property<string>("AzureJobId")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -57,8 +61,7 @@ namespace MeetingSummarizer.Api.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("ResultsJson")
-                        .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("RetryCount")
                         .HasColumnType("int");

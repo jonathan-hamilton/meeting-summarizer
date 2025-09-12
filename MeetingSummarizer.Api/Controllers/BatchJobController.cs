@@ -18,7 +18,6 @@ namespace MeetingSummarizer.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 public class BatchJobController : ControllerBase
 {
     private readonly MeetingSummarizerDbContext _context;
@@ -47,6 +46,7 @@ public class BatchJobController : ControllerBase
     /// <param name="request">Job submission details</param>
     /// <returns>Job submission response with job ID for tracking</returns>
     [HttpPost("submit")]
+    [Authorize]
     public async Task<ActionResult<SubmitBatchJobResponse>> SubmitJob([FromBody] SubmitBatchJobRequest request)
     {
         try
@@ -111,6 +111,7 @@ public class BatchJobController : ControllerBase
     /// <param name="jobId">Job identifier</param>
     /// <returns>Current job status and progress</returns>
     [HttpGet("{jobId}/status")]
+    [Authorize]
     public async Task<ActionResult<BatchJobStatusResponse>> GetStatus(Guid jobId)
     {
         try
@@ -172,6 +173,7 @@ public class BatchJobController : ControllerBase
     /// <param name="limit">Maximum number of jobs to return (default: 50)</param>
     /// <returns>List of user's batch jobs</returns>
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<List<BatchJobStatusResponse>>> GetUserJobs(
         [FromQuery] string? status = null,
         [FromQuery] int limit = 50)
@@ -223,6 +225,7 @@ public class BatchJobController : ControllerBase
     /// <param name="jobId">Job identifier</param>
     /// <returns>Cancellation result</returns>
     [HttpPost("{jobId}/cancel")]
+    [Authorize]
     public async Task<ActionResult> CancelJob(Guid jobId)
     {
         try
