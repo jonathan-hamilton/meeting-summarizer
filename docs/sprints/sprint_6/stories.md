@@ -1110,6 +1110,35 @@ try {
 - Provides foundation for S6.5 meeting history and search capabilities
 - Prepares system for production-scale transcript volumes
 
+#### **Post-S6.4 UI Polish & User Experience Enhancements**
+**Date:** September 13, 2025  
+**Status:** COMPLETE ✅
+
+Following successful S6.4 completion with working speaker diarization (4 speakers, 319 segments), implemented comprehensive UI improvements to enhance user experience and eliminate interface confusion:
+
+**Improvements Implemented:**
+- ✅ **Unified Stepper Workflow**: Eliminated jarring transitions between sync/async processing modes for seamless user experience
+- ✅ **Statistical Chip Clarity**: Enhanced time display labels ("Processed in 8:23", "Duration 5:20") for immediate comprehension
+- ✅ **Speaker Chip Labeling**: Added "Speaker" prefix to numbered chips ("1" → "Speaker 1") for consistent interface language
+
+**Technical Implementation:**
+- Modified `FileUpload.tsx` with unified stepper logic that adapts to processing mode
+- Updated `TranscriptDisplay.tsx` metadata chips with descriptive prefixes
+- Enhanced `SpeakerMapping.tsx` with consistent speaker label formatting using shared `formatSpeakerLabel` helper
+
+**User Experience Impact:**
+- Eliminates confusion during processing workflows
+- Provides immediate clarity on statistical information  
+- Creates consistent, professional interface appearance
+- Maintains all existing functionality while improving presentation
+
+**Files Modified:**
+- `frontend/src/components/FileUpload.tsx` - Unified stepper implementation
+- `frontend/src/components/TranscriptDisplay.tsx` - Statistical chip improvements
+- `frontend/src/components/SpeakerMapping.tsx` - Speaker chip labeling
+
+**Validation:** User-confirmed working correctly with no regressions
+
 ---
 
 ### Story S6.5: Persistent Upload Progress & Meeting History (Paid Users)

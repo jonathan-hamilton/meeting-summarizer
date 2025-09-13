@@ -31,6 +31,16 @@ import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
 import { TourPopover } from "./TourPopover";
 
+// Helper function to format speaker label without duplication
+const formatSpeakerLabel = (speakerId: string): string => {
+  // If already starts with "Speaker", return as-is
+  if (speakerId.toLowerCase().startsWith('speaker')) {
+    return speakerId;
+  }
+  // Otherwise add "Speaker" prefix
+  return `Speaker ${speakerId}`;
+};
+
 interface SpeakerMappingDialogProps {
   open: boolean;
   onClose: () => void;
@@ -555,8 +565,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // Memoize UI components
   const speakerChips = useMemo(() => {
     return mappings.map((mapping) => {
-      // Show name and role if available, otherwise fall back to speakerId
-      let chipLabel = mapping.speakerId;
+      // Show name and role if available, otherwise fall back to formatted speaker label
+      let chipLabel = formatSpeakerLabel(mapping.speakerId);
       if (mapping.name && mapping.name.trim()) {
         chipLabel = mapping.name.trim();
         if (mapping.role && mapping.role.trim()) {

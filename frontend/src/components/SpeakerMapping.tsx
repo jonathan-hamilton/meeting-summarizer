@@ -22,6 +22,16 @@ import { getSpeakerColor } from "../theme/speakerColors";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
 
+// Helper function to format speaker label without duplication
+const formatSpeakerLabel = (speakerId: string): string => {
+  // If already starts with "Speaker", return as-is
+  if (speakerId.toLowerCase().startsWith('speaker')) {
+    return speakerId;
+  }
+  // Otherwise add "Speaker" prefix
+  return `Speaker ${speakerId}`;
+};
+
 interface SpeakerMappingProps {
   transcriptionId: string;
   detectedSpeakers: string[];
@@ -285,7 +295,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         <Chip
           key={speakerId}
           icon={<Icon />}
-          label={speakerId}
+          label={formatSpeakerLabel(speakerId)}
           variant="filled"
           size="small"
           sx={{
