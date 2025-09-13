@@ -56,7 +56,7 @@ export const useBatchJobPolling = (
 
   const fetchJobStatus = useCallback(async (jobId: string) => {
     if (!mountedRef.current) return;
-
+    
     try {
       const response = await apiService.getBatchJobStatus(jobId);
       
@@ -115,8 +115,9 @@ export const useBatchJobPolling = (
   }, [apiService, isPolling, enabled, pollInterval, maxRetries]);
 
   const startPolling = useCallback((jobId: string) => {
-    if (!enabled) return;
-
+    // Note: We don't check 'enabled' here because startPolling is called explicitly
+    // and should override the enabled state. The enabled parameter is for auto-start behavior.
+    
     jobIdRef.current = jobId;
     setIsPolling(true);
     setError(null);

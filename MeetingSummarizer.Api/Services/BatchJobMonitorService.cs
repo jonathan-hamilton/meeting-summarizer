@@ -5,6 +5,9 @@ using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services.Configuration;
+using MeetingSummarizer.Api.Services.Storage;
+using MeetingSummarizer.Api.Services.Transcription;
+using System.Text.Json;
 
 namespace MeetingSummarizer.Api.Services;
 
@@ -112,6 +115,8 @@ public class BatchJobMonitorService : BackgroundService
         var context = scope.ServiceProvider.GetRequiredService<MeetingSummarizerDbContext>();
         var batchService = scope.ServiceProvider.GetRequiredService<AzureBatchTranscriptionService>();
         var azureConfig = scope.ServiceProvider.GetRequiredService<IAzureConfigurationService>();
+        var userStorageService = scope.ServiceProvider.GetRequiredService<IUserStorageService>();
+        var transcriptParsingService = scope.ServiceProvider.GetRequiredService<ITranscriptParsingService>();
 
         try
         {
@@ -131,7 +136,7 @@ public class BatchJobMonitorService : BackgroundService
 
                 try
                 {
-                    await MonitorActiveJobAsync(job, context, batchService, azureConfig);
+                    await MonitorActiveJobAsync(job, context, batchService, azureConfig, userStorageService, transcriptParsingService);
                 }
                 catch (Exception ex)
                 {
@@ -215,7 +220,9 @@ public class BatchJobMonitorService : BackgroundService
         BatchTranscriptionJob job,
         MeetingSummarizerDbContext context,
         AzureBatchTranscriptionService batchService,
-        IAzureConfigurationService azureConfig)
+        IAzureConfigurationService azureConfig,
+        IUserStorageService userStorageService,
+        ITranscriptParsingService transcriptParsingService)
     {
         if (string.IsNullOrEmpty(job.AzureJobId)) return;
 
@@ -233,7 +240,7 @@ public class BatchJobMonitorService : BackgroundService
                 job.ProgressPercentage = Math.Min(80, job.ProgressPercentage + 10);
                 break;
             case "succeeded":
-                await HandleJobCompletion(job, context, batchService, azureStatus);
+                await HandleJobCompletion(job, context, batchService, azureStatus, userStorageService, transcriptParsingService);
                 break;
             case "failed":
                 await HandleJobFailure(job, context, azureStatus.Error ?? "Azure processing failed");
@@ -245,25 +252,70 @@ public class BatchJobMonitorService : BackgroundService
     }
 
     /// <summary>
-    /// Handle successful job completion
+    /// Handle successful job completion using hybrid storage approach
     /// </summary>
     private async Task HandleJobCompletion(
         BatchTranscriptionJob job,
         MeetingSummarizerDbContext context,
         AzureBatchTranscriptionService batchService,
-        AzureBatchJobResponse azureStatus)
+        AzureBatchJobResponse azureStatus,
+        IUserStorageService userStorageService,
+        ITranscriptParsingService transcriptParsingService)
     {
         try
         {
             _logger.LogInformation("Job {JobId} completed successfully", job.Id);
 
-            // Download results if available
+            // Download and process results using hybrid storage approach
             if (!string.IsNullOrEmpty(azureStatus.ResultsUri))
             {
                 var resultsJson = await batchService.DownloadResultsAsync(azureStatus.ResultsUri);
-                job.ResultsJson = resultsJson;
                 _logger.LogInformation("Downloaded results for job {JobId} ({Size} bytes)", 
                     job.Id, resultsJson.Length);
+                
+                // Log a sample of the Azure response to debug diarization
+                _logger.LogInformation("Azure response sample for job {JobId}: {AzureResponseSample}", 
+                    job.Id, resultsJson.Length > 2000 ? resultsJson.Substring(0, 2000) + "..." : resultsJson);
+                
+                // Enhanced: Log complete structure for debugging diarization
+                try
+                {
+                    var azureData = JsonSerializer.Deserialize<JsonElement>(resultsJson);
+                    var properties = azureData.EnumerateObject().Select(p => p.Name).ToList();
+                    _logger.LogInformation("Complete Azure response properties for job {JobId}: {Properties}", job.Id, string.Join(", ", properties));
+                    
+                    // Check if recognizedPhrases exists (should contain individual speaker segments)
+                    if (azureData.TryGetProperty("recognizedPhrases", out var recognizedPhrases))
+                    {
+                        var count = recognizedPhrases.GetArrayLength();
+                        _logger.LogInformation("Found recognizedPhrases array with {Count} items for job {JobId}", count, job.Id);
+                        
+                        if (count > 0)
+                        {
+                            var firstPhrase = recognizedPhrases.EnumerateArray().First();
+                            var phraseProps = firstPhrase.EnumerateObject().Select(p => p.Name).ToList();
+                            _logger.LogInformation("First recognizedPhrase properties for job {JobId}: {Properties}", job.Id, string.Join(", ", phraseProps));
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No recognizedPhrases found in Azure response for job {JobId} - diarization may have failed", job.Id);
+                    }
+                    
+                    // Check combinedRecognizedPhrases structure
+                    if (azureData.TryGetProperty("combinedRecognizedPhrases", out var combinedPhrases))
+                    {
+                        var count = combinedPhrases.GetArrayLength();
+                        _logger.LogInformation("Found combinedRecognizedPhrases array with {Count} items for job {JobId}", count, job.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to analyze Azure response structure for job {JobId}", job.Id);
+                }
+
+                // Use hybrid storage approach for large transcripts
+                await ProcessTranscriptResultsAsync(job, resultsJson, context, userStorageService, transcriptParsingService);
             }
 
             job.Status = "completed";
@@ -277,7 +329,106 @@ public class BatchJobMonitorService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error handling completion for job {JobId}", job.Id);
-            await HandleJobFailure(job, context, "Failed to download results: " + ex.Message);
+            await HandleJobFailure(job, context, "Failed to process results: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Process transcript results using hybrid storage approach
+    /// </summary>
+    private async Task ProcessTranscriptResultsAsync(
+        BatchTranscriptionJob job,
+        string resultsJson,
+        MeetingSummarizerDbContext context,
+        IUserStorageService userStorageService,
+        ITranscriptParsingService transcriptParsingService)
+    {
+        // Validate JSON format first
+        var validationResult = await transcriptParsingService.ValidateAzureJsonAsync(resultsJson);
+        if (!validationResult.IsValid)
+        {
+            var errorMsg = validationResult.Issues.Count > 0 
+                ? string.Join("; ", validationResult.Issues) 
+                : "Unknown validation error";
+            throw new ArgumentException($"Invalid transcript JSON format: {errorMsg}");
+        }
+
+        // Determine storage strategy based on size (threshold: 1MB)
+        const int maxDbSize = 1024 * 1024; // 1MB
+        bool shouldUseBlobStorage = resultsJson.Length > maxDbSize;
+
+        if (shouldUseBlobStorage)
+        {
+            _logger.LogInformation("Storing large transcript ({Size} bytes) in blob storage for job {JobId}", 
+                resultsJson.Length, job.Id);
+
+            // Compress and store in blob storage as meeting artifact
+            var compressedData = CompressionUtils.CompressJson(resultsJson);
+            var base64Compressed = Convert.ToBase64String(compressedData);
+            
+            var blobResult = await userStorageService.UploadMeetingArtifactAsync(
+                job.UserId, 
+                job.Id, 
+                "compressed-transcript", 
+                base64Compressed
+            );
+
+            // Update job with blob reference
+            job.TranscriptBlobUrl = blobResult.BlobUrl;
+            job.IsTranscriptInBlobStorage = true;
+            job.CompressedTranscriptSize = compressedData.Length;
+            
+            #pragma warning disable CS0618 // Type or member is obsolete
+            job.ResultsJson = null; // Clear legacy field for large files
+            #pragma warning restore CS0618 // Type or member is obsolete
+            
+            _logger.LogInformation("Stored compressed transcript ({CompressedSize} bytes) at {BlobUrl} for job {JobId}", 
+                compressedData.Length, blobResult.BlobUrl, job.Id);
+        }
+        else
+        {
+            _logger.LogInformation("Storing small transcript ({Size} bytes) in database for job {JobId}", 
+                resultsJson.Length, job.Id);
+
+            // Store directly in database for small files
+            #pragma warning disable CS0618 // Type or member is obsolete
+            job.ResultsJson = resultsJson;
+            #pragma warning restore CS0618 // Type or member is obsolete
+            job.TranscriptBlobUrl = null;
+            job.IsTranscriptInBlobStorage = false;
+            job.CompressedTranscriptSize = null;
+        }
+
+        // Parse transcript into segments for efficient querying
+        try
+        {
+            var parsingResult = await transcriptParsingService.ParseAzureResultsAsync(resultsJson, job.Id);
+            if (parsingResult?.Segments?.Count > 0)
+            {
+                // Clear existing segments for this job (if any)
+                var existingSegments = context.TranscriptSegments.Where(s => s.JobId == job.Id);
+                context.TranscriptSegments.RemoveRange(existingSegments);
+
+                // Add parsed segments
+                foreach (var segment in parsingResult.Segments)
+                {
+                    segment.JobId = job.Id;
+                    context.TranscriptSegments.Add(segment);
+                }
+
+                _logger.LogInformation("Parsed and stored {SegmentCount} transcript segments for job {JobId}", 
+                    parsingResult.Segments.Count, job.Id);
+            }
+            else
+            {
+                _logger.LogWarning("Parsing returned no segments for job {JobId}", job.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse transcript segments for job {JobId}: {Error}", 
+                job.Id, ex.Message);
+            // Don't fail the entire job completion if segment parsing fails
         }
     }
 

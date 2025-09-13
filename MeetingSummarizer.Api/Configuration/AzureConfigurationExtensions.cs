@@ -159,16 +159,38 @@ public static class AzureConfigurationExtensions
         }
         else if (!string.IsNullOrEmpty(azureStorageOptions.ConnectionString))
         {
-            // Use connection string (development/testing)
+            // Use connection string (development/testing) with extended timeouts for large files
             services.AddSingleton<BlobServiceClient>(provider =>
-                new BlobServiceClient(azureStorageOptions.ConnectionString));
+            {
+                var options = new BlobClientOptions()
+                {
+                    Retry = {
+                        NetworkTimeout = TimeSpan.FromMinutes(10), // 10 minutes for large file uploads
+                        MaxRetries = 3,
+                        Delay = TimeSpan.FromSeconds(30),
+                        MaxDelay = TimeSpan.FromMinutes(2)
+                    }
+                };
+                return new BlobServiceClient(azureStorageOptions.ConnectionString, options);
+            });
         }
         else
         {
-            // Use managed identity (production)
+            // Use managed identity (production) with extended timeouts for large files
             var storageUri = $"https://{azureStorageOptions.AccountName}.blob.core.windows.net";
             services.AddSingleton<BlobServiceClient>(provider =>
-                new BlobServiceClient(new Uri(storageUri), new DefaultAzureCredential()));
+            {
+                var options = new BlobClientOptions()
+                {
+                    Retry = {
+                        NetworkTimeout = TimeSpan.FromMinutes(10), // 10 minutes for large file uploads
+                        MaxRetries = 3,
+                        Delay = TimeSpan.FromSeconds(30),
+                        MaxDelay = TimeSpan.FromMinutes(2)
+                    }
+                };
+                return new BlobServiceClient(new Uri(storageUri), new DefaultAzureCredential(), options);
+            });
         }
 
         return services;

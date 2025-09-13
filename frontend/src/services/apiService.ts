@@ -6,6 +6,7 @@ import type {
   DetailedHealthStatus, 
   RequestConfig, 
   TranscriptionResponse,
+  TranscriptionResult,
   SpeakerMappingRequest,
   SpeakerMappingResponse,
   MeetingSummaryRequest,
@@ -99,14 +100,25 @@ class ApiService {
 
   // Generic request method
   private async request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
+    console.log(`🔌 HTTP REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
+    console.log(`🔌 Full URL: ${this.baseURL}${config.url}`);
+    console.log(`🔌 Config:`, config);
+    
     try {
       const response = await this.client.request<T>(config);
+      console.log(`✅ HTTP SUCCESS: ${config.method?.toUpperCase()} ${config.url}`, response.status);
       return {
         data: response.data,
         success: true,
       };
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: any }; message?: string };
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error(`❌ HTTP ERROR: ${config.method?.toUpperCase()} ${config.url}`, {
+        status: axiosError.response?.status,
+        message: axiosError.message,
+        data: axiosError.response?.data
+      });
+      
       const errorData = axiosError.response?.data || {};
       return {
         success: false,
@@ -141,7 +153,7 @@ class ApiService {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 300000, // 5 minutes for file upload
+      timeout: 720000, // 12 minutes for large file upload (backend has 10min blob timeout)
     };
 
     if (onProgress) {
@@ -363,10 +375,40 @@ class ApiService {
 
   // Batch Job Methods
   async getBatchJobStatus(jobId: string): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus>> {
-    return this.request<import('../types/batchJob').BatchJobStatus>({
-      method: 'GET',
-      url: `/api/batchjob/${jobId}/status`,
-    });
+    console.log(`🌐 API SERVICE: About to make HTTP request for job ${jobId}`);
+    console.log(`🌐 URL: ${this.baseURL}/api/batchjob/${jobId}/status`);
+    
+    try {
+      const response = await this.request<import('../types/batchJob').BatchJobStatus>({
+        method: 'GET',
+        url: `/api/batchjob/${jobId}/status`,
+      });
+      
+      console.log(`🌐 API SERVICE: Got HTTP response for job ${jobId}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`❌ API SERVICE: HTTP request failed for job ${jobId}:`, error);
+      throw error;
+    }
+  }
+
+  async getBatchJobTranscript(jobId: string): Promise<ApiResponse<TranscriptionResult>> {
+    console.log(`📄 API SERVICE: About to fetch transcript for job ${jobId}`);
+    console.log(`📄 URL: ${this.baseURL}/api/batchjob/${jobId}/transcript`);
+    
+    try {
+      const response = await this.request<TranscriptionResult>({
+        method: 'GET',
+        url: `/api/batchjob/${jobId}/transcript`,
+        timeout: 60000, // 1 minute for large transcript retrieval
+      });
+      
+      console.log(`📄 API SERVICE: Got transcript response for job ${jobId}:`, response);
+      return response;
+    } catch (error) {
+      console.error(`❌ API SERVICE: Transcript request failed for job ${jobId}:`, error);
+      throw error;
+    }
   }
 
   async getUserBatchJobs(status?: string, limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {

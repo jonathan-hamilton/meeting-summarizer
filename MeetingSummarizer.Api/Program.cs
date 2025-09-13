@@ -119,6 +119,9 @@ builder.Services.AddAzureSpeechServices(builder.Configuration);
 // Configure Azure-only transcription service using conversation transcription
 builder.Services.AddScoped<ITranscriptionService, AzureConversationTranscriptionService>();
 
+// Register transcript parsing service for S6.4 hybrid storage optimization
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.Transcription.ITranscriptParsingService, MeetingSummarizer.Api.Services.Transcription.TranscriptParsingService>();
+
 // Register session-based speaker mapping service (S3.1)
 builder.Services.AddScoped<ISpeakerMappingService, SessionSpeakerMappingService>();
 builder.Services.AddScoped<ISessionSpeakerMappingService, SessionSpeakerMappingService>();

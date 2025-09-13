@@ -236,6 +236,39 @@ const apiServiceMock = {
       message: 'Mock batch job status retrieved'
     };
   },
+
+  async getBatchJobTranscript(_jobId: string): Promise<ApiResponse<import('../types').TranscriptionResult>> {
+    await delay(800);
+    
+    const mockTranscriptResult: import('../types').TranscriptionResult = {
+      text: "Speaker 1: Hello, welcome to our team meeting. Speaker 2: Thank you for joining us today. Let's start with the quarterly review.",
+      segments: [
+        {
+          start: 0.0,
+          end: 2.5,
+          text: "Hello, welcome to our team meeting.",
+          speaker: "Speaker 1",
+          confidence: 0.95
+        },
+        {
+          start: 2.8,
+          end: 5.2,
+          text: "Thank you for joining us today. Let's start with the quarterly review.",
+          speaker: "Speaker 2",
+          confidence: 0.92
+        }
+      ],
+      detectedLanguage: "en-US",
+      duration: 5.2
+    };
+    
+    return {
+      success: true,
+      data: mockTranscriptResult,
+      message: 'Mock transcript retrieved'
+    };
+  },
+
   async getUserBatchJobs(_status?: string, _limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {
     await delay(300);
     

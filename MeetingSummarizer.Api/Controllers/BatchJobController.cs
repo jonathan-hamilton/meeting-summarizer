@@ -9,6 +9,8 @@ using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services;
 using MeetingSummarizer.Api.Services.Configuration;
+using MeetingSummarizer.Api.Services.Storage;
+using MeetingSummarizer.Api.Services.Transcription;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -24,6 +26,8 @@ public class BatchJobController : ControllerBase
     private readonly AzureBatchTranscriptionService _batchService;
     private readonly IAzureConfigurationService _azureConfig;
     private readonly AzureSpeechOptions _speechOptions;
+    private readonly IUserStorageService _userStorageService;
+    private readonly ITranscriptParsingService _transcriptParsingService;
     private readonly ILogger<BatchJobController> _logger;
 
     public BatchJobController(
@@ -31,12 +35,16 @@ public class BatchJobController : ControllerBase
         AzureBatchTranscriptionService batchService,
         IAzureConfigurationService azureConfig,
         IOptions<AzureSpeechOptions> speechOptions,
+        IUserStorageService userStorageService,
+        ITranscriptParsingService transcriptParsingService,
         ILogger<BatchJobController> logger)
     {
         _context = context;
         _batchService = batchService;
         _azureConfig = azureConfig;
         _speechOptions = speechOptions.Value;
+        _userStorageService = userStorageService;
+        _transcriptParsingService = transcriptParsingService;
         _logger = logger;
     }
 
@@ -143,19 +151,8 @@ public class BatchJobController : ControllerBase
                 ProcessingDuration = job.ProcessingDuration
             };
 
-            // If job is completed, include results
-            if (job.Status == "completed" && !string.IsNullOrEmpty(job.ResultsJson))
-            {
-                try
-                {
-                    response.Results = _batchService.ParseAzureResults(job.ResultsJson);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error parsing results for job {JobId}", jobId);
-                    // Don't fail the status request if parsing fails
-                }
-            }
+            // Fast status response - transcript content available via separate endpoint
+            // This ensures status checks are always fast regardless of transcript size
 
             return Ok(response);
         }
@@ -163,6 +160,127 @@ public class BatchJobController : ControllerBase
         {
             _logger.LogError(ex, "Error getting status for job {JobId}", jobId);
             return StatusCode(500, "An error occurred while getting job status");
+        }
+    }
+
+    /// <summary>
+    /// Get the transcript content for a completed batch job (on-demand retrieval)
+    /// Handles both blob storage and database storage automatically
+    /// </summary>
+    /// <param name="jobId">Job identifier</param>
+    /// <returns>Parsed transcript content</returns>
+    [HttpGet("{jobId}/transcript")]
+    [Authorize]
+    public async Task<ActionResult<TranscriptionResult>> GetTranscript(Guid jobId)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            
+            var job = await _context.BatchTranscriptionJobs
+                .Where(j => j.Id == jobId && j.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (job == null)
+            {
+                return NotFound("Job not found");
+            }
+
+            if (job.Status != "completed")
+            {
+                return BadRequest("Job is not yet completed");
+            }
+
+            // Retrieve transcript using hybrid storage approach
+            string? transcriptJson = null;
+
+            if (job.IsTranscriptInBlobStorage && !string.IsNullOrEmpty(job.TranscriptBlobUrl))
+            {
+                _logger.LogInformation("Retrieving large transcript from blob storage for job {JobId}", jobId);
+                
+                try
+                {
+                    // Get compressed transcript from blob storage
+                    var downloadResult = await _userStorageService.GetMeetingArtifactAsync(
+                        userId, 
+                        jobId, 
+                        "compressed-transcript"
+                    );
+
+                    if (downloadResult.Content != null && downloadResult.ContentLength > 0)
+                    {
+                        // Read the base64-encoded compressed data from the stream
+                        using var reader = new StreamReader(downloadResult.Content);
+                        var base64Content = await reader.ReadToEndAsync();
+                        
+                        if (!string.IsNullOrEmpty(base64Content))
+                        {
+                            // Decompress the transcript
+                            var compressedData = Convert.FromBase64String(base64Content);
+                            transcriptJson = CompressionUtils.DecompressJson(compressedData);
+                            
+                            _logger.LogInformation("Retrieved and decompressed transcript ({DecompressedSize} bytes) from blob storage for job {JobId}", 
+                                transcriptJson.Length, jobId);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error retrieving transcript from blob storage for job {JobId}", jobId);
+                    return StatusCode(500, "Error retrieving transcript from storage");
+                }
+            }
+            else
+            {
+                // Get from database for smaller transcripts
+                #pragma warning disable CS0618 // Type or member is obsolete
+                transcriptJson = job.ResultsJson;
+                #pragma warning restore CS0618 // Type or member is obsolete
+                
+                if (!string.IsNullOrEmpty(transcriptJson))
+                {
+                    _logger.LogInformation("Retrieved transcript ({Size} bytes) from database for job {JobId}", 
+                        transcriptJson.Length, jobId);
+                }
+            }
+
+            if (string.IsNullOrEmpty(transcriptJson))
+            {
+                return NotFound("Transcript content not available");
+            }
+
+            // Parse and return the results using the new fixed parser
+            try
+            {
+                var parsingResult = await _transcriptParsingService.ParseAzureResultsAsync(transcriptJson, jobId);
+                
+                // Convert parsing result to TranscriptionResult format expected by the API
+                var results = new TranscriptionResult
+                {
+                    Text = string.Join("\n", parsingResult.Segments.Select(s => $"{s.SpeakerId ?? "Speaker 1"}: {s.Text}")),
+                    Segments = parsingResult.Segments.Select(s => new SpeakerSegment
+                    {
+                        Speaker = s.SpeakerId ?? "Speaker 1",
+                        Text = s.Text,
+                        Start = s.StartTime,
+                        End = s.EndTime,
+                        Confidence = s.Confidence
+                    }).ToList(),
+                    DetectedLanguage = "en-US",
+                    Duration = parsingResult.Segments.LastOrDefault()?.EndTime ?? 0
+                };
+                return Ok(results);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing transcript for job {JobId}", jobId);
+                return StatusCode(500, "Error parsing transcript content");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting transcript for job {JobId}", jobId);
+            return StatusCode(500, "An error occurred while retrieving transcript");
         }
     }
 

@@ -84,6 +84,8 @@ public class AzureBatchTranscriptionService
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
+            _logger.LogInformation("Azure Batch Job Payload: {Payload}", json);
+
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var response = await _httpClient.PostAsync("transcriptions", content);
 
