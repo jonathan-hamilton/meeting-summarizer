@@ -404,7 +404,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
           <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
             <Chip
               icon={<Schedule />}
-              label={formatTime(Math.round(transcription.processingTimeMs / 1000))}
+              label={`Processed in ${formatTime(Math.round(transcription.processingTimeMs / 1000))}`}
               size="small"
               variant="outlined"
             />
@@ -415,7 +415,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             />
             {transcription.duration && (
               <Chip
-                label={formatTime(transcription.duration)}
+                label={`Duration ${formatTime(transcription.duration)}`}
                 size="small"
                 variant="outlined"
               />

@@ -13,6 +13,16 @@ import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor } from "../theme/speakerColors";
 import { useTourStore } from "../stores/tourStore";
 
+// Helper function to format speaker label without duplication
+const formatSpeakerLabel = (speakerId: string): string => {
+  // If already starts with "Speaker", return as-is
+  if (speakerId.toLowerCase().startsWith('speaker')) {
+    return speakerId;
+  }
+  // Otherwise add "Speaker" prefix
+  return `Speaker ${speakerId}`;
+};
+
 interface TranscriptSpeakerSegmentProps {
   segment: SpeakerSegment;
   index: number;
@@ -113,8 +123,8 @@ export const TranscriptSpeakerSegment: React.FC<
             ? `${mapping.name} (${mapping.role})`
             : mapping.name;
         } else {
-          // Mapped but unnamed speaker: show speaker ID
-          displayName = speakerId;
+          // Mapped but unnamed speaker: show formatted speaker label
+          displayName = formatSpeakerLabel(speakerId);
         }
       } else {
         // No mapping found - check if this is a deleted speaker vs uninitialized
@@ -125,8 +135,8 @@ export const TranscriptSpeakerSegment: React.FC<
         if (isLikelyDeleted) {
           displayName = isProduction ? "Unassigned" : speakerId;
         } else {
-          // Probably just not initialized yet, show the speaker ID
-          displayName = speakerId;
+          // Probably just not initialized yet, show formatted speaker label
+          displayName = formatSpeakerLabel(speakerId);
         }
       }
 
@@ -173,7 +183,7 @@ export const TranscriptSpeakerSegment: React.FC<
     // Look up the assigned name and role from speaker mappings using the effective speaker ID
     const mapping = storeMappings.find((m: SpeakerMapping) => m.speakerId === effectiveSpeakerId);
     
-    let displayName = effectiveSpeakerId; // Default to speaker ID
+    let displayName = formatSpeakerLabel(effectiveSpeakerId); // Default to formatted speaker label
     
     if (mapping) {
       if (mapping.name && mapping.name.trim()) {
@@ -183,8 +193,8 @@ export const TranscriptSpeakerSegment: React.FC<
           displayName += ` (${mapping.role.trim()})`;
         }
       } else {
-        // Mapped but unnamed - show the speaker ID
-        displayName = effectiveSpeakerId;
+        // Mapped but unnamed - show formatted speaker label
+        displayName = formatSpeakerLabel(effectiveSpeakerId);
       }
     } else {
       // No mapping found - check if this is a deleted speaker vs uninitialized
@@ -194,10 +204,10 @@ export const TranscriptSpeakerSegment: React.FC<
         (effectiveSpeakerId.startsWith('Speaker ') || effectiveSpeakerId.match(/^Speaker\s*\d+$/i));
       
       if (isLikelyDeleted) {
-  displayName = isProduction ? "Unassigned" : effectiveSpeakerId;
+  displayName = isProduction ? "Unassigned" : formatSpeakerLabel(effectiveSpeakerId);
       } else {
-        // Probably just not initialized yet, show the speaker ID
-        displayName = effectiveSpeakerId;
+        // Probably just not initialized yet, show formatted speaker label
+        displayName = formatSpeakerLabel(effectiveSpeakerId);
       }
     }
     

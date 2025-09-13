@@ -68,6 +68,11 @@ const AppContent: React.FC = () => {
   const { mode: appMode, setMode: setAppMode, signOut: goToDemo } = useAppMode();
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
+
+  // Ensure page starts at the top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   const { addTranscript } = useSessionStore();
   const { isActive: isTourActive, isCurrentStep } = useTourStore();
   const openProfileDialog = useUserProfileDialogOpen();
@@ -211,16 +216,12 @@ const AppContent: React.FC = () => {
         sx={{
           width: "100%",
           minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
         }}
       >
         <Box
           sx={{
-            width: "1200px",
+            width: "100%",
             maxWidth: "1200px",
-            minWidth: "1200px",
             display: "flex",
             flexDirection: "column",
             margin: "0 auto",

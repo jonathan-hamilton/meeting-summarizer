@@ -61,42 +61,7 @@ interface TokenError {
 
 // Unified workflow steps for both regular and batch transcription
 const getUnifiedWorkflowSteps = (uploadFile: UploadFile, batchJob?: BatchJobStatus) => {
-  // For batch jobs (5+ minutes)
-  if (batchJob) {
-    return [
-      {
-        label: "File Uploaded",
-        icon: <AudioFile />,
-        completed: true,
-        active: false,
-        error: false,
-      },
-      {
-        label: "Job Submitted",
-        icon: <Upload />,
-        completed: batchJob.status !== "submitted",
-        active: batchJob.status === "submitted",
-        error: batchJob.status === "failed",
-      },
-      {
-        label: `Azure Processing (${batchJob.progressPercentage}%)`,
-        icon: <Psychology />,
-        completed: batchJob.status === "completed",
-        active: batchJob.status === "processing",
-        error: batchJob.status === "failed",
-        progress: batchJob.progressPercentage,
-      },
-      {
-        label: "Complete",
-        icon: <CheckCircle />,
-        completed: batchJob.status === "completed",
-        active: false,
-        error: batchJob.status === "failed",
-      },
-    ];
-  }
-  
-  // For regular jobs (< 5 minutes) - existing logic
+  // Unified stepper that works for both sync and async processing
   return [
     {
       label: "File Selected",
@@ -108,16 +73,28 @@ const getUnifiedWorkflowSteps = (uploadFile: UploadFile, batchJob?: BatchJobStat
     {
       label: "Uploading",
       icon: <Upload />,
-      completed: uploadFile.status === "completed" || (uploadFile.status === "uploading" && uploadFile.progress > 90),
-      active: uploadFile.status === "uploading" && uploadFile.progress <= 90,
+      completed: batchJob 
+        ? true // If batch job exists, upload is complete
+        : uploadFile.status === "completed" || (uploadFile.status === "uploading" && uploadFile.progress > 90),
+      active: batchJob 
+        ? false // If batch job exists, not actively uploading
+        : uploadFile.status === "uploading" && uploadFile.progress <= 90,
       error: uploadFile.status === "error",
     },
     {
-      label: "Processing & Transcription",
+      label: batchJob 
+        ? `Processing (${batchJob.progressPercentage}%)` 
+        : "Processing & Transcription",
       icon: <Psychology />,
-      completed: uploadFile.status === "completed",
-      active: uploadFile.status === "uploading" && uploadFile.progress > 90,
-      error: uploadFile.status === "error",
+      completed: batchJob 
+        ? batchJob.status === "completed"
+        : uploadFile.status === "completed",
+      active: batchJob 
+        ? batchJob.status === "submitted" || batchJob.status === "processing"
+        : uploadFile.status === "uploading" && uploadFile.progress > 90,
+      error: batchJob 
+        ? batchJob.status === "failed"
+        : uploadFile.status === "error",
     },
     {
       label: "Complete",
@@ -234,7 +211,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               })) || [],
               errorMessage: undefined,
               processingTimeMs: batchJob.processingDuration ? 
-                (new Date(batchJob.processingDuration).getTime() - new Date(batchJob.submittedAt).getTime()) : 0,
+                parseTimeSpanToMs(batchJob.processingDuration) : 0,
               createdAt: batchJob.submittedAt,
               completedAt: batchJob.completedAt,
               confidenceScore: transcriptResult.segments?.reduce((acc: number, seg) => 
@@ -344,6 +321,30 @@ const FileUpload: React.FC<FileUploadProps> = ({
       return `${remainingSeconds}s`;
     }
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  }, []);
+
+  // Parse TimeSpan format (HH:mm:ss or mm:ss or ss) to milliseconds
+  const parseTimeSpanToMs = useCallback((timeSpanString: string): number => {
+    if (!timeSpanString) return 0;
+    
+    const parts = timeSpanString.split(':');
+    let hours = 0, minutes = 0, seconds = 0;
+    
+    if (parts.length === 3) {
+      // HH:mm:ss format
+      hours = parseInt(parts[0]) || 0;
+      minutes = parseInt(parts[1]) || 0;
+      seconds = parseInt(parts[2]) || 0;
+    } else if (parts.length === 2) {
+      // mm:ss format
+      minutes = parseInt(parts[0]) || 0;
+      seconds = parseInt(parts[1]) || 0;
+    } else if (parts.length === 1) {
+      // ss format
+      seconds = parseInt(parts[0]) || 0;
+    }
+    
+    return (hours * 3600 + minutes * 60 + seconds) * 1000;
   }, []);
 
   const uploadFileToServer = useCallback(
@@ -1094,7 +1095,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       <Alert severity="success" sx={{ mt: 1 }}>
                         <Typography variant="body2">
                           ✅ Transcription completed in{" "}
-                          {formatTime(Math.round(uploadFile.result.processingTimeMs / 1000))}
+                          {uploadFile.result.processingTimeMs && !isNaN(uploadFile.result.processingTimeMs) 
+                            ? formatTime(Math.round(uploadFile.result.processingTimeMs / 1000))
+                            : "N/A"}
                         </Typography>
                         {uploadFile.result.speakerCount &&
                           uploadFile.result.speakerCount > 1 && (
