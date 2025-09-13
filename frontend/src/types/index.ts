@@ -61,6 +61,14 @@ export interface TranscriptionResponse {
   speakerMappings?: SpeakerMapping[]; // S2.2: Speaker mappings
 }
 
+// Transcription Result for batch job transcript endpoint
+export interface TranscriptionResult {
+  text: string;
+  segments: SpeakerSegment[];
+  detectedLanguage?: string;
+  duration?: number;
+}
+
 // Speaker Mapping Types (S2.2, enhanced in S2.5)
 export const SpeakerSource = {
   AutoDetected: 'AutoDetected',

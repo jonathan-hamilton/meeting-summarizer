@@ -41,6 +41,11 @@ public class MeetingSummarizerDbContext : DbContext
     /// Batch transcription jobs for longer meetings
     /// </summary>
     public DbSet<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = null!;
+
+    /// <summary>
+    /// Parsed transcript segments for efficient storage and search
+    /// </summary>
+    public DbSet<TranscriptSegment> TranscriptSegments { get; set; } = null!;
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -156,7 +161,9 @@ public class MeetingSummarizerDbContext : DbContext
             entity.Property(btj => btj.FileName).IsRequired().HasMaxLength(255);
             entity.Property(btj => btj.Status).IsRequired().HasMaxLength(50);
             entity.Property(btj => btj.AzureJobId).HasMaxLength(100);
+#pragma warning disable CS0618 // Type or member is obsolete
             entity.Property(btj => btj.ResultsJson).HasColumnType("nvarchar(max)");
+#pragma warning restore CS0618 // Type or member is obsolete
             entity.Property(btj => btj.ErrorMessage).HasMaxLength(1000);
             entity.Property(btj => btj.SubmittedAt).HasDefaultValueSql("GETUTCDATE()");
             
@@ -165,6 +172,24 @@ public class MeetingSummarizerDbContext : DbContext
                 .WithMany(u => u.BatchTranscriptionJobs)
                 .HasForeignKey(btj => btj.UserId)
                 .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+        });
+
+        // Configure TranscriptSegment entity
+        modelBuilder.Entity<TranscriptSegment>(entity =>
+        {
+            entity.HasKey(ts => new { ts.JobId, ts.SegmentIndex }); // Composite primary key
+            entity.HasIndex(ts => ts.JobId); // For job-specific queries
+            entity.HasIndex(ts => ts.StartTime); // For time-based searches
+            entity.HasIndex(ts => ts.SpeakerId); // For speaker filtering
+            
+            entity.Property(ts => ts.Text).IsRequired().HasMaxLength(1000);
+            entity.Property(ts => ts.SpeakerId).HasMaxLength(50);
+            
+            // Configure relationship with BatchTranscriptionJob
+            entity.HasOne(ts => ts.Job)
+                .WithMany(btj => btj.TranscriptSegments)
+                .HasForeignKey(ts => ts.JobId)
+                .OnDelete(DeleteBehavior.Cascade); // Segments should be deleted with the job
         });
 
         // Configure enums

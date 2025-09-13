@@ -93,4 +93,31 @@ public interface IUserStorageService
     /// <param name="expiryHours">Hours until URL expires (default: 24)</param>
     /// <returns>Secure access URL with expiration</returns>
     Task<string> GenerateSecureAccessUrlAsync(Guid userId, string blobUrl, int expiryHours = 24);
+
+    // Transcript-specific storage methods for S6.4 optimization
+
+    /// <summary>
+    /// Store large transcript JSON in compressed blob storage
+    /// </summary>
+    /// <param name="userId">User identifier for storage isolation</param>
+    /// <param name="jobId">Batch transcription job identifier</param>
+    /// <param name="transcriptJson">Large transcript JSON content</param>
+    /// <returns>Storage result with blob URL and compression stats</returns>
+    Task<TranscriptStorageResult> StoreTranscriptAsync(Guid userId, Guid jobId, string transcriptJson);
+
+    /// <summary>
+    /// Retrieve and decompress transcript JSON from blob storage
+    /// </summary>
+    /// <param name="userId">User identifier for access validation</param>
+    /// <param name="blobUrl">Blob URL of compressed transcript</param>
+    /// <returns>Decompressed transcript JSON content</returns>
+    Task<string> RetrieveTranscriptAsync(Guid userId, string blobUrl);
+
+    /// <summary>
+    /// Delete transcript blob when job is cleaned up
+    /// </summary>
+    /// <param name="userId">User identifier for access validation</param>
+    /// <param name="blobUrl">Blob URL to delete</param>
+    /// <returns>True if deleted successfully</returns>
+    Task<bool> DeleteTranscriptAsync(Guid userId, string blobUrl);
 }

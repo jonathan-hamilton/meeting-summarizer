@@ -6,6 +6,7 @@ using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Linq;
 using System.Text;
 
 namespace MeetingSummarizer.Api.Services.Storage;
@@ -412,6 +413,187 @@ public class UserStorageService : IUserStorageService
         {
             _logger.LogError(ex, "Failed to generate secure access URL for user {UserId}, blob {BlobUrl}", userId, blobUrl);
             throw;
+        }
+    }
+
+    // Transcript-specific storage methods for S6.4 optimization
+
+    public async Task<TranscriptStorageResult> StoreTranscriptAsync(Guid userId, Guid jobId, string transcriptJson)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(transcriptJson))
+                throw new ArgumentException("Transcript JSON cannot be null or empty", nameof(transcriptJson));
+
+            var originalSize = Encoding.UTF8.GetByteCount(transcriptJson);
+            
+            // Only compress if content is above threshold (default: 10KB)
+            bool shouldCompress = CompressionUtils.ShouldCompress(originalSize);
+            
+            var containerClient = await GetUserContainerAsync(userId);
+            var blobName = $"transcripts/{jobId:N}/{DateTime.UtcNow:yyyyMMdd-HHmmss}" + (shouldCompress ? ".json.gz" : ".json");
+            var blobClient = containerClient.GetBlobClient(blobName);
+
+            Stream contentStream;
+            long compressedSize;
+            string contentType;
+            
+            if (shouldCompress)
+            {
+                contentStream = CompressionUtils.CompressJsonToStream(transcriptJson);
+                compressedSize = contentStream.Length;
+                contentType = "application/gzip";
+                
+                _logger.LogInformation("Compressed transcript for job {JobId}: {OriginalSize} -> {CompressedSize} bytes ({Ratio}%)",
+                    jobId, originalSize, compressedSize, 
+                    CompressionUtils.CalculateCompressionRatio(originalSize, compressedSize));
+            }
+            else
+            {
+                contentStream = new MemoryStream(Encoding.UTF8.GetBytes(transcriptJson));
+                compressedSize = originalSize;
+                contentType = "application/json";
+                
+                _logger.LogInformation("Storing uncompressed transcript for job {JobId}: {Size} bytes (below compression threshold)",
+                    jobId, originalSize);
+            }
+
+            var uploadOptions = new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = contentType,
+                    CacheControl = "private, max-age=3600", // 1 hour cache for transcripts
+                    ContentEncoding = shouldCompress ? "gzip" : null
+                },
+                Metadata = new Dictionary<string, string>
+                {
+                    ["userId"] = userId.ToString(),
+                    ["jobId"] = jobId.ToString(),
+                    ["originalSize"] = originalSize.ToString(),
+                    ["compressed"] = shouldCompress.ToString().ToLowerInvariant(),
+                    ["uploadedAt"] = DateTime.UtcNow.ToString("O"),
+                    ["contentCategory"] = "transcript"
+                },
+                AccessTier = AccessTier.Hot // Start in hot tier for recent transcripts
+            };
+
+            var response = await blobClient.UploadAsync(contentStream, uploadOptions);
+            
+            _logger.LogInformation("Stored transcript for user {UserId}, job {JobId}: {CompressedSize} bytes", 
+                userId, jobId, compressedSize);
+
+            return new TranscriptStorageResult
+            {
+                BlobUrl = blobClient.Uri.ToString(),
+                OriginalSizeBytes = originalSize,
+                CompressedSizeBytes = compressedSize,
+                CompressionRatio = CompressionUtils.CalculateCompressionRatio(originalSize, compressedSize),
+                StoredAt = DateTime.UtcNow,
+                ETag = response.Value.ETag.ToString(),
+                StorageTier = StorageTier.Hot
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to store transcript for user {UserId}, job {JobId}", userId, jobId);
+            throw;
+        }
+        finally
+        {
+            // Ensure streams are disposed
+        }
+    }
+
+    public async Task<string> RetrieveTranscriptAsync(Guid userId, string blobUrl)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(blobUrl))
+                throw new ArgumentException("Blob URL cannot be null or empty", nameof(blobUrl));
+
+            // Validate that the blob belongs to the user's container
+            var containerName = GetUserContainerName(userId);
+            if (!blobUrl.Contains($"/{containerName}/"))
+            {
+                throw new UnauthorizedAccessException("Blob URL does not belong to the specified user");
+            }
+
+            // Extract blob name from URL and get client via container
+            var uri = new Uri(blobUrl);
+            var blobName = uri.Segments.Skip(2).Aggregate((a, b) => a + b).TrimStart('/'); // Skip account and container segments
+            var containerClient = await GetUserContainerAsync(userId);
+            var blobClient = containerClient.GetBlobClient(blobName);
+            
+            // Check if blob exists and get metadata
+            var propertiesResponse = await blobClient.GetPropertiesAsync();
+            var isCompressed = propertiesResponse.Value.Metadata.TryGetValue("compressed", out var compressedFlag) 
+                               && bool.Parse(compressedFlag);
+
+            // Download the blob content
+            var downloadResponse = await blobClient.DownloadStreamingAsync();
+            
+            if (isCompressed)
+            {
+                // Decompress GZip content
+                var decompressedJson = await CompressionUtils.DecompressStreamToJsonAsync(downloadResponse.Value.Content);
+                _logger.LogInformation("Retrieved and decompressed transcript from {BlobUrl}", blobUrl);
+                return decompressedJson;
+            }
+            else
+            {
+                // Read uncompressed content directly
+                using var reader = new StreamReader(downloadResponse.Value.Content);
+                var json = await reader.ReadToEndAsync();
+                _logger.LogInformation("Retrieved uncompressed transcript from {BlobUrl}", blobUrl);
+                return json;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to retrieve transcript for user {UserId} from {BlobUrl}", userId, blobUrl);
+            throw;
+        }
+    }
+
+    public async Task<bool> DeleteTranscriptAsync(Guid userId, string blobUrl)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(blobUrl))
+                return false;
+
+            // Validate that the blob belongs to the user's container
+            var containerName = GetUserContainerName(userId);
+            if (!blobUrl.Contains($"/{containerName}/"))
+            {
+                _logger.LogWarning("Attempted to delete blob that doesn't belong to user {UserId}: {BlobUrl}", userId, blobUrl);
+                return false;
+            }
+
+            // Extract blob name from URL and get client via container
+            var uri = new Uri(blobUrl);
+            var blobName = uri.Segments.Skip(2).Aggregate((a, b) => a + b).TrimStart('/'); // Skip account and container segments
+            var containerClient = await GetUserContainerAsync(userId);
+            var blobClient = containerClient.GetBlobClient(blobName);
+            
+            var response = await blobClient.DeleteIfExistsAsync();
+            
+            if (response.Value)
+            {
+                _logger.LogInformation("Deleted transcript blob for user {UserId}: {BlobUrl}", userId, blobUrl);
+            }
+            else
+            {
+                _logger.LogWarning("Transcript blob not found for deletion, user {UserId}: {BlobUrl}", userId, blobUrl);
+            }
+            
+            return response.Value;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete transcript for user {UserId} from {BlobUrl}", userId, blobUrl);
+            return false;
         }
     }
 

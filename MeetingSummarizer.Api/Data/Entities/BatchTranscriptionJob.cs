@@ -67,8 +67,25 @@ public class BatchTranscriptionJob
     public int ProgressPercentage { get; set; } = 0;
 
     /// <summary>
-    /// Final transcription results as JSON - can be very large (up to 2MB for long transcriptions)
+    /// Blob storage URL for compressed transcript JSON (replaces large inline storage)
     /// </summary>
+    [MaxLength(2048)]
+    public string? TranscriptBlobUrl { get; set; }
+
+    /// <summary>
+    /// Flag indicating whether transcript is stored in blob storage (true) or inline JSON (false)
+    /// </summary>
+    public bool IsTranscriptInBlobStorage { get; set; } = false;
+
+    /// <summary>
+    /// Compressed size of the transcript in blob storage (bytes)
+    /// </summary>
+    public long? CompressedTranscriptSize { get; set; }
+
+    /// <summary>
+    /// Final transcription results as JSON - deprecated in favor of blob storage for large files
+    /// </summary>
+    [Obsolete("Use TranscriptBlobUrl for large transcripts. This field maintained for backward compatibility only.")]
     public string? ResultsJson { get; set; }
 
     /// <summary>
@@ -109,6 +126,11 @@ public class BatchTranscriptionJob
     /// Navigation property to User entity
     /// </summary>
     public virtual User? User { get; set; }
+
+    /// <summary>
+    /// Navigation property to parsed transcript segments
+    /// </summary>
+    public virtual ICollection<TranscriptSegment> TranscriptSegments { get; set; } = new List<TranscriptSegment>();
 
     /// <summary>
     /// Check if the job can be retried

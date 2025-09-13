@@ -86,6 +86,47 @@ public class UserStorageStats
 }
 
 /// <summary>
+/// Result of transcript compression and storage operation
+/// </summary>
+public class TranscriptStorageResult
+{
+    /// <summary>
+    /// Blob URL where compressed transcript is stored
+    /// </summary>
+    public string BlobUrl { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Original transcript size in bytes (before compression)
+    /// </summary>
+    public long OriginalSizeBytes { get; set; }
+    
+    /// <summary>
+    /// Compressed size in bytes (after GZip compression)
+    /// </summary>
+    public long CompressedSizeBytes { get; set; }
+    
+    /// <summary>
+    /// Compression ratio as percentage (compressed/original * 100)
+    /// </summary>
+    public double CompressionRatio { get; set; }
+    
+    /// <summary>
+    /// When the transcript was stored
+    /// </summary>
+    public DateTime StoredAt { get; set; }
+    
+    /// <summary>
+    /// ETag for optimistic concurrency control
+    /// </summary>
+    public string ETag { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Storage tier used for the transcript blob
+    /// </summary>
+    public StorageTier StorageTier { get; set; } = StorageTier.Hot;
+}
+
+/// <summary>
 /// Storage tier options for cost optimization
 /// </summary>
 public enum StorageTier

@@ -330,6 +330,45 @@ class DemoApiService {
     };
   }
 
+  async getBatchJobTranscript(_jobId: string): Promise<ApiResponse<import('../types').TranscriptionResult>> {
+    await this.mockDelay(1000);
+    
+    const mockTranscriptResult: import('../types').TranscriptionResult = {
+      text: "Welcome to our demo meeting. Let's discuss the project status. The quarterly results look promising. We've exceeded expectations in most areas. Thank you for your attention.",
+      segments: [
+        {
+          start: 0.0,
+          end: 3.0,
+          text: "Welcome to our demo meeting. Let's discuss the project status.",
+          speaker: "Speaker 1",
+          confidence: 0.96
+        },
+        {
+          start: 3.2,
+          end: 6.5,
+          text: "The quarterly results look promising. We've exceeded expectations in most areas.",
+          speaker: "Speaker 2", 
+          confidence: 0.93
+        },
+        {
+          start: 6.8,
+          end: 8.5,
+          text: "Thank you for your attention.",
+          speaker: "Speaker 1",
+          confidence: 0.94
+        }
+      ],
+      detectedLanguage: "en-US",
+      duration: 8.5
+    };
+    
+    return {
+      success: true,
+      data: mockTranscriptResult,
+      message: 'Demo transcript retrieved'
+    };
+  }
+
   async getUserBatchJobs(_status?: string, _limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {
     await this.mockDelay(500);
     

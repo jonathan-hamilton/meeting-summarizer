@@ -32,7 +32,7 @@ import { TourPopover } from "./TourPopover";
 import InsufficientTokensDialog from "./InsufficientTokensDialog";
 import { createApiService } from "../services/apiServiceFactory";
 import { useEnhancedSessionStore } from "../stores/enhancedSessionStore";
-import { useBatchJobPolling } from "../hooks/useBatchJobPolling";
+import { useBatchJobPollingStore } from "../hooks/useBatchJobPollingStore";
 import type { TranscriptionResponse } from "../types";
 import type { BatchJobStatus } from "../types/batchJob";
 
@@ -184,69 +184,124 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const [tokenError, setTokenError] = useState<TokenError | null>(null);
   const demoCallbackCalledRef = useRef(false);
 
-  // Batch job state and polling
-  const [batchJobId, setBatchJobId] = useState<string | null>(null);
-  const { batchJob, isPolling, error: batchError, startPolling, stopPolling } = useBatchJobPolling({
-    enabled: !!batchJobId,
-    pollInterval: 30000, // 30 seconds
+  // Batch job state and polling (using Zustand store)
+  const { 
+    currentJob: batchJob, 
+    isPolling, 
+    pollingError: batchError, 
+    startPolling, 
+    stopPolling,
+    clearBatchJob
+  } = useBatchJobPollingStore({
+    onJobCompleted: async (jobId) => {
+      console.log(`🎉 BATCH JOB COMPLETED: ${jobId}`);
+      // This will be handled by the existing useEffect that watches batchJob.status
+    },
+    onJobFailed: (jobId, error) => {
+      console.error(`❌ BATCH JOB FAILED: ${jobId}`, error);
+    }
   });
 
   // Check if there's a completed file to disable upload
   const hasCompletedFile = uploadFiles.some(file => file.status === "completed");
 
-  // Handle batch job completion
+
+
+  // Handle batch job completion - fetch transcript content when job completes
   useEffect(() => {
-    if (batchJob && batchJob.status === 'completed' && batchJob.results) {
-      // Transform batch job results to TranscriptionResponse format
-      const transformedResult: TranscriptionResponse = {
-        transcriptionId: batchJob.jobId,
-        fileName: batchJob.fileName,
-        fileSize: 0, // Not available in batch job response
-        status: "Completed",
-        transcribedText: batchJob.results.text,
-        speakerSegments: batchJob.results.segments?.map((segment: any) => ({
-          start: segment.start,
-          end: segment.end,
-          text: segment.text,
-          speaker: segment.speaker,
-          confidence: segment.confidence
-        })) || [],
-        errorMessage: undefined,
-        processingTimeMs: batchJob.processingDuration ? 
-          (new Date(batchJob.processingDuration).getTime() - new Date(batchJob.submittedAt).getTime()) : 0,
-        createdAt: batchJob.submittedAt,
-        completedAt: batchJob.completedAt,
-        confidenceScore: batchJob.results.segments?.reduce((acc: number, seg: any) => 
-          acc + (seg.confidence || 0), 0) / (batchJob.results.segments?.length || 1),
-        detectedLanguage: batchJob.results.detectedLanguage,
-        duration: batchJob.results.duration,
-        speakerCount: batchJob.results.segments ? 
-          new Set(batchJob.results.segments.map((s: any) => s.speaker)).size : 0,
-        hasSpeakerDiarization: (batchJob.results.segments?.length || 0) > 0
+    if (batchJob && batchJob.status === 'completed') {
+      // Job completed - now fetch the transcript content via separate endpoint
+      const fetchTranscript = async () => {
+        try {
+          const transcriptResponse = await apiService.getBatchJobTranscript(batchJob.jobId);
+          
+          if (transcriptResponse.success && transcriptResponse.data) {
+            const transcriptResult = transcriptResponse.data;
+            
+            // Transform transcript result to TranscriptionResponse format
+            const transformedResult: TranscriptionResponse = {
+              transcriptionId: batchJob.jobId,
+              fileName: batchJob.fileName,
+              fileSize: 0, // Not available in batch job response
+              status: "Completed",
+              transcribedText: transcriptResult.text,
+              speakerSegments: transcriptResult.segments?.map((segment) => ({
+                start: segment.start,
+                end: segment.end,
+                text: segment.text,
+                speaker: segment.speaker,
+                confidence: segment.confidence
+              })) || [],
+              errorMessage: undefined,
+              processingTimeMs: batchJob.processingDuration ? 
+                (new Date(batchJob.processingDuration).getTime() - new Date(batchJob.submittedAt).getTime()) : 0,
+              createdAt: batchJob.submittedAt,
+              completedAt: batchJob.completedAt,
+              confidenceScore: transcriptResult.segments?.reduce((acc: number, seg) => 
+                acc + (seg.confidence || 0), 0) / (transcriptResult.segments?.length || 1),
+              detectedLanguage: transcriptResult.detectedLanguage,
+              duration: transcriptResult.duration,
+              speakerCount: transcriptResult.segments ? 
+                new Set(transcriptResult.segments.map(s => s.speaker)).size : 0,
+              hasSpeakerDiarization: (transcriptResult.segments?.length || 0) > 0
+            };
+
+            // Update the upload file status to completed with results
+            setUploadFiles((prev) =>
+              prev.map((f) => 
+                f.status === "uploading" 
+                  ? {
+                      ...f,
+                      status: "completed",
+                      progress: 100,
+                      result: transformedResult,
+                    }
+                  : f
+              )
+            );
+
+            // Call the completion callback
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete(transformedResult);
+            }
+          } else {
+            // Handle transcript fetch error
+            console.error('Failed to fetch transcript:', transcriptResponse.message);
+            setUploadFiles((prev) =>
+              prev.map((f) => 
+                f.status === "uploading" 
+                  ? {
+                      ...f,
+                      status: "error",
+                      error: transcriptResponse.message || 'Failed to fetch transcript content',
+                    }
+                  : f
+              )
+            );
+          }
+        } catch (error) {
+          // Handle network or other errors
+          console.error('Error fetching transcript:', error);
+          setUploadFiles((prev) =>
+            prev.map((f) => 
+              f.status === "uploading" 
+                ? {
+                    ...f,
+                    status: "error",
+                    error: 'Network error while fetching transcript',
+                  }
+                : f
+            )
+          );
+        } finally {
+          // Stop polling and clear batch job
+          stopPolling();
+          clearBatchJob();
+        }
       };
 
-      // Update the upload file status to completed with results
-      setUploadFiles((prev) =>
-        prev.map((f) => 
-          f.status === "uploading" 
-            ? {
-                ...f,
-                status: "completed",
-                progress: 100,
-                result: transformedResult,
-              }
-            : f
-        )
-      );
-      
-      // Call the completion callback
-      if (onTranscriptionComplete) {
-        onTranscriptionComplete(transformedResult);
-      }
-      
-      // Stop polling and clear batch job ID
-      stopPolling();
-      setBatchJobId(null);
+      // Execute the transcript fetch
+      fetchTranscript();
     } else if (batchJob && batchJob.status === 'failed') {
       // Handle batch job failure
       setUploadFiles((prev) =>
@@ -261,11 +316,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
         )
       );
       
-      // Stop polling and clear batch job ID
+      // Stop polling and clear batch job
       stopPolling();
-      setBatchJobId(null);
+      clearBatchJob();
     }
-  }, [batchJob, onTranscriptionComplete, stopPolling]);
+  }, [batchJob, onTranscriptionComplete, stopPolling, clearBatchJob, apiService]);
 
   // Handle demo completion callback
   useEffect(() => {
@@ -311,12 +366,22 @@ const FileUpload: React.FC<FileUploadProps> = ({
         );
 
         if (response.success && response.data) {
-          // Check if this is a batch job response (has jobId instead of immediate transcription)
-          if ('jobId' in response.data && typeof response.data.jobId === 'string') {
+          // DEBUG: Log the actual response structure 
+          console.log('🔍 UPLOAD RESPONSE DEBUG:', {
+            success: response.success,
+            dataKeys: response.data ? Object.keys(response.data) : null,
+            fullResponse: response.data
+          });
+          
+          // Check if this is a batch job response (has JobId instead of immediate transcription)
+          if (('JobId' in response.data && typeof response.data.JobId === 'string') || 
+              ('jobId' in response.data && typeof response.data.jobId === 'string')) {
             // This is a batch job submission response
             const batchResponse = response.data as any; // BatchJobSubmissionResponse
-            setBatchJobId(batchResponse.jobId);
-            startPolling(batchResponse.jobId);
+            const jobId = batchResponse.JobId || batchResponse.jobId;
+            console.log('✅ BATCH JOB DETECTED! Job ID:', jobId);
+            // Start polling immediately with the store-based hook
+            startPolling(jobId);
             
             // Update file status to show it's being processed via batch
             setUploadFiles((prev) =>
@@ -332,6 +397,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             );
           } else {
             // This is a regular transcription response
+            console.log('⚡ IMMEDIATE TRANSCRIPTION DETECTED');
             setUploadFiles((prev) =>
               prev.map((f) =>
                 f.id === uploadFile.id
@@ -398,7 +464,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         );
       }
     },
-    [onTranscriptionComplete, apiService, setBatchJobId, startPolling]
+    [onTranscriptionComplete, apiService, startPolling]
   );
 
   const onDrop = useCallback(
