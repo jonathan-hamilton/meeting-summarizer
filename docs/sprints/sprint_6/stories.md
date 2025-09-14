@@ -26,6 +26,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.5     | Persistent Upload Progress & Meeting History        | PENDING ⏸️    | S6.1, S6.4           |
 | S6.6     | Accessibility Compliance Enhancements              | PENDING ⏸️    | None                 |
 | S6.7     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
+| S6.T1    | Code Refactoring & Technical Debt Reduction        | COMPLETE ✅   | None                 |
 | S6.8     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.4           |
 | S6.9     | Production Monitoring & Observability Setup        | PENDING ⏸️    | S6.8                 |
 
@@ -1746,6 +1747,69 @@ The timeline extension accounts for the **critical addition of Azure production 
 4. **Production Readiness**: Monitoring must be in place before launch
 
 The additional 1-2 weeks ensures production infrastructure is properly configured, secured, monitored, and tested before public launch.
+
+### Story S6.T1: Code Refactoring & Technical Debt Reduction
+As a developer, I want to refactor large, monolithic files into focused, maintainable modules so that the codebase remains scalable and developer-friendly.
+
+**Status: COMPLETE ✅**
+
+**Completion Date:** September 14, 2025
+
+**Dependencies**: None
+
+**Implementation Summary:**
+This technical story addresses critical code maintainability issues by breaking down oversized files that were hindering development velocity and testing effectiveness. The focus was on modularizing components while preserving all existing functionality.
+
+**Acceptance Criteria:**
+- [✅] FileUpload.tsx component refactored from 1,098 lines into focused, single-responsibility modules
+- [✅] Tour store modularized from 815 lines into clean, separated modules  
+- [✅] All existing functionality preserved with no regression bugs
+- [✅] Modular architecture follows React and TypeScript best practices
+- [✅] Component testing becomes more targeted and maintainable
+- [✅] Clear separation of concerns between UI, business logic, and state management
+
+**Technical Implementation:**
+
+**FileUpload Modularization (1,098 → ~500 lines)**:
+- ✅ **FileDropzone Component**: Extracted drag-and-drop file selection with validation
+- ✅ **UploadProgress Component**: Isolated upload progress display and file queue management
+- ✅ **BatchJobHandler Component**: Focused batch job status monitoring and display  
+- ✅ **WorkflowStepper Component**: Extracted upload workflow step visualization
+- ✅ **Validation Utilities**: Centralized file validation logic in dedicated utilities
+- ✅ **Type Definitions**: Clean TypeScript interfaces for component props and state
+
+**Tour Store Modularization (815 → ~128 lines)**:
+- ✅ **Types Module**: Extracted TypeScript interfaces and type definitions
+- ✅ **Steps Module**: Separated tour step definitions and configuration
+- ✅ **Process Control Module**: Isolated tour process control and navigation logic
+- ✅ **Scroll Behavior Module**: Dedicated scrolling and positioning utilities
+- ✅ **Main Store**: Simplified to core state management and coordination
+
+**Bug Resolution During Refactoring**:
+- ✅ **Batch Job Completion Handler**: Restored missing `useEffect` for batch job completion
+- ✅ **Demo Mode Handler**: Fixed missing demo completion callback functionality
+- ✅ **API Integration**: Ensured proper transcript fetching after job completion
+- ✅ **Type Safety**: Maintained full TypeScript compatibility across modules
+
+**Technical Notes:**
+- **Architecture Pattern**: Followed compound component pattern for FileUpload modules
+- **Backward Compatibility**: All existing component interfaces preserved
+- **Performance**: No performance impact, maintained lazy loading and optimization
+- **Testing Strategy**: Smaller modules enable more focused and reliable unit tests
+- **Code Organization**: Clear file structure with logical module boundaries
+
+**Integration Points:**
+- **FileUpload**: Maintains same public API, all parent components unaffected
+- **Tour Store**: Existing store consumers continue working without changes  
+- **State Management**: No impact on global state or other Zustand stores
+- **Build Process**: Module bundling optimized, no build configuration changes required
+
+**Future Benefits**:
+- **Development Velocity**: Easier to locate, modify, and extend specific functionality
+- **Code Reviews**: Focused changes in smaller files improve review quality
+- **Testing**: Individual modules can be unit tested in isolation
+- **Onboarding**: New developers can understand focused modules more easily
+- **Maintenance**: Bug fixes and enhancements target specific modules vs large files
 
 ## Future Technical Considerations
 
