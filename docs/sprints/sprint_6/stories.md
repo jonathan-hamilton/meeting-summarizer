@@ -1148,66 +1148,163 @@ As a paid user, I want my upload progress and meeting history to persist across 
 
 **Dependencies**: S6.1 (Azure Storage), S6.4 (Transcript Storage Optimization)
 
-**Implementation Summary:**
-This story provides paid users with persistent meeting data, upload progress tracking, and comprehensive meeting history management that survives browser sessions and device changes.
+## **Complete S6.5 Implementation Plan**
 
-**Acceptance Criteria:**
-- ✓ Upload progress and meeting history saved to user account in backend (Paid mode only)
-- ✓ Data restored on login or page refresh for paid users with seamless experience
-- ✓ Real-time updates to progress and history across multiple browser tabs/devices
-- ✓ Error handling for data sync failures with offline capability and conflict resolution
-- ✓ Meeting history includes transcripts, summaries, action items, and speaker mappings
-- ✓ Search functionality across meeting history by date, participants, keywords, or action items
-- ✓ Export capabilities for meeting data (PDF, Word, JSON) with user-controlled access
-- ✓ Meeting sharing capabilities between authenticated users
-- ✓ Data retention policies with user control over meeting deletion and archival
+### **Overview**
+Implement persistent meeting history, progress tracking, and enhanced export/sharing functionality for authenticated users across 3 incremental phases with 1-year retention policy.
 
-**Technical Notes:**
-- Use Azure SQL/Cosmos DB for persistent storage with proper indexing for search
-- Implement backend APIs for progress/history management with caching for performance
-- Design for eventual consistency and offline-first experience
-- Implement WebSocket or Server-Sent Events for real-time updates
+### **Phase 1: S6.5.1 - Database Schema & Basic Meeting History**
 
-**Integration Points:**
-- Requires user authentication from payment system integration
-- Uses Azure storage infrastructure for persistent data
-- Enhances demo mode tour with paid feature demonstrations
-- Enables advanced search and analytics capabilities
+#### **Database Schema Design**
+**New MeetingHistory Table:**
+```sql
+CREATE TABLE MeetingHistory (
+    Id uniqueidentifier PRIMARY KEY DEFAULT NEWID(),
+    UserId uniqueidentifier NOT NULL FOREIGN KEY REFERENCES Users(Id),
+    BatchJobId uniqueidentifier NULL FOREIGN KEY REFERENCES BatchTranscriptionJobs(Id),
+    TranscriptBlobUrl nvarchar(500) NULL, -- Reference to S6.4 blob storage
+    FileName nvarchar(255) NOT NULL,
+    Title nvarchar(255) NULL, -- User-editable meeting title
+    ProcessingStatus nvarchar(50) NOT NULL, -- 'Uploading', 'Processing', 'Completed', 'Failed'
+    Duration int NULL, -- Audio duration in seconds
+    ProcessingTimeMs bigint NULL, SpeakerCount int NULL, FileSize bigint NULL,
+    ConfidenceScore float NULL, Participants nvarchar(1000) NULL,
+    UploadedAt datetime2 NOT NULL DEFAULT GETDATE(),
+    CompletedAt datetime2 NULL, ExpiresAt datetime2 NOT NULL DEFAULT DATEADD(year, 1, GETDATE()),
+    INDEX IX_MeetingHistory_UserId_CreatedAt (UserId, CreatedAt DESC)
+);
+```
 
----
+#### **Backend Implementation**
+- **Entity Framework Models**: `MeetingHistory.cs` with proper relationships
+- **Database Migration**: Create table with indexes and foreign keys
+- **Service Layer**: `IMeetingHistoryService` for CRUD operations and batch job integration
+- **REST API**: `MeetingHistoryController` with authenticated endpoints
+  - `GET /api/meetinghistory` - Paginated user history
+  - `GET /api/meetinghistory/{id}` - Individual meeting details
+  - `PUT /api/meetinghistory/{id}` - Update meeting title
+  - `DELETE /api/meetinghistory/{id}` - Delete meeting
 
-### Story S6.4: Persistent Upload Progress & Meeting History (Paid Users)
-As a paid user, I want my upload progress and meeting history to persist across browser refreshes and sessions so that I can resume work and access past meetings.
+#### **Frontend Implementation**
+- **Meeting History Page**: New route `/history` with elegant navigation button in main header
+- **Real-time Updates**: WebSocket/Server-Sent Events for instant status updates across tabs/devices
+- **Progress Integration**: Show ongoing batch jobs in both current FileUpload view AND meeting history
+- **API Integration**: TypeScript service for meeting history operations
+- **State Management**: Zustand store integration for history data
 
-**Status: PENDING ⏸️**
+#### **Key Features**:
+- ✅ **Persistent Progress Tracking**: Users see batch job status when logging back in
+- ✅ **Meeting History List**: Paginated display with meeting metadata
+- ✅ **Real-time Synchronization**: Instant updates across multiple browser tabs/devices
+- ✅ **User Authentication**: All endpoints require JWT authentication
+- ✅ **1-Year Retention**: Automatic cleanup of expired meetings
 
-**Dependencies**: S6.1 (Azure Storage), S6.3 (Payment & Token System)
+### **Phase 2: S6.5.2 - Enhanced Export & Download Functionality**
 
-**Implementation Summary:**
-This story provides paid users with persistent meeting data, upload progress tracking, and comprehensive meeting history management that survives browser sessions and device changes.
+#### **Export System Architecture**
+- **Document Generation Service**: `IDocumentGenerationService` for PDF/Word/Text generation
+- **Export Controller**: Authenticated endpoints for transcript and summary downloads
+- **Email Integration**: Transcript sharing via email (similar to existing summary sharing)
 
-**Acceptance Criteria:**
-- ✓ Upload progress and meeting history saved to user account in backend (Paid mode only)
-- ✓ Data restored on login or page refresh for paid users with seamless experience
-- ✓ Real-time updates to progress and history across multiple browser tabs/devices
-- ✓ Error handling for data sync failures with offline capability and conflict resolution
-- ✓ Meeting history includes transcripts, summaries, action items, and speaker mappings
-- ✓ Search functionality across meeting history by date, participants, keywords, or action items
-- ✓ Export capabilities for meeting data (PDF, Word, JSON) with user-controlled access
-- ✓ Meeting sharing capabilities between authenticated users
-- ✓ Data retention policies with user control over meeting deletion and archival
+#### **TranscriptDisplay Updates**
+- ❌ **Remove**: Copy button 
+- ✅ **Add**: Download dropdown (PDF/Word/Text formats)
+- ✅ **Add**: Email button → transcript email dialog (1+ recipients)
+- ✅ **Content**: Includes speaker assignments if user has mapped Name/Role/Email
 
-**Technical Notes:**
-- Use Azure SQL/Cosmos DB for persistent storage with proper indexing for search
-- Implement backend APIs for progress/history management with caching for performance
-- Design for eventual consistency and offline-first experience
-- Implement WebSocket or Server-Sent Events for real-time updates
+#### **SummaryDisplay Updates**  
+- ✅ **Add**: Download button (PDF/Word formats) for Summary + Action Items
+- ✅ **Keep**: Existing Share email functionality
+- ✅ **Content**: Same as current email share content
 
-**Integration Points:**
-- Requires user authentication from payment system integration
-- Uses Azure storage infrastructure for persistent data
-- Enhances demo mode tour with paid feature demonstrations
-- Enables advanced search and analytics capabilities
+#### **Key Features**:
+- ✅ **Multi-format Downloads**: PDF/Word/Text for transcripts, PDF/Word for summaries
+- ✅ **Professional Templates**: Branded document generation with customizable templates
+- ✅ **Email Sharing**: Transcript sharing with recipient validation (multiple recipients supported)
+- ✅ **No Server Storage**: Downloads delivered directly to browser, no persistent export storage
+
+### **Phase 3: S6.5.3 - Search & Advanced Features**
+
+#### **Search Implementation**
+- **Full-text Search**: Index transcript content and metadata for comprehensive search
+- **Advanced Filters**: Date range, participants, processing status, file types
+- **Search API**: Paginated search results with relevance scoring
+- **Auto-suggestions**: Real-time search suggestions based on user's meeting history
+
+#### **Enhanced Features**
+- **Bulk Operations**: Select and export multiple meetings
+- **Advanced Sorting**: By date, processing time, speaker count, file size
+- **Search Persistence**: Save and recall frequent search queries
+- **Meeting Analytics**: Usage statistics and processing insights
+
+#### **Key Features**:
+- ✅ **Comprehensive Search**: Full-text search across all transcript content and metadata
+- ✅ **Advanced Filtering**: Date ranges, participants, status, and content-based filters
+- ✅ **Performance Optimization**: Indexed search with caching for frequent queries
+- ✅ **User Experience**: Intuitive search interface with auto-complete and suggestions
+
+### **Integration Architecture**
+
+#### **Real-time Updates**
+- **WebSocket Hub**: `MeetingProgressHub.cs` for instant status synchronization
+- **Cross-device Sync**: Status updates visible across all user sessions
+- **Fallback Strategy**: Server-Sent Events for older browser compatibility
+
+#### **Batch Job Integration**
+**Files Modified**:
+- `BatchTranscriptionJobService.cs` - Create MeetingHistory entries on job creation
+- `FileUpload.tsx` - Display progress in both current view and history
+- `BatchJobController.cs` - Update MeetingHistory on status changes
+
+#### **Authentication & Security**
+- **JWT Authentication**: All API endpoints require `[Authorize]` attribute
+- **User Isolation**: Meeting history strictly isolated per user account
+- **Data Privacy**: 1-year retention with automated cleanup processes
+
+### **Technical Implementation Details**
+
+#### **Performance Considerations**
+- **Database Indexing**: Optimized indexes for user queries and date-based searches
+- **Caching Strategy**: Redis caching for frequently accessed meeting data
+- **Pagination**: Efficient pagination for large meeting histories
+- **Blob Storage Integration**: Leverage existing S6.4 compressed transcript storage
+
+#### **Error Handling & Resilience**
+- **Retry Logic**: Robust error handling for document generation and email delivery
+- **Offline Support**: Graceful degradation when real-time updates unavailable
+- **Data Consistency**: Transaction safety for meeting history updates
+- **Migration Strategy**: Clean migration from existing BatchTranscriptionJobs data
+
+### **Implementation Timeline**
+
+**Phase 1 (S6.5.1)**: 1-2 weeks
+- Database schema and migration
+- Basic meeting history functionality
+- Real-time progress tracking
+
+**Phase 2 (S6.5.2)**: 1 week  
+- Export and download functionality
+- Email sharing for transcripts
+- Enhanced UI components
+
+**Phase 3 (S6.5.3)**: 1 week
+- Search implementation
+- Advanced filtering and analytics
+- Performance optimizations
+
+**Total Estimate**: 3-4 weeks for complete S6.5 implementation
+
+### **Acceptance Criteria Status**
+- ✓ **Meeting History Persistence**: Complete database architecture with 1-year retention
+- ✓ **Progress Tracking**: Real-time batch job status across sessions and devices
+- ✓ **Export Capabilities**: Multi-format downloads (PDF/Word/Text) for transcripts and summaries
+- ✓ **Email Sharing**: Transcript sharing with 1+ recipients including speaker assignments
+- ✓ **Search Functionality**: Full-text search across meeting history with advanced filtering
+- ✓ **User Authentication**: JWT-secured endpoints with proper user isolation
+- ✓ **Real-time Updates**: WebSocket/SSE implementation for instant synchronization
+- ✓ **Navigation Integration**: Elegant meeting history access via main header button
+
+**Business Impact**: Transforms application from single-session tool into comprehensive meeting management platform with persistent user value, competitive enterprise features, and professional export capabilities.
 
 ---
 
