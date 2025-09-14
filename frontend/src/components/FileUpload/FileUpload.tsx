@@ -22,6 +22,7 @@ import { FileDropzone } from "./FileUpload/FileDropzone";
 import { UploadProgress } from "./FileUpload/UploadProgress";
 import { validateFiles } from "./FileUpload/validation";
 import type { FileUploadFile } from "./FileUpload/types";
+import { useSignalRBatchProgress } from "../../hooks/useSignalRProgress";
 
 interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
@@ -47,6 +48,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const { isTourActive, isCurrentStep, closeStep, triggerStepAction } = useTourStore();
   const { sessionToken } = useEnhancedSessionStore();
   const { batchJob, startPolling, batchError, isPolling } = useBatchJobPollingStore();
+  
+  // S6.5: Add SignalR for real-time progress updates
+  const signalRProgress = useSignalRBatchProgress();
 
   const [uploadFiles, setUploadFiles] = useState<FileUploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);

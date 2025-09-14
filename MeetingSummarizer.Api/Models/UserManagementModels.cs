@@ -149,6 +149,12 @@ public class MeetingResponse
     public DateTime CreatedAt { get; set; }
     public DateTime? ProcessingStartedAt { get; set; }
     public DateTime? ProcessingCompletedAt { get; set; }
+    
+    // S6.5: Batch job progress information
+    public Guid? BatchJobId { get; set; }
+    public string? BatchJobStatus { get; set; }
+    public int? ProgressPercentage { get; set; }
+    public DateTime? ScheduledDeletionAt { get; set; }
 }
 
 /// <summary>

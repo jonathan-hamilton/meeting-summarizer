@@ -219,6 +219,7 @@ public class UserManagementService : IUserManagementService
     public async Task<IEnumerable<Meeting>> GetUserMeetingHistoryAsync(Guid userId, int pageSize = 50, int page = 1)
     {
         return await _context.Meetings
+            .Include(m => m.BatchTranscriptionJobs) // Include batch job information for progress tracking
             .Where(m => m.UserId == userId)
             .OrderByDescending(m => m.CreatedAt)
             .Skip((page - 1) * pageSize)

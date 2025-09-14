@@ -1,18 +1,6 @@
-import React from 'react';
-import {
-  Box,
-  Stepper,
-  Step,
-  StepLabel,
-  CircularProgress
-} from '@mui/material';
-import { 
-  CheckCircle, 
-  Error as ErrorIcon, 
-  CloudUpload, 
-  Schedule, 
-  Psychology 
-} from '@mui/icons-material';
+﻿import React, { useEffect, useState } from 'react';
+import { Box, Stepper, Step, StepLabel, CircularProgress } from '@mui/material';
+import { CheckCircle, Error as ErrorIcon, AudioFile, Upload, Psychology } from '@mui/icons-material';
 import type { FileUploadFile, BatchJobStatus } from './types';
 
 interface WorkflowStepperProps {
@@ -30,127 +18,112 @@ interface StepperStep {
   error: boolean;
 }
 
-// Unified workflow step generation
-const getUnifiedWorkflowSteps = (
-  uploadFile: FileUploadFile, 
-  batchJob?: BatchJobStatus
-): StepperStep[] => {
-  if (batchJob) {
-    // Batch job workflow
-    return [
-      {
-        label: "Upload",
-        icon: <CloudUpload />,
-        completed: true,
-        active: false,
-        error: false,
-      },
-      {
-        label: "Queued",
-        icon: <Schedule />,
-        completed: batchJob.status !== 'submitted',
-        active: batchJob.status === 'submitted',
-        error: batchJob.status === 'failed',
-      },
-      {
-        label: "Processing",
-        icon: <Psychology />,
-        completed: batchJob.status === 'completed',
-        active: batchJob.status === 'processing',
-        error: batchJob.status === 'failed',
-      },
-    ];
-  } else {
-    // Regular upload workflow
-    return [
-      {
-        label: "Upload",
-        icon: <CloudUpload />,
-        completed: uploadFile.status === "completed" || uploadFile.progress >= 100,
-        active: uploadFile.status === "uploading" && uploadFile.progress < 90,
-        error: uploadFile.status === "error",
-      },
-      {
-        label: "Process",
-        icon: <Psychology />,
-        completed: uploadFile.status === "completed",
-        active: uploadFile.status === "uploading" && uploadFile.progress >= 90,
-        error: uploadFile.status === "error",
-      },
-      {
-        label: "Complete",
-        icon: <CheckCircle />,
-        completed: uploadFile.status === "completed",
-        active: false,
-        error: false,
-      },
-    ];
-  }
-};
-
-// Demo workflow steps
-const getDemoWorkflowSteps = (isActive: boolean, progress: number): StepperStep[] => {
-  return [
-    {
-      label: "Upload",
-      icon: <CloudUpload />,
-      completed: progress > 30,
-      active: isActive && progress <= 30,
-      error: false,
-    },
-    {
-      label: "Process", 
-      icon: <Psychology />,
-      completed: progress >= 90,
-      active: isActive && progress > 30 && progress < 90,
-      error: false,
-    },
-    {
-      label: "Complete",
-      icon: <CheckCircle />,
-      completed: progress >= 100,
-      active: isActive && progress >= 90 && progress < 100,
-      error: false,
-    },
-  ];
-};
-
 export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   uploadFile,
   batchJob,
   isDemo = false,
-  simulatedProgress = 0
+  simulatedProgress = 0,
 }) => {
-  const getActiveStep = () => {
-    if (isDemo) {
-      if (simulatedProgress <= 30) return 0;
-      if (simulatedProgress < 90) return 1;
-      if (simulatedProgress < 100) return 2;
-      return 3;
-    }
+  const [realTimeProgress, setRealTimeProgress] = useState<{
+    status?: string;
+    progressPercentage?: number;
+    jobId?: string;
+  }>({});
 
+  useEffect(() => {
+    const handleBatchJobProgress = (event: CustomEvent) => {
+      const update = event.detail;
+      if (batchJob && update.jobId === batchJob.jobId) {
+        setRealTimeProgress({
+          status: update.status,
+          progressPercentage: update.progressPercentage,
+          jobId: update.jobId
+        });
+      }
+    };
+
+    const handleMeetingProgress = (event: CustomEvent) => {
+      const update = event.detail;
+      if (update.batchJobId && batchJob && update.batchJobId === batchJob.jobId) {
+        setRealTimeProgress({
+          status: update.status,
+          progressPercentage: update.progressPercentage,
+          jobId: update.batchJobId
+        });
+      }
+    };
+
+    window.addEventListener('batchJobProgress', handleBatchJobProgress as EventListener);
+    window.addEventListener('meetingProgress', handleMeetingProgress as EventListener);
+
+    return () => {
+      window.removeEventListener('batchJobProgress', handleBatchJobProgress as EventListener);
+      window.removeEventListener('meetingProgress', handleMeetingProgress as EventListener);
+    };
+  }, [batchJob?.jobId]);
+
+  const getUnifiedWorkflowSteps = (): StepperStep[] => {
     if (batchJob) {
-      switch (batchJob.status) {
-        case 'submitted': return 1;
-        case 'processing': return 2;
-        case 'completed': return 3;
-        case 'failed': return 1;
-        default: return 0;
-      }
+      const currentStatus = realTimeProgress.status || batchJob.status;
+      const currentProgress = realTimeProgress.progressPercentage ?? batchJob.progressPercentage;
+      
+      return [
+        { label: "File Selected", icon: <AudioFile />, completed: true, active: false, error: false },
+        { label: "Uploading", icon: <Upload />, completed: true, active: false, error: false },
+        { 
+          label: currentProgress > 0 ? `Processing (${currentProgress}%)` : "Processing & Transcription",
+          icon: <Psychology />,
+          completed: currentStatus === 'completed',
+          active: currentStatus === 'submitted' || currentStatus === 'processing',
+          error: currentStatus === 'failed'
+        },
+        { label: "Complete", icon: <CheckCircle />, completed: currentStatus === 'completed', active: false, error: currentStatus === 'failed' }
+      ];
     } else {
-      switch (uploadFile.status) {
-        case "pending": return 0;
-        case "uploading": return uploadFile.progress > 90 ? 2 : 1;
-        case "completed": return 3;
-        case "error": return 1;
-        default: return 0;
-      }
+      return [
+        { label: "File Selected", icon: <AudioFile />, completed: true, active: false, error: false },
+        { 
+          label: "Uploading", 
+          icon: <Upload />, 
+          completed: uploadFile.status === "completed" || (uploadFile.status === "uploading" && uploadFile.progress > 90),
+          active: uploadFile.status === "uploading" && uploadFile.progress <= 90,
+          error: uploadFile.status === "error"
+        },
+        { 
+          label: "Processing & Transcription", 
+          icon: <Psychology />, 
+          completed: uploadFile.status === "completed",
+          active: uploadFile.status === "uploading" && uploadFile.progress > 90,
+          error: uploadFile.status === "error"
+        },
+        { label: "Complete", icon: <CheckCircle />, completed: uploadFile.status === "completed", active: false, error: uploadFile.status === "error" }
+      ];
     }
   };
 
-  const steps = isDemo 
-    ? getDemoWorkflowSteps(true, simulatedProgress)
-    : getUnifiedWorkflowSteps(uploadFile, batchJob);
+  const getDemoWorkflowSteps = (): StepperStep[] => {
+    const isSimulating = isDemo && simulatedProgress < 100;
+    
+    return [
+      { label: "File Selected", icon: <AudioFile />, completed: true, active: false, error: false },
+      { label: "Uploading", icon: <Upload />, completed: !isSimulating || simulatedProgress === 100, active: isSimulating && simulatedProgress <= 90, error: false },
+      { label: "Processing & Transcription", icon: <Psychology />, completed: !isSimulating && simulatedProgress === 100, active: isSimulating && simulatedProgress > 90, error: false },
+      { label: "Complete", icon: <CheckCircle />, completed: !isSimulating && simulatedProgress === 100, active: false, error: false }
+    ];
+  };
+
+  const getActiveStep = (): number => {
+    const steps = isDemo ? getDemoWorkflowSteps() : getUnifiedWorkflowSteps();
+    for (let i = 0; i < steps.length; i++) {
+      if (steps[i].active) return i;
+    }
+    for (let i = steps.length - 1; i >= 0; i--) {
+      if (steps[i].completed) return i;
+    }
+    return 0;
+  };
+
+  const steps = isDemo ? getDemoWorkflowSteps() : getUnifiedWorkflowSteps();
 
   return (
     <Box sx={{ mt: 2 }}>
@@ -158,45 +131,28 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
         activeStep={getActiveStep()}
         orientation="horizontal"
         sx={{
-          "& .MuiStepConnector-root": {
-            top: 10,
-            left: "calc(-50% + 10px)",
-            right: "calc(50% + 10px)",
-          },
-          "& .MuiStepLabel-root": {
-            flexDirection: "column",
-            "& .MuiStepLabel-label": {
-              fontSize: "0.75rem",
-              marginTop: "4px",
-            },
-          },
+          "& .MuiStepConnector-root": { top: 10, left: "calc(-50% + 10px)", right: "calc(50% + 10px)" },
+          "& .MuiStepLabel-root": { flexDirection: "column", "& .MuiStepLabel-label": { fontSize: "0.75rem", marginTop: "4px" } }
         }}
       >
         {steps.map((step, index) => (
-          <Step
-            key={`step-${index}`}
-            completed={step.completed}
-            disabled={uploadFile.status === "error" && !step.error}
-          >
+          <Step key={`step-${index}`} completed={step.completed} disabled={uploadFile.status === "error" && !step.error}>
             <StepLabel
               error={step.error}
-              icon={
-                step.active ? (
-                  <CircularProgress size={20} />
-                ) : step.error ? (
-                  <ErrorIcon color="error" />
-                ) : step.completed ? (
-                  <CheckCircle color="success" />
-                ) : (
-                  step.icon
-                )
-              }
+              icon={step.active ? <CircularProgress size={20} /> : step.error ? <ErrorIcon color="error" /> : step.completed ? <CheckCircle color="success" /> : step.icon}
             >
               {step.label}
             </StepLabel>
           </Step>
         ))}
       </Stepper>
+      {realTimeProgress.jobId && (
+        <Box sx={{ mt: 1, textAlign: 'center' }}>
+          <Box component="span" sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>
+             Real-time updates enabled
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };
