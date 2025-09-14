@@ -6,6 +6,7 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[September 13: S6.5 Meeting History Implementation Plan](technical-improvements/2025/09-13-s6.5-meeting-history-implementation-plan.md)** - Complete 3-phase architecture roadmap for persistent meeting management platform
 - **[September 13: UI Polish & User Experience Enhancements](technical-improvements/2025/09-13-ui-polish-user-experience-enhancements.md)** - Post-S6.4 interface improvements: unified stepper, statistical clarity, speaker labeling
 - **[September 7: Infrastructure as Code Migration](technical-improvements/2025/09-07-infrastructure-as-code-migration.md)** - Complete Bicep to Terraform conversion with modular architecture
 - **[September 5: Test Framework Modernization](technical-improvements/2025/09-05-test-framework-modernization.md)** - S5.4 major breakthrough: Modern test architecture fully validated
