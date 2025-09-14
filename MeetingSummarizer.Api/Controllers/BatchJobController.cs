@@ -74,11 +74,29 @@ public class BatchJobController : ControllerBase
                 return BadRequest($"Insufficient tokens. Required: {request.TokensToCharge}, Available: {user.TokenBalance}");
             }
 
-            // Create batch job record
+            // Create meeting record first
+            var meeting = new Meeting
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Title = request.FileName, // Default title, user can change later
+                OriginalFileName = request.FileName,
+                FileSizeBytes = 0, // Will be updated when file is processed
+                DurationSeconds = request.EstimatedDurationMinutes * 60,
+                BlobStoragePath = "", // Will be set when file is uploaded to blob storage
+                Status = MeetingStatus.Transcribing,
+                CreatedAt = DateTime.UtcNow,
+                ScheduledDeletionAt = DateTime.UtcNow.AddYears(1) // 1-year retention
+            };
+
+            _context.Meetings.Add(meeting);
+
+            // Create batch job record linked to meeting
             var batchJob = new BatchTranscriptionJob
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
+                MeetingId = meeting.Id, // Link to meeting
                 FileName = request.FileName,
                 EstimatedDurationMinutes = request.EstimatedDurationMinutes,
                 TokensCharged = request.TokensToCharge,

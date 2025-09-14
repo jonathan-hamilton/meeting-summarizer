@@ -60,6 +60,9 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Property<int>("MaxRetries")
                         .HasColumnType("int");
 
+                    b.Property<Guid?>("MeetingId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<int>("ProgressPercentage")
                         .HasColumnType("int");
 
@@ -97,6 +100,8 @@ namespace MeetingSummarizer.Api.Migrations
                     b.HasIndex("AzureJobId")
                         .IsUnique()
                         .HasFilter("[AzureJobId] IS NOT NULL");
+
+                    b.HasIndex("MeetingId");
 
                     b.HasIndex("Status");
 
@@ -429,11 +434,18 @@ namespace MeetingSummarizer.Api.Migrations
 
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.BatchTranscriptionJob", b =>
                 {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.Meeting", "Meeting")
+                        .WithMany("BatchTranscriptionJobs")
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
                         .WithMany("BatchTranscriptionJobs")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Meeting");
 
                     b.Navigation("User");
                 });
@@ -515,6 +527,8 @@ namespace MeetingSummarizer.Api.Migrations
 
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
+                    b.Navigation("BatchTranscriptionJobs");
+
                     b.Navigation("History");
                 });
 

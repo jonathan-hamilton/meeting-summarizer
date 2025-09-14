@@ -150,6 +150,10 @@ builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
 // Register JWT Authentication Service (S6.2 Increment 1)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAuthenticationService, MeetingSummarizer.Api.Services.Authentication.JwtAuthenticationService>();
 
+// Register SignalR for real-time meeting progress updates (S6.5 Increment 2)
+builder.Services.AddSignalR();
+builder.Services.AddScoped<MeetingSummarizer.Api.Hubs.IMeetingProgressNotificationService, MeetingSummarizer.Api.Hubs.MeetingProgressNotificationService>();
+
 // Configure ASP.NET Core Authentication with JWT Bearer (S6.2 Fix)
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -302,6 +306,9 @@ app.UseJwtAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Map SignalR hub for real-time meeting progress updates (S6.5 Increment 2)
+app.MapHub<MeetingSummarizer.Api.Hubs.MeetingProgressHub>("/meetingProgressHub");
 
 app.Run();
 

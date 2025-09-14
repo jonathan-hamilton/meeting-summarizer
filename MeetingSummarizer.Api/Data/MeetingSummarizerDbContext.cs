@@ -154,6 +154,7 @@ public class MeetingSummarizerDbContext : DbContext
         {
             entity.HasKey(btj => btj.Id);
             entity.HasIndex(btj => btj.UserId); // For user-specific job queries
+            entity.HasIndex(btj => btj.MeetingId); // For meeting-specific job queries
             entity.HasIndex(btj => btj.Status); // For status-based filtering
             entity.HasIndex(btj => btj.SubmittedAt); // For chronological ordering
             entity.HasIndex(btj => btj.AzureJobId).IsUnique(); // Unique Azure job tracking
@@ -171,6 +172,12 @@ public class MeetingSummarizerDbContext : DbContext
             entity.HasOne(btj => btj.User)
                 .WithMany(u => u.BatchTranscriptionJobs)
                 .HasForeignKey(btj => btj.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+            
+            // Configure relationship with Meeting
+            entity.HasOne(btj => btj.Meeting)
+                .WithMany(m => m.BatchTranscriptionJobs)
+                .HasForeignKey(btj => btj.MeetingId)
                 .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
         });
 

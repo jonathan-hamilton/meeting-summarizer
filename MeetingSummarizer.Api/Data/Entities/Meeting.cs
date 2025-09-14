@@ -121,6 +121,11 @@ public class Meeting
     /// Navigation property for meeting history/audit trail
     /// </summary>
     public virtual ICollection<MeetingHistory> History { get; set; } = new List<MeetingHistory>();
+
+    /// <summary>
+    /// Navigation property for batch transcription jobs associated with this meeting
+    /// </summary>
+    public virtual ICollection<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = new List<BatchTranscriptionJob>();
 }
 
 /// <summary>

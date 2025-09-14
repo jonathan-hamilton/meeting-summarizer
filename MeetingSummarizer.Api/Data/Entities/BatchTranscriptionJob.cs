@@ -23,6 +23,11 @@ public class BatchTranscriptionJob
     public Guid UserId { get; set; }
 
     /// <summary>
+    /// Meeting associated with this batch transcription job
+    /// </summary>
+    public Guid? MeetingId { get; set; }
+
+    /// <summary>
     /// Original filename of the uploaded audio file
     /// </summary>
     [Required]
@@ -147,4 +152,10 @@ public class BatchTranscriptionJob
     /// </summary>
     public TimeSpan? ProcessingDuration => 
         CompletedAt.HasValue ? CompletedAt.Value - SubmittedAt : null;
+
+    /// <summary>
+    /// Navigation property to the associated meeting
+    /// </summary>
+    [ForeignKey(nameof(MeetingId))]
+    public virtual Meeting? Meeting { get; set; }
 }
