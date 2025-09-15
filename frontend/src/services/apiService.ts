@@ -441,6 +441,37 @@ class ApiService {
     });
   }
 
+  // Meeting History API Methods (S6.5)
+  async getMeetings(params?: { 
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    sortBy?: string;
+    sortDirection?: 'asc' | 'desc';
+  }): Promise<ApiResponse<{ 
+    meetings: import('../types/meeting').MeetingListItem[];
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+  }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.pageSize) queryParams.set('pageSize', params.pageSize.toString());
+    if (params?.search) queryParams.set('search', params.search);
+    if (params?.sortBy) queryParams.set('sortBy', params.sortBy);
+    if (params?.sortDirection) queryParams.set('sortDirection', params.sortDirection);
+
+    return this.get(`/api/meetings?${queryParams.toString()}`);
+  }
+
+  async getMeetingStatistics(): Promise<ApiResponse<import('../types/meeting').MeetingStatistics>> {
+    return this.get('/api/meetings/statistics');
+  }
+
+  async deleteMeeting(id: string): Promise<ApiResponse<{ success: boolean }>> {
+    return this.delete(`/api/meetings/${id}`);
+  }
+
   // Utility methods
   getBaseURL(): string {
     return this.baseURL;
