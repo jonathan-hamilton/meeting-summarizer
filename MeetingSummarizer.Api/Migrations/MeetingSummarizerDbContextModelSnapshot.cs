@@ -157,6 +157,9 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Property<DateTime?>("ScheduledDeletionAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("SpeakerCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("SpeakerMappingsJson")
                         .HasColumnType("nvarchar(max)");
 

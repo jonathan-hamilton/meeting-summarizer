@@ -81,6 +81,11 @@ public class Meeting
     public string? SpeakerMappingsJson { get; set; }
     
     /// <summary>
+    /// Number of detected speakers in the meeting
+    /// </summary>
+    public int SpeakerCount { get; set; } = 0;
+    
+    /// <summary>
     /// Action items (JSON format)
     /// </summary>
     public string? ActionItemsJson { get; set; }

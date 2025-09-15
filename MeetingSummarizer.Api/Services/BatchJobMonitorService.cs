@@ -7,6 +7,7 @@ using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services.Configuration;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Services.Transcription;
+using MeetingSummarizer.Api.Services.Interfaces;
 using System.Text.Json;
 
 namespace MeetingSummarizer.Api.Services;
@@ -323,6 +324,9 @@ public class BatchJobMonitorService : BackgroundService
             job.CompletedAt = DateTime.UtcNow;
             job.ErrorMessage = null;
 
+            // S6.5 Increment 5: Create persistent meeting record on successful completion
+            await CreateMeetingRecordAsync(job, context);
+
             _logger.LogInformation("Successfully completed job {JobId} in {Duration}", 
                 job.Id, job.ProcessingDuration);
         }
@@ -501,6 +505,189 @@ public class BatchJobMonitorService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during cleanup of old jobs");
+        }
+    }
+
+    /// <summary>
+    /// Create persistent meeting record after successful batch job completion
+    /// Part of S6.5 Increment 5: Meeting History Integration
+    /// </summary>
+    private async Task CreateMeetingRecordAsync(
+        BatchTranscriptionJob job,
+        MeetingSummarizerDbContext context)
+    {
+        try
+        {
+            // Skip if meeting record already exists
+            if (job.MeetingId.HasValue)
+            {
+                _logger.LogDebug("Meeting record already exists for job {JobId}: {MeetingId}", 
+                    job.Id, job.MeetingId.Value);
+                return;
+            }
+
+            // Check if we have enough information to create a meeting
+            if (job.UserId == Guid.Empty)
+            {
+                _logger.LogWarning("Cannot create meeting for job {JobId}: missing UserId", job.Id);
+                return;
+            }
+
+            // Get meeting service from DI container
+            using var scope = _serviceProvider.CreateScope();
+            var meetingService = scope.ServiceProvider.GetRequiredService<IMeetingService>();
+
+            // Prepare meeting data
+            var meetingTitle = !string.IsNullOrEmpty(job.FileName) 
+                ? Path.GetFileNameWithoutExtension(job.FileName) 
+                : $"Meeting - {job.SubmittedAt:yyyy-MM-dd HH:mm}";
+
+            var originalFileName = job.FileName ?? "Unknown File";
+            var blobStoragePath = job.AudioBlobUrl ?? "unknown-path";
+
+            // Calculate approximate file size from audio duration (rough estimate: 32kbps)
+            var estimatedFileSizeBytes = (long)(job.EstimatedDurationMinutes * 60 * 4000); // 32kbps estimate
+
+            _logger.LogInformation("Creating meeting record for completed job {JobId}, user {UserId}", 
+                job.Id, job.UserId);
+
+            // Create the meeting record
+            var meeting = await meetingService.CreateMeetingAsync(
+                job.UserId,
+                meetingTitle,
+                $"Auto-generated from batch transcription job {job.Id}",
+                originalFileName,
+                estimatedFileSizeBytes,
+                job.EstimatedDurationMinutes * 60, // Convert to seconds
+                blobStoragePath);
+
+            // Update meeting with transcription data if available
+            // Handle both blob storage and inline JSON approaches (both have valid use cases)
+            string? transcriptionData = null;
+            
+            if (job.IsTranscriptInBlobStorage && !string.IsNullOrEmpty(job.TranscriptBlobUrl))
+            {
+                // Large transcripts: store reference to compressed blob
+                transcriptionData = JsonSerializer.Serialize(new { 
+                    BlobUrl = job.TranscriptBlobUrl,
+                    CompressedSize = job.CompressedTranscriptSize,
+                    StorageType = "BlobStorage"
+                });
+                _logger.LogInformation("Created meeting {MeetingId} with blob storage reference for job {JobId}", 
+                    "TBD", job.Id);
+            }
+            else if (!string.IsNullOrEmpty(job.ResultsJson))
+            {
+                // Small transcripts: store inline for optimal performance
+#pragma warning disable CS0618 // Type or member is obsolete
+                transcriptionData = job.ResultsJson;
+#pragma warning restore CS0618 // Type or member is obsolete
+                _logger.LogInformation("Created meeting {MeetingId} with inline transcript for job {JobId}", 
+                    "TBD", job.Id);
+            }
+
+            if (!string.IsNullOrEmpty(transcriptionData))
+            {
+                await meetingService.UpdateMeetingTranscriptionAsync(
+                    meeting.Id,
+                    transcriptionData,
+                    null, // Speaker mappings processed separately in current architecture
+                    job.TokensCharged);
+
+                // Calculate and update speaker count from transcription data
+                var speakerCount = await CalculateSpeakerCountFromTranscriptionAsync(job, transcriptionData);
+                if (speakerCount > 0)
+                {
+                    await meetingService.UpdateMeetingSpeakerCountAsync(meeting.Id, speakerCount);
+                    _logger.LogInformation("Updated meeting {MeetingId} with speaker count: {SpeakerCount}", 
+                        meeting.Id, speakerCount);
+                }
+            }
+
+            // Note: Summary data is processed separately in the current architecture
+            // Future enhancement: integrate summary processing into this workflow
+
+            // Mark meeting as completed
+            await meetingService.CompleteMeetingAsync(meeting.Id);
+
+            // Link the batch job to the meeting
+            job.MeetingId = meeting.Id;
+            await context.SaveChangesAsync();
+
+            _logger.LogInformation("Successfully created meeting {MeetingId} for job {JobId}", 
+                meeting.Id, job.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create meeting record for job {JobId}", job.Id);
+            // Don't throw - meeting creation failure shouldn't fail the batch job
+        }
+    }
+
+    /// <summary>
+    /// Calculate speaker count from transcription data (handles both inline JSON and blob storage)
+    /// </summary>
+    /// <param name="job">Batch transcription job</param>
+    /// <param name="transcriptionData">Transcription data (either inline JSON or blob reference)</param>
+    /// <returns>Number of distinct speakers found</returns>
+    private async Task<int> CalculateSpeakerCountFromTranscriptionAsync(BatchTranscriptionJob job, string transcriptionData)
+    {
+        try
+        {
+            string? actualTranscriptionJson = null;
+
+            // Handle blob storage case
+            if (job.IsTranscriptInBlobStorage && !string.IsNullOrEmpty(job.TranscriptBlobUrl))
+            {
+                // For blob storage, we need to fetch the actual transcription data
+                // The transcriptionData parameter contains metadata, not the actual transcript
+                using var scope = _serviceProvider.CreateScope();
+                var userStorageService = scope.ServiceProvider.GetRequiredService<IUserStorageService>();
+                
+                actualTranscriptionJson = await userStorageService.RetrieveTranscriptAsync(job.UserId, job.TranscriptBlobUrl);
+                _logger.LogDebug("Downloaded transcript from blob storage for speaker count calculation: {JobId}", job.Id);
+            }
+            else if (!string.IsNullOrEmpty(job.ResultsJson))
+            {
+                // Handle inline JSON case (backward compatibility)
+#pragma warning disable CS0618 // Type or member is obsolete
+                actualTranscriptionJson = job.ResultsJson;
+#pragma warning restore CS0618 // Type or member is obsolete
+                _logger.LogDebug("Using inline ResultsJson for speaker count calculation: {JobId}", job.Id);
+            }
+
+            if (string.IsNullOrEmpty(actualTranscriptionJson))
+            {
+                _logger.LogWarning("No transcription data available for speaker count calculation: {JobId}", job.Id);
+                return 0;
+            }
+
+            // Parse the transcription JSON and extract speaker count
+            // The structure should match TranscriptionResult format used in real-time processing
+            var transcriptionResult = JsonSerializer.Deserialize<TranscriptionResult>(actualTranscriptionJson);
+            
+            if (transcriptionResult?.Segments == null)
+            {
+                _logger.LogWarning("Invalid transcription format for speaker count calculation: {JobId}", job.Id);
+                return 0;
+            }
+
+            // Calculate distinct speakers (same logic as real-time flow)
+            var speakerCount = transcriptionResult.Segments
+                .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                .Select(s => s.Speaker)
+                .Distinct()
+                .Count();
+
+            _logger.LogDebug("Calculated speaker count {SpeakerCount} from {SegmentCount} segments for job {JobId}", 
+                speakerCount, transcriptionResult.Segments.Count, job.Id);
+
+            return speakerCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to calculate speaker count for job {JobId}", job.Id);
+            return 0; // Return 0 on error to avoid breaking the flow
         }
     }
 }

@@ -10,6 +10,7 @@ using MeetingSummarizer.Api.Services;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
+using MeetingSummarizer.Api.Services.Interfaces;
 using SpeakerServices = MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Helpers;
 using SpeakerMappingModel = MeetingSummarizer.Api.Models.SpeakerMapping;
@@ -30,6 +31,7 @@ public class SummaryController : ControllerBase
     private readonly MeetingSummarizerDbContext _context;
     private readonly AzureBatchTranscriptionService _batchService;
     private readonly IUserStorageService _userStorageService;
+    private readonly IMeetingService _meetingService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
@@ -38,7 +40,8 @@ public class SummaryController : ControllerBase
         ISpeakerMappingService speakerMappingService,
         MeetingSummarizerDbContext context,
         AzureBatchTranscriptionService batchService,
-        IUserStorageService userStorageService)
+        IUserStorageService userStorageService,
+        IMeetingService meetingService)
     {
         _logger = logger;
         _transcriptionService = transcriptionService;
@@ -47,6 +50,7 @@ public class SummaryController : ControllerBase
         _context = context;
         _batchService = batchService;
         _userStorageService = userStorageService;
+        _meetingService = meetingService;
     }
 
     /// <summary>
@@ -139,6 +143,9 @@ public class SummaryController : ControllerBase
                 _logger.LogInformation("Transcription completed for file: {FileName}, ID: {TranscriptionId}, Speakers: {SpeakerCount}",
                     request.AudioFile.FileName, response.TranscriptionId, response.SpeakerCount);
 
+                // S6.5: Create meeting record for real-time transcriptions (< 5 min files)
+                await CreateMeetingForRealTimeTranscription(request.AudioFile, transcriptionResult, estimatedDurationMinutes);
+
                 return Ok(response);
             }
             catch (InvalidOperationException ex)
@@ -194,7 +201,94 @@ public class SummaryController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing transcription request");
-            return StatusCode(500, new { error = "An error occurred while processing the transcription" });
+            return StatusCode(500, new { error = "Failed to submit batch transcription job" });
+        }
+    }
+
+    /// <summary>
+    /// Create a meeting record for real-time transcription results
+    /// Ensures all processed files appear in meeting history regardless of duration
+    /// </summary>
+    private async Task CreateMeetingForRealTimeTranscription(
+        IFormFile audioFile, 
+        TranscriptionResult transcriptionResult, 
+        int estimatedDurationMinutes)
+    {
+        try
+        {
+            // Only create meeting for authenticated users
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                _logger.LogDebug("Skipping meeting creation for real-time transcription - user not authenticated");
+                return;
+            }
+
+            // Prepare meeting data
+            var meetingTitle = !string.IsNullOrEmpty(audioFile.FileName) 
+                ? Path.GetFileNameWithoutExtension(audioFile.FileName) 
+                : $"Meeting - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+
+            var originalFileName = audioFile.FileName ?? "Unknown File";
+            
+            // For real-time transcriptions, we don't store the audio file in blob storage
+            // So we use a placeholder path or store it if needed
+            var blobStoragePath = $"realtime-transcription-{Guid.NewGuid()}";
+
+            _logger.LogInformation("Creating meeting record for real-time transcription, user {UserId}, file {FileName}", 
+                userId, audioFile.FileName);
+
+            // Create the meeting record with transcription data
+            var meeting = await _meetingService.CreateMeetingAsync(
+                userId.Value,
+                meetingTitle,
+                $"Real-time transcription completed at {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
+                originalFileName,
+                audioFile.Length,
+                estimatedDurationMinutes * 60, // Convert to seconds
+                blobStoragePath);
+
+            // Update meeting with transcription data
+            // Convert TranscriptionResult to the format expected by UpdateMeetingTranscriptionAsync
+            var transcriptionJson = System.Text.Json.JsonSerializer.Serialize(transcriptionResult);
+            
+            // Create speaker mappings from segments
+            var speakerMappings = transcriptionResult.Segments
+                .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                .GroupBy(s => s.Speaker)
+                .Select((group, index) => new { Speaker = group.Key, DisplayName = $"Speaker {index + 1}" })
+                .ToDictionary(x => x.Speaker!, x => x.DisplayName);
+            
+            var speakerMappingsJson = speakerMappings.Any() 
+                ? System.Text.Json.JsonSerializer.Serialize(speakerMappings)
+                : null;
+
+            // Calculate speaker count
+            var speakerCount = transcriptionResult.Segments
+                .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                .Select(s => s.Speaker)
+                .Distinct()
+                .Count();
+            
+            await _meetingService.UpdateMeetingTranscriptionAsync(
+                meeting.Id,
+                transcriptionJson,
+                speakerMappingsJson,
+                0); // No tokens consumed for real-time transcriptions
+
+            // Update speaker count
+            await _meetingService.UpdateMeetingSpeakerCountAsync(meeting.Id, speakerCount);
+
+            // Mark meeting as completed
+            await _meetingService.UpdateMeetingStatusAsync(meeting.Id, MeetingStatus.Completed);
+
+            _logger.LogInformation("Successfully created meeting {MeetingId} for real-time transcription {FileName}", 
+                meeting.Id, audioFile.FileName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create meeting record for real-time transcription {FileName}", audioFile.FileName);
+            // Don't throw - transcription was successful, meeting creation is supplementary
         }
     }
 
