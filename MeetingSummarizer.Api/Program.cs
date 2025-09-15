@@ -11,6 +11,7 @@ using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.TokenManagement;
 using MeetingSummarizer.Api.Services.Payment;
 using MeetingSummarizer.Api.Services;
+using MeetingSummarizer.Api.Services.Interfaces;
 using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
@@ -143,6 +144,9 @@ builder.Services.AddScoped<IUserStorageService, UserStorageService>();
 
 // Register User Management Service (S6.1 Increment 4)
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+
+// Register Meeting Service for persistent meeting records (S6.5 Increment 3)
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.Interfaces.IMeetingService, MeetingSummarizer.Api.Services.MeetingService>();
 
 // Register Data Retention Service (S6.1 Increment 4)
 builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
