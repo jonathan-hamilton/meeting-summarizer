@@ -339,11 +339,24 @@ public class AzureBatchTranscriptionService
                 fullText.AppendLine($"{speakerId}: {text}");
             }
 
+            // Calculate duration from segments
+            var durationSeconds = segments.Any() ? segments.Max(s => s.End) : 0.0;
+            
+            _logger.LogInformation("DEBUG: AzureBatchTranscriptionService - Calculated duration: {Duration}s from {SegmentCount} segments", 
+                durationSeconds, segments.Count);
+            if (segments.Any())
+            {
+                var endTimes = segments.Select(s => s.End).ToList();
+                _logger.LogInformation("DEBUG: AzureBatchTranscriptionService - Sample segment end times: [{EndTimes}]", 
+                    string.Join(", ", endTimes.Take(5)));
+            }
+
             return new TranscriptionResult
             {
                 Text = fullText.ToString().Trim(),
                 Segments = segments,
-                DetectedLanguage = "en-US" // Default for batch processing
+                DetectedLanguage = "en-US", // Default for batch processing
+                Duration = durationSeconds
             };
         }
         catch (Exception ex)

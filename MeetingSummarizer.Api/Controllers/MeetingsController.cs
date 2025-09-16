@@ -245,35 +245,6 @@ public class MeetingsController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get user's meeting statistics
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Meeting statistics</returns>
-    [HttpGet("statistics")]
-    public async Task<ActionResult<MeetingStatistics>> GetMeetingStatistics(
-        CancellationToken cancellationToken = default)
-    {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized("Invalid user token");
-        }
-
-        _logger.LogInformation("Getting statistics for user {UserId}", userId);
-
-        try
-        {
-            var statistics = await _meetingService.GetMeetingStatisticsAsync(userId.Value, cancellationToken);
-            return Ok(statistics);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting statistics for user {UserId}", userId);
-            return StatusCode(500, "An error occurred while retrieving statistics");
-        }
-    }
-
     // Internal endpoints for system use (batch job completion, etc.)
 
     /// <summary>

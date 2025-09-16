@@ -27,7 +27,7 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   
   // Determine initial mode based on current route
   const getInitialMode = (): AppMode => {
-    if (location.pathname.startsWith('/app')) return 'production';
+    if (location.pathname.startsWith('/app') || location.pathname === '/history') return 'production';
     return 'demo'; // default for / and /demo
   };
   

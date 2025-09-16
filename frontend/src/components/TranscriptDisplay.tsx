@@ -297,15 +297,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   }, []);
 
   const formatFileSize = useCallback((bytes: number): string => {
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    if (bytes === 0) return "0 Bytes";
-    const i = Math.floor(Math.log(bytes) / Math.log(1000));
-    const value = bytes / Math.pow(1000, i);
-    // Always show two decimals for MB
-    if (sizes[i] === "MB") {
-      return value.toFixed(2) + " MB";
+    const sizes = ["B", "KB", "MB", "GB"];
+    if (bytes === 0) return "0 B";
+    let len = bytes;
+    let order = 0;
+    while (len >= 1024 && order < sizes.length - 1) {
+      order++;
+      len = len / 1024;
     }
-    return Math.round(value * 100) / 100 + " " + sizes[i];
+    // Use same formatting as backend (0.## format)
+    return `${(Math.round(len * 100) / 100).toFixed(2)} ${sizes[order]}`;
   }, []);
 
   const copyToClipboard = useCallback(

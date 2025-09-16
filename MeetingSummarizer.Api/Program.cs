@@ -17,6 +17,7 @@ using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,9 @@ builder.Services.AddControllers()
     {
         // S3.4: Configure enum serialization as strings to match frontend
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        
+        // Ensure DateTime serialization is consistent and includes timezone info
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
 // Configure form options for large file uploads

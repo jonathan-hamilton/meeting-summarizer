@@ -14,7 +14,6 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
     (set, get) => ({
       // Initial state
       meetings: [],
-      statistics: null,
       currentPage: 1,
       pageSize: 10,
       totalCount: 0,
@@ -49,16 +48,16 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
           console.log('Meeting History Store - Response Data Structure:', JSON.stringify(response.data, null, 2));
           
           if (response.success && response.data) {
-            console.log('Meeting History Store - Processing meetings:', response.data.meetings);
-            if (response.data.meetings && response.data.meetings.length > 0) {
-              console.log('Meeting History Store - First meeting structure:', JSON.stringify(response.data.meetings[0], null, 2));
+            console.log('Meeting History Store - Processing meetings:', response.data.items);
+            if (response.data.items && response.data.items.length > 0) {
+              console.log('Meeting History Store - First meeting structure:', JSON.stringify(response.data.items[0], null, 2));
             }
             set({
-              meetings: response.data.meetings || [],
+              meetings: response.data.items || [],
               totalCount: response.data.totalCount || 0,
               totalPages: response.data.totalPages || 0,
-              hasNextPage: (response.data.currentPage || 1) < (response.data.totalPages || 1),
-              hasPreviousPage: (response.data.currentPage || 1) > 1,
+              hasNextPage: response.data.hasNextPage || false,
+              hasPreviousPage: response.data.hasPreviousPage || false,
               isLoading: false,
             });
           } else {
@@ -73,20 +72,6 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
             error: 'Failed to load meetings. Please try again.',
             isLoading: false,
           });
-        }
-      },
-
-      loadStatistics: async () => {
-        try {
-          const response = await apiService.getMeetingStatistics();
-          
-          if (response.success && response.data) {
-            set({ statistics: response.data });
-          } else {
-            console.error('Failed to load statistics:', response.errors || response.message);
-          }
-        } catch (error) {
-          console.error('Failed to load statistics:', error);
         }
       },
 
@@ -106,8 +91,7 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
               totalCount: state.totalCount - 1,
             });
 
-            // Reload statistics to reflect the change
-            get().loadStatistics();
+
           } else {
             set({ error: response.errors?.join(', ') || response.message || 'Failed to delete meeting' });
           }
@@ -166,10 +150,7 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
           
           set({ meetings: updatedMeetings });
           
-          // If status changed to completed, reload statistics
-          if (update.processingStatus === 'Completed') {
-            get().loadStatistics();
-          }
+
         }
       },
 
@@ -185,12 +166,10 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
 
 // Convenience hooks for specific parts of the store
 export const useMeetings = () => useMeetingHistoryStore(state => state.meetings);
-export const useMeetingStatistics = () => useMeetingHistoryStore(state => state.statistics);
 export const useMeetingHistoryLoading = () => useMeetingHistoryStore(state => state.isLoading);
 export const useMeetingHistoryError = () => useMeetingHistoryStore(state => state.error);
 export const useMeetingHistoryActions = () => useMeetingHistoryStore(state => ({
   loadMeetings: state.loadMeetings,
-  loadStatistics: state.loadStatistics,
   deleteMeeting: state.deleteMeeting,
   setPage: state.setPage,
   setSearchQuery: state.setSearchQuery,

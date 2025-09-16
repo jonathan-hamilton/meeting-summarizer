@@ -449,23 +449,22 @@ class ApiService {
     sortBy?: string;
     sortDirection?: 'asc' | 'desc';
   }): Promise<ApiResponse<{ 
-    meetings: import('../types/meeting').MeetingListItem[];
+    items: import('../types/meeting').MeetingListItem[];
     totalCount: number;
-    currentPage: number;
+    pageNumber: number;
+    pageSize: number;
     totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
   }>> {
     const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page) queryParams.set('pageNumber', params.page.toString());
     if (params?.pageSize) queryParams.set('pageSize', params.pageSize.toString());
-    if (params?.search) queryParams.set('search', params.search);
+    if (params?.search) queryParams.set('searchTerm', params.search);
     if (params?.sortBy) queryParams.set('sortBy', params.sortBy);
     if (params?.sortDirection) queryParams.set('sortDirection', params.sortDirection);
 
     return this.get(`/api/meetings?${queryParams.toString()}`);
-  }
-
-  async getMeetingStatistics(): Promise<ApiResponse<import('../types/meeting').MeetingStatistics>> {
-    return this.get('/api/meetings/statistics');
   }
 
   async deleteMeeting(id: string): Promise<ApiResponse<{ success: boolean }>> {

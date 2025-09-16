@@ -60,8 +60,14 @@ public class MeetingSummarizerDbContext : DbContext
             entity.Property(u => u.FirstName).IsRequired().HasMaxLength(100);
             entity.Property(u => u.LastName).IsRequired().HasMaxLength(100);
             entity.Property(u => u.TokenBalance).HasColumnType("decimal(18,2)");
-            entity.Property(u => u.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(u => u.LastActivityAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(u => u.CreatedAt).HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(
+                    v => v,
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            entity.Property(u => u.LastActivityAt).HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(
+                    v => v,
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
         });
         
         // Configure Meeting entity
@@ -75,8 +81,15 @@ public class MeetingSummarizerDbContext : DbContext
             entity.Property(m => m.BlobStoragePath).IsRequired().HasMaxLength(500);
             entity.Property(m => m.StorageTier).HasMaxLength(20).HasDefaultValue("Hot");
             entity.Property(m => m.TokensConsumed).HasColumnType("decimal(18,2)");
-            entity.Property(m => m.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-            entity.Property(m => m.LastAccessedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(m => m.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); // From database: Ensure Kind = UTC
+            entity.Property(m => m.LastAccessedAt).HasDefaultValueSql("GETUTCDATE()").HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); // From database: Ensure Kind = UTC
+            entity.Property(m => m.CompletedAt).HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : (DateTime?)null); // From database: Ensure Kind = UTC
             
             // Configure relationship with User
             entity.HasOne(m => m.User)
