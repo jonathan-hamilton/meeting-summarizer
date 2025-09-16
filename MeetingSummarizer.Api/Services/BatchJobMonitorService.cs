@@ -319,6 +319,14 @@ public class BatchJobMonitorService : BackgroundService
                 await ProcessTranscriptResultsAsync(job, resultsJson, context, userStorageService, transcriptParsingService);
             }
 
+            // Save transcript segments to database before creating meeting record
+            await context.SaveChangesAsync();
+            
+            // Verify segments were saved
+            var savedSegmentCount = await context.TranscriptSegments.CountAsync(s => s.JobId == job.Id);
+            _logger.LogInformation("DEBUG: Verified {SavedSegmentCount} segments saved to database for job {JobId}", 
+                savedSegmentCount, job.Id);
+
             job.Status = "completed";
             job.ProgressPercentage = 100;
             job.CompletedAt = DateTime.UtcNow;
@@ -413,11 +421,21 @@ public class BatchJobMonitorService : BackgroundService
                 var existingSegments = context.TranscriptSegments.Where(s => s.JobId == job.Id);
                 context.TranscriptSegments.RemoveRange(existingSegments);
 
+                _logger.LogInformation("DEBUG: About to store {SegmentCount} segments for job {JobId}", 
+                    parsingResult.Segments.Count, job.Id);
+                    
                 // Add parsed segments
                 foreach (var segment in parsingResult.Segments)
                 {
                     segment.JobId = job.Id;
                     context.TranscriptSegments.Add(segment);
+                }
+                
+                var sampleSegments = parsingResult.Segments.Take(3).ToList();
+                foreach (var segment in sampleSegments)
+                {
+                    _logger.LogInformation("DEBUG: Sample segment - JobId: {JobId}, StartTime: {Start}, EndTime: {End}, Text: {Text}", 
+                        segment.JobId, segment.StartTime, segment.EndTime, segment.Text.Substring(0, Math.Min(50, segment.Text.Length)));
                 }
 
                 _logger.LogInformation("Parsed and stored {SegmentCount} transcript segments for job {JobId}", 
@@ -548,17 +566,45 @@ public class BatchJobMonitorService : BackgroundService
             // Calculate approximate file size from audio duration (rough estimate: 32kbps)
             var estimatedFileSizeBytes = (long)(job.EstimatedDurationMinutes * 60 * 4000); // 32kbps estimate
 
+            // Get actual duration from parsed transcript segments (more accurate than estimated)
+            var actualDurationSeconds = job.EstimatedDurationMinutes * 60; // Fallback to estimate
+            _logger.LogInformation("DEBUG: Starting duration calculation for job {JobId}. Estimated: {EstimatedMinutes} min = {EstimatedSeconds}s", 
+                job.Id, job.EstimatedDurationMinutes, actualDurationSeconds);
+                
+            var segments = await context.TranscriptSegments
+                .Where(s => s.JobId == job.Id)
+                .ToListAsync();
+            
+            _logger.LogInformation("DEBUG: Found {SegmentCount} transcript segments for job {JobId}", segments.Count, job.Id);
+            
+            if (segments.Any())
+            {
+                var endTimes = segments.Select(s => s.EndTime).ToList();
+                var maxEndTime = segments.Max(s => s.EndTime);
+                actualDurationSeconds = (int)Math.Ceiling(maxEndTime);
+                
+                _logger.LogInformation("DEBUG: Segment end times: [{EndTimes}]", string.Join(", ", endTimes.Take(5)));
+                _logger.LogInformation("DEBUG: Max end time: {MaxEndTime}s, Calculated duration: {ActualDuration}s", maxEndTime, actualDurationSeconds);
+                _logger.LogInformation("Using actual duration {ActualDuration}s from transcript segments for job {JobId} (estimated was {EstimatedDuration}s)", 
+                    actualDurationSeconds, job.Id, job.EstimatedDurationMinutes * 60);
+            }
+            else
+            {
+                _logger.LogWarning("No transcript segments found for job {JobId}, using estimated duration {EstimatedDuration}s", 
+                    job.Id, actualDurationSeconds);
+            }
+
             _logger.LogInformation("Creating meeting record for completed job {JobId}, user {UserId}", 
                 job.Id, job.UserId);
 
-            // Create the meeting record
+            // Create the meeting record with actual duration
             var meeting = await meetingService.CreateMeetingAsync(
                 job.UserId,
                 meetingTitle,
                 $"Auto-generated from batch transcription job {job.Id}",
                 originalFileName,
                 estimatedFileSizeBytes,
-                job.EstimatedDurationMinutes * 60, // Convert to seconds
+                actualDurationSeconds,
                 blobStoragePath);
 
             // Update meeting with transcription data if available
@@ -576,7 +622,9 @@ public class BatchJobMonitorService : BackgroundService
                 _logger.LogInformation("Created meeting {MeetingId} with blob storage reference for job {JobId}", 
                     "TBD", job.Id);
             }
+#pragma warning disable CS0618 // Type or member is obsolete
             else if (!string.IsNullOrEmpty(job.ResultsJson))
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 // Small transcripts: store inline for optimal performance
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -647,7 +695,9 @@ public class BatchJobMonitorService : BackgroundService
                 actualTranscriptionJson = await userStorageService.RetrieveTranscriptAsync(job.UserId, job.TranscriptBlobUrl);
                 _logger.LogDebug("Downloaded transcript from blob storage for speaker count calculation: {JobId}", job.Id);
             }
+#pragma warning disable CS0618 // Type or member is obsolete
             else if (!string.IsNullOrEmpty(job.ResultsJson))
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 // Handle inline JSON case (backward compatibility)
 #pragma warning disable CS0618 // Type or member is obsolete

@@ -26,6 +26,10 @@ const router = createBrowserRouter([
     path: "/app", 
     element: <AppWithContext />,
   },
+  {
+    path: "/history",
+    element: <AppWithContext />,
+  },
 ], {
   future: {
     v7_relativeSplatPath: true,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Typography,
   Box,
@@ -18,7 +19,8 @@ import {
 import { 
   Brightness4, 
   Brightness7, 
- 
+  History as HistoryIcon,
+  Home as HomeIcon,
   Help as HelpIcon,
   AccountCircle as AccountIcon,
 } from "@mui/icons-material";
@@ -43,6 +45,7 @@ const AuthManager = React.lazy(() => import("./components/auth").then(m => ({ de
 
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
+import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import { sessionManager } from "./services/sessionManager";
 
@@ -76,6 +79,8 @@ const AppContent: React.FC = () => {
   const { addTranscript } = useSessionStore();
   const { isActive: isTourActive, isCurrentStep } = useTourStore();
   const openProfileDialog = useUserProfileDialogOpen();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   // Authentication integration  
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
@@ -297,6 +302,25 @@ const AppContent: React.FC = () => {
                   <SessionIndicator status={privacyControls.sessionStatus} />
                 )}
                 
+                {/* Navigation Buttons - Only when authenticated in production mode */}
+                {appMode === 'production' && isAuthenticated && (
+                  <>
+                    {location.pathname === '/history' ? (
+                      <Tooltip title="Home">
+                        <IconButton color="inherit" onClick={() => navigate('/app')}>
+                          <HomeIcon />
+                        </IconButton>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip title="Meeting History">
+                        <IconButton color="inherit" onClick={() => navigate('/history')}>
+                          <HistoryIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </>
+                )}
+
                 {/* User Profile Button - Only when authenticated in production mode */}
                 {appMode === 'production' && isAuthenticated && (
                   <Tooltip title="My Account">
@@ -483,61 +507,66 @@ const AppContent: React.FC = () => {
                 </Box>
               )}
 
-            <Grid
-              container
-              spacing={4}
-              sx={{ mt: 2, width: "100%", minHeight: "200px" }}
-            >
-              <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                <section aria-labelledby="upload-heading">
-                  <Typography variant="h4" component="h2" id="upload-heading" gutterBottom>
-                    Upload Audio File
-                  </Typography>
-                  {/* Show upload component only if not in production mode or if authenticated AND not currently loading */}
-                  {(appMode !== 'production' || (isAuthenticated && !isAuthLoading)) ? (
-                    <FileUpload
-                      onTranscriptionComplete={handleTranscriptionComplete}
-                      isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
-                    />
-                  ) : (
-                    <Box sx={{ 
-                      p: 4, 
-                      textAlign: 'center', 
-                      border: '1px dashed #ccc', 
-                      borderRadius: 2,
-                      backgroundColor: '#f5f5f5'
-                    }}>
-                      <Typography variant="body1" color="text.secondary">
-                        Please sign in to upload and process audio files.
-                      </Typography>
-                    </Box>
-                  )}
-                </section>
-              </Grid>
-
-              {transcriptionResults.length > 0 && (
+            {/* Render different content based on the current route */}
+            {location.pathname === '/history' ? (
+              <MeetingHistoryPage />
+            ) : (
+              <Grid
+                container
+                spacing={4}
+                sx={{ mt: 2, width: "100%", minHeight: "200px" }}
+              >
                 <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                  <section 
-                    aria-labelledby="transcription-heading"
-                    id="transcription-results" 
-                    ref={transcriptionResultsRef}
-                  >
-                    <Box sx={{ width: "100%" }}>
-                      <Typography variant="h4" component="h2" id="transcription-heading" gutterBottom>
-                        Transcription Results
-                      </Typography>
-                      {transcriptionResults.map((result) => (
-                        <TranscriptDisplay
-                          key={result.transcriptionId}
-                          transcription={result}
-                          aiSummaryRef={aiSummaryRef}
-                        />
-                      ))}
-                    </Box>
+                  <section aria-labelledby="upload-heading">
+                    <Typography variant="h4" component="h2" id="upload-heading" gutterBottom>
+                      Upload Audio File
+                    </Typography>
+                    {/* Show upload component only if not in production mode or if authenticated AND not currently loading */}
+                    {(appMode !== 'production' || (isAuthenticated && !isAuthLoading)) ? (
+                      <FileUpload
+                        onTranscriptionComplete={handleTranscriptionComplete}
+                        isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
+                      />
+                    ) : (
+                      <Box sx={{ 
+                        p: 4, 
+                        textAlign: 'center', 
+                        border: '1px dashed #ccc', 
+                        borderRadius: 2,
+                        backgroundColor: '#f5f5f5'
+                      }}>
+                        <Typography variant="body1" color="text.secondary">
+                          Please sign in to upload and process audio files.
+                        </Typography>
+                      </Box>
+                    )}
                   </section>
                 </Grid>
-              )}
-            </Grid>
+
+                {transcriptionResults.length > 0 && (
+                  <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
+                    <section 
+                      aria-labelledby="transcription-heading"
+                      id="transcription-results" 
+                      ref={transcriptionResultsRef}
+                    >
+                      <Box sx={{ width: "100%" }}>
+                        <Typography variant="h4" component="h2" id="transcription-heading" gutterBottom>
+                          Transcription Results
+                        </Typography>
+                        {transcriptionResults.map((result) => (
+                          <TranscriptDisplay
+                            key={result.transcriptionId}
+                            transcription={result}
+                            aiSummaryRef={aiSummaryRef}
+                          />
+                        ))}
+                      </Box>
+                    </section>
+                  </Grid>
+                )}
+              </Grid>
+            )}
           </Box>
           </main>
           

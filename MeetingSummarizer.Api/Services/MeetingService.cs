@@ -356,32 +356,5 @@ public class MeetingService : IMeetingService
         return true;
     }
 
-    public async Task<MeetingStatistics> GetMeetingStatisticsAsync(
-        Guid userId,
-        CancellationToken cancellationToken = default)
-    {
-        _logger.LogInformation("Getting meeting statistics for user {UserId}", userId);
 
-        var meetings = await _context.Meetings
-            .Where(m => m.UserId == userId && m.Status != MeetingStatus.Deleted)
-            .ToListAsync(cancellationToken);
-
-        var statistics = new MeetingStatistics
-        {
-            TotalMeetings = meetings.Count,
-            CompletedMeetings = meetings.Count(m => m.Status == MeetingStatus.Completed),
-            ProcessingMeetings = meetings.Count(m => m.Status == MeetingStatus.Transcribing || 
-                                                     m.Status == MeetingStatus.Summarizing),
-            FailedMeetings = meetings.Count(m => m.Status == MeetingStatus.Failed),
-            TotalStorageBytes = meetings.Sum(m => m.FileSizeBytes),
-            TotalDurationSeconds = meetings.Sum(m => m.DurationSeconds),
-            TotalTokensConsumed = meetings.Sum(m => m.TokensConsumed),
-            LastMeetingAt = meetings.Any() ? meetings.Max(m => m.CreatedAt) : null
-        };
-
-        _logger.LogInformation("User {UserId} statistics: {TotalMeetings} meetings, {CompletedMeetings} completed", 
-            userId, statistics.TotalMeetings, statistics.CompletedMeetings);
-
-        return statistics;
-    }
 }

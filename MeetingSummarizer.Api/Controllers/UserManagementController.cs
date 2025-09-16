@@ -206,7 +206,10 @@ public class UserManagementController : ControllerBase
             if (page < 1) page = 1;
 
             var meetings = await _userService.GetUserMeetingHistoryAsync(userId, pageSize, page);
-            var meetingResponses = meetings.Select(MapToMeetingResponse);
+            var meetingResponses = meetings.Select(meeting =>
+            {
+                return MapToMeetingResponse(meeting);
+            });
 
             // Get total count for pagination
             var user = await _userService.GetUserByIdAsync(userId);

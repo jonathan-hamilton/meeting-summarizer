@@ -135,7 +135,6 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         startIcon={<CloudUpload />} 
         sx={{ mt: 2 }}
         disabled={hasCompletedFile || (isDemo && (isSimulatingUpload || mockTranscripts.length > 0))}
-        onClick={handleClick}
       >
         Select File
       </Button>

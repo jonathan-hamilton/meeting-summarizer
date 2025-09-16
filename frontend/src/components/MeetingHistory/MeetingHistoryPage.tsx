@@ -23,8 +23,6 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  Card,
-  CardContent,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -39,7 +37,6 @@ import type { MeetingListItem } from '../../types/meeting';
 const MeetingHistoryPage: React.FC = () => {
   // Use individual selectors for better performance and reliability
   const meetings = useMeetingHistoryStore(state => state.meetings);
-  const statistics = useMeetingHistoryStore(state => state.statistics);
   const currentPage = useMeetingHistoryStore(state => state.currentPage);
   const totalPages = useMeetingHistoryStore(state => state.totalPages);
   const searchQuery = useMeetingHistoryStore(state => state.searchQuery);
@@ -49,7 +46,6 @@ const MeetingHistoryPage: React.FC = () => {
   const error = useMeetingHistoryStore(state => state.error);
   
   const loadMeetings = useMeetingHistoryStore(state => state.loadMeetings);
-  const loadStatistics = useMeetingHistoryStore(state => state.loadStatistics);
   const deleteMeeting = useMeetingHistoryStore(state => state.deleteMeeting);
   const setPage = useMeetingHistoryStore(state => state.setPage);
   const setSearchQuery = useMeetingHistoryStore(state => state.setSearchQuery);
@@ -65,8 +61,7 @@ const MeetingHistoryPage: React.FC = () => {
   // Load data on component mount
   useEffect(() => {
     loadMeetings();
-    loadStatistics();
-  }, [loadMeetings, loadStatistics]);
+  }, [loadMeetings]);
 
   const handleDeleteClick = (meeting: MeetingListItem) => {
     setMeetingToDelete(meeting);
@@ -92,7 +87,6 @@ const MeetingHistoryPage: React.FC = () => {
     try {
       // Placeholder: In a real implementation, this would call an API endpoint
       // const response = await apiService.downloadMeeting(meeting.id);
-      console.log('Download requested for meeting:', meeting.id);
       alert(`Download functionality not yet implemented for meeting: ${meeting.title || meeting.originalFileName}`);
     } catch (error) {
       console.error('Download failed:', error);
@@ -118,12 +112,15 @@ const MeetingHistoryPage: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    const date = new Date(dateString);
+    
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZoneName: 'short'
     });
   };
 
@@ -139,57 +136,7 @@ const MeetingHistoryPage: React.FC = () => {
         </Typography>
       </Box>
 
-      {/* Statistics Cards */}
-      {statistics && (
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Total Meetings
-                </Typography>
-                <Typography variant="h4">{statistics.totalMeetings}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Success Rate
-                </Typography>
-                <Typography variant="h4" color="success.main">
-                  {statistics.successRate.toFixed(1)}%
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Avg Processing Time
-                </Typography>
-                <Typography variant="h5">
-                  {statistics.formattedAverageProcessingTime}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <Card>
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Storage Used
-                </Typography>
-                <Typography variant="h5">
-                  {statistics.formattedTotalStorage}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
+
 
       {/* Filters and Search */}
       <Box mb={3}>
@@ -311,7 +258,10 @@ const MeetingHistoryPage: React.FC = () => {
                     <TableCell>{meeting.formattedDuration || '—'}</TableCell>
                     <TableCell>{meeting.speakerCount}</TableCell>
                     <TableCell>{meeting.formattedFileSize}</TableCell>
-                    <TableCell>{formatDate(meeting.createdAt)}</TableCell>
+                    <TableCell>
+                      <div>{formatDate(meeting.createdAt)}</div>
+                      <small style={{color: '#666', fontSize: '10px'}}>Raw: {meeting.createdAt}</small>
+                    </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         {meeting.status === 'Completed' && (

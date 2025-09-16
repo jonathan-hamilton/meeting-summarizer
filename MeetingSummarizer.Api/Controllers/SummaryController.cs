@@ -235,40 +235,68 @@ public class SummaryController : ControllerBase
             // So we use a placeholder path or store it if needed
             var blobStoragePath = $"realtime-transcription-{Guid.NewGuid()}";
 
-            _logger.LogInformation("Creating meeting record for real-time transcription, user {UserId}, file {FileName}", 
-                userId, audioFile.FileName);
+            // Calculate actual duration from transcription segments (more accurate than estimation)
+            var actualDurationSeconds = estimatedDurationMinutes * 60; // Fallback to estimate
+            if (transcriptionResult?.Segments?.Any() == true)
+            {
+                actualDurationSeconds = (int)Math.Ceiling(transcriptionResult.Segments.Max(s => s.End));
+                _logger.LogInformation("Using actual duration {ActualDuration}s from real-time transcription segments (estimated was {EstimatedDuration}s)", 
+                    actualDurationSeconds, estimatedDurationMinutes * 60);
+            }
+            else if (transcriptionResult?.Duration.HasValue == true)
+            {
+                actualDurationSeconds = (int)Math.Ceiling(transcriptionResult.Duration.Value);
+                _logger.LogInformation("Using actual duration {ActualDuration}s from transcription result Duration property (estimated was {EstimatedDuration}s)", 
+                    actualDurationSeconds, estimatedDurationMinutes * 60);
+            }
+            else
+            {
+                _logger.LogWarning("No segment or duration data available for real-time transcription, using estimated duration {EstimatedDuration}s", 
+                    actualDurationSeconds);
+            }
 
-            // Create the meeting record with transcription data
+            _logger.LogInformation("Creating meeting record for real-time transcription, user {UserId}, file {FileName}, duration {Duration}s", 
+                userId, audioFile.FileName, actualDurationSeconds);
+
+            // Create the meeting record with actual duration
             var meeting = await _meetingService.CreateMeetingAsync(
                 userId.Value,
                 meetingTitle,
                 $"Real-time transcription completed at {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
                 originalFileName,
                 audioFile.Length,
-                estimatedDurationMinutes * 60, // Convert to seconds
+                actualDurationSeconds,
                 blobStoragePath);
 
             // Update meeting with transcription data
             // Convert TranscriptionResult to the format expected by UpdateMeetingTranscriptionAsync
             var transcriptionJson = System.Text.Json.JsonSerializer.Serialize(transcriptionResult);
             
-            // Create speaker mappings from segments
-            var speakerMappings = transcriptionResult.Segments
-                .Where(s => !string.IsNullOrEmpty(s.Speaker))
-                .GroupBy(s => s.Speaker)
-                .Select((group, index) => new { Speaker = group.Key, DisplayName = $"Speaker {index + 1}" })
-                .ToDictionary(x => x.Speaker!, x => x.DisplayName);
+            // Create speaker mappings from segments (with null safety)
+            Dictionary<string, string> speakerMappings = new();
+            if (transcriptionResult?.Segments?.Any() == true)
+            {
+                speakerMappings = transcriptionResult.Segments
+                    .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                    .GroupBy(s => s.Speaker)
+                    .Select((group, index) => new { Speaker = group.Key, DisplayName = $"Speaker {index + 1}" })
+                    .ToDictionary(x => x.Speaker!, x => x.DisplayName);
+            }
             
             var speakerMappingsJson = speakerMappings.Any() 
                 ? System.Text.Json.JsonSerializer.Serialize(speakerMappings)
                 : null;
 
-            // Calculate speaker count
-            var speakerCount = transcriptionResult.Segments
-                .Where(s => !string.IsNullOrEmpty(s.Speaker))
-                .Select(s => s.Speaker)
-                .Distinct()
-                .Count();
+            // Calculate speaker count (with null safety)
+            var speakerCount = 0;
+            if (transcriptionResult?.Segments?.Any() == true)
+            {
+                speakerCount = transcriptionResult.Segments
+                    .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                    .Select(s => s.Speaker)
+                    .Distinct()
+                    .Count();
+            }
             
             await _meetingService.UpdateMeetingTranscriptionAsync(
                 meeting.Id,

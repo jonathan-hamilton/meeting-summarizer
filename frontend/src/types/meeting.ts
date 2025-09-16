@@ -51,18 +51,7 @@ export interface PaginatedResult<T> {
   hasPreviousPage: boolean;
 }
 
-export interface MeetingStatistics {
-  totalMeetings: number;
-  completedMeetings: number;
-  failedMeetings: number;
-  successRate: number;
-  averageProcessingTimeMs: number;
-  totalStorageBytes: number;
-  
-  // Computed display properties
-  formattedAverageProcessingTime: string;
-  formattedTotalStorage: string;
-}
+
 
 // Request types
 export interface GetMeetingsRequest {
@@ -77,7 +66,6 @@ export interface GetMeetingsRequest {
 // Store state types
 export interface MeetingHistoryState {
   meetings: MeetingListItem[];
-  statistics: MeetingStatistics | null;
   currentPage: number;
   pageSize: number;
   totalCount: number;
@@ -94,7 +82,6 @@ export interface MeetingHistoryState {
 
 export interface MeetingHistoryActions {
   loadMeetings: () => Promise<void>;
-  loadStatistics: () => Promise<void>;
   deleteMeeting: (id: string) => Promise<void>;
   setPage: (page: number) => void;
   setSearchQuery: (query: string) => void;

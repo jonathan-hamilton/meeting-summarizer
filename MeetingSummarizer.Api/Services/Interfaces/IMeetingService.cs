@@ -168,13 +168,5 @@ public interface IMeetingService
         Guid userId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Get user's meeting statistics
-    /// </summary>
-    /// <param name="userId">User ID</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>Meeting statistics</returns>
-    Task<MeetingStatistics> GetMeetingStatisticsAsync(
-        Guid userId,
-        CancellationToken cancellationToken = default);
+
 }

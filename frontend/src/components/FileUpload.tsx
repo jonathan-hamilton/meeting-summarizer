@@ -40,8 +40,8 @@ interface TokenError {
 
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
-  maxFileSize = 1073741824, // 1GB default
-  acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'],
+  maxFileSize: _maxFileSize = 1073741824, // 1GB default (unused for now)
+  acceptedFileTypes: _acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'], // unused for now
   isAuthDialogOpen = false,
 }) => {
   const { mode, isDemo } = useAppMode();
