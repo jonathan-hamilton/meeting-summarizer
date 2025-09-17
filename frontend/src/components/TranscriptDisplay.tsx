@@ -14,7 +14,7 @@ import {
   Skeleton,
 } from "@mui/material";
 import {
-  ContentCopy,
+  PictureAsPdf,
   Person,
   Schedule,
   Error,
@@ -35,6 +35,7 @@ import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
+import { apiService } from "../services/apiService";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -49,11 +50,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   speakerMappings,
   aiSummaryRef,
 }) => {
-  const [copiedSegment, setCopiedSegment] = useState<string | null>(null);
+
   const [forceUpdate, setForceUpdate] = useState(0);
   const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
     useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   
   // Ref to track which transcription ID we've already loaded mappings for
@@ -349,30 +351,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     setDeleteConfirmationOpen(false);
   }, []);
 
-  // Memoize helper function to resolve speaker display name
-  const resolveSpeakerName = useCallback(
-    (speakerId: string): string => {
-      // First check for session-based overrides
-      const override = sessionOverrides[speakerId];
-      if (override && override.action === "Override" && override.newValue) {
-        return override.newValue;
-      }
 
-      // Then check speaker mappings
-      const mapping = effectiveSpeakerMappings.find(
-        (m) => m.speakerId === speakerId
-      );
-      if (mapping) {
-        return mapping.role
-          ? `${mapping.name} (${mapping.role})`
-          : mapping.name;
-      }
-
-      // Return the original speaker ID if no mapping exists yet
-      return speakerId;
-    },
-    [sessionOverrides, effectiveSpeakerMappings]
-  );
 
   // Memoize utility functions
   const formatTime = useCallback((seconds: number): string => {
@@ -399,46 +378,25 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     return `${(Math.round(len * 100) / 100).toFixed(2)} ${sizes[order]}`;
   }, []);
 
-  const copyToClipboard = useCallback(
-    async (text: string, segmentId?: string) => {
-      try {
-        await navigator.clipboard.writeText(text);
-        setCopiedSegment(segmentId || "full");
-        setTimeout(() => setCopiedSegment(null), 2000);
-      } catch (err) {
-        console.error("Failed to copy text: ", err);
-      }
-    },
-    []
-  );
 
-  // Memoize full transcript text for copy functionality
-  const fullTranscriptText = useMemo(() => {
-    if (!speakerSegments || speakerSegments.length === 0) {
-      return transcription.transcribedText || "";
+
+  // PDF download handler
+  const handleDownloadPdf = useCallback(async () => {
+    if (!transcription.transcriptionId) {
+      console.error('No transcription ID available for PDF download');
+      return;
     }
-    return speakerSegments
-      .map((s) => `${resolveSpeakerName(s.speaker)}: ${s.text}`)
-      .join("\n\n");
-  }, [speakerSegments, resolveSpeakerName, transcription.transcribedText]);
 
-  // Memoize copy handlers
-  const handleCopyFullTranscript = useCallback(() => {
-    copyToClipboard(fullTranscriptText);
-  }, [copyToClipboard, fullTranscriptText]);
-
-  const handleCopySimpleTranscript = useCallback(() => {
-    // Use formatted text with speaker names if segments are available
-    if (speakerSegments && speakerSegments.length > 0) {
-      const formattedText = speakerSegments
-        .map((s) => `${resolveSpeakerName(s.speaker)}: ${s.text}`)
-        .join("\n\n");
-      copyToClipboard(formattedText);
-    } else {
-      // Fallback to raw text if no segments available
-      copyToClipboard(transcription.transcribedText || "");
+    setIsDownloadingPdf(true);
+    try {
+      await apiService.downloadTranscriptPdf(transcription.transcriptionId);
+    } catch (error) {
+      console.error('PDF download failed:', error);
+      // You might want to show a toast notification here
+    } finally {
+      setIsDownloadingPdf(false);
     }
-  }, [copyToClipboard, speakerSegments, resolveSpeakerName, transcription.transcribedText]);
+  }, [transcription.transcriptionId]);
 
   if (loading) {
     return (
@@ -599,17 +557,21 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 Transcript
               </Typography>
               <Box sx={{ flexGrow: 1 }} />
-              <Tooltip title="Copy full transcript">
+              <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
                 <span>
                   <IconButton
                     size="small"
-                    onClick={handleCopyFullTranscript}
-                    disabled={isActionDisabledDuringTour('copy-transcript')}
-                    color={copiedSegment === "full" ? "success" : "default"}
-                    aria-label="Copy full transcript"
-                    aria-describedby="copy-full-transcript-tooltip"
+                    onClick={handleDownloadPdf}
+                    disabled={isActionDisabledDuringTour('download-transcript') || isDownloadingPdf}
+                    color={isDownloadingPdf ? "primary" : "default"}
+                    aria-label="Download transcript as PDF"
+                    aria-describedby="download-pdf-tooltip"
                   >
-                    <ContentCopy fontSize="small" />
+                    {isDownloadingPdf ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <PictureAsPdf fontSize="small" />
+                    )}
                   </IconButton>
                 </span>
               </Tooltip>
@@ -655,17 +617,21 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               <Typography variant="h6" component="h4">
                 Transcript
               </Typography>
-              <Tooltip title="Copy transcript">
+              <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
                 <span>
                   <IconButton
                     size="small"
-                    onClick={handleCopySimpleTranscript}
-                    disabled={isActionDisabledDuringTour('copy-transcript')}
-                    color={copiedSegment === "full" ? "success" : "default"}
-                    aria-label="Copy transcript text"
-                    aria-describedby="copy-transcript-tooltip"
+                    onClick={handleDownloadPdf}
+                    disabled={isActionDisabledDuringTour('download-transcript') || isDownloadingPdf}
+                    color={isDownloadingPdf ? "primary" : "default"}
+                    aria-label="Download transcript as PDF"
+                    aria-describedby="download-pdf-tooltip"
                   >
-                    <ContentCopy fontSize="small" />
+                    {isDownloadingPdf ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <PictureAsPdf fontSize="small" />
+                    )}
                   </IconButton>
                 </span>
               </Tooltip>
