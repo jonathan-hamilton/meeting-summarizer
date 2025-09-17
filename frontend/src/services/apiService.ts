@@ -537,6 +537,72 @@ class ApiService {
     }
   }
 
+  /**
+   * Download transcript as PDF for the specified transcription ID
+   * @param transcriptionId Transcription ID to export as PDF
+   * @returns Promise that resolves when file download starts
+   */
+  async downloadTranscriptPdf(transcriptionId: string): Promise<void> {
+    try {
+      console.log(`Starting PDF download for transcription ID: ${transcriptionId}`);
+      const response = await this.client.get(`/api/export/transcript/${transcriptionId}/pdf`, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'application/pdf'
+        }
+      });
+      console.log('PDF download response received:', response.status, response.statusText);
+
+      // Extract filename from Content-Disposition header or use default
+      let filename = `meeting-transcript-${new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '-')}.pdf`;
+      const contentDisposition = response.headers['content-disposition'];
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Create blob and trigger download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      console.log(`PDF download completed: ${filename}`);
+    } catch (error: any) {
+      console.error('Failed to download transcript PDF:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Provide more specific error message
+      if (error.response?.status === 404) {
+        throw new Error('Transcript not found or you do not have access to it.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in again.');
+      } else if (error.response?.status === 400) {
+        throw new Error('Transcript data is not available for PDF generation.');
+      } else if (error.response?.status === 500) {
+        throw new Error('Server error occurred while generating PDF. Please try again later.');
+      } else {
+        throw new Error(`Failed to download PDF: ${error.response?.statusText || error.message}`);
+      }
+    }
+  }
+
   // Utility methods
   getBaseURL(): string {
     return this.baseURL;

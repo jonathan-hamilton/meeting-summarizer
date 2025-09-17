@@ -11,11 +11,13 @@ import {
 import { ArrowBack } from '@mui/icons-material';
 import TranscriptDisplay from './TranscriptDisplay';
 import apiService from '../services/apiService';
+import { useAuthStore } from '../stores/authStore';
 import type { TranscriptionResponse } from '../types';
 
 const TranscriptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const [transcription, setTranscription] = useState<TranscriptionResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +26,17 @@ const TranscriptPage: React.FC = () => {
     if (!id) {
       setError('No meeting ID provided');
       setLoading(false);
+      return;
+    }
+
+    // Wait for auth initialization to complete
+    if (isAuthLoading) {
+      return;
+    }
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      navigate('/app');
       return;
     }
 
@@ -98,7 +111,7 @@ const TranscriptPage: React.FC = () => {
     };
 
     fetchTranscript();
-  }, [id]);
+  }, [id, isAuthenticated, isAuthLoading]);
 
   const handleBack = () => {
     navigate('/history');

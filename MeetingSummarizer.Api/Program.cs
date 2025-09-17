@@ -195,6 +195,9 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.IToken
 // Register Payment Service (S6.3 Increment 4)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Payment.IPaymentService, MeetingSummarizer.Api.Services.Payment.StripePaymentService>();
 
+// Register Document Service (S6.5 PDF Export)
+builder.Services.AddScoped<IDocumentService, DocumentService>();
+
 // Register Batch Transcription Services (S6.3.6)
 builder.Services.AddHttpClient<AzureBatchTranscriptionService>();
 builder.Services.AddScoped<AzureBatchTranscriptionService>();
