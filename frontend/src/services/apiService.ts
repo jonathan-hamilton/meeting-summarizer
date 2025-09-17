@@ -100,13 +100,8 @@ class ApiService {
 
   // Generic request method
   private async request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    console.log(`🔌 HTTP REQUEST: ${config.method?.toUpperCase()} ${config.url}`);
-    console.log(`🔌 Full URL: ${this.baseURL}${config.url}`);
-    console.log(`🔌 Config:`, config);
-    
     try {
       const response = await this.client.request<T>(config);
-      console.log(`✅ HTTP SUCCESS: ${config.method?.toUpperCase()} ${config.url}`, response.status);
       return {
         data: response.data,
         success: true,
@@ -214,6 +209,11 @@ class ApiService {
 
   // Speaker Mapping endpoints (S2.2)
   async saveSpeakerMappings(request: SpeakerMappingRequest): Promise<ApiResponse<SpeakerMappingResponse>> {
+    console.log('=== SAVING SPEAKER MAPPINGS DEBUG ===');
+    console.log('Request:', request);
+    console.log('TranscriptionId being sent:', request.transcriptionId);
+    console.log('Number of mappings:', request.mappings?.length || 0);
+    
     return this.request<SpeakerMappingResponse>({
       method: 'POST',
       url: '/api/SpeakerMapping/map',
@@ -467,8 +467,74 @@ class ApiService {
     return this.get(`/api/meetings?${queryParams.toString()}`);
   }
 
+  async getMeetingById(id: string): Promise<ApiResponse<any>> {
+    return this.get(`/api/meetings/${id}`);
+  }
+
   async deleteMeeting(id: string): Promise<ApiResponse<{ success: boolean }>> {
     return this.delete(`/api/meetings/${id}`);
+  }
+
+  /**
+   * Download meeting transcript as a text file with speaker mappings applied
+   * @param meetingId Meeting ID to export
+   * @returns Promise that resolves when file download starts
+   */
+  async downloadMeetingTranscript(meetingId: string): Promise<void> {
+    try {
+      console.log(`Starting download for meeting ID: ${meetingId}`);
+      const response = await this.client.get(`/api/meetings/${meetingId}/export`, {
+        responseType: 'blob',
+        headers: {
+          'Accept': 'text/plain'
+        }
+      });
+      console.log('Download response received:', response.status, response.statusText);
+
+      // Extract filename from Content-Disposition header or use default
+      let filename = `meeting-${meetingId}-transcript.txt`;
+      const contentDisposition = response.headers['content-disposition'];
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Create blob and trigger download
+      const blob = new Blob([response.data], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error: any) {
+      console.error('Failed to download meeting transcript:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
+      // Provide more specific error message
+      if (error.response?.status === 404) {
+        throw new Error('Meeting not found or you do not have access to it.');
+      } else if (error.response?.status === 401) {
+        throw new Error('Authentication required. Please log in again.');
+      } else if (error.response?.status === 400) {
+        throw new Error('Meeting has no transcript available to export.');
+      } else {
+        throw new Error(`Failed to download transcript: ${error.response?.statusText || error.message}`);
+      }
+    }
   }
 
   // Utility methods

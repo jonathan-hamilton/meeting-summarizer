@@ -44,14 +44,7 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
 
           const response = await apiService.getMeetings(params);
           
-          console.log('Meeting History Store - API Response:', response);
-          console.log('Meeting History Store - Response Data Structure:', JSON.stringify(response.data, null, 2));
-          
           if (response.success && response.data) {
-            console.log('Meeting History Store - Processing meetings:', response.data.items);
-            if (response.data.items && response.data.items.length > 0) {
-              console.log('Meeting History Store - First meeting structure:', JSON.stringify(response.data.items[0], null, 2));
-            }
             set({
               meetings: response.data.items || [],
               totalCount: response.data.totalCount || 0,

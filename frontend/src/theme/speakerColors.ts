@@ -27,7 +27,12 @@ export const SPEAKER_COLORS = [
  * @param speakerId - The unique identifier for the speaker
  * @returns A hex color string
  */
-export const getSpeakerColor = (speakerId: string): string => {
+export const getSpeakerColor = (speakerId: string | undefined): string => {
+  // Handle undefined or null speakerId
+  if (!speakerId) {
+    return "#9e9e9e"; // Grey color for undefined speakers
+  }
+  
   // Special handling for unassigned speakers
   if (speakerId === "Unassigned") {
     return "#9e9e9e"; // Grey color for unassigned speakers

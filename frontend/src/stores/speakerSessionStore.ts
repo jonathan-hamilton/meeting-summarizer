@@ -43,6 +43,10 @@ interface SpeakerSessionState {
   resetToOriginal: () => void;
   clearSession: () => void;
   
+  // Persistence actions
+  loadSpeakerMappingsFromApi: (transcriptionId: string) => Promise<boolean>;
+  saveSpeakerMappingsToApi: (mappings: SpeakerMapping[]) => Promise<boolean>;
+  
   // Selectors (Computed Values) - now cached
   getActiveSpeakers: () => string[];
   getSpeakerStats: () => SpeakerStats;
@@ -335,6 +339,58 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
         const cache = recomputeCache(state);
         set({ _computedCache: cache });
         return cache.hasUnsavedChanges;
+      },
+
+      // Persistence methods
+      loadSpeakerMappingsFromApi: async (transcriptionId: string) => {
+        try {
+          // Import apiService dynamically to avoid circular dependencies
+          const { apiService } = await import('../services/apiService');
+          const response = await apiService.getSpeakerMappings(transcriptionId);
+          
+          if (response.success && response.data?.mappings) {
+            // Update store with loaded mappings
+            set({
+              speakerMappings: response.data.mappings,
+              _computedCache: null, // Invalidate cache
+            });
+            
+            return true;
+          } else {
+            return false;
+          }
+        } catch (error) {
+          console.error('Store - Failed to load speaker mappings:', error);
+          return false;
+        }
+      },
+
+      saveSpeakerMappingsToApi: async (mappings: SpeakerMapping[]) => {
+        try {
+          const state = get();
+          if (!state.transcriptionId) {
+            console.error('[ERROR] Store - No transcriptionId available for saving');
+            return false;
+          }
+          
+          // Import apiService dynamically to avoid circular dependencies
+          const { apiService } = await import('../services/apiService');
+          const response = await apiService.saveSpeakerMappings({
+            transcriptionId: state.transcriptionId,
+            mappings: mappings
+          });
+          
+          // Update store with saved mappings
+          set({
+            speakerMappings: mappings,
+            _computedCache: null, // Invalidate cache
+          });
+          
+          return response.success || false;
+        } catch (error) {
+          console.error('[ERROR] Store - Failed to save speaker mappings:', error);
+          return false;
+        }
       },
     }),
     {

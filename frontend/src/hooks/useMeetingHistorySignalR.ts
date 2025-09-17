@@ -21,8 +21,6 @@ export const useMeetingHistorySignalR = () => {
     const signalRService = getMeetingProgressSignalRService();
 
     const handleMeetingProgress = (update: MeetingProgressUpdate) => {
-      console.log('📡 Meeting History SignalR: Received meeting progress update:', update);
-
       // Convert SignalR update to meeting list item update format
       const meetingUpdate: Partial<MeetingListItem> = {
         id: update.meetingId,

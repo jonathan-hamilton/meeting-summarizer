@@ -1,6 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
+using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.SpeakerMapping;
+using MeetingSummarizer.Api.Services.Interfaces;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -14,15 +18,21 @@ public class SpeakerMappingController : ControllerBase
 {
     private readonly ISpeakerMappingService _speakerMappingService;
     private readonly ISessionSpeakerMappingService _sessionSpeakerMappingService;
+    private readonly IMeetingService _meetingService;
+    private readonly MeetingSummarizerDbContext _context;
     private readonly ILogger<SpeakerMappingController> _logger;
 
     public SpeakerMappingController(
         ISpeakerMappingService speakerMappingService,
         ISessionSpeakerMappingService sessionSpeakerMappingService,
+        IMeetingService meetingService,
+        MeetingSummarizerDbContext context,
         ILogger<SpeakerMappingController> logger)
     {
         _speakerMappingService = speakerMappingService;
         _sessionSpeakerMappingService = sessionSpeakerMappingService;
+        _meetingService = meetingService;
+        _context = context;
         _logger = logger;
     }
 
@@ -73,6 +83,17 @@ public class SpeakerMappingController : ControllerBase
             }
 
             var response = await _speakerMappingService.SaveSpeakerMappingsAsync(request);
+
+            // Also try to persist speaker mappings to the Meeting entity for export functionality
+            try 
+            {
+                await PersistSpeakerMappingsToMeetingAsync(request.TranscriptionId, response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to persist speaker mappings to Meeting entity for transcription {TranscriptionId}", request.TranscriptionId);
+                // Don't fail the request if this fails, just log the warning
+            }
 
             _logger.LogInformation("Successfully saved {Count} speaker mappings for transcription {TranscriptionId}",
                 response.MappedSpeakerCount, request.TranscriptionId);
@@ -332,4 +353,74 @@ public class SpeakerMappingController : ControllerBase
     }
 
     #endregion
+
+    /// <summary>
+    /// Persist speaker mappings to Meeting entity for export functionality
+    /// This bridges the gap between session-based storage and persistent export needs
+    /// </summary>
+    /// <param name="transcriptionId">The transcription ID (could be batch job ID or meeting ID)</param>
+    /// <param name="speakerMappings">The speaker mappings to persist</param>
+    private async Task PersistSpeakerMappingsToMeetingAsync(string transcriptionId, SpeakerMappingResponse speakerMappings)
+    {
+        try
+        {
+            // First try to parse as Guid (batch job ID or meeting ID)
+            if (Guid.TryParse(transcriptionId, out var transcriptionGuid))
+            {
+                // Look for batch job with this ID first
+                var batchJob = await _context.BatchTranscriptionJobs
+                    .Where(b => b.Id == transcriptionGuid)
+                    .FirstOrDefaultAsync();
+
+                if (batchJob != null)
+                {
+                    // Found batch job, get the associated meeting
+                    var meeting = await _context.Meetings
+                        .Where(m => m.Id == batchJob.MeetingId)
+                        .FirstOrDefaultAsync();
+
+                    if (meeting != null)
+                    {
+                        // Serialize speaker mappings to JSON and save
+                        meeting.SpeakerMappingsJson = JsonSerializer.Serialize(speakerMappings);
+                        await _context.SaveChangesAsync();
+
+                        _logger.LogInformation("Successfully persisted {Count} speaker mappings to Meeting {MeetingId}", 
+                            speakerMappings.MappedSpeakerCount, meeting.Id);
+                        return;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Batch job {BatchJobId} found but associated meeting {MeetingId} not found", batchJob.Id, batchJob.MeetingId);
+                    }
+                }
+
+                // No batch job found, try direct meeting lookup
+                var directMeeting = await _context.Meetings
+                    .Where(m => m.Id == transcriptionGuid)
+                    .FirstOrDefaultAsync();
+
+                if (directMeeting != null)
+                {
+                    directMeeting.SpeakerMappingsJson = JsonSerializer.Serialize(speakerMappings);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Successfully persisted {Count} speaker mappings to Meeting {MeetingId}", 
+                        speakerMappings.MappedSpeakerCount, directMeeting.Id);
+                    return;
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Transcription ID {TranscriptionId} is not a valid GUID", transcriptionId);
+            }
+
+            _logger.LogWarning("Could not find meeting or batch job for transcription ID {TranscriptionId}", transcriptionId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to persist speaker mappings for transcription {TranscriptionId}", transcriptionId);
+            throw;
+        }
+    }
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -23,6 +24,7 @@ import {
   CircularProgress,
   Alert,
   Grid,
+  Link,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
@@ -33,8 +35,11 @@ import {
 import { useMeetingHistoryStore } from '../../stores/meetingHistoryStore';
 import { useMeetingHistorySignalR } from '../../hooks/useMeetingHistorySignalR';
 import type { MeetingListItem } from '../../types/meeting';
+import { apiService } from '../../services/apiService';
 
 const MeetingHistoryPage: React.FC = () => {
+  const navigate = useNavigate();
+  
   // Use individual selectors for better performance and reliability
   const meetings = useMeetingHistoryStore(state => state.meetings);
   const currentPage = useMeetingHistoryStore(state => state.currentPage);
@@ -81,13 +86,26 @@ const MeetingHistoryPage: React.FC = () => {
     setMeetingToDelete(null);
   };
 
+  const handleViewMeeting = (meeting: MeetingListItem) => {
+    console.log('Navigating to meeting:', meeting.id);
+    navigate(`/transcript/${meeting.id}`);
+  };
+
   const handleDownloadClick = async (meeting: MeetingListItem) => {
-    // TODO: Implement download functionality
-    // This would typically download a PDF or ZIP file with transcript and summary
     try {
-      // Placeholder: In a real implementation, this would call an API endpoint
-      // const response = await apiService.downloadMeeting(meeting.id);
-      alert(`Download functionality not yet implemented for meeting: ${meeting.title || meeting.originalFileName}`);
+      console.log(`Downloading transcript for meeting: ${meeting.title || meeting.originalFileName}`);
+      console.log(`Meeting ID: ${meeting.id}`);
+      console.log('Meeting object:', meeting);
+      
+      // Debug: Check current session state for transcription ID
+      const sessionState = (window as any).useSpeakerSessionStore?.getState?.();
+      if (sessionState) {
+        console.log('Current session transcriptionId:', sessionState.transcriptionId);
+        console.log('Session speaker mappings:', sessionState.speakerMappings);
+      }
+      
+      await apiService.downloadMeetingTranscript(meeting.id);
+      console.log('Download initiated successfully');
     } catch (error) {
       console.error('Download failed:', error);
       alert('Download failed. Please try again.');
@@ -230,11 +248,24 @@ const MeetingHistoryPage: React.FC = () => {
                   <TableRow key={meeting.id} hover>
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" fontWeight="medium">
+                        <Link 
+                          component="button"
+                          variant="body2" 
+                          fontWeight="medium"
+                          onClick={() => handleViewMeeting(meeting)}
+                          sx={{ 
+                            textAlign: 'left',
+                            textDecoration: 'none',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              textDecoration: 'underline'
+                            }
+                          }}
+                        >
                           {meeting.title || meeting.originalFileName}
-                        </Typography>
+                        </Link>
                         {meeting.title && meeting.title !== meeting.originalFileName && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" display="block">
                             {meeting.originalFileName}
                           </Typography>
                         )}

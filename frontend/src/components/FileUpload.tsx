@@ -255,7 +255,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
             );
           } else {
             // This is a regular transcription response
-            console.log('⚡ IMMEDIATE TRANSCRIPTION DETECTED');
             setUploadFiles((prev) =>
               prev.map((f) =>
                 f.id === uploadFile.id

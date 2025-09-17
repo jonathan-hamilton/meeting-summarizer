@@ -1,6 +1,7 @@
 /**
  * Speaker validation utilities
- * Extracted from legacy store to be independent of store implementation
+ * Extracted from legacy store  // Role validation - roles do not need to be unique, multiple speakers can have the same role
+  // Removed uniqueness validation as requestedent of store implementation
  */
 
 import type { ValidationError } from '../types';
@@ -22,22 +23,7 @@ export const validateSpeakerMapping = (
 ): ValidationError[] => {
   const errors: ValidationError[] = [];
 
-  // Check for duplicate names (excluding current mapping)
-  // Only validate duplicates if the name is not empty
-  if (mapping.name && mapping.name.trim() !== '') {
-    const nameExists = allMappings.some(
-      m => m.speakerId !== mapping.speakerId && 
-           m.name === mapping.name &&
-           m.name.trim() !== '' // Only consider non-empty names as duplicates
-    );
-    if (nameExists) {
-      errors.push({
-        field: 'name',
-        message: 'Speaker name must be unique',
-        speakerId: mapping.speakerId
-      });
-    }
-  }
+  // Names do not need to be unique - removed validation
 
   // Email validation (optional but must be valid format if provided)
   if (mapping.email && mapping.email.trim() !== '') {
@@ -65,22 +51,7 @@ export const validateSpeakerMapping = (
     }
   }
 
-  // Check for duplicate roles (excluding current mapping)
-  // Only validate role uniqueness if the role is not empty and not the default "Role" value
-  if (mapping.role && mapping.role.trim() !== '' && mapping.role !== 'Role') {
-    const roleExists = allMappings.some(
-      m => m.speakerId !== mapping.speakerId && 
-           m.role === mapping.role &&
-           m.role !== 'Role' // Don't consider default "Role" values as duplicates
-    );
-    if (roleExists) {
-      errors.push({
-        field: 'role',
-        message: 'Speaker role must be unique',
-        speakerId: mapping.speakerId
-      });
-    }
-  }
+  // Roles do not need to be unique - removed validation
 
   return errors;
 };
