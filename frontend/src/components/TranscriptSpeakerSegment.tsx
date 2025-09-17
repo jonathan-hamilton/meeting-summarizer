@@ -14,7 +14,12 @@ import { getSpeakerColor } from "../theme/speakerColors";
 import { useTourStore } from "../stores/tourStore";
 
 // Helper function to format speaker label without duplication
-const formatSpeakerLabel = (speakerId: string): string => {
+const formatSpeakerLabel = (speakerId: string | undefined): string => {
+  // Handle undefined or null speakerId
+  if (!speakerId) {
+    return 'Unknown Speaker';
+  }
+  
   // If already starts with "Speaker", return as-is
   if (speakerId.toLowerCase().startsWith('speaker')) {
     return speakerId;
@@ -61,7 +66,7 @@ export const TranscriptSpeakerSegment: React.FC<
   
   // Get ALL detected speakers from original segments for reassignment options
   const originalDetectedSpeakers = useMemo(() => {
-    return Array.from(new Set(originalSegments.map(segment => segment.speaker)));
+    return Array.from(new Set(originalSegments.map(segment => (segment as any).Speaker || segment.speaker)));
   }, [originalSegments]);
   
   // Get detected speakers from store mappings as fallback
@@ -106,8 +111,9 @@ export const TranscriptSpeakerSegment: React.FC<
     );
 
     // Add current segment speaker (but not if it's "Unassigned")
-    if (segment.speaker !== "Unassigned") {
-      allSpeakerIds.add(segment.speaker);
+    const speakerId = (segment as any).Speaker || segment.speaker;
+    if (speakerId !== "Unassigned") {
+      allSpeakerIds.add(speakerId);
     }
 
     // Create options for all speakers
@@ -143,7 +149,7 @@ export const TranscriptSpeakerSegment: React.FC<
       options.push({
         id: speakerId,
         name: displayName,
-        isOriginal: speakerId === segment.speaker,
+        isOriginal: speakerId === ((segment as any).Speaker || segment.speaker),
         isOverridden: mapping?.isOverridden || false,
       });
     });
@@ -170,7 +176,7 @@ export const TranscriptSpeakerSegment: React.FC<
   const currentSpeakerInfo = useMemo(() => {
     // For individual segments, use the actual segment.speaker (which gets updated by parent component)
     // Session overrides are only used for global speaker-to-speaker reassignments, not individual segments
-    const effectiveSpeakerId = segment.speaker;
+    const effectiveSpeakerId = (segment as any).Speaker || segment.speaker;
     
     // Handle explicitly unassigned speakers
     if (effectiveSpeakerId === "Unassigned") {
@@ -280,7 +286,7 @@ export const TranscriptSpeakerSegment: React.FC<
     // For individual segment reassignment, we update segment.speaker directly
     // So we only check for speaker mapping overrides, not session overrides
     const mappingOverridden = speakerOptions.find(
-      (opt) => opt.id === segment.speaker
+      (opt) => opt.id === ((segment as any).Speaker || segment.speaker)
     )?.isOverridden;
 
     // Individual segments are not considered "overridden" - they're just updated
@@ -328,10 +334,10 @@ export const TranscriptSpeakerSegment: React.FC<
               fontSize="small"
               sx={{ mr: 0.5, verticalAlign: "middle" }}
             />
-            {formatTime(segment.start)} - {formatTime(segment.end)}
+            {formatTime((segment as any).Start || segment.start)} - {formatTime((segment as any).End || segment.end)}
           </Typography>
 
-          {segment.confidence && (
+          {((segment as any).Confidence || segment.confidence) && (
             <Typography
               variant="body2"
               color="text.secondary"
@@ -341,7 +347,7 @@ export const TranscriptSpeakerSegment: React.FC<
                   : "none",
               }}
             >
-              {Math.round(segment.confidence * 100)}% confidence
+              {Math.round(((segment as any).Confidence || segment.confidence) * 100)}% confidence
             </Typography>
           )}
 
@@ -364,7 +370,7 @@ export const TranscriptSpeakerSegment: React.FC<
 
         {/* Segment Text */}
         <Typography variant="body1" sx={{ mt: 1, pl: 2 }}>
-          {segment.text}
+          {(segment as any).Text || segment.text}
         </Typography>
       </Box>
 

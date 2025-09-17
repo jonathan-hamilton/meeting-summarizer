@@ -471,11 +471,25 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
       // Notify parent component
       if (onMappingsSaved) {
+        console.log('=== SPEAKER MAPPING DIALOG SAVE DEBUG ===');
+        console.log('transcriptionId used for mappings:', transcriptionId);
+        console.log('speakerMappingsForCallback:', speakerMappingsForCallback);
+        console.log('Each mapping transcriptionId:', speakerMappingsForCallback.map(m => ({ speakerId: m.speakerId, transcriptionId: m.transcriptionId })));
+        console.log('onMappingsSaved callback function:', onMappingsSaved);
+        console.log('onMappingsSaved callback type:', typeof onMappingsSaved);
+        console.log('onMappingsSaved callback name:', onMappingsSaved.name);
+        
         console.log(
           "✅ SpeakerMappingDialog: Calling onMappingsSaved callback"
         );
-        onMappingsSaved(speakerMappingsForCallback);
-        console.log("✅ SpeakerMappingDialog: Callback completed");
+        try {
+          onMappingsSaved(speakerMappingsForCallback);
+          console.log("✅ SpeakerMappingDialog: Callback completed successfully");
+        } catch (error) {
+          console.error("❌ SpeakerMappingDialog: Callback failed with error:", error);
+        }
+      } else {
+        console.warn("⚠️ SpeakerMappingDialog: onMappingsSaved callback is undefined/null");
       }
 
       setSuccess(true);

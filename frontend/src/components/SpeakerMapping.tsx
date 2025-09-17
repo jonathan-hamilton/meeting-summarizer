@@ -23,7 +23,12 @@ import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
 
 // Helper function to format speaker label without duplication
-const formatSpeakerLabel = (speakerId: string): string => {
+const formatSpeakerLabel = (speakerId: string | undefined): string => {
+  // Handle undefined or null speakerId
+  if (!speakerId) {
+    return 'Unknown Speaker';
+  }
+  
   // If already starts with "Speaker", return as-is
   if (speakerId.toLowerCase().startsWith('speaker')) {
     return speakerId;
@@ -36,12 +41,14 @@ interface SpeakerMappingProps {
   transcriptionId: string;
   detectedSpeakers: string[];
   onMappingsChanged?: (mappings: SpeakerMapping[]) => void;
+  onMappingsSaved?: (mappings: SpeakerMapping[]) => void;
 }
 
 export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   transcriptionId,
   detectedSpeakers: _detectedSpeakers, // Keep interface compatibility but don't use
   onMappingsChanged,
+  onMappingsSaved,
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -100,10 +107,13 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       // The store should already be updated by the dialog component
       // Don't re-initialize here as it can cause the mappings to be lost
       
-      // Notify parent component of changes
+      // Call parent persistence callback first (for database saving)
+      onMappingsSaved?.(newMappings);
+      
+      // Notify parent component of changes (for UI updates)
       onMappingsChanged?.(newMappings);
     },
-    [onMappingsChanged]
+    [onMappingsChanged, onMappingsSaved]
   );
 
   const handleOpenDialog = useCallback(() => {

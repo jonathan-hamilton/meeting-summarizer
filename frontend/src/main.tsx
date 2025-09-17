@@ -30,6 +30,10 @@ const router = createBrowserRouter([
     path: "/history",
     element: <AppWithContext />,
   },
+  {
+    path: "/transcript/:id",
+    element: <AppWithContext />,
+  },
 ], {
   future: {
     v7_relativeSplatPath: true,

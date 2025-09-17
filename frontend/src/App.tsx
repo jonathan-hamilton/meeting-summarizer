@@ -47,6 +47,7 @@ import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
+import TranscriptPage from "./components/TranscriptPage";
 import { sessionManager } from "./services/sessionManager";
 
 import type { TranscriptionResponse } from "./types";
@@ -510,6 +511,8 @@ const AppContent: React.FC = () => {
             {/* Render different content based on the current route */}
             {location.pathname === '/history' ? (
               <MeetingHistoryPage />
+            ) : location.pathname.startsWith('/transcript/') ? (
+              <TranscriptPage />
             ) : (
               <Grid
                 container

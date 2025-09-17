@@ -144,7 +144,14 @@ public class SummaryController : ControllerBase
                     request.AudioFile.FileName, response.TranscriptionId, response.SpeakerCount);
 
                 // S6.5: Create meeting record for real-time transcriptions (< 5 min files)
-                await CreateMeetingForRealTimeTranscription(request.AudioFile, transcriptionResult, estimatedDurationMinutes);
+                var meetingId = await CreateMeetingForRealTimeTranscription(request.AudioFile, transcriptionResult, estimatedDurationMinutes);
+                
+                // Update response with meeting ID as transcription ID for proper linking
+                if (meetingId.HasValue)
+                {
+                    response.TranscriptionId = meetingId.Value.ToString();
+                    _logger.LogInformation("Updated transcription response with meeting ID {MeetingId} as transcription ID", meetingId.Value);
+                }
 
                 return Ok(response);
             }
@@ -209,7 +216,7 @@ public class SummaryController : ControllerBase
     /// Create a meeting record for real-time transcription results
     /// Ensures all processed files appear in meeting history regardless of duration
     /// </summary>
-    private async Task CreateMeetingForRealTimeTranscription(
+    private async Task<Guid?> CreateMeetingForRealTimeTranscription(
         IFormFile audioFile, 
         TranscriptionResult transcriptionResult, 
         int estimatedDurationMinutes)
@@ -221,7 +228,7 @@ public class SummaryController : ControllerBase
             if (!userId.HasValue)
             {
                 _logger.LogDebug("Skipping meeting creation for real-time transcription - user not authenticated");
-                return;
+                return null;
             }
 
             // Prepare meeting data
@@ -312,11 +319,14 @@ public class SummaryController : ControllerBase
 
             _logger.LogInformation("Successfully created meeting {MeetingId} for real-time transcription {FileName}", 
                 meeting.Id, audioFile.FileName);
+                
+            return meeting.Id;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create meeting record for real-time transcription {FileName}", audioFile.FileName);
             // Don't throw - transcription was successful, meeting creation is supplementary
+            return null;
         }
     }
 

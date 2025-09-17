@@ -44,11 +44,15 @@ export interface BatchJobStatus {
 
 export const ACCEPTED_AUDIO_FORMATS = [
   'audio/wav',
+  'audio/wave',
+  'audio/x-wav',
   'audio/mp3',
   'audio/mpeg',
   'audio/mp4',
   'audio/m4a',
+  'audio/x-m4a',
   'audio/flac',
+  'audio/x-flac',
   'audio/ogg',
   'audio/webm',
   'audio/aac'
