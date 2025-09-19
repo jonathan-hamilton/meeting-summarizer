@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, Suspense } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -10,7 +10,6 @@ import {
   Snackbar,
   Divider,
   Stack,
-  Skeleton,
 } from "@mui/material";
 import TourPopover from "./TourPopover";
 import SummaryHeader from "./SummaryHeader";
@@ -24,8 +23,7 @@ import { useSummaryStore } from "../stores/summaryStore";
 import { useTourStore } from "../stores/tourStore";
 import { useAppMode } from "../contexts/AppModeContext";
 
-// Lazy load EmailCompositionDialog to reduce bundle size
-const EmailCompositionDialog = React.lazy(() => import("./EmailCompositionDialog"));
+// EmailCompositionDialog now handled by TranscriptDisplay
 
 import UpsertActionItemDialog from "./UpsertActionItemDialog";
 
@@ -92,8 +90,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     severity: "info",
   });
 
-  // Email dialog state
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  // Email dialog now handled by TranscriptDisplay EmailCompositionDialog
 
   // Action item dialog state
   const [actionItemDialogOpen, setActionItemDialogOpen] = useState(false);
@@ -161,12 +158,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     }
   };
 
-  // Handle email sending
-  const handleSendEmail = (emailData: any) => {
-    // For now, just simulate sending and show success message
-    // In a real implementation, this would call an email service
-    showSnackbar(`Email sent successfully to ${emailData.recipients.length} recipient(s)!`, "success");
-  };
+  // Email sending now handled by EmailCompositionDialog
 
   // Action item handlers
   const handleCreateActionItem = () => {
@@ -318,7 +310,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               isDemo={isDemo}
               isTourActive={isTourActive}
               isCurrentStep={isCurrentStep}
-              onShareClick={() => setEmailDialogOpen(true)}
+              onShareClick={() => console.log('Email button clicked - TODO: Connect to Zustand store')}
               onCopyClick={() => handleCopyToClipboard(summary.meetingOverview, "Summary")}
               onCloseStep={closeStep}
               triggerStepAction={triggerStepAction}
@@ -369,17 +361,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         </Alert>
       </Snackbar>
 
-      {/* Email Composition Dialog */}
-      <Suspense fallback={<Skeleton variant="rectangular" height={600} />}>
-        <EmailCompositionDialog
-          open={emailDialogOpen}
-          onClose={() => setEmailDialogOpen(false)}
-          summary={summary}
-          speakerMappings={effectiveSpeakerMappings}
-          actionItems={actionItems}
-          onSend={handleSendEmail}
-        />
-      </Suspense>
+      {/* Email Composition Dialog - Now handled by TranscriptDisplay */}
 
       {/* Action Item Dialog */}
       <UpsertActionItemDialog

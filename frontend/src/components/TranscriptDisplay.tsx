@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -6,24 +7,28 @@ import {
   Box,
   Chip,
   IconButton,
+  Button,
   Tooltip,
   Stack,
   Divider,
   Alert,
   CircularProgress,
-  Skeleton,
 } from "@mui/material";
 import {
   PictureAsPdf,
   Person,
   Schedule,
   Error,
+  Email,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
+import { useEmailStore } from "../stores/emailStore";
 
-// Lazy load SpeakerMappingDialog to reduce bundle size  
-const SpeakerMappingDialog = React.lazy(() => import("./SpeakerMappingDialog").then(m => ({ default: m.SpeakerMappingDialog })));
+// Lazy load SpeakerMappingDialog to reduce bundle
+// S6.5 Phase 3: Direct imports for debugging (were lazy loaded)
+import SpeakerMappingDialog from "./SpeakerMappingDialog";
+import EmailCompositionDialog from "./EmailCompositionDialog";
 
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
@@ -36,6 +41,7 @@ import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscription
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
 import { apiService } from "../services/apiService";
+import { emailService } from "../services/emailService";
 
 interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
@@ -56,6 +62,13 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // S6.5 Phase 3: Email dialog state using Zustand store
+  const { isDialogOpen: emailDialogOpen, openDialog: openEmailDialog, closeDialog: closeEmailDialog } = useEmailStore();
+  const location = useLocation();
+
+  // Email button ref for direct event listener attachment
+  const emailButtonRef = useRef<HTMLButtonElement>(null);
 
   
   // Ref to track which transcription ID we've already loaded mappings for
@@ -249,6 +262,62 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     }
   }, [transcription.transcriptionId, allDetectedSpeakers, initializeSpeakers, loadSpeakerMappingsFromApi, storeSpeakerMappings]);
 
+  // Create stable event handler using refs to avoid stale closures
+  const stableEmailHandler = useCallback(() => {
+    console.log('🚨🚨🚨 STABLE HANDLER CALLED 🚨🚨🚨');
+    console.log('Current openEmailDialog:', typeof openEmailDialog);
+    console.log('Current transcription:', transcription?.transcriptionId);
+    
+    openEmailDialog({
+      transcriptData: {
+        transcriptionId: transcription.transcriptionId,
+        fileName: transcription.fileName,
+        speakerSegments: speakerSegments,
+        transcribedText: transcription.transcribedText || ''
+      },
+      speakerMappings: storeSpeakerMappings,
+    });
+    console.log('✅ openEmailDialog called from stable handler');
+  }, [openEmailDialog, transcription.transcriptionId, transcription.fileName, transcription.transcribedText, speakerSegments, storeSpeakerMappings]);
+
+  // Direct event listener for email button to bypass React synthetic events
+  useEffect(() => {
+    const button = emailButtonRef.current;
+    if (button) {
+      console.log('🔧 USEEFFECT: Email button found, attaching direct event listener', button);
+      console.log('🔧 Button element ID for tracking:', button.getAttribute('data-button-id') || 'no-id');
+      
+      const handleDirectClick = (event: Event) => {
+        console.log('🚨🚨🚨 DIRECT EVENT LISTENER FIRED 🚨🚨🚨');
+        console.log('Direct event:', event);
+        event.preventDefault();
+        event.stopPropagation();
+        
+        console.log('About to call stable handler...');
+        stableEmailHandler();
+      };
+
+      // Add a unique identifier to track button instances
+      const buttonId = `email-button-${Date.now()}-${Math.random()}`;
+      button.setAttribute('data-button-id', buttonId);
+      
+      button.addEventListener('click', handleDirectClick, true); // Use capture phase
+      console.log('🔧 Direct event listener attached with capture=true, button ID:', buttonId);
+
+      return () => {
+        console.log('🔧 CLEANUP: Removing event listener from button ID:', button.getAttribute('data-button-id'));
+        if (button && button.removeEventListener) {
+          button.removeEventListener('click', handleDirectClick, true);
+          console.log('🔧 Direct event listener removed successfully');
+        } else {
+          console.log('🔧 Button element no longer available for cleanup');
+        }
+      };
+    } else {
+      console.log('🔧 USEEFFECT: Email button ref not found');
+    }
+  }, [stableEmailHandler]); // Only depend on the stable handler
+
   // Memoize transcript structure invalidation (for confidence score strikethrough)
   const isTranscriptStructureInvalidated = useMemo(() => {
     // Check if any speaker segments have been reassigned (structural change)
@@ -398,6 +467,68 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     }
   }, [transcription.transcriptionId]);
 
+  // S6.5 Phase 3: Email functionality
+  const isAppPage = location.pathname === '/app';
+  const isTranscriptPage = location.pathname.startsWith('/transcript');
+  const shouldShowEmailButton = isAppPage || isTranscriptPage;
+  
+  console.log('=== EMAIL BUTTON DEBUG ===');
+  console.log('location.pathname:', location.pathname);
+  console.log('isAppPage:', isAppPage);
+  console.log('isTranscriptPage:', isTranscriptPage);
+  console.log('shouldShowEmailButton:', shouldShowEmailButton);
+  console.log('emailDialogOpen:', emailDialogOpen);
+  console.log('isActionDisabledDuringTour(email-transcript):', isActionDisabledDuringTour('email-transcript'));
+  
+  const handleEmailTranscript = useCallback(() => {
+    console.log('🔥🔥🔥 EMAIL BUTTON CLICKED - FUNCTION CALLED 🔥🔥🔥');
+    console.log('Current location:', location.pathname);
+    console.log('shouldShowEmailButton:', shouldShowEmailButton);
+    console.log('Current emailDialogOpen state:', emailDialogOpen);
+    console.log('openEmailDialog function:', openEmailDialog);
+    console.log('Opening email dialog with Zustand store...');
+    
+    // Open dialog with transcript context
+    openEmailDialog({
+      transcriptData: {
+        transcriptionId: transcription.transcriptionId,
+        fileName: transcription.fileName,
+        speakerSegments: speakerSegments,
+        transcribedText: transcription.transcribedText || ''
+      },
+      speakerMappings: storeSpeakerMappings,
+      transcriptOnly: true,
+      includeTranscriptDefault: true
+    });
+  }, [location.pathname, shouldShowEmailButton, openEmailDialog, transcription, speakerSegments, storeSpeakerMappings]);
+
+
+
+  const handleEmailSend = useCallback(async (emailData: any) => {
+    try {
+      console.log('Sending transcript email:', emailData);
+      
+      const result = await emailService.emailTranscript(transcription.transcriptionId, {
+        recipients: emailData.recipients,
+        subject: emailData.subject,
+        includeTranscript: emailData.includeTranscript !== false // default to true
+      });
+      
+      if (result.success) {
+        console.log('✅ Transcript email sent successfully');
+        // You could show a success toast here
+      } else {
+        console.error('❌ Failed to send transcript email:', result.message);
+        // You could show an error toast here
+      }
+    } catch (error) {
+      console.error('❌ Error sending transcript email:', error);
+      // You could show an error toast here
+    } finally {
+      closeEmailDialog();
+    }
+  }, [transcription.transcriptionId]);
+
   if (loading) {
     return (
       <Card sx={{ mb: 2, width: "100%" }}>
@@ -543,6 +674,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         )}
 
         {/* Speaker segments display */}
+        {(() => {
+          console.log('🔍 RENDER PATH DEBUG:', {
+            speakerSegments: speakerSegments?.length || 0,
+            hasSegments: !!(speakerSegments && speakerSegments.length > 0),
+            transcribedText: !!transcription.transcribedText
+          });
+          return null;
+        })()}
         {speakerSegments && speakerSegments.length > 0 ? (
           <Box
             id="transcript-display"
@@ -575,6 +714,30 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   </IconButton>
                 </span>
               </Tooltip>
+              {/* Email button - shown on /app and /transcript pages */}
+              {shouldShowEmailButton && (
+                <Tooltip title="Email transcript">
+                  <span>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<Email />}
+                      onClick={(e) => {
+                        console.log('🎯🎯🎯 EMAIL BUTTON CLICKED!!! 🎯🎯🎯');
+                        console.log('🚀 Triggering email dialog from onClick event...');
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleEmailTranscript();
+                      }}
+                      sx={{ ml: 1 }}
+                      disabled={isActionDisabledDuringTour('email-transcript')}
+                      aria-label="Email transcript"
+                    >
+                      Email
+                    </Button>
+                  </span>
+                </Tooltip>
+              )}
             </Stack>
 
             {/* Speaker segments */}
@@ -607,7 +770,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
           </Box>
         ) : transcription.transcribedText ? (
           /* Fallback to simple text display */
-          <Box>
+          <>
+            {(() => {
+              console.log('📝 USING FALLBACK RENDER PATH - Simple text display');
+              return null;
+            })()}
+            <Box>
             <Stack
               direction="row"
               alignItems="center"
@@ -617,6 +785,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               <Typography variant="h6" component="h4">
                 Transcript
               </Typography>
+              <Box sx={{ flexGrow: 1 }} />
               <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
                 <span>
                   <IconButton
@@ -635,6 +804,35 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   </IconButton>
                 </span>
               </Tooltip>
+              {/* Email button - shown on /app and /transcript pages (fallback section) */}
+              {shouldShowEmailButton && (
+                <Tooltip title="Email transcript">
+                  <span>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        console.log('🚨🚨🚨 FALLBACK CLICK EVENT FIRED 🚨🚨🚨');
+                        console.log('Event:', e);
+                        console.log('Current target:', e.currentTarget);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('About to call handleEmailTranscript...');
+                        handleEmailTranscript();
+                        console.log('Called handleEmailTranscript');
+                      }}
+                      aria-label="Email transcript"
+                      sx={{ 
+                        backgroundColor: 'green !important',
+                        color: 'white !important',
+                        border: '3px solid orange !important',
+                        '&:hover': { backgroundColor: 'darkgreen !important' }
+                      }}
+                    >
+                      📧 FALLBACK
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              )}
             </Stack>
 
             <Typography
@@ -653,6 +851,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               {transcription.transcribedText}
             </Typography>
           </Box>
+          </>
         ) : (
           <Alert severity="info">
             <Typography variant="body2">
@@ -691,16 +890,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       </CardContent>
 
       {/* Speaker Mapping Dialog */}
-      <Suspense fallback={<Skeleton variant="rectangular" height={400} />}>
-        <SpeakerMappingDialog
-          open={speakerMappingDialogOpen}
-          onClose={() => setSpeakerMappingDialogOpen(false)}
-          transcriptionId={transcription.transcriptionId}
-          existingMappings={getAllMappings?.() || []}
-          detectedSpeakers={detectedSpeakers}
-          onMappingsSaved={handleSpeakerMappingsSaved}
-        />
-      </Suspense>
+      <SpeakerMappingDialog
+        open={speakerMappingDialogOpen}
+        onClose={() => setSpeakerMappingDialogOpen(false)}
+        transcriptionId={transcription.transcriptionId}
+        existingMappings={getAllMappings?.() || []}
+        detectedSpeakers={detectedSpeakers}
+        onMappingsSaved={handleSpeakerMappingsSaved}
+      />
 
       {/* Transcription Delete Confirmation Dialog */}
       <ConfirmTranscriptionDeleteDialog
@@ -708,6 +905,19 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
+
+      {/* Email Composition Dialog - for transcript emails on /app and /transcript pages */}
+      {shouldShowEmailButton && (
+        <>
+          {(() => {
+            console.log('📧 RENDERING EmailCompositionDialog directly (no lazy loading), shouldShowEmailButton:', shouldShowEmailButton);
+            return null;
+          })()}
+          <EmailCompositionDialog
+            onSend={handleEmailSend}
+          />
+        </>
+      )}
     </Card>
   );
 };

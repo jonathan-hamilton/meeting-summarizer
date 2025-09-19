@@ -12,10 +12,10 @@ import {
 import {
   CheckCircle,
   Email,
-  ContentCopy,
   Schedule,
   Assignment,
   Person,
+  PictureAsPdf,
 } from '@mui/icons-material';
 import TourPopover from './TourPopover';
 import { useTourStore } from '../stores/tourStore';
@@ -54,7 +54,21 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         <Typography variant="h6">Summary Generated</Typography>
         <Box sx={{ flexGrow: 1 }} />
         
-        {/* Action Buttons */}
+        {/* Action Buttons - Copy first, then Email */}
+        <Tooltip title="Download summary as PDF">
+          <span>
+            <IconButton
+              onClick={onCopyClick}
+              size="small"
+              disabled={isActionDisabledDuringTour('copy-summary')}
+              aria-label="Download summary as PDF"
+              aria-describedby="copy-summary-tooltip"
+            >
+              <PictureAsPdf fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+
         <Tooltip title="Share via email">
           <span>
             <Button
@@ -65,12 +79,12 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
                 onShareClick();
                 triggerStepAction('open-email-dialog');
               }}
-              sx={{ mr: 1 }}
+              sx={{ ml: 1 }}
               disabled={isActionDisabledDuringTour('share-summary')}
               aria-label="Share summary via email"
               aria-describedby="share-email-tooltip"
             >
-              Share
+              Email
             </Button>
           </span>
         </Tooltip>
@@ -83,20 +97,6 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           position={{ top: '50px', right: '190px' }}
           maxWidth="300px"
         />
-
-        <Tooltip title="Copy full summary">
-          <span>
-            <IconButton
-              onClick={onCopyClick}
-              size="small"
-              disabled={isActionDisabledDuringTour('copy-summary')}
-              aria-label="Copy full summary text"
-              aria-describedby="copy-summary-tooltip"
-            >
-              <ContentCopy />
-            </IconButton>
-          </span>
-        </Tooltip>
 
         {/* Step 12 Tour Popover - Copy Summary */}
         <TourPopover

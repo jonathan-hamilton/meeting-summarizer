@@ -376,6 +376,72 @@ docs/speaker-mapping-dialog-optimization.md (workflow documentation)
 - Backend: OpenAIController.cs (NEW), service configuration files, health controller
 - Frontend: App.tsx, FileUpload.tsx, speaker management components, API service
 
+## EmailCompositionDialog Enhancement & Implementation Plan ✅ CLEANUP COMPLETE (September 18, 2025)
+
+### Code Cleanup & File Consolidation ✅ COMPLETE
+
+**Implementation Summary:**
+- Cleaned up multiple versions of EmailCompositionDialog components to single working version
+- Eliminated broken EmailCompositionDialog.tsx (720 lines with syntax errors)
+- Removed unused EmailCompositionDialog-simple.tsx variant
+- Renamed EmailCompositionDialog-clean.tsx to main EmailCompositionDialog.tsx (161 lines)
+- Updated import references in TranscriptDisplay.tsx for correct file path
+- Verified compilation success and eliminated all syntax errors
+
+**Technical Achievements:**
+✅ **File Consolidation**: Reduced 3 dialog variants to 1 clean, working version
+✅ **Syntax Error Resolution**: Eliminated JavaScript parsing errors preventing dev server startup
+✅ **Import Path Consistency**: Updated TranscriptDisplay.tsx import to use standard filename
+✅ **Code Quality**: Maintained clean 161-line implementation with Zustand store integration
+✅ **Compilation Success**: Zero compilation errors, dev server running successfully
+
+### Dual-Context Email Implementation Plan (5 Phases)
+
+**Strategic Overview:**
+Complete implementation of context-aware email composition supporting both transcript-only and summary+actionItems scenarios with optional transcript inclusion functionality.
+
+#### **Phase 1: Summary EMAIL Button Connection** 🔄 READY TO IMPLEMENT
+**Objective:** Connect Summary section EMAIL button to Zustand store
+- Update SummaryHeader.tsx EMAIL button to call emailStore.openDialog()
+- Pass summary context parameters (meetingSummary, actionItems, speakerMappings)
+- Ensure dialog appears when clicked from summary section
+- Maintain existing transcript EMAIL button functionality
+
+#### **Phase 2: Context-Aware Dialog Pre-filling** 🔄 PLANNED
+**Objective:** Implement context-specific email content generation
+- Enhance emailStore.openDialog() to accept context parameters
+- Pre-fill email content based on source (transcript vs summary)
+- Generate appropriate subject lines for each context
+- Implement content templates for both scenarios
+
+#### **Phase 3: 'Append Transcript' Checkbox** 🔄 PLANNED
+**Objective:** Add optional transcript inclusion for summary emails
+- Add checkbox to dialog when opened from summary context
+- Implement transcript appending logic in email content generation
+- Maintain content structure: summary + action items + optional transcript
+- Update email templates to support combined content
+
+#### **Phase 4: Enhanced Content Generation** 🔄 PLANNED
+**Objective:** Improve email content quality and formatting
+- Professional email templates with proper formatting
+- Dynamic recipient suggestions from speaker mappings
+- Content validation and preview functionality
+- Integration with existing SendGrid email service
+
+#### **Phase 5: Cross-Component Integration** 🔄 PLANNED
+**Objective:** Ensure seamless workflow across all components
+- Verify consistent behavior between transcript and summary contexts
+- Test email composition workflow end-to-end
+- Implement proper state management and cleanup
+- Documentation and testing coverage
+
+**Files Modified in Cleanup:**
+- Frontend: EmailCompositionDialog.tsx (consolidated), TranscriptDisplay.tsx (import update)
+- Removed: EmailCompositionDialog-clean.tsx, EmailCompositionDialog-simple.tsx
+
+**Next Steps:**
+Ready to begin Phase 1 implementation of Summary EMAIL button connection to complete dual-context email functionality.
+
 ---
 
 ## User Stories

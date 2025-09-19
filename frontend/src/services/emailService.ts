@@ -127,6 +127,45 @@ export class EmailService {
   }
 
   /**
+   * Send transcript-only email
+   */
+  async emailTranscript(transcriptionId: string, emailData: {
+    recipients: string[];
+    subject: string;
+    includeTranscript: boolean;
+  }): Promise<SendEmailResponse> {
+    try {
+      console.log('🚀 Sending transcript email for transcription:', transcriptionId);
+      
+      const response = await apiService.post<SendEmailResponse>(`/api/email/transcript/${transcriptionId}`, emailData);
+      
+      if (response.success && response.data) {
+        console.log('✅ Transcript email sent successfully:', response.data);
+        return response.data;
+      } else {
+        console.error('❌ Failed to send transcript email:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Failed to send transcript email',
+          recipientsCount: 0,
+          sentAt: new Date().toISOString(),
+          errorDetails: response.errors?.join(', ') || 'Unknown error'
+        };
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to send transcript email:', error);
+      
+      return {
+        success: false,
+        message: 'Failed to send transcript email: Network error',
+        recipientsCount: 0,
+        sentAt: new Date().toISOString(),
+        errorDetails: error.message || 'Unknown error occurred'
+      };
+    }
+  }
+
+  /**
    * Create a professional email subject for meeting summaries
    */
   createEmailSubject(meetingDate?: string): string {
