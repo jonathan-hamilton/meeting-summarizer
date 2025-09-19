@@ -346,3 +346,81 @@ The storage layer will be implemented in **Sprint 6** to provide persistent user
 - **Authentication**: User login and session management
 - **Authorization**: Role-based access to transcripts
 - **Audit Logging**: Track who accessed which transcripts
+
+---
+
+## Development Guidelines
+
+### State Management Standards
+
+**Primary Directive**: Use Zustand for all state management needs across the application.
+
+- **Local Component State**: Avoid React `useState` and `useReducer` for any state that might be shared or persisted
+- **Global State**: All application state must use Zustand stores
+- **Store Organization**: Create dedicated stores for feature domains (e.g., `useEmailStore`, `useTourStore`, `useTranscriptStore`)
+- **State Persistence**: Use Zustand's persist middleware for data that should survive page refreshes
+
+**Pattern Examples**:
+```typescript
+// ✅ CORRECT: Use Zustand store
+const useEmailStore = create<EmailState>((set) => ({
+  isDialogOpen: false,
+  openDialog: () => set({ isDialogOpen: true }),
+  closeDialog: () => set({ isDialogOpen: false })
+}));
+
+// ❌ INCORRECT: Avoid local React state
+const [isDialogOpen, setIsDialogOpen] = useState(false);
+```
+
+**Rationale**: Zustand provides:
+- Predictable state management without React context complexity
+- Better debugging and state inspection capabilities  
+- Easier state sharing between components
+- Consistent patterns across the entire application
+- Reduced prop drilling and cleaner component interfaces
+
+### Code Organization Standards
+
+- **Component Structure**: Keep components focused and use Zustand stores for state management
+- **Store Location**: Place stores in `src/stores/` directory with descriptive names
+- **Type Safety**: All stores must be fully typed with TypeScript interfaces
+
+---
+
+## Development Guidelines
+
+### State Management Standards
+
+**Primary Directive**: Use Zustand for all state management needs across the application.
+
+- **Local Component State**: Avoid React `useState` and `useReducer` for any state that might be shared or persisted
+- **Global State**: All application state must use Zustand stores
+- **Store Organization**: Create dedicated stores for feature domains (e.g., `useEmailStore`, `useTourStore`, `useTranscriptStore`)
+- **State Persistence**: Use Zustand's persist middleware for data that should survive page refreshes
+
+**Pattern Examples**:
+```typescript
+// ✅ CORRECT: Use Zustand store
+const useEmailStore = create<EmailState>((set) => ({
+  isDialogOpen: false,
+  openDialog: () => set({ isDialogOpen: true }),
+  closeDialog: () => set({ isDialogOpen: false })
+}));
+
+// ❌ INCORRECT: Avoid local React state
+const [isDialogOpen, setIsDialogOpen] = useState(false);
+```
+
+**Rationale**: Zustand provides:
+- Predictable state management without React context complexity
+- Better debugging and state inspection capabilities  
+- Easier state sharing between components
+- Consistent patterns across the entire application
+- Reduced prop drilling and cleaner component interfaces
+
+### Code Organization Standards
+
+- **Component Structure**: Keep components focused and use Zustand stores for state management
+- **Store Location**: Place stores in `src/stores/` directory with descriptive names
+- **Type Safety**: All stores must be fully typed with TypeScript interfaces

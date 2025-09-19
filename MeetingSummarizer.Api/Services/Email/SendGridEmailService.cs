@@ -54,14 +54,48 @@ public class SendGridEmailService : IEmailService
                 };
             }
 
+            // Generate content based on request type (S6.5 Phase 3)
+            string htmlContent;
+            string plainTextContent;
+            
+            if (request.IncludeTranscript && request.TranscriptData != null)
+            {
+                if (request.MeetingSummary != null)
+                {
+                    // Summary + Transcript scenario
+                    htmlContent = GenerateSummaryWithTranscriptTemplate(request.MeetingSummary, request.SpeakerMappings, request.TranscriptData);
+                }
+                else
+                {
+                    // Transcript-only scenario
+                    htmlContent = GenerateTranscriptOnlyTemplate(request.TranscriptData, request.SpeakerMappings);
+                }
+            }
+            else if (!string.IsNullOrEmpty(request.Content))
+            {
+                // Use provided content (existing behavior)
+                htmlContent = request.Content;
+            }
+            else if (request.MeetingSummary != null)
+            {
+                // Summary-only scenario (existing behavior)
+                htmlContent = GenerateMeetingSummaryTemplate(request.MeetingSummary, request.SpeakerMappings);
+            }
+            else
+            {
+                throw new ArgumentException("No content provided for email");
+            }
+
+            plainTextContent = request.PlainTextContent ?? ConvertToPlainText(htmlContent);
+
             // Create SendGrid message
             var from = new EmailAddress(_options.FromEmail, _options.FromName);
             var msg = new SendGridMessage
             {
                 From = from,
                 Subject = request.Subject,
-                HtmlContent = request.Content,
-                PlainTextContent = request.PlainTextContent ?? ConvertToPlainText(request.Content)
+                HtmlContent = htmlContent,
+                PlainTextContent = plainTextContent
             };
 
             // Add recipients
@@ -133,7 +167,7 @@ public class SendGridEmailService : IEmailService
         sb.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
         sb.AppendLine("    <title>Meeting Summary</title>");
         sb.AppendLine("    <style>");
-        sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f4f4f4; }");
+        sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #000000; margin: 0; padding: 0; background-color: #f4f4f4; }");
         sb.AppendLine("        .container { max-width: 800px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }");
         sb.AppendLine("        .header { background-color: #2c3e50; color: white; padding: 30px; text-align: center; }");
         sb.AppendLine("        .header h1 { margin: 0; font-size: 28px; font-weight: 300; }");
@@ -254,6 +288,177 @@ public class SendGridEmailService : IEmailService
         sb.AppendLine("</html>");
         
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// S6.5 Phase 3: Generate HTML template for transcript-only emails
+    /// </summary>
+    public string GenerateTranscriptOnlyTemplate(TranscriptEmailData transcriptData, List<Models.SpeakerMapping>? speakerMappings = null)
+    {
+        var sb = new StringBuilder();
+        
+        sb.AppendLine("<!DOCTYPE html>");
+        sb.AppendLine("<html lang=\"en\">");
+        sb.AppendLine("<head>");
+        sb.AppendLine("    <meta charset=\"UTF-8\">");
+        sb.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
+        sb.AppendLine("    <title>Meeting Transcript</title>");
+        sb.AppendLine("    <style>");
+        sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #000000; margin: 0; padding: 0; background-color: #f4f4f4; }");
+        sb.AppendLine("        .container { max-width: 800px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }");
+        sb.AppendLine("        .header { background-color: #2c3e50; color: white; padding: 30px; text-align: center; }");
+        sb.AppendLine("        .header h1 { margin: 0; font-size: 28px; font-weight: 300; }");
+        sb.AppendLine("        .content { padding: 30px; }");
+        sb.AppendLine("        .section { margin-bottom: 30px; }");
+        sb.AppendLine("        .section h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; font-size: 22px; margin-bottom: 15px; }");
+        sb.AppendLine("        .participants { background-color: #f0f8ff; padding: 20px; border-radius: 4px; margin: 15px 0; }");
+        sb.AppendLine("        .transcript { background-color: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; margin: 15px 0; border-radius: 4px; }");
+        sb.AppendLine("        .speaker-segment { margin-bottom: 15px; padding: 10px; background-color: #fff; border-radius: 4px; border-left: 3px solid #27ae60; }");
+        sb.AppendLine("        .speaker-name { font-weight: bold; color: #2c3e50; margin-bottom: 5px; }");
+        sb.AppendLine("        .speaker-text { margin-left: 15px; }");
+        sb.AppendLine("        .footer { background-color: #ecf0f1; padding: 20px; text-align: center; color: #7f8c8d; font-size: 14px; }");
+        sb.AppendLine("        .metadata { font-size: 14px; color: #7f8c8d; margin-bottom: 20px; }");
+        sb.AppendLine("        ul { padding-left: 20px; }");
+        sb.AppendLine("        li { margin-bottom: 8px; }");
+        sb.AppendLine("    </style>");
+        sb.AppendLine("</head>");
+        sb.AppendLine("<body>");
+        sb.AppendLine("    <div class=\"container\">");
+        
+        // Header
+        sb.AppendLine("        <div class=\"header\">");
+        sb.AppendLine("            <h1>🎤 Meeting Transcript</h1>");
+        sb.AppendLine("        </div>");
+        
+        // Content
+        sb.AppendLine("        <div class=\"content\">");
+        
+        // Metadata
+        sb.AppendLine("            <div class=\"metadata\">");
+        sb.AppendLine($"                <strong>File:</strong> {FormatTextForHtml(transcriptData.FileName)}<br>");
+        sb.AppendLine($"                <strong>Generated:</strong> {DateTime.UtcNow:MMMM dd, yyyy 'at' HH:mm} UTC<br>");
+        sb.AppendLine($"                <strong>Transcript ID:</strong> {transcriptData.TranscriptionId}");
+        sb.AppendLine("            </div>");
+        
+        // Participants
+        if (speakerMappings != null && speakerMappings.Count > 0)
+        {
+            sb.AppendLine("            <div class=\"section\">");
+            sb.AppendLine("                <h2>👥 Meeting Participants</h2>");
+            sb.AppendLine("                <div class=\"participants\">");
+            sb.AppendLine("                    <ul>");
+            
+            foreach (var speaker in speakerMappings)
+            {
+                var displayName = !string.IsNullOrEmpty(speaker.Name) ? speaker.Name : speaker.SpeakerId;
+                var role = !string.IsNullOrEmpty(speaker.Role) ? $" - {speaker.Role}" : "";
+                sb.AppendLine($"                        <li><strong>{FormatTextForHtml(displayName)}</strong>{FormatTextForHtml(role)}</li>");
+            }
+            
+            sb.AppendLine("                    </ul>");
+            sb.AppendLine("                </div>");
+            sb.AppendLine("            </div>");
+        }
+        
+        // Transcript Content
+        sb.AppendLine("            <div class=\"section\">");
+        sb.AppendLine("                <h2>📄 Full Transcript</h2>");
+        sb.AppendLine("                <div class=\"transcript\">");
+        
+        if (transcriptData.SpeakerSegments != null && transcriptData.SpeakerSegments.Count > 0)
+        {
+            // Format with speaker segments (one speaker per line/block)
+            foreach (var segment in transcriptData.SpeakerSegments)
+            {
+                var speakerMapping = speakerMappings?.FirstOrDefault(m => m.SpeakerId == segment.Speaker);
+                var speakerName = speakerMapping?.Name ?? segment.Speaker ?? "Unknown Speaker";
+                
+                sb.AppendLine("                    <div class=\"speaker-segment\">");
+                sb.AppendLine($"                        <div class=\"speaker-name\">{FormatTextForHtml(speakerName)}:</div>");
+                sb.AppendLine($"                        <div class=\"speaker-text\">{FormatTextForHtml(segment.Text)}</div>");
+                sb.AppendLine("                    </div>");
+            }
+        }
+        else if (!string.IsNullOrEmpty(transcriptData.TranscribedText))
+        {
+            // Fallback to plain text
+            sb.AppendLine($"                    <p>{FormatTextForHtml(transcriptData.TranscribedText)}</p>");
+        }
+        else
+        {
+            sb.AppendLine("                    <p><em>No transcript content available.</em></p>");
+        }
+        
+        sb.AppendLine("                </div>");
+        sb.AppendLine("            </div>");
+        
+        // Footer
+        sb.AppendLine("            <div class=\"footer\">");
+        sb.AppendLine("                <p><strong>Meeting-Summary.io</strong> | AI-Powered Meeting Transcription</p>");
+        sb.AppendLine("                <p><em>This transcript was generated by AI and may require review for accuracy.</em></p>");
+        sb.AppendLine("            </div>");
+        
+        sb.AppendLine("        </div>");
+        sb.AppendLine("    </div>");
+        sb.AppendLine("</body>");
+        sb.AppendLine("</html>");
+        
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// S6.5 Phase 3: Generate HTML template for summary + transcript emails
+    /// </summary>
+    public string GenerateSummaryWithTranscriptTemplate(MeetingSummary summary, List<Models.SpeakerMapping>? speakerMappings = null, TranscriptEmailData? transcriptData = null)
+    {
+        // Start with the existing summary template
+        var summaryHtml = GenerateMeetingSummaryTemplate(summary, speakerMappings);
+        
+        // If no transcript data, return summary only
+        if (transcriptData?.SpeakerSegments == null || transcriptData.SpeakerSegments.Count == 0)
+        {
+            return summaryHtml;
+        }
+        
+        // Insert transcript section before the closing footer
+        var footerIndex = summaryHtml.LastIndexOf("<div class=\"footer\">");
+        if (footerIndex == -1)
+        {
+            footerIndex = summaryHtml.LastIndexOf("</div></body>");
+        }
+        
+        if (footerIndex != -1)
+        {
+            var sb = new StringBuilder();
+            sb.Append(summaryHtml.Substring(0, footerIndex));
+            
+            // Add transcript section
+            sb.AppendLine("            <div class=\"section\">");
+            sb.AppendLine("                <h2>📄 Full Transcript</h2>");
+            sb.AppendLine("                <div style=\"background-color: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; margin: 15px 0; border-radius: 4px;\">");
+            
+            foreach (var segment in transcriptData.SpeakerSegments)
+            {
+                var speakerMapping = speakerMappings?.FirstOrDefault(m => m.SpeakerId == segment.Speaker);
+                var speakerName = speakerMapping?.Name ?? segment.Speaker ?? "Unknown Speaker";
+                
+                sb.AppendLine("                    <div style=\"margin-bottom: 15px; padding: 10px; background-color: #fff; border-radius: 4px; border-left: 3px solid #27ae60;\">");
+                sb.AppendLine($"                        <div style=\"font-weight: bold; color: #2c3e50; margin-bottom: 5px;\">{FormatTextForHtml(speakerName)}:</div>");
+                sb.AppendLine($"                        <div style=\"margin-left: 15px;\">{FormatTextForHtml(segment.Text)}</div>");
+                sb.AppendLine("                    </div>");
+            }
+            
+            sb.AppendLine("                </div>");
+            sb.AppendLine("            </div>");
+            
+            // Add the rest of the original template
+            sb.Append(summaryHtml.Substring(footerIndex));
+            
+            return sb.ToString();
+        }
+        
+        // Fallback: return original summary if insertion fails
+        return summaryHtml;
     }
 
     /// <summary>
