@@ -21,6 +21,7 @@ import type { SpeakerMapping, MeetingSummary, ActionItem } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
 import { useTourStore } from "../stores/tourStore";
+import { useEmailStore } from "../stores/emailStore";
 import { useAppMode } from "../contexts/AppModeContext";
 
 // EmailCompositionDialog now handled by TranscriptDisplay
@@ -34,6 +35,9 @@ interface SummaryDisplayProps {
   detectedSpeakers?: string[];
   onSummaryGenerated?: (summary: MeetingSummary) => void;
   aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for Step 9->10 tour scroll
+  // Additional props for email functionality
+  fileName?: string;
+  speakerSegments?: any[];
 }
 
 interface SnackbarState {
@@ -49,6 +53,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   detectedSpeakers = [],
   onSummaryGenerated,
   aiSummaryRef,
+  fileName,
+  speakerSegments = [],
 }) => {
   // Get current speaker mappings from centralized store
   const speakerMappings_store = useSpeakerSessionStore(state => state.speakerMappings);
@@ -73,6 +79,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
 
   // Tour store for managing tour state and closed steps
   const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
+  
+  // Email store for handling email dialog
+  const { openDialog: openEmailDialog } = useEmailStore();
   
   // Clear summary when transcriptionId changes (new file uploaded)
   useEffect(() => {
@@ -220,6 +229,28 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleEmailShare = () => {
+    console.log('📧 Summary EMAIL button clicked - opening email dialog with summary context');
+    
+    // Construct transcript data for email functionality
+    const transcriptData = fileName && transcriptText ? {
+      transcriptionId: transcriptionId,
+      fileName: fileName,
+      speakerSegments: speakerSegments,
+      transcribedText: transcriptText,
+    } : null;
+    
+    // Open email dialog with summary context
+    openEmailDialog({
+      summary: summary,
+      actionItems: actionItems,
+      speakerMappings: effectiveSpeakerMappings,
+      transcriptData: transcriptData,
+      transcriptOnly: false,
+      includeTranscriptDefault: true, // Show "Append Transcript" checkbox for summary emails
+    });
+  };
+
   const getTotalActionItems = (): number => {
     return actionItems.length;
   };
@@ -310,7 +341,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               isDemo={isDemo}
               isTourActive={isTourActive}
               isCurrentStep={isCurrentStep}
-              onShareClick={() => console.log('Email button clicked - TODO: Connect to Zustand store')}
+              onShareClick={handleEmailShare}
               onCopyClick={() => handleCopyToClipboard(summary.meetingOverview, "Summary")}
               onCloseStep={closeStep}
               triggerStepAction={triggerStepAction}
