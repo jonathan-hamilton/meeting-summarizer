@@ -1,13 +1,56 @@
 # Sprint 6: User Management & Infrastructure + Azure Production Hosting
 
+## Overview
+
+Sprint 6 focuses on implementing user authentication, payment processing, persistent data storage, accessibility compliance, **and complete Azure production hosting deployment**. This sprint enables the transition from demo mode to a fully functional paid service with user accounts, token management, persistent meeting history, **and public production access via Azure hosting with comprehensive monitoring**.
+
+## Sprint Goals
+
+- Implement Azure storage and database infrastructure for persistent user data
+- Set up secure payment processing and token management system
+- Provide persistent upload progress and meeting history for paid users
+- Ensure accessibility compliance across all UI components
+- Enable user authentication and account management
+- **Deploy complete production hosting infrastructure to Azure**
+- **Implement comprehensive monitoring, alerting, and observability**
+- **Enable public user access via hosted web application**
+
+## Progress Tracker
+
+| Story ID | Title                                              | Status        | Dependencies         |
+|----------|----------------------------------------------------|---------------|----------------------|
+| S6.1     | Azure Storage & Persistent Data Setup              | COMPLETE ✅   | None                 |
+| S6.2     | User Management Interface & Authentication System  | COMPLETE ✅   | S6.1                 |
+| S6.3     | Payment & Token System Setup                       | COMPLETE ✅   | S6.1, S6.2           |
+| S6.4     | Transcript Data Storage Optimization (Blob Storage)| COMPLETE ✅   | S6.1, S6.3           |
+| S6.5     | Persistent Upload Progress & Meeting History        | COMPLETE ✅   | S6.1, S6.4           |
+| S6.6     | Accessibility Compliance Enhancements              | 43% COMPLETE 🏗️| None                 |
+| S6.7     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
+| S6.T1    | Code Refactoring & Technical Debt Reduction        | COMPLETE ✅   | None                 |
+| S6.8     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.4           |
+| S6.9     | Production Monitoring & Observability Setup        | PENDING ⏸️    | S6.8                 |
+
+## Story Files
+
+Each story has been split into its own focused file for better organization and maintainability (all files <800 lines):
+
+### Complete Story List
+- **[S6.1: Azure Storage & Persistent Data Setup](s6.1-azure-storage.md)** ✅ *COMPLETE*
+- **[S6.2: User Management Interface & Authentication System](s6.2-user-interface.md)** ✅ *COMPLETE*
+- **[S6.3: Token Economy & Payment Integration](s6.3-token-payment.md)** 🔄 *IN PROGRESS*
+- **[S6.4: AI Meeting Optimization & Quality Enhancement](s6.4-ai-optimization.md)** 📋 *PLANNED*
+- **[S6.5: Collaboration & Sharing Features](s6.5-collaboration.md)** 📋 *PLANNED*
+- **[S6.6: Accessibility & Compliance Implementation](s6.6-accessibility.md)** 🔄 *IN PROGRESS (43% Complete)*
+- **[S6.7: API Integration & Third-Party Connectivity](s6.7-api-integration.md)** 📋 *PLANNED*
+- **[S6.8: Analytics & Reporting Dashboard](s6.8-analytics-reporting.md)** 📋 *PLANNED*
+- **[S6.9: Production Deployment & DevOps Optimization](s6.9-devops-deployment.md)** 📋 *PLANNED*
+
+### Integration Documentation
+- **[Integration Notes & Cross-Story Dependencies](integration-notes.md)** - Comprehensive guide to how all stories integrate together, including shared components, database schema relationships, and deployment coordination.
+
 ## Documentation Structure
 
-This folder contains comprehensive Sprint 6 documentation:
-
-### Core Sprint Planning
-- **[stories.md](./stories.md)** - Complete user stories, acceptance criteria, and implementation details
-  - 7 user stories covering user management, payments, Azure hosting, and monitoring
-  - Updated progress tracker with all new work
+This folder contains focused Sprint 6 documentation
   - Extended 5-6 week timeline with justification
 
 ### Supporting Documentation

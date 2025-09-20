@@ -151,7 +151,7 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
               required
               disabled={isLoading}
               autoComplete="email"
-              autoFocus
+              aria-label="Email address for login"
             />
 
             <TextField

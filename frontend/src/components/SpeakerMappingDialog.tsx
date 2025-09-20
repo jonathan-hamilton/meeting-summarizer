@@ -651,6 +651,10 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         onClose={handleClose}
         maxWidth="md"
         fullWidth
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="speaker-mapping-dialog-title"
+        aria-describedby="speaker-mapping-dialog-description"
         PaperProps={{
           sx: { minHeight: "400px" },
         }}
@@ -667,15 +671,29 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <PersonIcon color="primary" />
-            <Typography variant="h6">Map Speakers to Names</Typography>
+            <Typography 
+              variant="h6" 
+              id="speaker-mapping-dialog-title"
+            >
+              Map Speakers to Names
+            </Typography>
           </Box>
-          <IconButton onClick={handleClose} disabled={loading}>
+          <IconButton 
+            onClick={handleClose} 
+            disabled={loading}
+            aria-label="Close speaker mapping dialog"
+          >
             <CloseIcon />
           </IconButton>
         </DialogTitle>
 
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          <Typography 
+            variant="body2" 
+            color="text.secondary" 
+            sx={{ mb: 3 }}
+            id="speaker-mapping-dialog-description"
+          >
             Assign real names and roles to the detected speakers in this meeting
             transcription. You can add or remove speakers as needed.
           </Typography>
