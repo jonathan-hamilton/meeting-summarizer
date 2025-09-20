@@ -204,7 +204,21 @@ const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   return (
-    <Box sx={{ width: "100%" }}>
+    <Box 
+      sx={{ width: "100%" }}
+      component="section"
+      role="region"
+      aria-labelledby="file-upload-section"
+    >
+      <Typography 
+        id="file-upload-section" 
+        component="h2" 
+        variant="h6" 
+        sx={{ sr: '&sr-only' }}
+      >
+        Audio File Upload
+      </Typography>
+      
       {/* File Dropzone */}
       <FileDropzone
         onFilesDropped={onDrop}
@@ -226,7 +240,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
-        <Box sx={{ mt: 2 }}>
+        <Box 
+          sx={{ mt: 2 }}
+          role="alert"
+          aria-label="File validation errors"
+        >
           {validationErrors.map((error, index) => (
             <Alert
               key={index}
@@ -244,10 +262,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       {/* Demo Upload Simulation */}
       {isDemo && isSimulatingUpload && (
-        <Card sx={{ mt: 3, width: "100%" }}>
+        <Card 
+          sx={{ mt: 3, width: "100%" }}
+          component="section"
+          role="status"
+          aria-live="polite"
+          aria-label="File upload progress"
+        >
           <CardContent>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-              <Typography variant="h6">Upload Queue (1)</Typography>
+              <Typography variant="h6" component="h3">Upload Queue (1)</Typography>
               <Chip
                 icon={<CircularProgress size={16} />}
                 label="1 processing"

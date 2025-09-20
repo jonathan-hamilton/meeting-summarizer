@@ -189,8 +189,9 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
             error={!!errors.description}
             helperText={errors.description || 'What needs to be done?'}
             placeholder="Enter action item description..."
-            autoFocus
             required
+            aria-label="Action item description"
+            aria-describedby="description-helper-text"
             fullWidth
             variant="outlined"
             inputProps={{

@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useCallback, Suspense } from "react";
+import ReactDOM from "react-dom/client";
 import { useNavigate, useLocation } from "react-router-dom";
+
+// Accessibility testing setup for development
+declare global {
+  const __DEV_AXE_ENABLED__: boolean;
+}
+
+if (typeof __DEV_AXE_ENABLED__ !== 'undefined' && __DEV_AXE_ENABLED__) {
+  import('@axe-core/react').then((axe) => {
+    axe.default(React, ReactDOM, 1000);
+  });
+}
 import {
   Typography,
   Box,
@@ -35,6 +47,7 @@ import { useUserProfileDialogOpen } from "./stores/userProfileStore";
 import { useAuthStore } from "./stores/authStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
 import { useSpeakerMappingLifecycle } from "./hooks/useSpeakerMappingLifecycle";
+import { useAccessibilityStore } from "./stores/accessibilityStore";
 
 // Lazy load dialog components to reduce initial bundle size
 // Health dialog component removed
@@ -87,6 +100,18 @@ const AppContent: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // Accessibility store
+  const {
+    announcement,
+    helpDialogOpen,
+    privacyPolicyOpen,
+    setHelpDialogOpen,
+    setPrivacyPolicyOpen,
+    announceTranscriptionComplete,
+    announceModeChange,
+    announceThemeChange
+  } = useAccessibilityStore();
+  
   // Authentication integration  
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const [transcriptionResults, setTranscriptionResults] = useState<
@@ -97,10 +122,59 @@ const AppContent: React.FC = () => {
 
   // State for forcing Privacy Policy dialog (for testing in dev mode)
   const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
-  
-  // State for manually opening privacy policy and help dialogs
-  const [privacyPolicyOpen, setPrivacyPolicyOpen] = useState(false);
-  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+
+  // Wrapper function for theme toggle with accessibility announcement
+  const handleThemeToggle = () => {
+    toggleTheme();
+    const newMode = mode === 'dark' ? 'light' : 'dark';
+    announceThemeChange(newMode);
+  };
+
+  // Keyboard shortcuts handling
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Alt + H for Help dialog
+      if (event.altKey && event.key === 'h') {
+        event.preventDefault();
+        setHelpDialogOpen(true);
+        return;
+      }
+      
+      // Alt + T for theme toggle
+      if (event.altKey && event.key === 't') {
+        event.preventDefault();
+        handleThemeToggle();
+        return;
+      }
+      
+      // Alt + 1 for home navigation (when authenticated)
+      if (event.altKey && event.key === '1' && isAuthenticated && appMode === 'production') {
+        event.preventDefault();
+        navigate('/app');
+        return;
+      }
+      
+      // Alt + 2 for history navigation (when authenticated)
+      if (event.altKey && event.key === '2' && isAuthenticated && appMode === 'production') {
+        event.preventDefault();
+        navigate('/history');
+        return;
+      }
+      
+      // Escape key to close open dialogs
+      if (event.key === 'Escape') {
+        if (helpDialogOpen) {
+          setHelpDialogOpen(false);
+        } else if (privacyPolicyOpen) {
+          setPrivacyPolicyOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleThemeToggle, navigate, isAuthenticated, appMode, helpDialogOpen, privacyPolicyOpen, setHelpDialogOpen, setPrivacyPolicyOpen]);
+
   
   // State for development mode sign-in dialog
   const [devSignInDialogOpen, setDevSignInDialogOpen] = useState(false);
@@ -127,6 +201,8 @@ const AppContent: React.FC = () => {
     setTranscriptionResults((prev) => [result, ...prev]);
     // Also add to sessionStore for consistent session data tracking
     addTranscript(result);
+    // Announce completion to screen readers
+    announceTranscriptionComplete();
   };
 
   // Ref callback for Step 2 tour scroll - scrolls when element is mounted and tour is on Step 2
@@ -168,8 +244,10 @@ const AppContent: React.FC = () => {
     // Toggle between development and production modes (demo stays demo)
     if (appMode === 'production') {
       setAppMode('development');
+      announceModeChange('development');
     } else if (appMode === 'development') {
       setAppMode('production');
+      announceModeChange('production');
     }
   };
 
@@ -222,6 +300,42 @@ const AppContent: React.FC = () => {
 
   return (
     <>
+      {/* Skip link for keyboard navigation */}
+      <Link
+        href="#main-content"
+        sx={{
+          position: 'absolute',
+          top: '-40px',
+          left: '6px',
+          background: 'primary.main',
+          color: 'primary.contrastText',
+          padding: '8px',
+          textDecoration: 'none',
+          borderRadius: '4px',
+          zIndex: 10000,
+          '&:focus': {
+            top: '6px'
+          }
+        }}
+      >
+        Skip to main content
+      </Link>
+      
+      {/* Live region for screen reader announcements */}
+      <Box
+        aria-live="polite"
+        aria-atomic="true"
+        sx={{
+          position: 'absolute',
+          left: '-10000px',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden'
+        }}
+      >
+        {announcement}
+      </Box>
+      
       <Box
         sx={{
           width: "100%",
@@ -284,6 +398,11 @@ const AppContent: React.FC = () => {
                         onDoubleClick={handleModeDoubleClick}
                         color="default"
                         sx={{ mr: 1, cursor: 'pointer' }}
+                        inputProps={{ 
+                          'aria-label': 'Toggle between development and production mode',
+                          'aria-describedby': 'mode-switch-description'
+                        }}
+                        id="mode-switch"
                       />
                     </Tooltip>
 
@@ -293,7 +412,7 @@ const AppContent: React.FC = () => {
               </Box>
               
               {/* Centered title */}
-              <Typography variant="h4" component="div" sx={{ 
+              <Typography variant="h4" component="h1" sx={{ 
                 textAlign: "center",
                 fontWeight: "bold"
               }}>
@@ -376,11 +495,21 @@ const AppContent: React.FC = () => {
                 )}
                 
                 <Tooltip title="Help & Privacy FAQ">
-                  <IconButton color="inherit" onClick={() => setHelpDialogOpen(true)} sx={{ ml: 1 }}>
+                  <IconButton 
+                    color="inherit" 
+                    onClick={() => setHelpDialogOpen(true)} 
+                    sx={{ ml: 1 }}
+                    aria-label="Help & Privacy FAQ"
+                  >
                     <HelpIcon />
                   </IconButton>
                 </Tooltip>
-                <IconButton color="inherit" onClick={toggleTheme} sx={{ ml: 1 }}>
+                <IconButton 
+                  color="inherit" 
+                  onClick={handleThemeToggle} 
+                  sx={{ ml: 1 }}
+                  aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
+                >
                   {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
                 </IconButton>
               </Box>
@@ -465,11 +594,11 @@ const AppContent: React.FC = () => {
             </DialogActions>
           </Dialog>
 
-          <main role="main" aria-label="Main content">
+          <main role="main" aria-label="Main content" id="main-content">
             <Box sx={{ py: 4, width: "100%" }}>
               <Typography
                 variant="h5"
-                component="h1"
+                component="h2"
                 gutterBottom
                 align="center"
                 color="text.secondary"
@@ -525,7 +654,7 @@ const AppContent: React.FC = () => {
               >
                 <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
                   <section aria-labelledby="upload-heading">
-                    <Typography variant="h4" component="h2" id="upload-heading" gutterBottom>
+                    <Typography variant="h4" component="h3" id="upload-heading" gutterBottom>
                       Upload Audio File
                     </Typography>
                     {/* Show upload component only if not in production mode or if authenticated AND not currently loading */}
@@ -558,7 +687,7 @@ const AppContent: React.FC = () => {
                       ref={transcriptionResultsRef}
                     >
                       <Box sx={{ width: "100%" }}>
-                        <Typography variant="h4" component="h2" id="transcription-heading" gutterBottom>
+                        <Typography variant="h4" component="h3" id="transcription-heading" gutterBottom>
                           Transcription Results
                         </Typography>
                         {transcriptionResults.map((result) => (

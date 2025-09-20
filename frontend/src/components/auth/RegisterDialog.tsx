@@ -208,7 +208,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
                 required
                 disabled={isLoading}
                 autoComplete="given-name"
-                autoFocus
+                aria-label="First name for registration"
               />
               
               <TextField
