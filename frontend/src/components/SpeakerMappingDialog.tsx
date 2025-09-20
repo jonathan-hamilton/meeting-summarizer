@@ -457,6 +457,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           role: mapping.role.trim() || "Participant",
           transcriptionId: mapping.transcriptionId || transcriptionId,
           source: mapping.source,
+          email: mapping.email, // S3.4: Include email field in API save
           // Override tracking
           originalName: isOverridden
             ? originalName || existingMapping?.name

@@ -349,9 +349,16 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           const response = await apiService.getSpeakerMappings(transcriptionId);
           
           if (response.success && response.data?.mappings) {
-            // Update store with loaded mappings
+            // Merge loaded mappings with existing mappings from other transcripts
+            const currentMappings = get().speakerMappings;
+            const otherTranscriptMappings = currentMappings.filter(
+              m => m.transcriptionId !== transcriptionId
+            );
+            const mergedMappings = [...otherTranscriptMappings, ...response.data.mappings];
+            
+            // Update store with merged mappings
             set({
-              speakerMappings: response.data.mappings,
+              speakerMappings: mergedMappings,
               _computedCache: null, // Invalidate cache
             });
             
@@ -380,9 +387,16 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
             mappings: mappings
           });
           
-          // Update store with saved mappings
+          // Merge saved mappings with existing mappings from other transcripts
+          const currentMappings = get().speakerMappings;
+          const otherTranscriptMappings = currentMappings.filter(
+            m => m.transcriptionId !== state.transcriptionId
+          );
+          const mergedMappings = [...otherTranscriptMappings, ...mappings];
+          
+          // Update store with merged mappings
           set({
-            speakerMappings: mappings,
+            speakerMappings: mergedMappings,
             _computedCache: null, // Invalidate cache
           });
           

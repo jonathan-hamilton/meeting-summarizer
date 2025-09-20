@@ -12,12 +12,17 @@ import {
   IconButton,
   Checkbox,
   FormControlLabel,
+  Chip,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import {
   Close,
   Email,
+  Add,
 } from '@mui/icons-material';
 import { useEmailStore } from '../stores/emailStore';
+import { EmailService } from '../services/emailService';
 
 interface EmailCompositionDialogProps {
   onSend?: (data: any) => void;
@@ -33,9 +38,19 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     subject: storeSubject,
     content: storeContent,
     recipients: storeRecipients,
+    speakerMappings,
+    recipientInput,
+    summary,
+    isSending,
+    sendSuccess,
+    sendError,
+    setSending,
+    setSendSuccess,
+    setSendError,
     setSubject: setStoreSubject,
     setContent: setStoreContent,
-    setRecipients: _setStoreRecipients,
+    addRecipient,
+    setRecipientInput,
     // Transcript options
     includeTranscript,
     transcriptOnly,
@@ -47,6 +62,79 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     open,
     isDialogOpen: open,
   });
+
+  // Helper functions
+  const handleAddRecipientFromInput = () => {
+    const email = recipientInput.trim();
+    if (email && !storeRecipients.includes(email)) {
+      addRecipient(email);
+      setRecipientInput(''); // Clear the input after adding
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (storeRecipients.length === 0) {
+      setSendError('Please add at least one recipient');
+      return;
+    }
+
+    setSending(true);
+    setSendError(null);
+    setSendSuccess(null);
+
+    try {
+      const emailService = new EmailService();
+      
+      // Prepare email content - include transcript if checked and available
+      let finalContent = storeContent;
+      if (includeTranscript && transcriptData) {
+        finalContent += '\n\n--- Full Meeting Transcript ---\n\n';
+        if (transcriptData.transcribedText) {
+          finalContent += transcriptData.transcribedText;
+        }
+      }
+
+      const result = await emailService.sendEmail({
+        recipients: storeRecipients,
+        subject: storeSubject,
+        content: finalContent,
+        meetingSummary: summary || undefined,
+        speakerMappings: speakerMappings,
+      });
+
+      if (result.success) {
+        setSendSuccess(`Email sent successfully to ${result.recipientsCount} recipient(s)!`);
+        // Close dialog after brief delay to show success message
+        setTimeout(() => {
+          handleClose();
+        }, 1500);
+      } else {
+        setSendError(result.message || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('❌ Error sending email:', error);
+      setSendError('Failed to send email. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Get unique suggested emails from speaker mappings
+  const getSuggestedEmails = () => {
+    console.log('📧 Debug - speakerMappings:', speakerMappings);
+    const emails = speakerMappings
+      .filter(speaker => speaker.email && speaker.email.trim())
+      .map(speaker => speaker.email!.trim());
+    
+    console.log('📧 Debug - filtered emails:', emails);
+    
+    // Remove duplicates using Set
+    const uniqueEmails = Array.from(new Set(emails));
+    console.log('📧 Debug - unique emails:', uniqueEmails);
+    return uniqueEmails;
+  };
+
+
 
   // Debug: Track when open state changes
   React.useEffect(() => {
@@ -109,21 +197,69 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
         <Stack spacing={3} sx={{ pt: 2 }}>
           {/* Recipients Section */}
           <Box>
-            <Typography variant="subtitle1" sx={{ mb: 1, color: '#000', fontWeight: 'bold' }}>
-              Recipients
-            </Typography>
+            {/* Recipient Input Field */}
             <TextField
               label="Add recipient email"
-              value=""
-              onChange={() => {}}
+              value={recipientInput}
+              onChange={(e) => setRecipientInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAddRecipientFromInput()}
               placeholder="Enter email address..."
               fullWidth
               variant="outlined"
+              InputProps={{
+                endAdornment: recipientInput.trim() && (
+                  <IconButton onClick={handleAddRecipientFromInput} size="small">
+                    <Add />
+                  </IconButton>
+                )
+              }}
             />
+            
+            {/* Suggested Recipients from Speaker Mappings */}
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1, color: 'text.secondary', fontWeight: 'medium' }}>
+                Meeting Participants ({getSuggestedEmails().length} found):
+              </Typography>
+              {getSuggestedEmails().length > 0 ? (
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {getSuggestedEmails().map((email, index) => (
+                    <Chip
+                      key={index}
+                      label={email}
+                      onClick={() => {
+                        if (!storeRecipients.includes(email)) {
+                          addRecipient(email);
+                        }
+                      }}
+                      clickable
+                      variant="outlined"
+                      size="small"
+                      color={storeRecipients.includes(email) ? "primary" : "default"}
+                      sx={{
+                        cursor: 'pointer',
+                        opacity: storeRecipients.includes(email) ? 0.5 : 1,
+                        '&:hover': {
+                          backgroundColor: 'action.hover'
+                        }
+                      }}
+                    />
+                  ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
+                  No participants with email addresses found. Add email addresses in Speaker Mapping to see suggestions here.
+                </Typography>
+              )}
+            </Box>
+            
+            {/* Recipients Heading and List */}
             {storeRecipients.length > 0 && (
-              <Box sx={{ mt: 1 }}>
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle1" sx={{ mb: 1, color: 'white', fontWeight: 'bold' }}>
+                  Recipients
+                </Typography>
                 {storeRecipients.map((email, index) => (
-                  <Typography key={index} variant="body2" sx={{ color: '#000' }}>
+                  <Typography key={index} variant="body2" sx={{ color: 'white' }}>
                     • {email}
                   </Typography>
                 ))}
@@ -169,11 +305,28 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={handleClose} variant="outlined">
+        {/* Success/Error Messages */}
+        {sendSuccess && (
+          <Typography variant="body2" color="success.main" sx={{ flexGrow: 1 }}>
+            ✅ {sendSuccess}
+          </Typography>
+        )}
+        {sendError && (
+          <Typography variant="body2" color="error.main" sx={{ flexGrow: 1 }}>
+            ❌ {sendError}
+          </Typography>
+        )}
+        
+        <Button onClick={handleClose} variant="outlined" disabled={isSending}>
           Cancel
         </Button>
-        <Button onClick={handleClose} variant="contained" color="primary">
-          Send Email
+        <Button 
+          onClick={handleSendEmail} 
+          variant="contained" 
+          color="primary"
+          disabled={storeRecipients.length === 0 || isSending}
+        >
+          {isSending ? 'Sending...' : 'Send Email'}
         </Button>
       </DialogActions>
     </Dialog>
