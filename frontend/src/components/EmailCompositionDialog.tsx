@@ -13,8 +13,6 @@ import {
   Checkbox,
   FormControlLabel,
   Chip,
-  CircularProgress,
-  Alert,
 } from '@mui/material';
 import {
   Close,
@@ -22,7 +20,9 @@ import {
   Add,
 } from '@mui/icons-material';
 import { useEmailStore } from '../stores/emailStore';
+import { useAccessibilityStore } from '../stores/accessibilityStore';
 import { EmailService } from '../services/emailService';
+import FocusTrap from 'focus-trap-react';
 
 interface EmailCompositionDialogProps {
   onSend?: (data: any) => void;
@@ -30,6 +30,8 @@ interface EmailCompositionDialogProps {
 
 const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend: _onSend }) => {
   console.log('🚨 EmailCompositionDialog COMPONENT CALLED - start of function');
+  
+
   
   // Email store state
   const {
@@ -57,6 +59,10 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     transcriptData,
     setIncludeTranscript,
   } = useEmailStore();
+
+  // Accessibility store for modal management
+  const { openModal, closeModal, announceModalOpen, announceModalClose } = useAccessibilityStore();
+
 
   console.log('📧 EMAIL DIALOG DEBUG:', {
     open,
@@ -136,31 +142,23 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
 
 
 
-  // Debug: Track when open state changes
+  // Modal lifecycle management
   React.useEffect(() => {
-    console.log('📧 EmailCompositionDialog useEffect - open changed to:', open);
     if (open) {
-      console.log('📧 DIALOG SHOULD BE VISIBLE NOW!');
-      
-      // DOM inspection
-      setTimeout(() => {
-        console.log('🔍 DOM INSPECTION:');
-        const dialogs = document.querySelectorAll('[role="dialog"]');
-        const backdrops = document.querySelectorAll('.MuiBackdrop-root');
-        console.log('🔍 Found dialogs:', dialogs.length, 'backdrops:', backdrops.length);
-        
-        if (dialogs.length > 0) {
-          const style = window.getComputedStyle(dialogs[0]);
-          console.log('🔍 Dialog style:', {
-            display: style.display,
-            visibility: style.visibility,
-            opacity: style.opacity,
-            zIndex: style.zIndex
-          });
-        }
-      }, 200);
+      openModal('emailComposition');
+      announceModalOpen('Share Meeting Summary via Email');
+    } else {
+      closeModal('emailComposition');
+      announceModalClose('Share Meeting Summary via Email');
     }
-  }, [open]);
+    
+    // Cleanup on unmount
+    return () => {
+      if (open) {
+        closeModal('emailComposition');
+      }
+    };
+  }, [open, openModal, closeModal, announceModalOpen, announceModalClose]);
 
   const handleClose = () => {
     console.log('📧 Closing dialog');
@@ -175,12 +173,23 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
       onClose={handleClose}
       maxWidth="md"
       fullWidth
-      PaperProps={{
-        style: {
-          minHeight: '70vh',
-        }
-      }}
-    >
+      disableAutoFocus
+      disableEnforceFocus
+      disableRestoreFocus
+        PaperProps={{
+          style: {
+            minHeight: '70vh',
+          }
+        }}
+      >
+      <FocusTrap 
+        active={open && !isSending}
+        focusTrapOptions={{
+          allowOutsideClick: false,
+          escapeDeactivates: true,
+        }}
+      >
+        <div>
       <DialogTitle>
         <Stack direction="row" alignItems="center" spacing={2}>
           <Email color="primary" />
@@ -329,6 +338,8 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
           {isSending ? 'Sending...' : 'Send Email'}
         </Button>
       </DialogActions>
+        </div>
+      </FocusTrap>
     </Dialog>
   );
 };

@@ -3,6 +3,7 @@
  * Single source of truth for speaker and segment state management
  */
 
+import React from 'react';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { SpeakerSegment, SpeakerMapping } from '../types';
@@ -279,9 +280,8 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.activeSpeakers;
         }
         
-        // Compute and cache
+        // Compute without calling set() during render
         const cache = recomputeCache(state);
-        set({ _computedCache: cache });
         return cache.activeSpeakers;
       },
 
@@ -293,9 +293,8 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.speakerStats;
         }
         
-        // Compute and cache
+        // Compute without calling set() during render
         const cache = recomputeCache(state);
-        set({ _computedCache: cache });
         return cache.speakerStats;
       },
 
@@ -307,9 +306,8 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.filteredMappings;
         }
         
-        // Compute and cache
+        // Compute without calling set() during render
         const cache = recomputeCache(state);
-        set({ _computedCache: cache });
         return cache.filteredMappings;
       },
 
@@ -321,9 +319,8 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.structurallyInvalidated;
         }
         
-        // Compute and cache
+        // Compute without calling set() during render
         const cache = recomputeCache(state);
-        set({ _computedCache: cache });
         return cache.structurallyInvalidated;
       },
 
@@ -335,9 +332,8 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.hasUnsavedChanges;
         }
         
-        // Compute and cache
+        // Compute without calling set() during render
         const cache = recomputeCache(state);
-        set({ _computedCache: cache });
         return cache.hasUnsavedChanges;
       },
 
@@ -413,21 +409,77 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
   )
 );
 
-// Updated convenience hooks - now use cached store methods
-export const useActiveSpeakers = () => 
-  useSpeakerSessionStore(state => state.getActiveSpeakers());
+// Updated convenience hooks - use React.useMemo for proper caching
+export const useActiveSpeakers = () => {
+  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const cache = useSpeakerSessionStore(state => state._computedCache);
+  
+  return React.useMemo(() => {
+    if (cache) {
+      return cache.activeSpeakers;
+    }
+    return computeActiveSpeakers(currentSegments);
+  }, [currentSegments, cache]);
+};
 
-export const useSpeakerStats = () => 
-  useSpeakerSessionStore(state => state.getSpeakerStats());
+export const useSpeakerStats = () => {
+  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const speakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const cache = useSpeakerSessionStore(state => state._computedCache);
+  
+  return React.useMemo(() => {
+    if (cache) {
+      return cache.speakerStats;
+    }
+    const activeSpeakers = computeActiveSpeakers(currentSegments);
+    return computeSpeakerStats(activeSpeakers, speakerMappings);
+  }, [currentSegments, speakerMappings, cache]);
+};
 
-export const useFilteredMappings = () => 
-  useSpeakerSessionStore(state => state.getFilteredMappings());
+export const useFilteredMappings = () => {
+  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const speakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const cache = useSpeakerSessionStore(state => state._computedCache);
+  
+  return React.useMemo(() => {
+    if (cache) {
+      return cache.filteredMappings;
+    }
+    const activeSpeakers = computeActiveSpeakers(currentSegments);
+    return computeFilteredMappings(activeSpeakers, speakerMappings);
+  }, [currentSegments, speakerMappings, cache]);
+};
 
-export const useStructurallyInvalidated = () => 
-  useSpeakerSessionStore(state => state.getStructurallyInvalidated());
+export const useStructurallyInvalidated = () => {
+  const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
+  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const cache = useSpeakerSessionStore(state => state._computedCache);
+  
+  return React.useMemo(() => {
+    if (cache) {
+      return cache.structurallyInvalidated;
+    }
+    return computeStructurallyInvalidated(originalSegments, currentSegments);
+  }, [originalSegments, currentSegments, cache]);
+};
 
-export const useHasUnsavedChanges = () => 
-  useSpeakerSessionStore(state => state.hasUnsavedChanges());
+export const useHasUnsavedChanges = () => {
+  const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
+  const currentSegments = useSpeakerSessionStore(state => state.currentSegments);
+  const speakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
+  const cache = useSpeakerSessionStore(state => state._computedCache);
+  
+  return React.useMemo(() => {
+    if (cache) {
+      return cache.hasUnsavedChanges;
+    }
+    return hasUnsavedChangesComputation(
+      originalSegments,
+      currentSegments,
+      speakerMappings
+    );
+  }, [originalSegments, currentSegments, speakerMappings, cache]);
+};
 
 // Direct state access hooks (use sparingly to avoid unnecessary re-renders)
 export const useCurrentSegments = () => 

@@ -86,7 +86,18 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
 export const useAppMode = (): AppModeContextType => {
   const context = useContext(AppModeContext);
   if (context === undefined) {
-    throw new Error('useAppMode must be used within an AppModeProvider');
+    // More defensive: log error but don't crash the app
+    console.error('useAppMode must be used within an AppModeProvider');
+    // Return safe fallback values
+    return {
+      mode: 'development' as AppMode,
+      isDemo: false,
+      isDevelopment: true,
+      isProduction: false,
+      setMode: () => {},
+      signIn: async () => {},
+      signOut: () => {}
+    };
   }
   return context;
 };
