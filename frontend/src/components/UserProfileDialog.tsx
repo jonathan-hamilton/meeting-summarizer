@@ -22,6 +22,8 @@ import {
 import { useUserProfileStore, useUserProfileDialogState, useUserProfileDialogClose } from '../stores/userProfileStore';
 import { useAuthStore } from '../stores/authStore';
 import { UserProfileForm } from './UserProfileForm';
+import { useAccessibilityStore } from '../stores/accessibilityStore';
+import FocusTrap from 'focus-trap-react';
 
 export const UserProfileDialog: React.FC = () => {
   const isOpen = useUserProfileDialogState();
@@ -38,6 +40,9 @@ export const UserProfileDialog: React.FC = () => {
   const setProfile = useUserProfileStore((state) => state.setProfile);
   const setError = useUserProfileStore((state) => state.setError);
   
+  // Accessibility store for modal management
+  const { openModal, closeModal, announceModalOpen, announceModalClose } = useAccessibilityStore();
+  
   const [isEditing, setIsEditing] = useState(false);
 
   // TODO: Add function to load additional user stats from API when endpoints are available
@@ -49,6 +54,24 @@ export const UserProfileDialog: React.FC = () => {
       setProfile(null);
     }
   }, [authUser, profile, setProfile]);
+
+  // Modal lifecycle management
+  useEffect(() => {
+    if (isOpen) {
+      openModal('userProfile');
+      announceModalOpen('User Profile Settings');
+    } else {
+      closeModal('userProfile');
+      announceModalClose('User Profile Settings');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (isOpen) {
+        closeModal('userProfile');
+      }
+    };
+  }, [isOpen, openModal, closeModal, announceModalOpen, announceModalClose]);
 
   const handleClose = () => {
     setIsEditing(false);
@@ -92,10 +115,21 @@ export const UserProfileDialog: React.FC = () => {
       onClose={handleClose}
       maxWidth="sm"
       fullWidth
+      disableAutoFocus
+      disableEnforceFocus
+      disableRestoreFocus
       PaperProps={{
         sx: { borderRadius: 2 }
       }}
     >
+      <FocusTrap 
+        active={isOpen && !isLoading}
+        focusTrapOptions={{
+          allowOutsideClick: false,
+          escapeDeactivates: true,
+        }}
+      >
+        <div>
       <DialogTitle sx={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -281,6 +315,8 @@ export const UserProfileDialog: React.FC = () => {
           </>
         )}
       </DialogActions>
+        </div>
+      </FocusTrap>
     </Dialog>
   );
 };

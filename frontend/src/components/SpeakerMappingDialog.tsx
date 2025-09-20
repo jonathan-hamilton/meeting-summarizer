@@ -13,6 +13,7 @@ import {
   Divider,
   Chip,
 } from "@mui/material";
+import FocusTrap from 'focus-trap-react';
 import {
   Close as CloseIcon,
   Person as PersonIcon,
@@ -23,6 +24,7 @@ import {
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import { sessionManager } from "../services/sessionManager";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
+import { useAccessibilityStore } from "../stores/accessibilityStore";
 import { getSpeakerColor } from "../theme/speakerColors";
 import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
@@ -68,6 +70,10 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 }) => {
   const { isDemo } = useAppMode();
   const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
+  
+  // Accessibility store for modal management and announcements
+  const { openModal, closeModal, announceModalOpen, announceModalClose } = useAccessibilityStore();
+  const modalId = 'speakerMappingDialog';
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,6 +292,24 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
     setError(null);
     setSuccess(false);
   }, [open, transcriptionId, detectedSpeakers.join(',')]); // Use join to create stable dependency
+
+  // Modal lifecycle management
+  useEffect(() => {
+    if (open) {
+      openModal(modalId);
+      announceModalOpen('Speaker Mapping Dialog');
+    } else {
+      closeModal(modalId);
+      announceModalClose('Speaker Mapping Dialog');
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (open) {
+        closeModal(modalId);
+      }
+    };
+  }, [open, openModal, closeModal, announceModalOpen, announceModalClose, modalId]);
 
   // Simple functions for speaker management
   const handleAddSpeaker = useCallback(() => {
@@ -531,9 +555,11 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       setError(null);
       setSuccess(false);
 
+      // Close modal and restore focus
+      closeModal(modalId);
       onClose();
     }
-  }, [loading, onClose, clearValidationErrors, clearEditState]);
+  }, [loading, onClose, clearValidationErrors, clearEditState, closeModal, modalId]);
 
   // Memoize computed values
   // Check if there are changes (names filled, new speakers added, or any modification from original)
@@ -655,6 +681,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
         aria-modal="true"
         aria-labelledby="speaker-mapping-dialog-title"
         aria-describedby="speaker-mapping-dialog-description"
+        disableAutoFocus
+        disableEnforceFocus
+        disableRestoreFocus
         PaperProps={{
           sx: { minHeight: "400px" },
         }}
@@ -662,6 +691,14 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           zIndex: 10000, // Higher than tour popover z-index (9999)
         }}
       >
+        <FocusTrap 
+          active={open && !loading}
+          focusTrapOptions={{
+            allowOutsideClick: false,
+            escapeDeactivates: true,
+          }}
+        >
+          <div>
         <DialogTitle
           sx={{
             display: "flex",
@@ -826,7 +863,9 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             maxWidth="300px"
           />
         </DialogActions>
-      </Dialog>
+          </div>
+        </FocusTrap>
+        </Dialog>
 
       {/* S2.5: Confirmation dialog for speaker removal */}
       <ConfirmDeleteDialog
