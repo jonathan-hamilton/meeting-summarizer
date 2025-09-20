@@ -35,6 +35,7 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 - **State Management Enhancement:** Improved emailStore with recipient suggestions and context-aware functionality
 - **Summary Persistence Planning:** Created comprehensive implementation plan for user history functionality
 - **Documentation Updates:** Added summary-persistence-implementation-plan.md with detailed 5-phase architecture
+- **S3.4 Email Field Bug Fix:** Resolved critical persistence issue where speaker email addresses disappeared during navigation between transcript pages
 
 ### ✅ COMPLETED WORK - EXCEPTIONAL SUCCESS
 

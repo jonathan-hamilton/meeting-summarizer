@@ -213,6 +213,7 @@ class ApiService {
     console.log('Request:', request);
     console.log('TranscriptionId being sent:', request.transcriptionId);
     console.log('Number of mappings:', request.mappings?.length || 0);
+    console.log('Email fields in mappings:', request.mappings?.map(m => ({ speakerId: m.speakerId, email: m.email })));
     
     return this.request<SpeakerMappingResponse>({
       method: 'POST',
@@ -222,10 +223,18 @@ class ApiService {
   }
 
   async getSpeakerMappings(transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {
-    return this.request<SpeakerMappingResponse>({
+    console.log('=== LOADING SPEAKER MAPPINGS DEBUG ===');
+    console.log('Loading mappings for transcriptionId:', transcriptionId);
+    
+    const response = await this.request<SpeakerMappingResponse>({
       method: 'GET',
       url: `/api/SpeakerMapping/${transcriptionId}`,
     });
+    
+    console.log('API Response:', response);
+    console.log('Email fields in loaded mappings:', response.data?.mappings?.map(m => ({ speakerId: m.speakerId, email: m.email })));
+    
+    return response;
   }
 
   async deleteSpeakerMappings(transcriptionId: string): Promise<ApiResponse<void>> {

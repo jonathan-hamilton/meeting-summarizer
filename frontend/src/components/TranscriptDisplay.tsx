@@ -102,7 +102,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       };
     });
     
-    initializeSession(transcriptionId, segmentsForStore, existingMappings);
+    // Filter mappings to only include those for this specific transcript
+    const transcriptMappings = existingMappings.filter(
+      mapping => mapping.transcriptionId === transcriptionId
+    );
+    
+    initializeSession(transcriptionId, segmentsForStore, transcriptMappings);
   };
   
   const getAllMappings = () => {
@@ -206,9 +211,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
           sessionManager.clearSpeakerOverrides();
         }
         
-        // Use store mappings if available, otherwise use provided mappings
-        const existingMappings = currentStoreMappings.length > 0 
-          ? currentStoreMappings 
+        // Filter store mappings to only include those for the current transcript
+        const transcriptSpecificMappings = currentStoreMappings.filter(
+          mapping => mapping.transcriptionId === transcription.transcriptionId
+        );
+        
+        // Use transcript-specific mappings if available, otherwise use provided mappings
+        const existingMappings = transcriptSpecificMappings.length > 0 
+          ? transcriptSpecificMappings 
           : speakerMappings || transcription.speakerMappings || [];
         
         initializeSpeakers(
@@ -241,11 +251,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         const success = await loadSpeakerMappingsFromApi(transcription.transcriptionId);
         
         if (success) {
+          // Filter to only use mappings for this specific transcript
+          const transcriptMappings = storeSpeakerMappings.filter(
+            mapping => mapping.transcriptionId === transcription.transcriptionId
+          );
+          
           // Force re-initialization with the loaded mappings
           initializeSpeakers(
             transcription.transcriptionId,
             allDetectedSpeakers,
-            storeSpeakerMappings
+            transcriptMappings
           );
         }
         

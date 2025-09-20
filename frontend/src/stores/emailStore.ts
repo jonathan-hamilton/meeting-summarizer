@@ -120,9 +120,6 @@ export const useEmailStore = create<EmailState>()((set, get) => ({
       }
     }
 
-    // Auto-populate recipients from speaker mappings with email addresses
-    const suggestedRecipients = generateRecipientSuggestions(speakerMappings);
-
     console.log('🏪 STORE about to call set() with isDialogOpen: true');
     set({
       isDialogOpen: true,
@@ -135,7 +132,8 @@ export const useEmailStore = create<EmailState>()((set, get) => ({
       includeTranscript,
       subject: defaultSubject,
       content: defaultContent,
-      recipients: suggestedRecipients,
+      recipients: [], // Start with empty recipients, let user add from suggestions
+      recipientInput: '', // Clear recipient input
       isSending: false,
     });
     console.log('🏪 STORE set() called, isDialogOpen should now be true');
@@ -397,24 +395,3 @@ ${formatTranscriptText()}
 *This transcript was generated using AI-powered transcription and may require review for accuracy.*`;
 }
 
-// Helper function to generate recipient suggestions from speaker mappings
-function generateRecipientSuggestions(speakerMappings: SpeakerMapping[]): string[] {
-  const recipients: string[] = [];
-  
-  speakerMappings.forEach(speaker => {
-    if (speaker.email && speaker.email.trim()) {
-      // Format: "Speaker Name <email@domain.com>" or just "email@domain.com"
-      const formattedRecipient = speaker.name 
-        ? `${speaker.name} <${speaker.email.trim()}>` 
-        : speaker.email.trim();
-      
-      // Avoid duplicates
-      if (!recipients.includes(formattedRecipient)) {
-        recipients.push(formattedRecipient);
-      }
-    }
-  });
-  
-  console.log('📧 Generated recipient suggestions:', recipients);
-  return recipients;
-}

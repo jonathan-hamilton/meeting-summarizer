@@ -2,6 +2,59 @@
 
 ## Current Technical Debt
 
+### S3.4 Speaker Email Field Persistence Bug ✅ RESOLVED
+
+**Date Identified**: September 19, 2025  
+**Date Resolved**: September 19, 2025  
+**Sprint**: S3.4 Email Field Support Bug Fix  
+**Resolution Duration**: Same day
+
+**Problem Resolved**: 
+- Speaker email addresses disappeared when navigating between transcript pages (/transcript → /app → /transcript)
+- Email field was missing from API save request payload in SpeakerMappingDialog.tsx
+- Users lost email assignments after navigation requiring re-entry
+- API round-trip not preserving email field data causing user frustration
+
+**Root Cause**: 
+- Line 451-468 in SpeakerMappingDialog.tsx was creating SpeakerMapping objects for API save without including the `email` field
+- Despite email field being properly defined in SpeakerMapping interface and UI components supporting it, the API request was missing this critical field
+- Navigation triggered reload from API which had no email data due to incomplete save requests
+
+**Solution Implemented**:
+- ✅ **API Payload Fix**: Added `email: mapping.email` to SpeakerMapping object creation for API save requests
+- ✅ **Debug Logging**: Enhanced apiService.ts with comprehensive email field tracking in save/load operations
+- ✅ **Data Persistence**: Email addresses now properly saved to API and restored during navigation
+- ✅ **User Experience**: All speaker fields (name, role, email) now persist consistently across page navigation
+
+**Technical Resolution**:
+```typescript
+// BEFORE (missing email field in API save)
+return {
+  speakerId: mapping.speakerId,
+  name: mapping.name.trim(),
+  role: mapping.role.trim() || "Participant",
+  transcriptionId: mapping.transcriptionId || transcriptionId,
+  source: mapping.source,
+  // email: mapping.email, // ← This was MISSING!
+};
+
+// AFTER (email field included)
+return {
+  speakerId: mapping.speakerId,
+  name: mapping.name.trim(),
+  role: mapping.role.trim() || "Participant",
+  transcriptionId: mapping.transcriptionId || transcriptionId,
+  source: mapping.source,
+  email: mapping.email, // S3.4: Include email field in API save ← FIXED!
+};
+```
+
+**Impact Resolved**:
+- **User Experience**: Email assignments no longer lost during navigation
+- **Data Integrity**: Complete speaker mapping data (name/role/email) persisted consistently
+- **Email Functionality**: Enhanced email composition with reliable recipient suggestions
+- **System Reliability**: API save/load cycle now handles all SpeakerMapping fields correctly
+
 ### Code Modularization & Component Maintainability ✅ RESOLVED
 
 **Date Identified**: September 13, 2025  

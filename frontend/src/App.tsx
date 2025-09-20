@@ -34,6 +34,7 @@ import { useTourStore } from "./stores/tourStore";
 import { useUserProfileDialogOpen } from "./stores/userProfileStore";
 import { useAuthStore } from "./stores/authStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
+import { useSpeakerMappingLifecycle } from "./hooks/useSpeakerMappingLifecycle";
 
 // Lazy load dialog components to reduce initial bundle size
 // Health dialog component removed
@@ -72,6 +73,9 @@ const AppContent: React.FC = () => {
   const { mode: appMode, setMode: setAppMode, signOut: goToDemo } = useAppMode();
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
+  
+  // Manage speaker mapping lifecycle based on authentication changes
+  useSpeakerMappingLifecycle();
 
   // Ensure page starts at the top when component mounts
   useEffect(() => {
