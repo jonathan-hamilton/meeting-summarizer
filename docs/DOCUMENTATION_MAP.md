@@ -49,6 +49,12 @@ This document provides clear navigation paths and traceability between all proje
 | `docs/sprints/sprint_X_stories.md` | Sprint-specific work breakdown | During sprint execution | Requirements roadmap | Implementation plans |
 | `docs/archive/sX.X-*.md` | Completed sprint summaries | Sprint completion | Sprint stories | Requirements roadmap |
 
+### **4. Implementation Level**
+| File | Purpose | Updates When | Traces From | Traces To |
+|------|---------|--------------|-------------|-----------|
+| [`docs/implementation/summary-persistence-implementation-plan.md`](./implementation/summary-persistence-implementation-plan.md) | Summary persistence system architecture and execution plan | Summary persistence features | Email functionality enhancement, user history requirements | Database schema, API endpoints, frontend components |
+| [`docs/implementation/S5.3-implementation-plan.md`](./implementation/S5.3-implementation-plan.md) | Performance optimization implementation guide | Performance sprint work | Sprint 5.3 requirements | Code optimizations, bundle analysis |
+
 ---
 
 ## 🔄 Update Workflow & Process

@@ -870,6 +870,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               speakerMappings={effectiveSpeakerMappings}
               detectedSpeakers={allDetectedSpeakers}
               aiSummaryRef={aiSummaryRef}
+              fileName={transcription.fileName}
+              speakerSegments={speakerSegments}
             />
           </Box>
         )}

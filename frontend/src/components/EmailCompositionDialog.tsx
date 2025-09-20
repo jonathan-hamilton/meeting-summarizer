@@ -10,6 +10,8 @@ import {
   Box,
   Stack,
   IconButton,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import {
   Close,
@@ -34,6 +36,11 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     setSubject: setStoreSubject,
     setContent: setStoreContent,
     setRecipients: _setStoreRecipients,
+    // Transcript options
+    includeTranscript,
+    transcriptOnly,
+    transcriptData,
+    setIncludeTranscript,
   } = useEmailStore();
 
   console.log('📧 EMAIL DIALOG DEBUG:', {
@@ -143,6 +150,21 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
             fullWidth
             variant="outlined"
           />
+          
+          {/* Append Transcript Option - Show only for summary emails with transcript data */}
+          {!transcriptOnly && transcriptData && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={includeTranscript}
+                  onChange={(e) => setIncludeTranscript(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Append full transcript to email"
+              sx={{ alignSelf: 'flex-start', mt: 1 }}
+            />
+          )}
         </Stack>
       </DialogContent>
 
