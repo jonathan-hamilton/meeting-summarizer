@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 
 interface AccessibilityState {
   // Live region announcements for screen readers
@@ -13,6 +13,19 @@ interface AccessibilityState {
   activeModalId: string | null;
   focusElementBeforeModal: HTMLElement | null;
   modalStack: string[]; // Track multiple modals for nested scenarios
+  
+  // Color & Visual Accessibility (S6.6 Increment 5)
+  highContrast: boolean;
+  reduceMotion: boolean;
+  enhancedFocusIndicators: boolean;
+  largeText: boolean;
+  
+  // System preferences detection
+  systemPreferences: {
+    prefersReducedMotion: boolean;
+    prefersHighContrast: boolean;
+    prefersDarkMode: boolean;
+  };
   
   // Actions
   setAnnouncement: (message: string, timeout?: number) => void;
@@ -30,6 +43,19 @@ interface AccessibilityState {
   setFocusElementBeforeModal: (element: HTMLElement | null) => void;
   restoreFocusAfterModal: () => void;
   
+  // Color & Visual Accessibility Actions (S6.6 Increment 5)
+  setHighContrast: (enabled: boolean) => void;
+  setReduceMotion: (enabled: boolean) => void;
+  setEnhancedFocusIndicators: (enabled: boolean) => void;
+  setLargeText: (enabled: boolean) => void;
+  
+  // System preferences detection
+  detectSystemPreferences: () => void;
+  
+  // Color accessibility utilities
+  announceHighContrastChange: (enabled: boolean) => void;
+  announceMotionPreferenceChange: (enabled: boolean) => void;
+  
   // Utility actions for common announcements
   announceTranscriptionComplete: () => void;
   announceModeChange: (mode: 'development' | 'production') => void;
@@ -40,7 +66,8 @@ interface AccessibilityState {
 
 export const useAccessibilityStore = create<AccessibilityState>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       // Initial state
       announcement: '',
       helpDialogOpen: false,
@@ -48,6 +75,25 @@ export const useAccessibilityStore = create<AccessibilityState>()(
       activeModalId: null,
       focusElementBeforeModal: null,
       modalStack: [],
+      
+      // Color & Visual Accessibility Initial State
+      highContrast: false,
+      reduceMotion: false,
+      enhancedFocusIndicators: true, // Default to enabled for better accessibility
+      largeText: false,
+      
+      // System preferences (detected on initialization)
+      systemPreferences: {
+        prefersReducedMotion: typeof window !== 'undefined' 
+          ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
+          : false,
+        prefersHighContrast: typeof window !== 'undefined' 
+          ? window.matchMedia('(prefers-contrast: high)').matches 
+          : false,
+        prefersDarkMode: typeof window !== 'undefined' 
+          ? window.matchMedia('(prefers-color-scheme: dark)').matches 
+          : false,
+      },
       
       // Actions
       setAnnouncement: (message: string, timeout = 1000) => {
@@ -153,9 +199,94 @@ export const useAccessibilityStore = create<AccessibilityState>()(
         const friendlyName = modalName.replace(/([A-Z])/g, ' $1').toLowerCase().trim();
         get().setAnnouncement(`${friendlyName} dialog closed`);
       },
+      
+      // Color & Visual Accessibility Actions
+      setHighContrast: (enabled: boolean) => {
+        set({ highContrast: enabled });
+        
+        // Announce change to screen readers
+        get().announceHighContrastChange(enabled);
+      },
+      
+      setReduceMotion: (enabled: boolean) => {
+        set({ reduceMotion: enabled });
+        
+        // Announce change to screen readers
+        get().announceMotionPreferenceChange(enabled);
+      },
+      
+      setEnhancedFocusIndicators: (enabled: boolean) => {
+        set({ enhancedFocusIndicators: enabled });
+        
+        get().setAnnouncement(
+          enabled ? 'Enhanced focus indicators enabled' : 'Enhanced focus indicators disabled'
+        );
+      },
+      
+      setLargeText: (enabled: boolean) => {
+        set({ largeText: enabled });
+        
+        // Apply CSS custom property for text scaling
+        if (typeof document !== 'undefined') {
+          document.documentElement.style.setProperty(
+            '--text-scale-factor', 
+            enabled ? '1.25' : '1'
+          );
+        }
+        
+        get().setAnnouncement(
+          enabled ? 'Large text mode enabled' : 'Large text mode disabled'
+        );
+      },
+      
+      // System Preference Detection
+      detectSystemPreferences: () => {
+        if (typeof window === 'undefined') return;
+        
+        const systemPreferences = {
+          prefersReducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+          prefersHighContrast: window.matchMedia('(prefers-contrast: high)').matches,
+          prefersDarkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+        };
+        
+        set({ systemPreferences });
+        
+        // Auto-apply system preferences if user hasn't manually set them
+        const currentState = get();
+        if (systemPreferences.prefersReducedMotion && !currentState.reduceMotion) {
+          get().setReduceMotion(true);
+        }
+        if (systemPreferences.prefersHighContrast && !currentState.highContrast) {
+          get().setHighContrast(true);
+        }
+      },
+      
+      // Accessibility-specific announcements
+      announceHighContrastChange: (enabled: boolean) => {
+        get().setAnnouncement(
+          enabled ? 'High contrast mode enabled' : 'High contrast mode disabled'
+        );
+      },
+      
+      announceMotionPreferenceChange: (enabled: boolean) => {
+        get().setAnnouncement(
+          enabled ? 'Reduced motion enabled' : 'Motion restored'
+        );
+      },
     }),
     {
       name: 'accessibility-store',
+      // Persist visual accessibility preferences
+      partialize: (state) => ({
+        highContrast: state.highContrast,
+        reduceMotion: state.reduceMotion,
+        enhancedFocusIndicators: state.enhancedFocusIndicators,
+        largeText: state.largeText,
+      }),
+    }
+    ),
+    {
+      name: 'accessibility-store-devtools',
     }
   )
 );

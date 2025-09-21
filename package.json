@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "focus-trap-react": "^10.3.0"
+    "focus-trap-react": "^10.3.0",
+    "typescript": "^5.9.2"
   }
 }

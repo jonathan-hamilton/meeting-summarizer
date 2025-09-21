@@ -35,9 +35,11 @@ import {
   Home as HomeIcon,
   Help as HelpIcon,
   AccountCircle as AccountIcon,
+  Accessibility as AccessibilityIcon,
 } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
+import "./styles/accessibility.css";
 import { useAppMode } from "./contexts/AppModeContext";
 import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
@@ -62,6 +64,7 @@ import FileUpload from "./components/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import TranscriptPage from "./components/TranscriptPage";
+import { AccessibilityControlPanel } from "./components/AccessibilityControlPanel";
 import { sessionManager } from "./services/sessionManager";
 
 import type { TranscriptionResponse } from "./types";
@@ -105,6 +108,9 @@ const AppContent: React.FC = () => {
     announcement,
     helpDialogOpen,
     privacyPolicyOpen,
+    highContrast,
+    reduceMotion,
+    enhancedFocusIndicators,
     setHelpDialogOpen,
     setPrivacyPolicyOpen,
     announceTranscriptionComplete,
@@ -182,6 +188,7 @@ const AppContent: React.FC = () => {
   // Authentication dialog states
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
+  const [accessibilityPanelOpen, setAccessibilityPanelOpen] = useState(false);
 
   // Listen for session expiry events
   useEffect(() => {
@@ -239,6 +246,49 @@ const AppContent: React.FC = () => {
       setIsOpenAIEnabled(false);
     }
   }, [appMode]);
+
+  // Initialize accessibility settings on mount (for persisted preferences)
+  useEffect(() => {
+    // Force rehydration of persisted accessibility store values on app mount
+    // This ensures localStorage values are applied immediately after the store is ready
+    const timer = setTimeout(() => {
+      // Double-check that DOM classes are applied after store rehydration
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.toggle('high-contrast-mode', highContrast);
+        document.documentElement.classList.toggle('enhanced-focus-indicators', enhancedFocusIndicators);
+        
+        const duration = reduceMotion ? '0ms' : '300ms';
+        const timing = reduceMotion ? '0ms' : 'ease-in-out';
+        document.documentElement.style.setProperty('--motion-duration', duration);
+        document.documentElement.style.setProperty('--motion-timing', timing);
+      }
+    }, 50); // Small delay to ensure store has rehydrated
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Accessibility DOM effects - handle CSS class application
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('high-contrast-mode', highContrast);
+    }
+  }, [highContrast]);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('enhanced-focus-indicators', enhancedFocusIndicators);
+    }
+  }, [enhancedFocusIndicators]);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const duration = reduceMotion ? '0ms' : '300ms';
+      const timing = reduceMotion ? '0ms' : 'ease-in-out';
+      
+      document.documentElement.style.setProperty('--motion-duration', duration);
+      document.documentElement.style.setProperty('--motion-timing', timing);
+    }
+  }, [reduceMotion]);
 
   const handleModeToggle = async () => {
     // Toggle between development and production modes (demo stays demo)
@@ -504,6 +554,16 @@ const AppContent: React.FC = () => {
                     <HelpIcon />
                   </IconButton>
                 </Tooltip>
+                <Tooltip title="Accessibility Settings">
+                  <IconButton 
+                    color="inherit" 
+                    onClick={() => setAccessibilityPanelOpen(true)} 
+                    sx={{ ml: 1 }}
+                    aria-label="Accessibility settings and preferences"
+                  >
+                    <AccessibilityIcon />
+                  </IconButton>
+                </Tooltip>
                 <IconButton 
                   color="inherit" 
                   onClick={handleThemeToggle} 
@@ -551,6 +611,12 @@ const AppContent: React.FC = () => {
           <Suspense fallback={null}>
             <UserProfileDialog />
           </Suspense>
+
+          {/* Accessibility Control Panel */}
+          <AccessibilityControlPanel
+            open={accessibilityPanelOpen}
+            onClose={() => setAccessibilityPanelOpen(false)}
+          />
 
           {/* Authentication dialogs */}
           <Suspense fallback={null}>

@@ -1,0 +1,2267 @@
+/**
+ * Accessibility CSS
+ * WCAG AA compliance styles for color, focus, and visual accessibility
+ * S6.6 Increment 5: Color & Visual Accessibility
+ */
+
+/* CSS Custom Properties for Accessibility */
+:root {
+  /* Motion control */
+  --motion-duration: 300ms;
+  --motion-timing: ease-in-out;
+  
+  /* Text scaling */
+  --text-scale-factor: 1;
+  
+  /* Focus indicators */
+  --focus-outline-width: 3px;
+  --focus-outline-offset: 2px;
+  --focus-outline-color-light: #005fcc;
+  --focus-outline-color-dark: #90caf9;
+  
+  /* High contrast colors - UNIVERSAL (white text on black background) */
+  --hc-text-color: #ffffff;
+  --hc-background-color: #000000;
+  --hc-border-color: #ffffff;
+  --hc-focus-color: #ffffff;
+  
+  /* Color contrast ratios (for reference) */
+  --wcag-aa-normal: 4.5; /* Minimum for normal text */
+  --wcag-aa-large: 3.0;   /* Minimum for large text */
+}
+
+/* Dark theme custom properties */
+[data-theme="dark"] {
+  --focus-outline-color-light: #90caf9;
+  --focus-outline-color-dark: #90caf9;
+  
+  /* High contrast colors - SAME FOR ALL THEMES */
+  --hc-text-color: #ffffff;
+  --hc-background-color: #000000;
+  --hc-border-color: #ffffff;
+  --hc-focus-color: #ffffff;
+}
+
+/* ========================================
+   MOTION PREFERENCES
+======================================== */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Apply motion preferences from accessibility store */
+html[style*="--motion-duration: 0ms"] * {
+  animation-duration: 0ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0ms !important;
+}
+
+/* ========================================
+   TEXT SCALING
+======================================== */
+
+/* Large text mode */
+html[style*="--text-scale-factor: 1.25"] {
+  font-size: calc(16px * var(--text-scale-factor));
+}
+
+html[style*="--text-scale-factor: 1.25"] .MuiTypography-root {
+  font-size: calc(1em * var(--text-scale-factor));
+}
+
+/* ========================================
+   FOCUS INDICATORS
+======================================== */
+
+/* Enhanced focus indicators */
+.enhanced-focus-indicators *:focus-visible {
+  outline: var(--focus-outline-width) solid var(--focus-outline-color-light) !important;
+  outline-offset: var(--focus-outline-offset) !important;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] .enhanced-focus-indicators *:focus-visible {
+  outline-color: var(--focus-outline-color-dark) !important;
+}
+
+/* Material-UI component focus overrides for enhanced indicators */
+.enhanced-focus-indicators .MuiButton-root:focus-visible {
+  outline: var(--focus-outline-width) solid var(--focus-outline-color-light) !important;
+  outline-offset: var(--focus-outline-offset) !important;
+  box-shadow: 0 0 0 1px var(--focus-outline-color-light) !important;
+}
+
+.enhanced-focus-indicators .MuiIconButton-root:focus-visible {
+  outline: var(--focus-outline-width) solid var(--focus-outline-color-light) !important;
+  outline-offset: var(--focus-outline-offset) !important;
+}
+
+.enhanced-focus-indicators .MuiTextField-root input:focus-visible,
+.enhanced-focus-indicators .MuiTextField-root textarea:focus-visible {
+  outline: var(--focus-outline-width) solid var(--focus-outline-color-light) !important;
+  outline-offset: var(--focus-outline-offset) !important;
+}
+
+.enhanced-focus-indicators .MuiChip-root:focus-visible {
+  outline: var(--focus-outline-width) solid var(--focus-outline-color-light) !important;
+  outline-offset: var(--focus-outline-offset) !important;
+}
+
+/* ========================================
+   HIGH CONTRAST MODE
+======================================== */
+
+/* High contrast mode styles */
+.high-contrast-mode {
+  /* Global high contrast colors */
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode * {
+  /* Remove background images in high contrast mode */
+  background-image: none !important;
+  
+  /* Ensure borders are visible */
+  border-color: var(--hc-border-color) !important;
+}
+
+/* High contrast text elements */
+.high-contrast-mode .MuiTypography-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* High contrast buttons - using more specific selectors */
+html.high-contrast-mode .MuiButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: #000000 !important; /* Force black text for all buttons */
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+html.high-contrast-mode .MuiButton-root *,
+html.high-contrast-mode .MuiButton-root span,
+html.high-contrast-mode .MuiButton-root .MuiButton-startIcon,
+html.high-contrast-mode .MuiButton-root .MuiSvgIcon-root {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+html.high-contrast-mode .MuiButton-contained {
+  background-color: var(--hc-text-color) !important;
+  color: #000000 !important; /* Keep text black even for contained buttons */
+}
+
+html.high-contrast-mode .MuiButton-root:hover {
+  background-color: var(--hc-text-color) !important;
+  color: #000000 !important; /* Keep text black on hover */
+}
+
+html.high-contrast-mode .MuiButton-root:hover *,
+html.high-contrast-mode .MuiButton-root:hover span,
+html.high-contrast-mode .MuiButton-root:hover .MuiButton-startIcon,
+html.high-contrast-mode .MuiButton-root:hover .MuiSvgIcon-root {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+/* Additional aggressive targeting for button text visibility */
+html.high-contrast-mode button,
+html.high-contrast-mode button *,
+html.high-contrast-mode button span {
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000 !important;
+}
+
+/* Fix PDF icons appearing as solid black blocks */
+html.high-contrast-mode .MuiSvgIcon-root[data-testid="PictureAsPdfIcon"],
+html.high-contrast-mode svg[data-testid="PictureAsPdfIcon"],
+html.high-contrast-mode .MuiIconButton-root .MuiSvgIcon-root {
+  color: #000000 !important;
+  fill: transparent !important;
+  stroke: #000000 !important;
+  stroke-width: 1px !important;
+  background: transparent !important;
+}
+
+/* Ensure PDF icons have proper outline styling */
+html.high-contrast-mode .MuiSvgIcon-root path {
+  fill: transparent !important;
+  stroke: #000000 !important;
+  stroke-width: 1px !important;
+}
+
+/* High contrast form elements */
+.high-contrast-mode .MuiTextField-root {
+  background-color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiTextField-root input,
+.high-contrast-mode .MuiTextField-root textarea {
+  color: var(--hc-text-color) !important;
+  background-color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiTextField-root .MuiInputLabel-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* High contrast chips (speaker indicators) */
+.high-contrast-mode .MuiChip-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+/* High contrast dialogs */
+.high-contrast-mode .MuiDialog-paper {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 3px solid var(--hc-border-color) !important;
+}
+
+/* High contrast focus indicators */
+.high-contrast-mode *:focus-visible {
+  outline: 4px solid var(--hc-focus-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* High contrast tables */
+.high-contrast-mode .MuiTable-root {
+  background-color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiTableHead-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiTableCell-root {
+  color: var(--hc-text-color) !important;
+  border-color: var(--hc-border-color) !important;
+  border-width: 1px !important;
+}
+
+.high-contrast-mode .MuiTableCell-head {
+  color: var(--hc-background-color) !important;
+  background-color: var(--hc-text-color) !important;
+  font-weight: bold !important;
+  border-color: var(--hc-background-color) !important;
+}
+
+/* High contrast icon buttons */
+.high-contrast-mode .MuiIconButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  border-radius: 4px !important;
+}
+
+.high-contrast-mode .MuiIconButton-root:hover {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiSvgIcon-root {
+  color: inherit !important;
+}
+
+/* High contrast badges/status indicators */
+.high-contrast-mode .MuiBadge-badge {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+/* High contrast cards/papers */
+.high-contrast-mode .MuiPaper-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+/* High contrast toolbar/app bar */
+.high-contrast-mode .MuiAppBar-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border-bottom: 3px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiTypography-root {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  margin: 2px !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root:hover {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+/* Ensure app bar icon content is visible */
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root .MuiSvgIcon-root {
+  color: var(--hc-text-color) !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root:hover .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+  fill: currentColor !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+/* High contrast menu items */
+.high-contrast-mode .MuiMenuItem-root {
+  color: var(--hc-text-color) !important;
+  border-bottom: 1px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiMenuItem-root:hover {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+/* High contrast dividers */
+.high-contrast-mode .MuiDivider-root {
+  background-color: var(--hc-border-color) !important;
+  border-color: var(--hc-border-color) !important;
+  border-width: 2px !important;
+}
+
+/* High contrast tooltips */
+.high-contrast-mode .MuiTooltip-tooltip {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+}
+
+/* High contrast progress indicators */
+.high-contrast-mode .MuiCircularProgress-root {
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiLinearProgress-root {
+  background-color: var(--hc-background-color) !important;
+  border: 1px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiLinearProgress-bar {
+  background-color: var(--hc-text-color) !important;
+}
+
+/* ========================================
+   APPLICATION-SPECIFIC HIGH CONTRAST
+======================================== */
+
+/* Meeting table specific styles */
+.high-contrast-mode [role="table"],
+.high-contrast-mode .meeting-table {
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .meeting-row:nth-child(even) {
+  background-color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .meeting-row:nth-child(odd) {
+  background-color: transparent !important;
+}
+
+/* Status indicators */
+.high-contrast-mode .status-indicator,
+.high-contrast-mode .status-completed,
+.high-contrast-mode .status-processing,
+.high-contrast-mode .status-failed {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  font-weight: bold !important;
+}
+
+/* Action buttons in tables */
+.high-contrast-mode .action-buttons button,
+.high-contrast-mode .table-actions button {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  margin: 2px !important;
+}
+
+.high-contrast-mode .action-buttons button:hover,
+.high-contrast-mode .table-actions button:hover {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+/* File size and metadata text */
+.high-contrast-mode .file-size,
+.high-contrast-mode .upload-date,
+.high-contrast-mode .metadata {
+  color: var(--hc-text-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Search input specific styling */
+.high-contrast-mode input[type="search"],
+.high-contrast-mode .search-input {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 3px solid var(--hc-border-color) !important;
+  padding: 8px !important;
+}
+
+.high-contrast-mode input[type="search"]::placeholder,
+.high-contrast-mode .search-input::placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 0.7;
+}
+
+/* ========================================
+   FIXES FOR INVISIBLE ELEMENTS
+======================================== */
+
+/* Fix invisible page titles and headings */
+.high-contrast-mode h1,
+.high-contrast-mode h2,
+.high-contrast-mode h3,
+.high-contrast-mode h4,
+.high-contrast-mode h5,
+.high-contrast-mode h6 {
+  color: var(--hc-text-color) !important;
+  font-weight: bold !important;
+  border-bottom: 2px solid var(--hc-border-color) !important;
+  padding-bottom: 4px !important;
+  margin-bottom: 8px !important;
+}
+
+/* Fix invisible app subtitle and descriptions */
+.high-contrast-mode .MuiTypography-body1,
+.high-contrast-mode .MuiTypography-body2,
+.high-contrast-mode .MuiTypography-subtitle1,
+.high-contrast-mode .MuiTypography-subtitle2 {
+  color: var(--hc-text-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Fix invisible footer text and links */
+html.high-contrast-mode footer,
+html.high-contrast-mode footer *,
+html.high-contrast-mode [component="footer"],
+html.high-contrast-mode [component="footer"] *,
+html.high-contrast-mode .MuiTypography-root[color="text.secondary"],
+html.high-contrast-mode .footer,
+html.high-contrast-mode .privacy-policy,
+html.high-contrast-mode p,
+html.high-contrast-mode span:not(.MuiChip-label) {
+  color: var(--hc-text-color) !important;
+}
+
+/* Fix invisible links - especially Privacy Policy */
+html.high-contrast-mode a,
+html.high-contrast-mode .MuiLink-root,
+html.high-contrast-mode button[component="Link"],
+html.high-contrast-mode [component="button"][variant="body2"],
+html.high-contrast-mode .MuiLink-button,
+html.high-contrast-mode .MuiButtonBase-root.MuiLink-root {
+  color: var(--hc-text-color) !important;
+  text-decoration: underline !important;
+  font-weight: bold !important;
+  border: 1px solid transparent !important;
+}
+
+/* Specific targeting for Privacy Policy link - more aggressive approach */
+html.high-contrast-mode footer .MuiLink-root,
+html.high-contrast-mode footer button,
+html.high-contrast-mode [component="footer"] .MuiLink-root,
+html.high-contrast-mode [component="footer"] button,
+html.high-contrast-mode .MuiBox-root footer .MuiLink-root,
+html.high-contrast-mode .MuiBox-root [component="footer"] button,
+html.high-contrast-mode footer .MuiTypography-root .MuiLink-root,
+html.high-contrast-mode [component="footer"] .MuiTypography-root button {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+  padding: 2px 4px !important;
+  border-radius: 2px !important;
+  background: transparent !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Ultra-specific Privacy Policy targeting */
+html.high-contrast-mode .MuiTypography-body2 .MuiLink-root,
+html.high-contrast-mode .MuiTypography-body2 button[component="button"],
+html.high-contrast-mode *[color="text.secondary"] .MuiLink-root,
+html.high-contrast-mode *[color="text.secondary"] button {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Stepper icons and progress indicators - aggressive targeting for high contrast mode */
+html.high-contrast-mode .MuiStepper-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiStep-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiStepLabel-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiStepIcon-root,
+html.high-contrast-mode .MuiStepIcon-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiListItem-root .MuiSvgIcon-root[data-testid*="CheckCircle"],
+html.high-contrast-mode .MuiListItem-root .MuiSvgIcon-root[data-testid*="AudioFile"],
+html.high-contrast-mode .MuiListItem-root .MuiSvgIcon-root[data-testid*="Upload"],
+html.high-contrast-mode .MuiListItem-root .MuiSvgIcon-root[data-testid*="Psychology"],
+html.high-contrast-mode .MuiListItem-root .MuiSvgIcon-root[data-testid*="Error"] {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  background: transparent !important;
+}
+
+/* More aggressive targeting for ALL SVG icons in upload progress area */
+html.high-contrast-mode .MuiListItem-root .MuiSvgIcon-root,
+html.high-contrast-mode .upload-progress .MuiSvgIcon-root,
+html.high-contrast-mode .MuiBox-root .MuiSvgIcon-root,
+html.high-contrast-mode svg[data-testid],
+html.high-contrast-mode .MuiList-root .MuiSvgIcon-root {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+  stroke: #ffffff !important;
+  background: transparent !important;
+}
+
+/* Ultra-aggressive: target ALL SVG elements in high contrast mode */
+html.high-contrast-mode svg,
+html.high-contrast-mode .MuiSvgIcon-root {
+  color: #ffffff !important;
+  fill: #ffffff !important;
+}
+
+/* Action Items accordion headers - make speaker labels and icons visible */
+html.high-contrast-mode .MuiAccordion-root .MuiAccordionSummary-root,
+html.high-contrast-mode .MuiAccordion-root .MuiAccordionSummary-content,
+html.high-contrast-mode .MuiAccordion-root .MuiTypography-root,
+html.high-contrast-mode .MuiAccordionSummary-root * {
+  color: var(--hc-text-color) !important;
+}
+
+/* Action Items speaker icons */
+html.high-contrast-mode .MuiAccordion-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiAccordionSummary-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiAccordionSummary-content .MuiSvgIcon-root {
+  color: var(--hc-text-color) !important;
+  fill: var(--hc-text-color) !important;
+}
+
+/* Ensure action item count text is visible */
+html.high-contrast-mode .MuiAccordion-root .MuiTypography-body2,
+html.high-contrast-mode .MuiAccordion-root .MuiTypography-caption,
+html.high-contrast-mode .MuiAccordionSummary-root .MuiTypography-body2 {
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode a:hover,
+.high-contrast-mode a:focus {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border-color: var(--hc-border-color) !important;
+}
+
+/* Fix upload area and file format text */
+.high-contrast-mode .upload-area,
+.high-contrast-mode .dropzone {
+  border: 3px dashed var(--hc-border-color) !important;
+  background-color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .upload-area *,
+.high-contrast-mode .dropzone *,
+.high-contrast-mode .file-formats,
+.high-contrast-mode .supported-formats {
+  color: var(--hc-text-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Fix file size display and metadata */
+.high-contrast-mode .file-info,
+.high-contrast-mode .file-size-text,
+.high-contrast-mode .max-file-size {
+  color: var(--hc-text-color) !important;
+  font-weight: bold !important;
+}
+
+/* Fix file metadata badges/chips that are invisible */
+.high-contrast-mode .MuiChip-root,
+.high-contrast-mode .metadata-chip,
+.high-contrast-mode .status-chip,
+.high-contrast-mode .info-badge {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  font-weight: bold !important;
+}
+
+.high-contrast-mode .MuiChip-label {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+/* Fix speaker metadata and processing info */
+.high-contrast-mode .processing-info,
+.high-contrast-mode .file-size-info,
+.high-contrast-mode .duration-info,
+.high-contrast-mode .speaker-count-info {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  font-weight: bold !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+}
+
+/* Fix table row content and timestamps */
+.high-contrast-mode .MuiTableRow-root td {
+  color: var(--hc-text-color) !important;
+  font-weight: 500 !important;
+}
+
+.high-contrast-mode .timestamp,
+.high-contrast-mode .date-text,
+.high-contrast-mode .time-text {
+  color: var(--hc-text-color) !important;
+  font-weight: 600 !important;
+}
+
+/* Fix speaker transcript content */
+.high-contrast-mode .transcript-content,
+.high-contrast-mode .speaker-text,
+.high-contrast-mode .transcript-text {
+  color: var(--hc-text-color) !important;
+  background-color: var(--hc-background-color) !important;
+  border: 1px solid var(--hc-border-color) !important;
+  padding: 8px !important;
+  margin: 4px 0 !important;
+}
+
+/* Fix confidence indicators */
+.high-contrast-mode .confidence,
+.high-contrast-mode .confidence-text {
+  color: var(--hc-text-color) !important;
+  font-weight: bold !important;
+}
+
+/* Nuclear option: Force visibility for all potentially hidden elements */
+.high-contrast-mode [class*="badge"],
+.high-contrast-mode [class*="chip"],
+.high-contrast-mode [class*="tag"],
+.high-contrast-mode [class*="info"],
+.high-contrast-mode [class*="meta"],
+.high-contrast-mode [class*="stat"] {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  font-weight: bold !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+}
+
+/* Ensure processing status and file info are always visible */
+.high-contrast-mode [class*="process"],
+.high-contrast-mode [class*="duration"],
+.high-contrast-mode [class*="size"],
+.high-contrast-mode [class*="speaker"] {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+  font-weight: bold !important;
+}
+
+/* Ensure all text elements are visible */
+.high-contrast-mode div,
+.high-contrast-mode span,
+.high-contrast-mode p,
+.high-contrast-mode label,
+.high-contrast-mode .MuiFormLabel-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* ========================================
+   COMPREHENSIVE ELEMENT VISIBILITY FIXES
+======================================== */
+
+/* Force all icons to be visible */
+.high-contrast-mode .MuiSvgIcon-root {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+/* Force all buttons to be visible with strong borders */
+.high-contrast-mode .MuiButton-root,
+.high-contrast-mode .MuiIconButton-root,
+.high-contrast-mode button {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+.high-contrast-mode .MuiButton-root:hover,
+.high-contrast-mode .MuiIconButton-root:hover,
+.high-contrast-mode button:hover {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* Force button content (icons and text) to be visible */
+.high-contrast-mode .MuiButton-root *,
+.high-contrast-mode .MuiIconButton-root *,
+.high-contrast-mode button * {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+.high-contrast-mode .MuiButton-root .MuiSvgIcon-root,
+.high-contrast-mode .MuiIconButton-root .MuiSvgIcon-root,
+.high-contrast-mode button .MuiSvgIcon-root {
+  color: inherit !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+}
+
+/* Force all typography to be visible */
+.high-contrast-mode .MuiTypography-root,
+.high-contrast-mode h1,
+.high-contrast-mode h2, 
+.high-contrast-mode h3,
+.high-contrast-mode h4,
+.high-contrast-mode h5,
+.high-contrast-mode h6 {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Force toolbar elements to be visible */
+.high-contrast-mode .MuiToolbar-root * {
+  opacity: 1 !important;
+}
+
+.high-contrast-mode .MuiToolbar-root .MuiTypography-root {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+  text-shadow: none !important;
+}
+
+/* Force app bar title to be visible */
+.high-contrast-mode .MuiAppBar-root h1,
+.high-contrast-mode .MuiAppBar-root .MuiTypography-h6 {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+}
+
+/* Override any Material-UI opacity settings */
+.high-contrast-mode * {
+  opacity: 1 !important;
+}
+
+/* Force all interactive elements to be visible */
+.high-contrast-mode [role="button"],
+.high-contrast-mode .MuiChip-root,
+.high-contrast-mode .MuiBadge-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Force chip and badge content to be visible */
+.high-contrast-mode .MuiChip-root *,
+.high-contrast-mode .MuiBadge-root * {
+  color: var(--hc-background-color) !important;
+  opacity: 1 !important;
+}
+
+.high-contrast-mode .MuiChip-label {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+}
+
+/* Force chip icons to be visible */
+.high-contrast-mode .MuiChip-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+}
+
+/* Ensure contrast for inverse elements (like app bar) */
+.high-contrast-mode .MuiAppBar-root *:not(.MuiIconButton-root):not(.MuiButton-root) {
+  color: var(--hc-background-color) !important;
+  background-color: transparent !important;
+}
+
+/* Force navigation elements to be visible */
+.high-contrast-mode nav,
+.high-contrast-mode .MuiAppBar-root nav {
+  opacity: 1 !important;
+}
+
+.high-contrast-mode nav *,
+.high-contrast-mode .MuiAppBar-root nav * {
+  opacity: 1 !important;
+}
+
+/* ========================================
+   NUCLEAR OPTION - FORCE VISIBILITY
+======================================== */
+
+/* Override any hidden or transparent elements */
+.high-contrast-mode [style*="opacity: 0"],
+.high-contrast-mode [style*="display: none"],
+.high-contrast-mode .MuiCollapse-hidden {
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Force visibility for common utility classes */
+.high-contrast-mode .sr-only:not(:focus) {
+  /* Keep screen reader only content hidden unless focused */
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+}
+
+/* Force Material-UI components to respect high contrast */
+.high-contrast-mode .MuiBox-root,
+.high-contrast-mode .MuiContainer-root,
+.high-contrast-mode .MuiStack-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* Force visibility for specific app elements */
+.high-contrast-mode .css-* {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Override Material-UI's CSS-in-JS styles that might hide elements */
+.high-contrast-mode [class*="MuiTypography-"] {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+.high-contrast-mode [class*="MuiAppBar-"] [class*="MuiTypography-"] {
+  color: var(--hc-background-color) !important;
+  opacity: 1 !important;
+}
+
+/* Force all pseudo-elements to be visible if they contain content */
+.high-contrast-mode *::before,
+.high-contrast-mode *::after {
+  opacity: 1 !important;
+  color: inherit !important;
+}
+
+/* ========================================
+   APP-SPECIFIC ELEMENT FIXES
+======================================== */
+
+/* Force meeting summary app title to be visible */
+.high-contrast-mode [class*="Meeting-Summary"] {
+  color: var(--hc-background-color) !important;
+  opacity: 1 !important;
+}
+
+/* Force all badge/chip content to be visible */
+.high-contrast-mode .MuiChip-label {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+}
+
+/* Force speaker chips to be visible with high contrast */
+.high-contrast-mode [class*="speaker"],
+.high-contrast-mode [class*="Speaker"] {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Force metadata elements to be visible */
+.high-contrast-mode [class*="metadata"],
+.high-contrast-mode [class*="info"],
+.high-contrast-mode [class*="duration"],
+.high-contrast-mode [class*="size"] {
+  color: var(--hc-background-color) !important;
+  background-color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  opacity: 1 !important;
+  padding: 4px 8px !important;
+  font-weight: bold !important;
+}
+
+/* Force all badge-like elements to be visible */
+.high-contrast-mode .MuiChip-root,
+.high-contrast-mode [role="status"],
+.high-contrast-mode .status-badge,
+.high-contrast-mode .info-badge,
+.high-contrast-mode .metadata-badge {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+}
+
+/* Force all text inside badges to be visible */
+.high-contrast-mode .MuiChip-root span,
+.high-contrast-mode [role="status"] span,
+.high-contrast-mode .status-badge span,
+.high-contrast-mode .info-badge span,
+.high-contrast-mode .metadata-badge span {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+}
+
+/* Force transcript content to be visible */
+.high-contrast-mode [class*="transcript"] {
+  color: var(--hc-text-color) !important;
+  background-color: var(--hc-background-color) !important;
+  border: 1px solid var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Aggressive override for any remaining invisible elements */
+.high-contrast-mode body *:not(.sr-only):not([aria-hidden="true"]) {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+.high-contrast-mode .MuiAppBar-root body *:not(.sr-only):not([aria-hidden="true"]) {
+  color: var(--hc-background-color) !important;
+  opacity: 1 !important;
+}
+
+/* ========================================
+   FINAL NUCLEAR OPTION FOR INVISIBLE TEXT
+======================================== */
+
+/* Force ALL svg icons to inherit color and be visible */
+.high-contrast-mode svg,
+.high-contrast-mode .MuiSvgIcon-root {
+  color: inherit !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+}
+
+/* Force ALL text content to be visible with proper inheritance */
+.high-contrast-mode button span,
+.high-contrast-mode .MuiButton-root span,
+.high-contrast-mode .MuiIconButton-root span,
+.high-contrast-mode .MuiChip-root span,
+.high-contrast-mode .MuiTypography-root,
+.high-contrast-mode span,
+.high-contrast-mode div {
+  color: inherit !important;
+  opacity: 1 !important;
+}
+
+/* Ensure proper color inheritance for nested elements */
+.high-contrast-mode .MuiButton-root * {
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiChip-root * {
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiButton-root * {
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root * {
+  color: var(--hc-text-color) !important;
+}
+
+/* Force text visibility in specific contexts */
+.high-contrast-mode [style*="color"] {
+  color: inherit !important;
+}
+
+/* Override any Material-UI inline styles that might hide text */
+.high-contrast-mode [class*="MuiChip-"] [class*="label"] {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+/* NUCLEAR RESET - REMOVE THE CONFLICTING GLOBAL RULE */
+
+/* Reset specific Material-UI components systematically */
+.high-contrast-mode .MuiChip-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiChip-root *,
+.high-contrast-mode .MuiChip-label {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+.high-contrast-mode .MuiButton-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiButton-root * {
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiIconButton-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  border-radius: 4px !important;
+}
+
+.high-contrast-mode .MuiIconButton-root *,
+.high-contrast-mode .MuiIconButton-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+/* App bar specific overrides (inverse colors) */
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root *,
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root .MuiSvgIcon-root {
+  color: var(--hc-text-color) !important;
+  fill: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiButton-root * {
+  color: var(--hc-text-color) !important;
+}
+
+/* Force text visibility in regular body content */
+.high-contrast-mode p,
+.high-contrast-mode span:not(.MuiChip-label),
+.high-contrast-mode div:not(.MuiButton-root):not(.MuiChip-root):not(.MuiIconButton-root),
+.high-contrast-mode .MuiTypography-root:not(.MuiButton-root *):not(.MuiChip-root *) {
+  color: var(--hc-text-color) !important;
+}
+
+/* Override Material-UI's !important declarations */
+.high-contrast-mode .MuiTypography-root.MuiTypography-body1,
+.high-contrast-mode .MuiTypography-root.MuiTypography-body2,
+.high-contrast-mode .MuiTypography-root.MuiTypography-caption {
+  color: var(--hc-text-color) !important;
+}
+
+/* Fix any invisible icons */
+.high-contrast-mode .MuiSvgIcon-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* Icons inside contrasting elements should be background color */
+.high-contrast-mode .MuiChip-root .MuiSvgIcon-root,
+.high-contrast-mode .MuiButton-contained .MuiSvgIcon-root,
+.high-contrast-mode .MuiTableHead-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+}
+
+/* ========================================
+   SPEAKER COLOR ACCESSIBILITY
+======================================== */
+
+/* Ensure speaker chips meet contrast requirements */
+.speaker-chip {
+  /* Minimum contrast ensured by speakerColors.ts utility */
+  color: white !important;
+  font-weight: 600 !important; /* Bold text for better readability */
+}
+
+/* High contrast mode speaker chips */
+.high-contrast-mode .speaker-chip,
+.high-contrast-mode .MuiChip-colorPrimary,
+.high-contrast-mode .MuiChip-colorSecondary,
+.high-contrast-mode .MuiChip-colorDefault {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+/* Override any Material-UI chip variants in high contrast */
+.high-contrast-mode .MuiChip-root.MuiChip-filled,
+.high-contrast-mode .MuiChip-root.MuiChip-outlined {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiChip-root .MuiChip-label {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+.high-contrast-mode .MuiChip-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+}
+
+/* Speaker chip focus states */
+.speaker-chip:focus-visible {
+  outline: 3px solid var(--focus-outline-color-light) !important;
+  outline-offset: 2px !important;
+}
+
+.high-contrast-mode .speaker-chip:focus-visible {
+  outline: 4px solid var(--hc-focus-color) !important;
+}
+
+/* ========================================
+   SKIP LINKS
+======================================== */
+
+/* Skip to main content link */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background-color: var(--focus-outline-color-light);
+  color: white;
+  padding: 8px 12px;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: bold;
+  z-index: 10000;
+  transition: top var(--motion-duration) var(--motion-timing);
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+[data-theme="dark"] .skip-link {
+  background-color: var(--focus-outline-color-dark);
+  color: black;
+}
+
+.high-contrast-mode .skip-link {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+/* ========================================
+   SCREEN READER UTILITIES
+======================================== */
+
+/* Screen reader only content */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Show screen reader content when focused */
+.sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* ========================================
+   ERROR AND STATUS INDICATORS
+======================================== */
+
+/* Ensure error states meet contrast requirements */
+.error-text {
+  color: #d32f2f !important; /* Material-UI error color with good contrast */
+  font-weight: 600 !important;
+}
+
+.success-text {
+  color: #2e7d32 !important; /* Material-UI success color with good contrast */
+  font-weight: 600 !important;
+}
+
+.warning-text {
+  color: #ef6c00 !important; /* Material-UI warning color with good contrast */
+  font-weight: 600 !important;
+}
+
+/* High contrast mode status colors */
+.high-contrast-mode .error-text,
+.high-contrast-mode .success-text,
+.high-contrast-mode .warning-text {
+  color: var(--hc-text-color) !important;
+  /* Add icons or patterns to convey meaning without relying on color */
+}
+
+/* ========================================
+   MEDIA QUERIES FOR SYSTEM PREFERENCES
+======================================== */
+
+/* Respect system high contrast preference */
+@media (prefers-contrast: high) {
+  :root {
+    --focus-outline-width: 4px;
+    --focus-outline-offset: 3px;
+  }
+  
+  /* Apply high contrast automatically if not manually set - controlled by JavaScript */
+}
+
+/* Respect system dark mode preference for focus colors */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --focus-outline-color-light: var(--focus-outline-color-dark);
+  }
+}
+
+/* ========================================
+   DYSLEXIC-FRIENDLY FONT OPTION
+======================================== */
+
+/* OpenDyslexic font family (if available) */
+.dyslexic-font,
+.dyslexic-font * {
+  font-family: "OpenDyslexic", "Comic Sans MS", cursive, sans-serif !important;
+}
+
+/* ========================================
+   ANIMATIONS AND TRANSITIONS
+======================================== */
+
+/* Default accessible animations */
+* {
+  animation-duration: var(--motion-duration);
+  animation-timing-function: var(--motion-timing);
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-timing);
+}
+
+/* Ensure Material-UI animations respect motion preferences */
+.MuiCircularProgress-root {
+  animation-duration: var(--motion-duration) !important;
+}
+
+.MuiLinearProgress-root .MuiLinearProgress-bar {
+  transition-duration: var(--motion-duration) !important;
+}
+
+/* ========================================
+   LIVE REGIONS FOR SCREEN READERS
+======================================== */
+
+/* Live region styling */
+[aria-live] {
+  /* Ensure live regions are accessible but not visually intrusive */
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Make live regions visible for debugging in development */
+[data-dev-mode="true"] [aria-live] {
+  position: static;
+  left: auto;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  padding: 8px;
+  margin: 4px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+/* ========================================
+   FINAL HIGH CONTRAST OVERRIDES
+   (These should be at the end to have maximum specificity)
+======================================== */
+
+/* Final attempt to force visibility of problematic elements */
+.high-contrast-mode .MuiChip-root,
+.high-contrast-mode .MuiButton-root,
+.high-contrast-mode button {
+  background: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiChip-root span,
+.high-contrast-mode .MuiButton-root span,
+.high-contrast-mode button span {
+  color: var(--hc-background-color) !important;
+}
+
+/* Force icon visibility */
+.high-contrast-mode .MuiSvgIcon-root {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* Universal high contrast - all elements follow same pattern */
+.high-contrast-mode svg {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* App bar elements follow the same pattern as all other elements */
+.high-contrast-mode .MuiAppBar-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border-bottom: 3px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiTypography-root {
+  color: var(--hc-text-color) !important;
+  font-weight: bold !important;
+}
+
+/* All interactive elements are white on black */
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root,
+.high-contrast-mode .MuiAppBar-root .MuiButton-root {
+  background: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root *,
+.high-contrast-mode .MuiAppBar-root .MuiButton-root * {
+  color: var(--hc-background-color) !important;
+}
+
+/* FORCE APP BAR ICONS TO BE VISIBLE */
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root svg {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root svg path {
+  fill: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root .MuiButton-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+/* ========================================
+   NUCLEAR OVERRIDES FOR MISSING ELEMENTS
+======================================== */
+
+/* Force ALL text content in tables to be visible */
+.high-contrast-mode table *,
+.high-contrast-mode .MuiTable-root *,
+.high-contrast-mode [role="table"] *,
+.high-contrast-mode [role="grid"] * {
+  color: var(--hc-text-color) !important;
+}
+
+/* Override for table headers */
+.high-contrast-mode .MuiTableHead-root *,
+.high-contrast-mode th *,
+.high-contrast-mode [role="columnheader"] * {
+  color: var(--hc-background-color) !important;
+}
+
+/* Override for interactive elements in tables */
+.high-contrast-mode table .MuiIconButton-root *,
+.high-contrast-mode table .MuiButton-root *,
+.high-contrast-mode table .MuiChip-root * {
+  color: var(--hc-background-color) !important;
+}
+
+/* Force visibility of all SVG icons everywhere */
+.high-contrast-mode svg,
+.high-contrast-mode .MuiSvgIcon-root {
+  color: inherit !important;
+  fill: currentColor !important;
+  opacity: 1 !important;
+}
+
+/* Force visibility of all links */
+.high-contrast-mode a,
+.high-contrast-mode .MuiLink-root {
+  color: var(--hc-text-color) !important;
+  text-decoration: underline !important;
+}
+
+/* Override Material-UI's CSS-in-JS inline styles */
+.high-contrast-mode * {
+  /* This is aggressive but necessary for Material-UI components */
+  color: var(--hc-text-color) !important;
+}
+
+/* Then override specific containers that should have contrasting backgrounds */
+.high-contrast-mode .MuiChip-root *,
+.high-contrast-mode .MuiButton-root *,
+.high-contrast-mode .MuiIconButton-root *,
+.high-contrast-mode .MuiTableHead-root *,
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root * {
+  color: var(--hc-background-color) !important;
+}
+
+/* Final override for table content */
+.high-contrast-mode .MuiTableBody-root .MuiTableCell-root,
+.high-contrast-mode .MuiTableBody-root .MuiTableCell-root * {
+  color: var(--hc-text-color) !important;
+  background-color: var(--hc-background-color) !important;
+}
+
+/* Final override for chips inside table cells */
+.high-contrast-mode .MuiTableBody-root .MuiChip-root,
+.high-contrast-mode .MuiTableBody-root .MuiChip-root * {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+/* ========================================
+   FIX ALL MISSING ELEMENTS
+======================================== */
+
+/* Table content - force all text to be visible */
+.high-contrast-mode .MuiTable-root,
+.high-contrast-mode .MuiTableContainer-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiTableCell-root {
+  color: var(--hc-text-color) !important;
+  border: 1px solid var(--hc-border-color) !important;
+  background-color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiTableHead-root .MuiTableCell-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+/* Force all table links to be visible */
+.high-contrast-mode .MuiTableCell-root a,
+.high-contrast-mode .MuiTableCell-root .MuiLink-root {
+  color: var(--hc-text-color) !important;
+  text-decoration: underline !important;
+  font-weight: bold !important;
+}
+
+/* Force all table text content */
+.high-contrast-mode .MuiTableCell-root span,
+.high-contrast-mode .MuiTableCell-root div,
+.high-contrast-mode .MuiTableCell-root p {
+  color: var(--hc-text-color) !important;
+}
+
+/* Force timestamps and metadata */
+.high-contrast-mode .MuiTableCell-root .MuiTypography-body2,
+.high-contrast-mode .MuiTableCell-root .MuiTypography-caption {
+  color: var(--hc-text-color) !important;
+  opacity: 0.8 !important;
+}
+
+/* Action buttons in table */
+.high-contrast-mode .MuiTableCell-root .MuiIconButton-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  margin: 2px !important;
+}
+
+.high-contrast-mode .MuiTableCell-root .MuiIconButton-root:hover {
+  background-color: var(--hc-border-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+/* Status chips in table */
+.high-contrast-mode .MuiTableCell-root .MuiChip-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiTableCell-root .MuiChip-root .MuiChip-label {
+  color: var(--hc-background-color) !important;
+  font-weight: bold !important;
+}
+
+/* Search input field */
+.high-contrast-mode .MuiTextField-root {
+  background-color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiTextField-root .MuiInputBase-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-border-color) !important;
+}
+
+.high-contrast-mode .MuiTextField-root .MuiInputBase-input {
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiTextField-root .MuiInputBase-input::placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 0.7 !important;
+}
+
+/* Search icon inside input */
+.high-contrast-mode .MuiTextField-root .MuiSvgIcon-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* Table sort indicators */
+.high-contrast-mode .MuiTableSortLabel-root {
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiTableSortLabel-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+}
+
+/* Force all icons in app bar to be visible */
+.high-contrast-mode .MuiAppBar-root .MuiSvgIcon-root {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+/* Override any CSS-in-JS styles that might be hiding content */
+.high-contrast-mode [style*="color: rgb"] {
+  color: var(--hc-text-color) !important;
+}
+
+.high-contrast-mode .MuiTableCell-root [style*="color: rgb"] {
+  color: var(--hc-text-color) !important;
+}
+
+/* ========================================
+   NUCLEAR OPTION FOR APP BAR ICONS
+======================================== */
+
+/* Force ALL SVG elements in app bar to be visible */
+.high-contrast-mode .MuiAppBar-root svg,
+.high-contrast-mode .MuiAppBar-root svg * {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+  stroke: var(--hc-background-color) !important;
+  opacity: 1 !important;
+}
+
+/* Target Material-UI's internal icon classes */
+.high-contrast-mode .MuiAppBar-root [class*="MuiSvgIcon-"] {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root [class*="MuiIconButton-"] [class*="MuiSvgIcon-"] {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+/* Force visibility for common icon components */
+.high-contrast-mode .MuiAppBar-root .MuiIcon-root {
+  color: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root [data-testid*="icon"] {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+/* Target specific icon paths */
+.high-contrast-mode .MuiAppBar-root svg path {
+  fill: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root svg circle {
+  fill: var(--hc-background-color) !important;
+}
+
+.high-contrast-mode .MuiAppBar-root svg rect {
+  fill: var(--hc-background-color) !important;
+}
+
+/* Override any Material-UI theme-specific icon colors */
+.high-contrast-mode .MuiAppBar-root .MuiIconButton-root > * > * {
+  color: var(--hc-background-color) !important;
+  fill: var(--hc-background-color) !important;
+}
+
+/* NUCLEAR OPTION: Force all visible elements with extreme specificity */
+html.high-contrast-mode body,
+html.high-contrast-mode body *,
+html.high-contrast-mode [class],
+html.high-contrast-mode [class] * {
+  color: var(--hc-text-color) !important;
+  background-color: var(--hc-background-color) !important;
+}
+
+/* FORCE ALL BUTTONS TO BE VISIBLE */
+html.high-contrast-mode button,
+html.high-contrast-mode .MuiButton-root,
+html.high-contrast-mode [role="button"],
+html.high-contrast-mode input[type="button"],
+html.high-contrast-mode input[type="submit"] {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  font-weight: bold !important;
+}
+
+/* FORCE ALL BUTTON TEXT CONTENT TO BE VISIBLE */
+html.high-contrast-mode button *,
+html.high-contrast-mode .MuiButton-root *,
+html.high-contrast-mode [role="button"] *,
+html.high-contrast-mode button span,
+html.high-contrast-mode .MuiButton-root span {
+  color: var(--hc-background-color) !important;
+  background-color: transparent !important;
+  font-weight: bold !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+}
+
+/* FORCE ALL ICON BUTTONS AND SVG ICONS TO BE VISIBLE */
+html.high-contrast-mode .MuiIconButton-root,
+html.high-contrast-mode [aria-label] {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+html.high-contrast-mode .MuiSvgIcon-root,
+html.high-contrast-mode svg,
+html.high-contrast-mode svg *,
+html.high-contrast-mode path,
+html.high-contrast-mode circle,
+html.high-contrast-mode rect,
+html.high-contrast-mode line,
+html.high-contrast-mode polygon {
+  fill: var(--hc-background-color) !important;
+  stroke: var(--hc-background-color) !important;
+  color: var(--hc-background-color) !important;
+}
+
+/* FORCE APP BAR ELEMENTS TO BE VISIBLE */
+html.high-contrast-mode .MuiAppBar-root,
+html.high-contrast-mode [class*="MuiAppBar"] {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border-bottom: 3px solid var(--hc-text-color) !important;
+}
+
+html.high-contrast-mode .MuiAppBar-root *,
+html.high-contrast-mode [class*="MuiAppBar"] * {
+  color: var(--hc-text-color) !important;
+}
+
+/* ULTRA-SPECIFIC SIGN OUT BUTTON */
+html.high-contrast-mode .MuiAppBar-root button,
+html.high-contrast-mode .MuiAppBar-root .MuiButton-root,
+html.high-contrast-mode [class*="MuiAppBar"] button,
+html.high-contrast-mode [class*="MuiAppBar"] .MuiButton-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  font-weight: bold !important;
+}
+
+html.high-contrast-mode .MuiAppBar-root button *,
+html.high-contrast-mode .MuiAppBar-root .MuiButton-root *,
+html.high-contrast-mode [class*="MuiAppBar"] button *,
+html.high-contrast-mode [class*="MuiAppBar"] .MuiButton-root * {
+  color: var(--hc-background-color) !important;
+  background-color: transparent !important;
+}
+
+/* FORCE TABLE CONTENT TO BE VISIBLE */
+html.high-contrast-mode table,
+html.high-contrast-mode .MuiTable-root,
+html.high-contrast-mode th,
+html.high-contrast-mode td,
+html.high-contrast-mode .MuiTableCell-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 1px solid var(--hc-text-color) !important;
+}
+
+/* FORCE SEARCH INPUT AND RELATED ELEMENTS TO BE VISIBLE */
+html.high-contrast-mode input,
+html.high-contrast-mode .MuiTextField-root,
+html.high-contrast-mode .MuiOutlinedInput-root,
+html.high-contrast-mode .MuiInputBase-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* FORCE ALL PLACEHOLDER TEXT TO BE VISIBLE WITH MULTIPLE SELECTORS */
+html.high-contrast-mode input::placeholder,
+html.high-contrast-mode .MuiInputBase-input::placeholder,
+html.high-contrast-mode .MuiOutlinedInput-input::placeholder,
+html.high-contrast-mode .MuiTextField-root input::placeholder,
+html.high-contrast-mode input[placeholder]::placeholder,
+html.high-contrast-mode *::placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+  font-weight: normal !important;
+}
+
+/* Additional placeholder targeting for webkit browsers */
+html.high-contrast-mode input::-webkit-input-placeholder,
+html.high-contrast-mode .MuiInputBase-input::-webkit-input-placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Additional placeholder targeting for mozilla browsers */
+html.high-contrast-mode input::-moz-placeholder,
+html.high-contrast-mode .MuiInputBase-input::-moz-placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* Force placeholder visibility on focus and blur states */
+html.high-contrast-mode input:focus::placeholder,
+html.high-contrast-mode input:not(:focus)::placeholder,
+html.high-contrast-mode .MuiInputBase-input:focus::placeholder,
+html.high-contrast-mode .MuiInputBase-input:not(:focus)::placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* FORCE SEARCH ICON TO BE VISIBLE */
+html.high-contrast-mode .MuiInputAdornment-root,
+html.high-contrast-mode .MuiInputAdornment-root .MuiSvgIcon-root {
+  color: var(--hc-text-color) !important;
+}
+
+html.high-contrast-mode .MuiInputAdornment-root svg,
+html.high-contrast-mode .MuiInputAdornment-root svg * {
+  fill: var(--hc-text-color) !important;
+  stroke: var(--hc-text-color) !important;
+}
+
+/* FORCE INPUT LABELS AND FIELDSETS TO BE VISIBLE */
+html.high-contrast-mode .MuiInputLabel-root,
+html.high-contrast-mode .MuiFormLabel-root,
+html.high-contrast-mode fieldset,
+html.high-contrast-mode .MuiOutlinedInput-notchedOutline {
+  color: var(--hc-text-color) !important;
+  border-color: var(--hc-text-color) !important;
+}
+
+/* SPECIFIC TARGETING FOR SEARCH FUNCTIONALITY */
+html.high-contrast-mode [placeholder*="Search"],
+html.high-contrast-mode [placeholder*="search"],
+html.high-contrast-mode [aria-label*="Search"],
+html.high-contrast-mode [aria-label*="search"] {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* MATERIAL-UI TEXTFIELD INPUT AND PLACEHOLDER TARGETING */
+html.high-contrast-mode .MuiTextField-root .MuiInputBase-input,
+html.high-contrast-mode .MuiTextField-root .MuiOutlinedInput-input,
+html.high-contrast-mode .MuiOutlinedInput-root .MuiInputBase-input {
+  color: var(--hc-text-color) !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* MATERIAL-UI LABEL AS PLACEHOLDER (when it shrinks/transforms) */
+html.high-contrast-mode .MuiInputLabel-root,
+html.high-contrast-mode .MuiInputLabel-root.MuiInputLabel-shrink,
+html.high-contrast-mode .MuiFormLabel-root {
+  color: var(--hc-text-color) !important;
+}
+
+/* FORCE PLACEHOLDER ATTRIBUTE TO SHOW */
+html.high-contrast-mode .MuiTextField-root input[placeholder],
+html.high-contrast-mode input[placeholder] {
+  color: var(--hc-text-color) !important;
+}
+
+/* EMERGENCY FALLBACK: Inject "Search meetings..." text manually for empty search fields */
+html.high-contrast-mode .MuiTextField-root:has(input[placeholder*="Search"]) .MuiInputBase-root:not(:focus-within)::after {
+  content: "Search meetings..." !important;
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: var(--hc-text-color) !important;
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+  font-size: 16px !important;
+}
+
+/* Hide the injected text when user types */
+html.high-contrast-mode .MuiTextField-root .MuiInputBase-root:focus-within::after,
+html.high-contrast-mode .MuiTextField-root .MuiInputBase-root:has(input:not(:placeholder-shown))::after {
+  display: none !important;
+}
+
+/* ULTIMATE BRUTE FORCE: Make everything inside TextField containers white */
+html.high-contrast-mode .MuiTextField-root *,
+html.high-contrast-mode .MuiInputBase-root *,
+html.high-contrast-mode .MuiOutlinedInput-root * {
+  color: var(--hc-text-color) !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* Force visibility of any pseudo-elements that might contain placeholder text */
+html.high-contrast-mode .MuiTextField-root *::before,
+html.high-contrast-mode .MuiTextField-root *::after,
+html.high-contrast-mode .MuiInputBase-root *::before,
+html.high-contrast-mode .MuiInputBase-root *::after {
+  color: var(--hc-text-color) !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* Nuclear option: Force all text nodes to be visible */
+html.high-contrast-mode * {
+  text-shadow: none !important;
+}
+
+/* Make sure text is not being hidden by transparent colors */
+html.high-contrast-mode .MuiInputBase-input::-webkit-input-placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* FORCE TABLE ACTION ICONS (DOWNLOAD AND DELETE) TO BE VISIBLE */
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root,
+html.high-contrast-mode table .MuiIconButton-root,
+html.high-contrast-mode tbody .MuiIconButton-root {
+  background-color: var(--hc-text-color) !important;
+  color: var(--hc-background-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+  border-radius: 4px !important;
+}
+
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root:hover,
+html.high-contrast-mode table .MuiIconButton-root:hover,
+html.high-contrast-mode tbody .MuiIconButton-root:hover {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* FORCE TABLE ACTION ICONS SVG TO BE VISIBLE */
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root .MuiSvgIcon-root,
+html.high-contrast-mode table .MuiIconButton-root .MuiSvgIcon-root,
+html.high-contrast-mode tbody .MuiIconButton-root .MuiSvgIcon-root {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg,
+html.high-contrast-mode table .MuiIconButton-root svg,
+html.high-contrast-mode tbody .MuiIconButton-root svg {
+  fill: currentColor !important;
+  color: inherit !important;
+}
+
+/* NUCLEAR OPTION: Force ALL SVG paths, circles, rects to be visible */
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg path,
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg circle,
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg rect,
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg polygon,
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg line {
+  fill: var(--hc-background-color) !important;
+  stroke: var(--hc-background-color) !important;
+  stroke-width: 1px !important;
+}
+
+/* FORCE ACTION ICONS TO HAVE CONTENT - LAST RESORT */
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root:nth-child(1)::after {
+  content: "⬇" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: var(--hc-background-color) !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  pointer-events: none !important;
+}
+
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root:nth-child(2)::after {
+  content: "🗑" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: var(--hc-background-color) !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  pointer-events: none !important;
+}
+
+/* MAKE TABLE ICON BUTTONS VISIBLE WITH WHITE BACKGROUND AND BLACK ICONS */
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root {
+  background-color: white !important;
+  border: 2px solid #000000 !important;
+  border-radius: 4px !important;
+}
+
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root .MuiSvgIcon-root {
+  color: #000000 !important;
+}
+
+/* Ensure the SVG paths inherit the black color properly */
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg {
+  fill: currentColor !important;
+}
+
+html.high-contrast-mode .MuiTableCell-root .MuiIconButton-root svg path {
+  fill: currentColor !important;
+}
+
+/* PAGINATION COMPONENT FIXES */
+/* Make pagination numbers black text on white background */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Make selected pagination number have inverted colors */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root.Mui-selected {
+  background-color: #000000 !important;
+  color: white !important;
+  border: 1px solid #000000 !important;
+}
+
+/* Make navigation arrows (< >) white when in black squares */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root .MuiSvgIcon-root {
+  color: white !important;
+  fill: white !important;
+}
+
+/* Ensure selected item arrows are white */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root.Mui-selected .MuiSvgIcon-root {
+  color: white !important;
+  fill: white !important;
+}
+
+/* NUCLEAR APPROACH: Force navigation arrows to show with text fallback */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="previous"],
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="next"] {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  position: relative !important;
+}
+
+/* Hide original SVG and add text content */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="previous"] .MuiSvgIcon-root,
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="next"] .MuiSvgIcon-root {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* OVERRIDE THE GLOBAL DISABLE FOR NAVIGATION ARROWS ONLY */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="previous"]::after,
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="next"]::after {
+  display: block !important;
+}
+
+/* Add text arrows as fallback */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="previous"]::after {
+  content: "<" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: #000000 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  pointer-events: none !important;
+  z-index: 999 !important;
+}
+
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root[aria-label*="next"]::after {
+  content: ">" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: #000000 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  pointer-events: none !important;
+  z-index: 999 !important;
+}
+
+/* Alternative: Try to force existing SVGs to show */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root svg,
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root svg *,
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root svg path {
+  fill: #000000 !important;
+  stroke: #000000 !important;
+  color: #000000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* FORCE ALL PAGINATION ITEMS TO HAVE CONSISTENT STYLING */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  font-weight: bold !important;
+  font-size: 16px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* SELECTED PAGE: Inverted colors to clearly show current page */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root.Mui-selected {
+  background-color: #000000 !important;
+  color: white !important;
+  border: 2px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+/* Disable any pseudo-elements or overlays */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root::before,
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root::after {
+  display: none !important;
+}
+
+/* Remove any box-shadows or outlines that might cover text */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Force text to be always on top */
+html.high-contrast-mode .MuiPagination-root .MuiPaginationItem-root * {
+  z-index: 999 !important;
+  position: relative !important;
+}
+
+/* DIALOG CLOSE BUTTON (X) VISIBILITY */
+html.high-contrast-mode .MuiDialog-root .MuiIconButton-root,
+html.high-contrast-mode .MuiDialogTitle-root .MuiIconButton-root {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 4px !important;
+}
+
+html.high-contrast-mode .MuiDialog-root .MuiIconButton-root .MuiSvgIcon-root,
+html.high-contrast-mode .MuiDialogTitle-root .MuiIconButton-root .MuiSvgIcon-root {
+  color: #000000 !important;
+  fill: #000000 !important;
+}
+
+/* DIALOG ACTION BUTTONS VISIBILITY */
+html.high-contrast-mode .MuiDialogActions-root .MuiButton-root {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+html.high-contrast-mode .MuiDialogActions-root .MuiButton-root:hover {
+  background-color: #000000 !important;
+  color: white !important;
+  border: 2px solid #000000 !important;
+}
+
+/* NUCLEAR APPROACH FOR CLOSE X BUTTON */
+html.high-contrast-mode [aria-label="close"],
+html.high-contrast-mode [title*="close"],
+html.high-contrast-mode [title*="Close"] {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+/* FORCE X BUTTON TO SHOW WITH TEXT FALLBACK */
+html.high-contrast-mode .MuiDialog-root .MuiIconButton-root:last-child::after,
+html.high-contrast-mode .MuiDialogTitle-root .MuiIconButton-root::after {
+  content: "✕" !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: #000000 !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  pointer-events: none !important;
+  z-index: 999 !important;
+  background: none !important;
+}
+
+/* HIDE ORIGINAL SVG TO PREVENT OVERLAP */
+html.high-contrast-mode .MuiDialog-root .MuiIconButton-root .MuiSvgIcon-root {
+  opacity: 0 !important;
+}
+
+/* ALTERNATIVE: Target any button in dialog title area */
+html.high-contrast-mode .MuiDialogTitle-root button,
+html.high-contrast-mode .MuiDialog-root button[aria-label*="close"] {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  position: relative !important;
+}
+
+/* BACK TO HISTORY BUTTON VISIBILITY */
+html.high-contrast-mode .MuiButton-root[aria-label*="back"],
+html.high-contrast-mode .MuiButton-root[aria-label*="Back"],
+html.high-contrast-mode button[aria-label*="back"],
+html.high-contrast-mode button[aria-label*="Back"] {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  font-weight: bold !important;
+}
+
+/* Target buttons with "BACK" text content */
+html.high-contrast-mode .MuiButton-root:has([class*="back"]),
+html.high-contrast-mode .MuiButton-root:has([class*="Back"]) {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+/* General back navigation button styling */
+html.high-contrast-mode .MuiButton-startIcon,
+html.high-contrast-mode .MuiButton-root .MuiSvgIcon-root {
+  color: #000000 !important;
+  fill: #000000 !important;
+}
+
+/* Force any button containing back arrow or back text to be visible */
+html.high-contrast-mode [class*="back"]:not(input):not(textarea),
+html.high-contrast-mode [class*="Back"]:not(input):not(textarea) {
+  background-color: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+}
+
+/* ENSURE DIALOG BACKGROUNDS ARE PROPER */
+html.high-contrast-mode .MuiDialog-paper {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 3px solid var(--hc-text-color) !important;
+}
+
+/* MATERIAL-UI PLACEHOLDER TEXT - MULTIPLE APPROACHES */
+html.high-contrast-mode .MuiTextField-root .MuiInputBase-input::placeholder,
+html.high-contrast-mode .MuiOutlinedInput-input::placeholder,
+html.high-contrast-mode .MuiInputBase-input::placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* WEBKIT SPECIFIC FOR MATERIAL-UI */
+html.high-contrast-mode .MuiTextField-root input::-webkit-input-placeholder,
+html.high-contrast-mode .MuiOutlinedInput-input::-webkit-input-placeholder,
+html.high-contrast-mode .MuiInputBase-input::-webkit-input-placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* MOZILLA SPECIFIC FOR MATERIAL-UI */
+html.high-contrast-mode .MuiTextField-root input::-moz-placeholder,
+html.high-contrast-mode .MuiOutlinedInput-input::-moz-placeholder,
+html.high-contrast-mode .MuiInputBase-input::-moz-placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+}
+
+/* NUCLEAR OPTION: Force placeholder text with attribute selectors */
+html.high-contrast-mode input[placeholder="Search meetings..."],
+html.high-contrast-mode input[placeholder="Search meetings..."]::-webkit-input-placeholder,
+html.high-contrast-mode input[placeholder="Search meetings..."]::-moz-placeholder,
+html.high-contrast-mode input[placeholder="Search meetings..."]::placeholder {
+  color: var(--hc-text-color) !important;
+  opacity: 1 !important;
+  font-size: 14px !important;
+  font-weight: normal !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
+/* Alternative approach: Set text color on empty inputs */
+html.high-contrast-mode input:placeholder-shown {
+  color: var(--hc-text-color) !important;
+}
+
+/* Material-UI specific placeholder overrides */
+html.high-contrast-mode .MuiInputBase-root .MuiInputBase-input:placeholder-shown {
+  color: var(--hc-text-color) !important;
+}
+
+/* Last resort: Force all input text to be visible */
+html.high-contrast-mode input,
+html.high-contrast-mode .MuiInputBase-input {
+  color: var(--hc-text-color) !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}

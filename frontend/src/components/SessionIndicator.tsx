@@ -22,6 +22,8 @@ import {
   Storage as StorageIcon,
 } from "@mui/icons-material";
 import { useSessionStore } from "../stores/sessionStore";
+import { getContrastRatio, getBestTextColor } from "../theme/colorContrast";
+import { useAccessibilityStore } from "../stores/accessibilityStore";
 
 interface SessionIndicatorProps {
   /**
@@ -44,6 +46,8 @@ export const SessionIndicator: React.FC<SessionIndicatorProps> = ({
     overrideCount,
     getSessionDurationMinutes 
   } = useSessionStore();
+  
+  const { highContrast } = useAccessibilityStore();
 
   // Update every minute to refresh session duration
   React.useEffect(() => {
@@ -87,45 +91,50 @@ export const SessionIndicator: React.FC<SessionIndicatorProps> = ({
       },
     };
 
-    switch (status) {
-      case 'active':
-        return {
-          ...baseStyles,
-          backgroundColor: '#4caf50', // Green background
-          color: '#ffffff', // White text
-          border: '2px solid #ffffff', // White border for contrast
-          '&:hover': {
-            backgroundColor: '#45a049',
-          },
-        };
-      case 'warning':
-        return {
-          ...baseStyles,
-          backgroundColor: '#ff9800', // Orange background
-          color: '#000000', // Black text for better contrast
-          border: '2px solid #000000', // Black border
-          '&:hover': {
-            backgroundColor: '#f57c00',
-          },
-        };
-      case 'expired':
-        return {
-          ...baseStyles,
-          backgroundColor: '#f44336', // Red background
-          color: '#ffffff', // White text
-          border: '2px solid #ffffff', // White border
-          '&:hover': {
-            backgroundColor: '#d32f2f',
-          },
-        };
-      default:
-        return {
-          ...baseStyles,
-          backgroundColor: '#9e9e9e', // Gray background
-          color: '#ffffff', // White text
-          border: '2px solid #ffffff', // White border
-        };
-    }
+    // WCAG AA compliant colors (4.5:1 contrast ratio minimum)
+    const statusColors = {
+      active: {
+        bg: highContrast ? '#1b5e20' : '#2e7d32', // Dark green for better contrast
+        text: '#ffffff',
+        hover: highContrast ? '#0d4e14' : '#1b5e20',
+      },
+      warning: {
+        bg: highContrast ? '#e65100' : '#ef6c00', // Dark orange for better contrast  
+        text: '#ffffff', // White text instead of black for better contrast
+        hover: highContrast ? '#bf360c' : '#e65100',
+      },
+      expired: {
+        bg: highContrast ? '#b71c1c' : '#c62828', // Dark red for better contrast
+        text: '#ffffff',
+        hover: highContrast ? '#8b0000' : '#b71c1c',
+      },
+      default: {
+        bg: highContrast ? '#212121' : '#424242', // Dark gray for better contrast
+        text: '#ffffff',
+        hover: highContrast ? '#000000' : '#212121',
+      },
+    };
+
+    const colors = statusColors[status] || statusColors.default;
+    
+    // Verify contrast ratio meets WCAG AA standards
+    const contrastRatio = getContrastRatio(colors.text, colors.bg);
+    const textColor = contrastRatio >= 4.5 ? colors.text : getBestTextColor(colors.bg);
+
+    return {
+      ...baseStyles,
+      backgroundColor: colors.bg,
+      color: textColor,
+      border: `2px solid ${highContrast ? textColor : 'transparent'}`,
+      '&:hover': {
+        backgroundColor: colors.hover,
+      },
+      // Enhanced focus indicator for accessibility
+      '&:focus-visible': {
+        outline: `3px solid ${textColor}`,
+        outlineOffset: '2px',
+      },
+    };
   };
 
   const getStatusText = () => {
