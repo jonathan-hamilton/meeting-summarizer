@@ -30,6 +30,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.8     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.4           |
 | S6.9     | Production Monitoring & Observability Setup        | PENDING ⏸️    | S6.8                 |
 | S6.10    | Summary Persistence & User History Integration      | COMPLETE ✅     | S6.1, S6.2, S6.5     |
+| S6.11    | Refund System Requirements & Implementation         | PENDING ⏸️      | S6.3                 |
 
 ## Story Files
 
