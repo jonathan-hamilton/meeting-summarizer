@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { MeetingSummary, MeetingSummaryRequest, SpeakerMapping, ActionItem } from '../types';
+import type { MeetingSummary, MeetingSummaryRequest, SpeakerMapping, ActionItem, SavedSummary } from '../types';
 import type { AppMode } from '../contexts/AppModeContext';
 import { createApiService } from '../services/apiServiceFactory';
 
 interface SummaryState {
-  // Current summary data
+  // Current summary data (session state)
   summary: MeetingSummary | null;
   
   // Unified action items (AI-generated + user-created, all editable)
@@ -16,7 +16,19 @@ interface SummaryState {
   error: string | null;
   lastGeneratedAt: string | null;
   
-  // Actions
+  // Persistence state (S6.10)
+  savedSummaries: SavedSummary[];
+  selectedSavedSummary: SavedSummary | null;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  loadStatus: 'idle' | 'loading' | 'loaded' | 'error';
+  autoSaveEnabled: boolean;
+  autoSaveContext: {
+    userId: string;
+    fileName: string;
+    meetingId?: string;
+  } | null;
+  
+  // Session actions
   generateSummary: (transcriptText: string, speakerMappings: SpeakerMapping[], mode?: AppMode) => Promise<void>;
   clearSummary: () => void;
   clearError: () => void;
@@ -28,17 +40,36 @@ interface SummaryState {
   reorderActionItems: (newOrder: ActionItem[]) => void;
   clearActionItems: () => void;
   setActionItems: (actionItems: ActionItem[]) => void; // For bulk setting from AI
+  
+  // Persistence actions (S6.10)
+  saveSummary: (userId: string, title: string, transcriptFileName: string, meetingId?: string) => Promise<void>;
+  loadUserSummaries: (userId: string) => Promise<void>;
+  selectSavedSummary: (summaryId: string, userId: string) => Promise<void>;
+  deleteSavedSummary: (summaryId: string, userId: string) => Promise<void>;
+  
+  // Auto-save management
+  enableAutoSave: (userId: string, transcriptFileName: string, meetingId?: string) => void;
+  disableAutoSave: () => void;
+  triggerAutoSave: () => Promise<void>;
 }
 
 export const useSummaryStore = create<SummaryState>()(
   persist(
-    (set) => ({
-      // Initial state
+    (set, get) => ({
+      // Initial state (session data)
       summary: null,
       actionItems: [],
       isGenerating: false,
       error: null,
       lastGeneratedAt: null,
+      
+      // Persistence state (S6.10)
+      savedSummaries: [],
+      selectedSavedSummary: null,
+      saveStatus: 'idle' as const,
+      loadStatus: 'idle' as const,
+      autoSaveEnabled: false,
+      autoSaveContext: null,
 
       // Generate meeting summary action
       generateSummary: async (transcriptText: string, speakerMappings: SpeakerMapping[], mode?: AppMode) => {
@@ -173,6 +204,212 @@ export const useSummaryStore = create<SummaryState>()(
 
       clearActionItems: () => {
         set({ actionItems: [] });
+      },
+
+      // Persistence actions (S6.10)
+      saveSummary: async (userId: string, title: string, transcriptFileName: string, meetingId?: string) => {
+        const currentState = get();
+        
+        if (!currentState.summary) {
+          set({ saveStatus: 'error', error: 'No summary to save' });
+          return;
+        }
+
+        set({ saveStatus: 'saving' });
+
+        try {
+          const apiService = createApiService('production') as any;
+          const result = await apiService.saveSummary(userId, {
+            title,
+            summaryData: currentState.summary,
+            transcriptFileName,
+            meetingId,
+            actionItems: currentState.actionItems.map((item, index) => ({
+              description: item.description,
+              assignedTo: item.assignedTo || 'Unassigned',
+              confidence: item.confidence || 0.5,
+              isExplicitAssignment: item.isExplicitAssignment || false,
+              sortOrder: index,
+              isCompleted: false
+            }))
+          });
+
+          if (result.success && result.data) {
+            // Update saved summaries list
+            const updatedSummaries = [...currentState.savedSummaries];
+            const existingIndex = updatedSummaries.findIndex(s => s.id === result.data!.id);
+            
+            if (existingIndex >= 0) {
+              updatedSummaries[existingIndex] = result.data;
+            } else {
+              updatedSummaries.unshift(result.data);
+            }
+            
+            set({ 
+              saveStatus: 'saved', 
+              savedSummaries: updatedSummaries,
+              selectedSavedSummary: result.data 
+            });
+          } else {
+            set({ saveStatus: 'error', error: result.message || 'Failed to save summary' });
+          }
+        } catch (error) {
+          console.error('Error saving summary:', error);
+          set({ saveStatus: 'error', error: 'Failed to save summary' });
+        }
+      },
+
+      loadUserSummaries: async (userId: string) => {
+        set({ loadStatus: 'loading' });
+
+        try {
+          const apiService = createApiService('production') as any;
+          const result = await apiService.getUserSummaries(userId);
+
+          if (result.success && result.data) {
+            set({ 
+              loadStatus: 'loaded', 
+              savedSummaries: result.data 
+            });
+          } else {
+            set({ 
+              loadStatus: 'error', 
+              error: result.message || 'Failed to load summaries' 
+            });
+          }
+        } catch (error) {
+          console.error('Error loading summaries:', error);
+          set({ loadStatus: 'error', error: 'Failed to load summaries' });
+        }
+      },
+
+      selectSavedSummary: async (summaryId: string, userId: string) => {
+        set({ loadStatus: 'loading' });
+
+        try {
+          const apiService = createApiService('production') as any;
+          const result = await apiService.getSavedSummary(summaryId, userId);
+
+          if (result.success && result.data) {
+            // Load the saved summary data into current session
+            set({ 
+              summary: result.data.summaryData,
+              actionItems: result.data.actionItems.map((item: any) => ({
+                id: item.id?.toString() || Math.random().toString(36).substr(2, 9),
+                description: item.title || item.description,
+                assignedTo: item.assignedTo || 'Unassigned',
+                confidence: item.confidence || 0.5,
+                isExplicitAssignment: item.isExplicitlyAssigned || false,
+                sourceText: item.description
+              })),
+              selectedSavedSummary: result.data,
+              loadStatus: 'loaded',
+              lastGeneratedAt: result.data.createdAt
+            });
+          } else {
+            set({ 
+              loadStatus: 'error', 
+              error: result.message || 'Failed to load summary' 
+            });
+          }
+        } catch (error) {
+          console.error('Error loading summary:', error);
+          set({ loadStatus: 'error', error: 'Failed to load summary' });
+        }
+      },
+
+      deleteSavedSummary: async (summaryId: string, userId: string) => {
+        try {
+          const apiService = createApiService('production') as any;
+          const result = await apiService.deleteSavedSummary(summaryId, userId);
+
+          if (result.success) {
+            const currentState = get();
+            const updatedSummaries = currentState.savedSummaries.filter(s => s.id !== summaryId);
+            
+            set({ 
+              savedSummaries: updatedSummaries,
+              selectedSavedSummary: currentState.selectedSavedSummary?.id === summaryId 
+                ? null 
+                : currentState.selectedSavedSummary
+            });
+          } else {
+            set({ error: result.message || 'Failed to delete summary' });
+          }
+        } catch (error) {
+          console.error('Error deleting summary:', error);
+          set({ error: 'Failed to delete summary' });
+        }
+      },
+
+      // Auto-save management
+      enableAutoSave: (userId: string, transcriptFileName: string, meetingId?: string) => {
+        set({ 
+          autoSaveEnabled: true,
+          autoSaveContext: {
+            userId,
+            fileName: transcriptFileName,
+            meetingId
+          }
+        });
+        
+        // Set up auto-save interval (every 30 seconds)
+        const autoSaveInterval = setInterval(async () => {
+          const currentState = get();
+          if (currentState.autoSaveEnabled && currentState.summary) {
+            await currentState.triggerAutoSave();
+          }
+        }, 30000);
+
+        // Store interval ID for cleanup
+        (window as any).__autoSaveInterval = autoSaveInterval;
+      },
+
+      disableAutoSave: () => {
+        set({ 
+          autoSaveEnabled: false,
+          autoSaveContext: null 
+        });
+        
+        // Clear interval
+        if ((window as any).__autoSaveInterval) {
+          clearInterval((window as any).__autoSaveInterval);
+          delete (window as any).__autoSaveInterval;
+        }
+      },
+
+      triggerAutoSave: async () => {
+        const currentState = get();
+        if (!currentState.summary || !currentState.autoSaveEnabled || !currentState.autoSaveContext) return;
+
+        const { userId, fileName, meetingId } = currentState.autoSaveContext;
+        
+        console.log('Auto-save attempting with user ID:', userId, 'meetingId:', meetingId);
+
+        try {
+          // Auto-save logic - save with auto-generated title if not already saved
+          if (!currentState.selectedSavedSummary) {
+            const autoTitle = `Auto-saved ${new Date().toLocaleString()}`;
+            await currentState.saveSummary(userId, autoTitle, fileName, meetingId);
+          } else {
+            // Update existing saved summary
+            const apiService = createApiService('production') as any;
+            await apiService.updateSavedSummary(currentState.selectedSavedSummary.id, userId, {
+              summaryData: currentState.summary,
+              actionItems: currentState.actionItems.map((item, index) => ({
+                description: item.description,
+                assignedTo: item.assignedTo || 'Unassigned',
+                confidence: item.confidence || 0.5,
+                isExplicitAssignment: item.isExplicitAssignment || false,
+                sortOrder: index,
+                isCompleted: false
+              }))
+            });
+          }
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+          set({ saveStatus: 'error', error: 'Auto-save failed' });
+        }
       }
     }),
     {

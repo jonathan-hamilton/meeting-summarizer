@@ -123,6 +123,9 @@ public class SummaryController : ControllerBase
 
             try
             {
+                // S6.5: Create meeting record FIRST for consistent ID usage (aligns with batch processing)
+                var meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
+
                 // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
                 using var audioStream = request.AudioFile.OpenReadStream();
                 var transcriptionResult = await _transcriptionService.TranscribeAudioWithMetadataAsync(
@@ -132,26 +135,20 @@ public class SummaryController : ControllerBase
 
                 stopwatch.Stop();
 
-                // Convert to API response format
+                // Convert to API response format using meeting ID for consistent transcription ID
                 var response = TranscriptionResponse.FromResult(
                     transcriptionResult,
                     request.AudioFile.FileName,
                     request.AudioFile.Length,
-                    stopwatch.ElapsedMilliseconds
+                    stopwatch.ElapsedMilliseconds,
+                    meetingId  // Use meeting ID as transcription ID from the start
                 );
 
-                _logger.LogInformation("Transcription completed for file: {FileName}, ID: {TranscriptionId}, Speakers: {SpeakerCount}",
-                    request.AudioFile.FileName, response.TranscriptionId, response.SpeakerCount);
+                _logger.LogInformation("Transcription completed for file: {FileName}, Meeting ID: {MeetingId}, Speakers: {SpeakerCount}",
+                    request.AudioFile.FileName, meetingId, response.SpeakerCount);
 
-                // S6.5: Create meeting record for real-time transcriptions (< 5 min files)
-                var meetingId = await CreateMeetingForRealTimeTranscription(request.AudioFile, transcriptionResult, estimatedDurationMinutes);
-                
-                // Update response with meeting ID as transcription ID for proper linking
-                if (meetingId.HasValue)
-                {
-                    response.TranscriptionId = meetingId.Value.ToString();
-                    _logger.LogInformation("Updated transcription response with meeting ID {MeetingId} as transcription ID", meetingId.Value);
-                }
+                // Update the meeting record with transcription results
+                await UpdateMeetingWithTranscriptionResults(meetingId, transcriptionResult);
 
                 return Ok(response);
             }
@@ -212,123 +209,7 @@ public class SummaryController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Create a meeting record for real-time transcription results
-    /// Ensures all processed files appear in meeting history regardless of duration
-    /// </summary>
-    private async Task<Guid?> CreateMeetingForRealTimeTranscription(
-        IFormFile audioFile, 
-        TranscriptionResult transcriptionResult, 
-        int estimatedDurationMinutes)
-    {
-        try
-        {
-            // Only create meeting for authenticated users
-            var userId = GetCurrentUserId();
-            if (!userId.HasValue)
-            {
-                _logger.LogDebug("Skipping meeting creation for real-time transcription - user not authenticated");
-                return null;
-            }
 
-            // Prepare meeting data
-            var meetingTitle = !string.IsNullOrEmpty(audioFile.FileName) 
-                ? Path.GetFileNameWithoutExtension(audioFile.FileName) 
-                : $"Meeting - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
-
-            var originalFileName = audioFile.FileName ?? "Unknown File";
-            
-            // For real-time transcriptions, we don't store the audio file in blob storage
-            // So we use a placeholder path or store it if needed
-            var blobStoragePath = $"realtime-transcription-{Guid.NewGuid()}";
-
-            // Calculate actual duration from transcription segments (more accurate than estimation)
-            var actualDurationSeconds = estimatedDurationMinutes * 60; // Fallback to estimate
-            if (transcriptionResult?.Segments?.Any() == true)
-            {
-                actualDurationSeconds = (int)Math.Ceiling(transcriptionResult.Segments.Max(s => s.End));
-                _logger.LogInformation("Using actual duration {ActualDuration}s from real-time transcription segments (estimated was {EstimatedDuration}s)", 
-                    actualDurationSeconds, estimatedDurationMinutes * 60);
-            }
-            else if (transcriptionResult?.Duration.HasValue == true)
-            {
-                actualDurationSeconds = (int)Math.Ceiling(transcriptionResult.Duration.Value);
-                _logger.LogInformation("Using actual duration {ActualDuration}s from transcription result Duration property (estimated was {EstimatedDuration}s)", 
-                    actualDurationSeconds, estimatedDurationMinutes * 60);
-            }
-            else
-            {
-                _logger.LogWarning("No segment or duration data available for real-time transcription, using estimated duration {EstimatedDuration}s", 
-                    actualDurationSeconds);
-            }
-
-            _logger.LogInformation("Creating meeting record for real-time transcription, user {UserId}, file {FileName}, duration {Duration}s", 
-                userId, audioFile.FileName, actualDurationSeconds);
-
-            // Create the meeting record with actual duration
-            var meeting = await _meetingService.CreateMeetingAsync(
-                userId.Value,
-                meetingTitle,
-                $"Real-time transcription completed at {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
-                originalFileName,
-                audioFile.Length,
-                actualDurationSeconds,
-                blobStoragePath);
-
-            // Update meeting with transcription data
-            // Convert TranscriptionResult to the format expected by UpdateMeetingTranscriptionAsync
-            var transcriptionJson = System.Text.Json.JsonSerializer.Serialize(transcriptionResult);
-            
-            // Create speaker mappings from segments (with null safety)
-            Dictionary<string, string> speakerMappings = new();
-            if (transcriptionResult?.Segments?.Any() == true)
-            {
-                speakerMappings = transcriptionResult.Segments
-                    .Where(s => !string.IsNullOrEmpty(s.Speaker))
-                    .GroupBy(s => s.Speaker)
-                    .Select((group, index) => new { Speaker = group.Key, DisplayName = $"Speaker {index + 1}" })
-                    .ToDictionary(x => x.Speaker!, x => x.DisplayName);
-            }
-            
-            var speakerMappingsJson = speakerMappings.Any() 
-                ? System.Text.Json.JsonSerializer.Serialize(speakerMappings)
-                : null;
-
-            // Calculate speaker count (with null safety)
-            var speakerCount = 0;
-            if (transcriptionResult?.Segments?.Any() == true)
-            {
-                speakerCount = transcriptionResult.Segments
-                    .Where(s => !string.IsNullOrEmpty(s.Speaker))
-                    .Select(s => s.Speaker)
-                    .Distinct()
-                    .Count();
-            }
-            
-            await _meetingService.UpdateMeetingTranscriptionAsync(
-                meeting.Id,
-                transcriptionJson,
-                speakerMappingsJson,
-                0); // No tokens consumed for real-time transcriptions
-
-            // Update speaker count
-            await _meetingService.UpdateMeetingSpeakerCountAsync(meeting.Id, speakerCount);
-
-            // Mark meeting as completed
-            await _meetingService.UpdateMeetingStatusAsync(meeting.Id, MeetingStatus.Completed);
-
-            _logger.LogInformation("Successfully created meeting {MeetingId} for real-time transcription {FileName}", 
-                meeting.Id, audioFile.FileName);
-                
-            return meeting.Id;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create meeting record for real-time transcription {FileName}", audioFile.FileName);
-            // Don't throw - transcription was successful, meeting creation is supplementary
-            return null;
-        }
-    }
 
     /// <summary>
     /// Upload an audio file for enhanced transcription with speaker diarization
@@ -923,6 +804,146 @@ public class SummaryController : ControllerBase
         {
             _logger.LogError(ex, "Error submitting batch transcription job for file: {FileName}", audioFile.FileName);
             return StatusCode(500, new { error = "Failed to submit batch transcription job" });
+        }
+    }
+
+    /// <summary>
+    /// Creates meeting record upfront for real-time transcription (aligned with batch processing architecture)
+    /// </summary>
+    /// <param name="audioFile">The audio file being transcribed</param>
+    /// <param name="estimatedDurationMinutes">Estimated duration in minutes</param>
+    /// <returns>Meeting ID if user is authenticated, null for anonymous users</returns>
+    private async Task<Guid?> CreateMeetingForRealTimeTranscriptionUpfront(
+        IFormFile audioFile, 
+        int estimatedDurationMinutes)
+    {
+        try
+        {
+            // Only create meeting for authenticated users
+            var userId = GetCurrentUserId();
+            if (!userId.HasValue)
+            {
+                _logger.LogDebug("Skipping meeting creation for real-time transcription - user not authenticated");
+                return null;
+            }
+
+            // Prepare meeting data
+            var meetingTitle = !string.IsNullOrEmpty(audioFile.FileName) 
+                ? Path.GetFileNameWithoutExtension(audioFile.FileName) 
+                : $"Meeting - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+
+            var originalFileName = audioFile.FileName ?? "Unknown File";
+            
+            // For real-time transcriptions, we don't store the audio file in blob storage
+            var blobStoragePath = $"realtime-transcription-{Guid.NewGuid()}";
+
+            // Use estimated duration for now - will be updated with actual duration after transcription
+            var estimatedDurationSeconds = estimatedDurationMinutes * 60;
+
+            _logger.LogInformation("Creating meeting record upfront for real-time transcription, user {UserId}, file {FileName}, estimated duration {Duration}s", 
+                userId, audioFile.FileName, estimatedDurationSeconds);
+
+            // Create the meeting record with estimated duration
+            var meeting = await _meetingService.CreateMeetingAsync(
+                userId.Value,
+                meetingTitle,
+                $"Real-time transcription started at {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
+                originalFileName,
+                audioFile.Length,
+                estimatedDurationSeconds,
+                blobStoragePath);
+
+            _logger.LogInformation("Successfully created meeting {MeetingId} upfront for real-time transcription {FileName}", 
+                meeting.Id, audioFile.FileName);
+                
+            return meeting.Id;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create meeting record upfront for real-time transcription {FileName}", audioFile.FileName);
+            // Don't throw - we can still proceed with anonymous transcription
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Updates meeting record with transcription results after processing
+    /// </summary>
+    /// <param name="meetingId">Meeting ID to update</param>
+    /// <param name="transcriptionResult">Transcription results</param>
+    private async Task UpdateMeetingWithTranscriptionResults(Guid? meetingId, TranscriptionResult transcriptionResult)
+    {
+        if (!meetingId.HasValue)
+        {
+            // Anonymous user - no meeting to update
+            return;
+        }
+
+        try
+        {
+            // Convert TranscriptionResult to the format expected by UpdateMeetingTranscriptionAsync
+            var transcriptionJson = System.Text.Json.JsonSerializer.Serialize(transcriptionResult);
+            
+            // Create speaker mappings from segments (with null safety)
+            Dictionary<string, string> speakerMappings = new();
+            if (transcriptionResult?.Segments?.Any() == true)
+            {
+                speakerMappings = transcriptionResult.Segments
+                    .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                    .GroupBy(s => s.Speaker)
+                    .Select((group, index) => new { Speaker = group.Key, DisplayName = $"Speaker {index + 1}" })
+                    .ToDictionary(x => x.Speaker!, x => x.DisplayName);
+            }
+            
+            var speakerMappingsJson = speakerMappings.Any() 
+                ? System.Text.Json.JsonSerializer.Serialize(speakerMappings)
+                : null;
+
+            // Calculate speaker count (with null safety)
+            var speakerCount = 0;
+            if (transcriptionResult?.Segments?.Any() == true)
+            {
+                speakerCount = transcriptionResult.Segments
+                    .Where(s => !string.IsNullOrEmpty(s.Speaker))
+                    .Select(s => s.Speaker)
+                    .Distinct()
+                    .Count();
+            }
+
+            // Calculate actual duration from transcription segments (more accurate than estimation)
+            var actualDurationSeconds = 0;
+            if (transcriptionResult?.Segments?.Any() == true)
+            {
+                actualDurationSeconds = (int)Math.Ceiling(transcriptionResult.Segments.Max(s => s.End));
+                _logger.LogInformation("Using actual duration {ActualDuration}s from transcription segments for meeting {MeetingId}", 
+                    actualDurationSeconds, meetingId.Value);
+            }
+            else if (transcriptionResult?.Duration.HasValue == true)
+            {
+                actualDurationSeconds = (int)Math.Ceiling(transcriptionResult.Duration.Value);
+                _logger.LogInformation("Using actual duration {ActualDuration}s from transcription result Duration property for meeting {MeetingId}", 
+                    actualDurationSeconds, meetingId.Value);
+            }
+
+            // Update meeting with transcription data
+            await _meetingService.UpdateMeetingTranscriptionAsync(
+                meetingId.Value,
+                transcriptionJson,
+                speakerMappingsJson,
+                0); // No tokens consumed for real-time transcriptions
+
+            // Update speaker count
+            await _meetingService.UpdateMeetingSpeakerCountAsync(meetingId.Value, speakerCount);
+
+            // Mark meeting as completed
+            await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Completed);
+
+            _logger.LogInformation("Successfully updated meeting {MeetingId} with transcription results", meetingId.Value);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update meeting {MeetingId} with transcription results", meetingId.Value);
+            // Don't throw - transcription was successful, meeting update is supplementary
         }
     }
 

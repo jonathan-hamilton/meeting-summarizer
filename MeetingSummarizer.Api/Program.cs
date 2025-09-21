@@ -198,6 +198,9 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.Payment.IPaymentServic
 // Register Document Service (S6.5 PDF Export)
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 
+// Register Summary Persistence Service (S6.10 Summary Persistence)
+builder.Services.AddScoped<ISummaryPersistenceService, SummaryPersistenceService>();
+
 // Register Batch Transcription Services (S6.3.6)
 builder.Services.AddHttpClient<AzureBatchTranscriptionService>();
 builder.Services.AddScoped<AzureBatchTranscriptionService>();

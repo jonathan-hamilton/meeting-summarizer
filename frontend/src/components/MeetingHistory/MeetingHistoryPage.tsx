@@ -26,6 +26,7 @@ import {
   Grid,
   Link,
 } from '@mui/material';
+import { useAuthStore } from '../../stores/authStore';
 import {
   Delete as DeleteIcon,
   Search as SearchIcon,
@@ -39,6 +40,12 @@ import { apiService } from '../../services/apiService';
 
 const MeetingHistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
+  
+  // Show nothing if user is not authenticated - let the main app handle auth UI
+  if (!isAuthLoading && !isAuthenticated) {
+    return null;
+  }
   
   // Use individual selectors for better performance and reliability
   const meetings = useMeetingHistoryStore(state => state.meetings);

@@ -28,17 +28,33 @@ export const useAuthStore = create<AuthStore>()(
           
           // Decode user info from access token
           const decodedToken = jwtDecode<JwtPayload>(response.accessToken);
-          // console.log('Decoded token:', decodedToken);
-          // console.log('Raw login response:', response);
           
           // Extract user data from JWT claims - cast to any to access all possible claim fields
           const tokenClaims = decodedToken as any;
+          
+          // Debug token claims
+          console.log('🔍 JWT Token Claims DEBUG:');
+          console.log('  ALL TOKEN CLAIMS:', Object.keys(tokenClaims));
+          console.log('  Token Claims Object:', tokenClaims);
           
           // Try different possible claim field names
           const userId = tokenClaims.sub || tokenClaims.userId || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
           const userEmail = tokenClaims.email || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
           const fullName = tokenClaims.name || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '';
           const userRole = tokenClaims.role || tokenClaims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+          
+          // Debug extracted values
+          console.log('🔍 EXTRACTED VALUES:');
+          console.log('  userId:', userId);
+          console.log('  userEmail:', userEmail);
+          console.log('  fullName:', fullName);
+          console.log('  userRole:', userRole);
+          
+          // Validate required fields
+          if (!userId || !userEmail) {
+            console.error('❌ Missing required user fields from JWT:', { userId, userEmail });
+            throw new Error('Invalid token: missing required user information');
+          }
           
           // Split full name into first and last name
           const nameParts = fullName.split(' ');
@@ -207,12 +223,20 @@ export const useAuthStore = create<AuthStore>()(
           // Check if tokens exist in localStorage
           const storedAccessToken = authService.getAccessToken();
           const storedRefreshToken = authService.getRefreshToken();
-          const storedUser = authService.getStoredUser();
+          let storedUser = authService.getStoredUser();
 
-          // console.log('Auth check:', { storedAccessToken: !!storedAccessToken, storedRefreshToken: !!storedRefreshToken, storedUser });
+          console.log('🔍 checkAuthStatus DEBUG:');
+          console.log('  storedAccessToken exists:', !!storedAccessToken);
+          console.log('  storedRefreshToken exists:', !!storedRefreshToken);
+          console.log('  storedUser:', storedUser);
+          console.log('  storedUser keys:', storedUser ? Object.keys(storedUser) : null);
+          if (storedUser) {
+            console.log('  storedUser.id:', storedUser.id);
+            console.log('  storedUser.email:', storedUser.email);
+          }
 
           if (!storedAccessToken || !storedRefreshToken || !storedUser) {
-            // console.log('Missing auth data, setting as unauthenticated');
+            console.log('Missing auth data, setting as unauthenticated');
             set({ 
               isLoading: false, 
               isAuthenticated: false,
@@ -221,6 +245,54 @@ export const useAuthStore = create<AuthStore>()(
               refreshToken: null
             });
             return;
+          }
+
+          // Check if stored user object is complete (has id and email)
+          if (!storedUser.id || !storedUser.email) {
+            console.log('🔧 Stored user incomplete, re-parsing from JWT token');
+            try {
+              // Re-parse user data from JWT token
+              const decodedToken = jwtDecode<JwtPayload>(storedAccessToken);
+              const tokenClaims = decodedToken as any;
+              
+              const userId = tokenClaims.sub || tokenClaims.userId || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
+              const userEmail = tokenClaims.email || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
+              const fullName = tokenClaims.name || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '';
+              const userRole = tokenClaims.role || tokenClaims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+              
+              // Split full name into first and last name
+              const nameParts = fullName.split(' ');
+              const firstName = nameParts[0] || '';
+              const lastName = nameParts.slice(1).join(' ') || '';
+              
+              // Create complete user object merging JWT data with stored data
+              const completeUser: User = {
+                id: userId,
+                email: userEmail,
+                firstName: firstName,
+                lastName: lastName,
+                role: userRole as 'User' | 'Admin' | 'SuperAdmin',
+                isPaidUser: storedUser.isPaidUser || (tokenClaims.isPaidUser === 'true'),
+                tokenBalance: storedUser.tokenBalance || parseInt(tokenClaims.tokenBalance) || 0,
+                hasConsentedToDataProcessing: storedUser.hasConsentedToDataProcessing || true,
+                createdAt: storedUser.createdAt || new Date().toISOString(),
+                lastActivityAt: storedUser.lastActivityAt || new Date().toISOString(),
+                totalMeetings: storedUser.totalMeetings || 0
+              };
+
+              console.log('🔧 Re-created complete user:', completeUser);
+              
+              // Store the complete user object
+              authService.setUser(completeUser);
+              
+              // Update the stored user for further processing
+              storedUser = completeUser;
+            } catch (error) {
+              console.error('Failed to re-parse user from JWT:', error);
+              get().logout();
+              set({ isLoading: false });
+              return;
+            }
           }
 
           // Check if access token is expired

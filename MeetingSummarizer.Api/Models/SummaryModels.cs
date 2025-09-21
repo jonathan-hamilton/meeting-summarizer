@@ -420,3 +420,274 @@ public class MeetingSummaryRequest
     [Range(200, 1500, ErrorMessage = "Max tokens must be between 200 and 1500")]
     public int MaxTokens { get; set; } = 800;
 }
+
+// ============================================================================
+// Summary Persistence DTOs (S6.10)
+// ============================================================================
+
+/// <summary>
+/// DTO for saved summary data
+/// </summary>
+public class SavedSummaryDto
+{
+    /// <summary>
+    /// Unique identifier for this saved summary
+    /// </summary>
+    public Guid Id { get; set; }
+    
+    /// <summary>
+    /// User who owns this summary
+    /// </summary>
+    public Guid UserId { get; set; }
+    
+    /// <summary>
+    /// Associated meeting ID (optional)
+    /// </summary>
+    public Guid? MeetingId { get; set; }
+    
+    /// <summary>
+    /// Display title for the summary
+    /// </summary>
+    public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Optional description or notes
+    /// </summary>
+    public string? Description { get; set; }
+    
+    /// <summary>
+    /// Meeting summary data (deserialized JSON)
+    /// </summary>
+    public object SummaryData { get; set; } = new();
+    
+    /// <summary>
+    /// Original transcript filename
+    /// </summary>
+    public string TranscriptFileName { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// When this summary was created
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// When this summary was last modified
+    /// </summary>
+    public DateTime LastModifiedAt { get; set; }
+    
+    /// <summary>
+    /// When this summary was last accessed
+    /// </summary>
+    public DateTime? LastAccessedAt { get; set; }
+    
+    /// <summary>
+    /// Action items in this summary
+    /// </summary>
+    public List<SavedActionItemDto> ActionItems { get; set; } = new();
+}
+
+/// <summary>
+/// DTO for saved action item data
+/// </summary>
+public class SavedActionItemDto
+{
+    /// <summary>
+    /// Unique identifier for this action item
+    /// </summary>
+    public Guid Id { get; set; }
+    
+    /// <summary>
+    /// Parent summary ID
+    /// </summary>
+    public Guid SummaryId { get; set; }
+    
+    /// <summary>
+    /// Action item description
+    /// </summary>
+    public string Description { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Person or role assigned to this action item
+    /// </summary>
+    public string AssignedTo { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// AI confidence level (0.0 to 1.0)
+    /// </summary>
+    public decimal Confidence { get; set; }
+    
+    /// <summary>
+    /// Whether assignment was explicitly made
+    /// </summary>
+    public bool IsExplicitAssignment { get; set; }
+    
+    /// <summary>
+    /// Sort order within summary
+    /// </summary>
+    public int SortOrder { get; set; }
+    
+    /// <summary>
+    /// Whether this action item is completed
+    /// </summary>
+    public bool IsCompleted { get; set; }
+    
+    /// <summary>
+    /// When this action item was created
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// When this action item was last modified
+    /// </summary>
+    public DateTime LastModifiedAt { get; set; }
+}
+
+/// <summary>
+/// Request model for saving a summary
+/// </summary>
+public class SaveSummaryRequest
+{
+    /// <summary>
+    /// Display title for the summary
+    /// </summary>
+    [Required(ErrorMessage = "Title is required")]
+    [StringLength(200, ErrorMessage = "Title cannot exceed 200 characters")]
+    public string Title { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Optional description or notes
+    /// </summary>
+    [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+    public string? Description { get; set; }
+    
+    /// <summary>
+    /// Meeting summary data to save
+    /// </summary>
+    [Required(ErrorMessage = "Summary data is required")]
+    public object SummaryData { get; set; } = new();
+    
+    /// <summary>
+    /// Original transcript filename
+    /// </summary>
+    [Required(ErrorMessage = "Transcript filename is required")]
+    [StringLength(255, ErrorMessage = "Transcript filename cannot exceed 255 characters")]
+    public string TranscriptFileName { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Associated meeting ID (optional)
+    /// </summary>
+    public Guid? MeetingId { get; set; }
+    
+    /// <summary>
+    /// Action items to save with this summary
+    /// </summary>
+    public List<SaveActionItemRequest> ActionItems { get; set; } = new();
+}
+
+/// <summary>
+/// Request model for saving an action item
+/// </summary>
+public class SaveActionItemRequest
+{
+    /// <summary>
+    /// Action item description
+    /// </summary>
+    [Required(ErrorMessage = "Description is required")]
+    [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+    public string Description { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Person or role assigned to this action item
+    /// </summary>
+    [Required(ErrorMessage = "AssignedTo is required")]
+    [StringLength(100, ErrorMessage = "AssignedTo cannot exceed 100 characters")]
+    public string AssignedTo { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// AI confidence level (0.0 to 1.0)
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Confidence must be between 0.0 and 1.0")]
+    public decimal Confidence { get; set; } = 0.0m;
+    
+    /// <summary>
+    /// Whether assignment was explicitly made
+    /// </summary>
+    public bool IsExplicitAssignment { get; set; } = false;
+    
+    /// <summary>
+    /// Sort order within summary
+    /// </summary>
+    public int SortOrder { get; set; } = 0;
+    
+    /// <summary>
+    /// Whether this action item is completed
+    /// </summary>
+    public bool IsCompleted { get; set; } = false;
+}
+
+/// <summary>
+/// Request model for updating a saved summary
+/// </summary>
+public class UpdateSavedSummaryRequest
+{
+    /// <summary>
+    /// Updated title for the summary
+    /// </summary>
+    [StringLength(200, ErrorMessage = "Title cannot exceed 200 characters")]
+    public string? Title { get; set; }
+    
+    /// <summary>
+    /// Updated description or notes
+    /// </summary>
+    [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
+    public string? Description { get; set; }
+    
+    /// <summary>
+    /// Updated summary data (optional)
+    /// </summary>
+    public object? SummaryData { get; set; }
+    
+    /// <summary>
+    /// Updated action items (optional) - replaces all existing action items
+    /// </summary>
+    public List<SaveActionItemRequest>? ActionItems { get; set; }
+}
+
+/// <summary>
+/// Request model for updating a saved action item
+/// </summary>
+public class UpdateSavedActionItemRequest
+{
+    /// <summary>
+    /// Updated description
+    /// </summary>
+    [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
+    public string? Description { get; set; }
+    
+    /// <summary>
+    /// Updated assignee
+    /// </summary>
+    [StringLength(100, ErrorMessage = "AssignedTo cannot exceed 100 characters")]
+    public string? AssignedTo { get; set; }
+    
+    /// <summary>
+    /// Updated confidence level
+    /// </summary>
+    [Range(0.0, 1.0, ErrorMessage = "Confidence must be between 0.0 and 1.0")]
+    public decimal? Confidence { get; set; }
+    
+    /// <summary>
+    /// Updated explicit assignment flag
+    /// </summary>
+    public bool? IsExplicitAssignment { get; set; }
+    
+    /// <summary>
+    /// Updated sort order
+    /// </summary>
+    public int? SortOrder { get; set; }
+    
+    /// <summary>
+    /// Updated completion status
+    /// </summary>
+    public bool? IsCompleted { get; set; }
+}

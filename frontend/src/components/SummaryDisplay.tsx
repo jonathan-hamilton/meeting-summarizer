@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   Card,
   CardContent,
@@ -14,6 +14,7 @@ import {
 import TourPopover from "./TourPopover";
 import SummaryHeader from "./SummaryHeader";
 import ActionItemsSection from "./ActionItemsSection";
+
 import {
   Psychology,
 } from "@mui/icons-material";
@@ -23,6 +24,7 @@ import { useSummaryStore } from "../stores/summaryStore";
 import { useTourStore } from "../stores/tourStore";
 import { useEmailStore } from "../stores/emailStore";
 import { useAppMode } from "../contexts/AppModeContext";
+import { useAuthStore } from "../stores/authStore";
 
 // EmailCompositionDialog now handled by TranscriptDisplay
 
@@ -71,8 +73,19 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     addActionItem,
     updateActionItem,
     deleteActionItem,
-    reorderActionItems
+    reorderActionItems,
+    // Auto-save related state and actions (S6.10)
+    enableAutoSave,
+    disableAutoSave,
+    triggerAutoSave,
+    autoSaveEnabled,
+    // Summary persistence actions
+    loadUserSummaries,
+    selectSavedSummary
   } = useSummaryStore();
+  
+  // Get authentication state for user ID
+  const { user, isLoading: isAuthLoading } = useAuthStore();
   
   // Get the current app mode to pass to the summary generation
   const { mode, isDemo } = useAppMode();
@@ -83,10 +96,143 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   // Email store for handling email dialog
   const { openDialog: openEmailDialog } = useEmailStore();
   
-  // Clear summary when transcriptionId changes (new file uploaded)
+  // Load existing summary when transcriptionId changes or component mounts
   useEffect(() => {
-    clearSummary();
-  }, [transcriptionId, clearSummary]);
+    const loadExistingSummary = async () => {
+      console.log('🔍 SummaryDisplay loadExistingSummary called:', {
+        userId: user?.id,
+        transcriptionId: transcriptionId,
+        hasUser: !!user?.id,
+        hasTranscriptionId: !!transcriptionId,
+        isAuthLoading: isAuthLoading
+      });
+
+      // Wait for authentication to finish loading
+      if (isAuthLoading) {
+        console.log('⏳ Auth still loading, waiting...');
+        return;
+      }
+
+      if (!user?.id || !transcriptionId) {
+        console.log('❌ Early return from loadExistingSummary:', {
+          noUserId: !user?.id,
+          noTranscriptionId: !transcriptionId
+        });
+        clearSummary();
+        return;
+      }
+
+      try {
+        // Load all user summaries
+        await loadUserSummaries(user.id);
+        
+        // Find existing summary for this meeting ID
+        const currentState = useSummaryStore.getState();
+        console.log('🔍 Looking for existing summary with meetingId:', transcriptionId);
+        console.log('🔍 Available saved summaries:', currentState.savedSummaries.map(s => ({
+          id: s.id,
+          title: s.title,
+          meetingId: s.meetingId,
+          transcriptFileName: s.transcriptFileName
+        })));
+        
+        // Try exact match first
+        const exactMatch = currentState.savedSummaries.find(
+          s => s.meetingId === transcriptionId
+        );
+        
+        // Also try string vs UUID comparison (in case of type mismatch)
+        const stringMatch = currentState.savedSummaries.find(
+          s => String(s.meetingId) === String(transcriptionId)
+        );
+        
+        // FALLBACK MATCHING COMMENTED OUT FOR ID CONSISTENCY TESTING
+        // Try matching by filename if the IDs don't match
+        // const filenameMatch = fileName ? currentState.savedSummaries.find(
+        //   s => s.transcriptFileName === fileName
+        // ) : null;
+        
+        // Try to find the most recent auto-saved summary (last resort)
+        // const recentAutoSave = currentState.savedSummaries.find(
+        //   s => s.title?.includes('Auto-saved')
+        // );
+        
+        console.log('🔍 Exact match found:', !!exactMatch);
+        console.log('🔍 String match found:', !!stringMatch);
+        // console.log('🔍 Filename match found:', !!filenameMatch);
+        // console.log('🔍 Recent auto-save found:', !!recentAutoSave);
+        console.log('🔍 Comparison details:', {
+          transcriptionId,
+          transcriptionIdType: typeof transcriptionId,
+          fileName,
+          sampleMeetingId: currentState.savedSummaries[0]?.meetingId,
+          sampleMeetingIdType: typeof currentState.savedSummaries[0]?.meetingId,
+          availableFilenames: currentState.savedSummaries.map(s => s.transcriptFileName)
+        });
+        
+        // ONLY USE EXACT ID MATCHING FOR TESTING
+        const existingSummary = exactMatch || stringMatch;
+        // const existingSummary = exactMatch || stringMatch || filenameMatch || recentAutoSave;
+
+        if (existingSummary) {
+          console.log('Found existing summary:', existingSummary.id, existingSummary.title);
+          // Load the existing summary
+          await selectSavedSummary(existingSummary.id, user.id);
+        } else {
+          console.log('No existing summary found for meetingId:', transcriptionId);
+          // No existing summary, clear current state
+          clearSummary();
+        }
+      } catch (error) {
+        console.error('Failed to load existing summary:', error);
+        clearSummary();
+      }
+    };
+
+    loadExistingSummary();
+  }, [transcriptionId, user?.id, isAuthLoading, clearSummary, loadUserSummaries, selectSavedSummary]);
+
+  // Auto-save management (S6.10 Phase 4)
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Enable auto-save when component mounts with authenticated user and valid context
+  useEffect(() => {
+    if (user?.id && fileName && !isDemo && mode === 'production') {
+      enableAutoSave(user.id, fileName, transcriptionId);
+      
+      return () => {
+        disableAutoSave();
+      };
+    }
+  }, [user?.id, fileName, transcriptionId, isDemo, mode, enableAutoSave, disableAutoSave]);
+  
+  // Debounced auto-save trigger on summary or action items change
+  const triggerDebouncedAutoSave = useCallback(() => {
+    if (!autoSaveEnabled || !summary || isDemo) return;
+    
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Set new timeout for debounced auto-save (5 seconds after last change)
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      triggerAutoSave();
+    }, 5000);
+  }, [autoSaveEnabled, summary, isDemo, triggerAutoSave]);
+  
+  // Trigger auto-save when summary or action items change
+  useEffect(() => {
+    if (summary && autoSaveEnabled) {
+      triggerDebouncedAutoSave();
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [summary, actionItems, triggerDebouncedAutoSave]);
 
   // Use store mappings if available, otherwise fall back to props
   const effectiveSpeakerMappings = useMemo(() => {
@@ -166,6 +312,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       showSnackbar(`Failed to generate meeting summary: ${err instanceof Error ? err.message : 'Unknown error'}`, "error");
     }
   };
+
+
 
   // Email sending now handled by EmailCompositionDialog
 
@@ -346,6 +494,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               onCloseStep={closeStep}
               triggerStepAction={triggerStepAction}
             />
+
+
 
             {/* Meeting Overview */}
             <Box sx={{ mb: 3 }}>

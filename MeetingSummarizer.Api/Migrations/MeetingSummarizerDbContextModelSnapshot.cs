@@ -239,6 +239,111 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("MeetingHistory");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.SavedActionItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssignedTo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal>("Confidence")
+                        .HasPrecision(5, 4)
+                        .HasColumnType("decimal(5,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsExplicitAssignment")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastModifiedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SummaryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedTo");
+
+                    b.HasIndex("SummaryId", "SortOrder");
+
+                    b.ToTable("SavedActionItems");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.SavedSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("LastAccessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastModifiedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<Guid?>("MeetingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SummaryData")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TranscriptFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LastAccessedAt");
+
+                    b.HasIndex("MeetingId");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("SavedSummaries");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenPurchase", b =>
                 {
                     b.Property<Guid>("Id")
@@ -482,6 +587,35 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Navigation("PerformedBy");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.SavedActionItem", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.SavedSummary", "Summary")
+                        .WithMany("ActionItems")
+                        .HasForeignKey("SummaryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Summary");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.SavedSummary", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.Meeting", "Meeting")
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
+                        .WithMany("SavedSummaries")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Meeting");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenPurchase", b =>
                 {
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
@@ -535,11 +669,18 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Navigation("History");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.SavedSummary", b =>
+                {
+                    b.Navigation("ActionItems");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.User", b =>
                 {
                     b.Navigation("BatchTranscriptionJobs");
 
                     b.Navigation("Meetings");
+
+                    b.Navigation("SavedSummaries");
 
                     b.Navigation("TokenPurchases");
 

@@ -91,4 +91,9 @@ public class User
     /// Navigation property for user's batch transcription jobs
     /// </summary>
     public virtual ICollection<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = new List<BatchTranscriptionJob>();
+    
+    /// <summary>
+    /// Navigation property for user's saved summaries
+    /// </summary>
+    public virtual ICollection<SavedSummary> SavedSummaries { get; set; } = new List<SavedSummary>();
 }

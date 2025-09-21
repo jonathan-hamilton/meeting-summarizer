@@ -183,6 +183,20 @@ public class TranscriptionResponse
     /// <returns>A complete TranscriptionResponse</returns>
     public static TranscriptionResponse FromResult(TranscriptionResult result, string fileName, long fileSize, long processingTimeMs)
     {
+        return FromResult(result, fileName, fileSize, processingTimeMs, null);
+    }
+
+    /// <summary>
+    /// Creates a TranscriptionResponse from a TranscriptionResult with a specific meeting ID
+    /// </summary>
+    /// <param name="result">The transcription result from the OpenAI service</param>
+    /// <param name="fileName">Original filename</param>
+    /// <param name="fileSize">File size in bytes</param>
+    /// <param name="processingTimeMs">Processing time in milliseconds</param>
+    /// <param name="meetingId">Meeting ID to use as transcription ID (if null, generates new GUID)</param>
+    /// <returns>A complete TranscriptionResponse</returns>
+    public static TranscriptionResponse FromResult(TranscriptionResult result, string fileName, long fileSize, long processingTimeMs, Guid? meetingId)
+    {
         var speakers = result.Segments.Select(s => s.Speaker).Distinct().ToList();
         var confidenceSegments = result.Segments.Where(s => s.Confidence.HasValue).ToList();
         var averageConfidence = confidenceSegments.Any() ?
@@ -191,7 +205,7 @@ public class TranscriptionResponse
 
         return new TranscriptionResponse
         {
-            TranscriptionId = Guid.NewGuid().ToString(),
+            TranscriptionId = meetingId?.ToString() ?? Guid.NewGuid().ToString(),
             FileName = fileName,
             FileSize = fileSize,
             Status = "Completed",

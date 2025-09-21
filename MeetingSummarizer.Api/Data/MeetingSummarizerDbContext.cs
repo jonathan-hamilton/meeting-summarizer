@@ -47,6 +47,16 @@ public class MeetingSummarizerDbContext : DbContext
     /// </summary>
     public DbSet<TranscriptSegment> TranscriptSegments { get; set; } = null!;
     
+    /// <summary>
+    /// Saved summaries created by users
+    /// </summary>
+    public DbSet<SavedSummary> SavedSummaries { get; set; } = null!;
+    
+    /// <summary>
+    /// Action items within saved summaries
+    /// </summary>
+    public DbSet<SavedActionItem> SavedActionItems { get; set; } = null!;
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -210,6 +220,63 @@ public class MeetingSummarizerDbContext : DbContext
                 .WithMany(btj => btj.TranscriptSegments)
                 .HasForeignKey(ts => ts.JobId)
                 .OnDelete(DeleteBehavior.Cascade); // Segments should be deleted with the job
+        });
+
+        // Configure SavedSummary entity
+        modelBuilder.Entity<SavedSummary>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.HasIndex(s => new { s.UserId, s.CreatedAt }); // For efficient user summary queries
+            entity.HasIndex(s => s.MeetingId); // For meeting-related summary lookups
+            entity.HasIndex(s => s.LastAccessedAt); // For usage tracking and cleanup
+            entity.Property(s => s.Title).IsRequired().HasMaxLength(200);
+            entity.Property(s => s.Description).HasMaxLength(1000);
+            entity.Property(s => s.SummaryData).IsRequired().HasColumnType("nvarchar(max)");
+            entity.Property(s => s.TranscriptFileName).IsRequired().HasMaxLength(255);
+            entity.Property(s => s.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); // From database: Ensure Kind = UTC
+            entity.Property(s => s.LastModifiedAt).HasDefaultValueSql("GETUTCDATE()").HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); // From database: Ensure Kind = UTC
+            entity.Property(s => s.LastAccessedAt).HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : (DateTime?)null); // From database: Ensure Kind = UTC
+            
+            // Configure relationship with User
+            entity.HasOne(s => s.User)
+                .WithMany(u => u.SavedSummaries)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade); // When user deleted, delete their summaries
+                
+            // Configure relationship with Meeting (optional)
+            entity.HasOne(s => s.Meeting)
+                .WithMany()
+                .HasForeignKey(s => s.MeetingId)
+                .OnDelete(DeleteBehavior.SetNull); // When meeting deleted, keep summary but clear reference
+        });
+        
+        // Configure SavedActionItem entity
+        modelBuilder.Entity<SavedActionItem>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.HasIndex(a => new { a.SummaryId, a.SortOrder }); // For efficient ordered retrieval
+            entity.HasIndex(a => a.AssignedTo); // For filtering by assignee
+            entity.Property(a => a.Description).IsRequired().HasMaxLength(500);
+            entity.Property(a => a.AssignedTo).IsRequired().HasMaxLength(100);
+            entity.Property(a => a.Confidence).HasColumnType("decimal(5,4)").HasPrecision(5, 4);
+            entity.Property(a => a.CreatedAt).HasDefaultValueSql("GETUTCDATE()").HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); // From database: Ensure Kind = UTC
+            entity.Property(a => a.LastModifiedAt).HasDefaultValueSql("GETUTCDATE()").HasConversion(
+                v => v, // To database: DateTime as-is (already UTC)
+                v => DateTime.SpecifyKind(v, DateTimeKind.Utc)); // From database: Ensure Kind = UTC
+            
+            // Configure relationship with SavedSummary
+            entity.HasOne(a => a.Summary)
+                .WithMany(s => s.ActionItems)
+                .HasForeignKey(a => a.SummaryId)
+                .OnDelete(DeleteBehavior.Cascade); // When summary deleted, delete its action items
         });
 
         // Configure enums
