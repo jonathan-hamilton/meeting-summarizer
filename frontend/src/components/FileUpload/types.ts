@@ -58,5 +58,5 @@ export const ACCEPTED_AUDIO_FORMATS = [
   'audio/aac'
 ] as const;
 
-export const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+export const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
 export const MAX_FILES = 10;

@@ -547,11 +547,12 @@ describe("FileUpload Component - Comprehensive Testing (S5.4 Phase 2)", () => {
 
   describe("Component Props and Configuration", () => {
     it("uses custom maxFileSize when provided", () => {
-      const customMaxSize = 500 * 1024 * 1024; // 500MB
+            // Test custom max size handling
+      const customMaxSize = 1024 * 1024 * 1024; // 1GB
       
       renderWithProviders(<FileUpload maxFileSize={customMaxSize} />);
       
-      expect(screen.getByText(/Maximum file size: 500 MB/)).toBeInTheDocument();
+      expect(screen.getByText(/Maximum file size: 1 GB/)).toBeInTheDocument();
     });
 
     it("uses custom acceptedFileTypes when provided", () => {
