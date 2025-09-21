@@ -55,6 +55,7 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 - **State Management Enhancement:** Improved emailStore with recipient suggestions and context-aware functionality
 - **Summary Persistence Planning:** Created comprehensive implementation plan for user history functionality
 - **Documentation Updates:** Added summary-persistence-implementation-plan.md with detailed 5-phase architecture
+- **S6.10 Story Creation:** Summary Persistence scheduled as Sprint 6 story with complete technical specification
 - **S3.4 Email Field Bug Fix:** Resolved critical persistence issue where speaker email addresses disappeared during navigation between transcript pages
 - **S6.5 Meeting History Complete:** Persistent upload progress, meeting history, PDF exports, and transcript email delivery via EmailCompositionDialog integration
 

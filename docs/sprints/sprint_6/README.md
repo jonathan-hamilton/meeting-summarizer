@@ -29,6 +29,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.T1    | Code Refactoring & Technical Debt Reduction        | COMPLETE ✅   | None                 |
 | S6.8     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.4           |
 | S6.9     | Production Monitoring & Observability Setup        | PENDING ⏸️    | S6.8                 |
+| S6.10    | Summary Persistence & User History Integration      | PENDING ⏸️    | S6.1, S6.2, S6.5     |
 
 ## Story Files
 
@@ -44,6 +45,7 @@ Each story has been split into its own focused file for better organization and 
 - **[S6.7: API Integration & Third-Party Connectivity](s6.7-api-integration.md)** 📋 *PLANNED*
 - **[S6.8: Analytics & Reporting Dashboard](s6.8-analytics-reporting.md)** 📋 *PLANNED*
 - **[S6.9: Production Deployment & DevOps Optimization](s6.9-devops-deployment.md)** 📋 *PLANNED*
+- **[S6.10: Summary Persistence & User History Integration](s6.10-summary-persistence.md)** ⏸️ *PENDING - Ready for Implementation*
 
 ### Integration Documentation
 - **[Integration Notes & Cross-Story Dependencies](integration-notes.md)** - Comprehensive guide to how all stories integrate together, including shared components, database schema relationships, and deployment coordination.
