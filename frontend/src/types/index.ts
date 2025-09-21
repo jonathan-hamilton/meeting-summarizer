@@ -266,5 +266,8 @@ export type ThemeMode = 'light' | 'dark';
 
 export interface ThemeContextType {
   mode: ThemeMode;
+  highContrast: boolean;
   toggleTheme: () => void;
+  toggleHighContrast: () => void;
+  setHighContrast: (enabled: boolean) => void;
 }

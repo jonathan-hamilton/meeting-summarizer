@@ -18,9 +18,10 @@ import {
   type SessionOverrideAction,
 } from "../services/sessionManager";
 import { useActiveSpeakers, useSpeakerSessionStore } from "../stores/speakerSessionStore";
-import { getSpeakerColor } from "../theme/speakerColors";
+import { getSpeakerColor, getSpeakerTextColor } from "../theme/speakerColors";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useTourStore } from "../stores/tourStore";
+import { useAccessibilityStore } from "../stores/accessibilityStore";
 
 // Helper function to format speaker label without duplication
 const formatSpeakerLabel = (speakerId: string | undefined): string => {
@@ -55,6 +56,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   // Tour state management
   const { isDemo } = useAppMode();
   const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep, isActionDisabledDuringTour } = useTourStore();
+  const { highContrast } = useAccessibilityStore();
   
   // Use centralized store for simplified state management
   const activeSpeakers = useActiveSpeakers();
@@ -242,12 +244,14 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           variant="filled"
           size="small"
           sx={{
-            backgroundColor: getSpeakerColor(mapping.speakerId),
-            color: "white",
+            backgroundColor: getSpeakerColor(mapping.speakerId, highContrast),
+            color: getSpeakerTextColor(getSpeakerColor(mapping.speakerId, highContrast)),
+            fontWeight: 'bold', // Better text readability
             "& .MuiChip-icon": {
-              color: "white",
+              color: getSpeakerTextColor(getSpeakerColor(mapping.speakerId, highContrast)),
             },
           }}
+          className="speaker-chip" // CSS class for additional accessibility styling
           title={`${sourceLabel} speaker${
             isOverridden
               ? ` - overridden at ${new Date(
@@ -271,12 +275,14 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           variant="filled"
           size="small"
           sx={{
-            backgroundColor: getSpeakerColor(speakerId),
-            color: "white",
+            backgroundColor: getSpeakerColor(speakerId, highContrast),
+            color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
+            fontWeight: 'bold', // Better text readability
             "& .MuiChip-icon": {
-              color: "white",
+              color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
             },
           }}
+          className="speaker-chip" // CSS class for additional accessibility styling
           title={`session override - ${override.newValue}`}
         />
       );
@@ -309,12 +315,14 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           variant="filled"
           size="small"
           sx={{
-            backgroundColor: getSpeakerColor(speakerId),
-            color: "white",
+            backgroundColor: getSpeakerColor(speakerId, highContrast),
+            color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
+            fontWeight: 'bold', // Better text readability
             "& .MuiChip-icon": {
-              color: "white",
+              color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
             },
           }}
+          className="speaker-chip" // CSS class for additional accessibility styling
           title={`${sourceLabel} speaker`}
         />
       );

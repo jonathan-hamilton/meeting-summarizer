@@ -24,7 +24,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.3     | Payment & Token System Setup                       | COMPLETE ✅   | S6.1, S6.2           |
 | S6.4     | Transcript Data Storage Optimization (Blob Storage)| COMPLETE ✅   | S6.1, S6.3           |
 | S6.5     | Persistent Upload Progress & Meeting History        | COMPLETE ✅   | S6.1, S6.4           |
-| S6.6     | Accessibility Compliance Enhancements              | 57% COMPLETE 🏗️| None                 |
+| S6.6     | Accessibility Compliance Enhancements              | 71% COMPLETE 🏗️| None                 |
 | S6.7     | Footer Content & Legal Information                  | PENDING ⏸️    | None                 |
 | S6.T1    | Code Refactoring & Technical Debt Reduction        | COMPLETE ✅   | None                 |
 | S6.8     | Azure Production Hosting Deployment                | PENDING ⏸️    | S6.1, S6.4           |
@@ -40,7 +40,7 @@ Each story has been split into its own focused file for better organization and 
 - **[S6.3: Token Economy & Payment Integration](s6.3-token-payment.md)** 🔄 *IN PROGRESS*
 - **[S6.4: AI Meeting Optimization & Quality Enhancement](s6.4-ai-optimization.md)** 📋 *PLANNED*
 - **[S6.5: Collaboration & Sharing Features](s6.5-collaboration.md)** 📋 *PLANNED*
-- **[S6.6: Accessibility & Compliance Implementation](s6.6-accessibility.md)** 🔄 *IN PROGRESS (57% Complete)*
+- **[S6.6: Accessibility & Compliance Implementation](s6.6-accessibility.md)** 🔄 *IN PROGRESS (71% Complete)*
 - **[S6.7: API Integration & Third-Party Connectivity](s6.7-api-integration.md)** 📋 *PLANNED*
 - **[S6.8: Analytics & Reporting Dashboard](s6.8-analytics-reporting.md)** 📋 *PLANNED*
 - **[S6.9: Production Deployment & DevOps Optimization](s6.9-devops-deployment.md)** 📋 *PLANNED*
