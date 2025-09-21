@@ -25,9 +25,18 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 
 ## Current State Analysis (September 19, 2025)
 
-### 🏗️ CURRENT SPRINT 6 PROGRESS - 83% COMPLETE
+### 🏗️ CURRENT SPRINT 6 PROGRESS - 91% COMPLETE
 
-#### Latest Sprint 6 Achievements (September 20, 2025)
+#### Latest Sprint 6 Achievements (September 21, 2025)
+**S6.10 Summary Persistence: ID Consistency & Authentication Architecture** - **80% COMPLETE 🏗️**
+- **Database Infrastructure**: Complete SavedSummary and SavedActionItem entities with EF migration (20250921172238_AddSummaryPersistence) ✅
+- **API Controllers & Services**: Full REST API implementation with SavedSummaryController and SummaryPersistenceService ✅
+- **Architecture Unification**: Resolved ID mismatch between real-time and batch processing - Meeting entity now single source of truth ✅
+- **Authentication Guards**: Fixed unauthenticated user experience on MeetingHistoryPage - prevents 401 errors and shows proper sign-in UI ✅
+- **TranscribeRequest Factory**: Enhanced with meetingId parameter for consistent ID usage across all transcription flows ✅
+- **SummaryController Restructure**: Aligned real-time processing architecture with batch processing patterns for consistency ✅
+
+#### Previous Sprint 6 Achievements (September 20, 2025)
 **S6.6 Accessibility Increment 4: Focus Management & Modal Accessibility** - **COMPLETE ✅**
 - **Focus Trap Integration**: Successfully integrated focus-trap-react across all modal dialogs for WCAG 2.1 AA compliance ✅
 - **Material-UI Conflicts Resolved**: Fixed architectural conflicts between Material-UI Dialog focus management and focus-trap-react library ✅
@@ -91,10 +100,10 @@ d**S5.4 Test Framework Modernization** - **PHASE 1 COMPLETE ✅**
 
 ### 📱 STRATEGIC INITIATIVE UPDATE: USER MANAGEMENT & INFRASTRUCTURE PRIORITY
 
-**Sprint 6: User Management & Infrastructure** (Updated September 20, 2025) - 83% COMPLETE 🏗️
+**Sprint 6: User Management & Infrastructure** (Updated September 21, 2025) - 91% COMPLETE 🏗️
 - **Business Priority:** Token-based monetization with persistent storage competitive advantage + WCAG 2.1 AA accessibility compliance
 - **Timeline:** 4-5 weeks for production-ready user accounts, data persistence, and accessibility compliance
-- **Latest**: S6.6 Accessibility Increment 4 Complete - Focus management, modal accessibility, focus trap integration implemented
+- **Latest**: S6.10 Summary Persistence 80% Complete - ID consistency architecture, authentication guards, database entities, and API controllers implemented
 - **Investment:** Azure storage infrastructure (~$0.15/month per user), 10-15% token price increase
 - **Market Value:** 365-day meeting retention competitive with Otter.ai, Zoom, and enterprise tools
 - **⚠️ CRITICAL ADDITION:** Azure web hosting deployment must be included for production readiness

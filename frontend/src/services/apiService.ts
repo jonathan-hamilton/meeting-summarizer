@@ -10,7 +10,13 @@ import type {
   SpeakerMappingRequest,
   SpeakerMappingResponse,
   MeetingSummaryRequest,
-  MeetingSummary
+  MeetingSummary,
+  SavedSummary,
+  SavedActionItem,
+  SaveSummaryRequest,
+  SaveActionItemRequest,
+  UpdateSavedSummaryRequest,
+  UpdateSavedActionItemRequest
 } from '../types';
 import { sessionManager, type SessionOverrideAction } from './sessionManager';
 import { useAuthStore } from '../stores/authStore';
@@ -620,6 +626,192 @@ class ApiService {
   updateBaseURL(newBaseURL: string): void {
     this.baseURL = newBaseURL;
     this.client.defaults.baseURL = newBaseURL;
+  }
+
+  // ============================================================================
+  // Summary Persistence API Methods (S6.10)
+  // ============================================================================
+
+  /**
+   * Get all saved summaries for a user
+   */
+  async getUserSummaries(userId: string): Promise<ApiResponse<SavedSummary[]>> {
+    try {
+      const response = await this.client.get(`/api/savedsummary/user/${userId}`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error getting user summaries:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to get user summaries',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Get a specific saved summary by ID
+   */
+  async getSavedSummary(summaryId: string, userId: string): Promise<ApiResponse<SavedSummary>> {
+    try {
+      const response = await this.client.get(`/api/savedsummary/${summaryId}?userId=${userId}`);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error getting saved summary:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to get saved summary',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Save a new summary
+   */
+  async saveSummary(userId: string, request: SaveSummaryRequest): Promise<ApiResponse<SavedSummary>> {
+    try {
+      const response = await this.client.post(`/api/savedsummary/user/${userId}`, request);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error saving summary:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to save summary',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Update an existing summary
+   */
+  async updateSavedSummary(summaryId: string, userId: string, request: UpdateSavedSummaryRequest): Promise<ApiResponse<SavedSummary>> {
+    try {
+      const response = await this.client.put(`/api/savedsummary/${summaryId}?userId=${userId}`, request);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error updating saved summary:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to update saved summary',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Delete a saved summary
+   */
+  async deleteSavedSummary(summaryId: string, userId: string): Promise<ApiResponse<void>> {
+    try {
+      await this.client.delete(`/api/savedsummary/${summaryId}?userId=${userId}`);
+      return {
+        success: true
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error deleting saved summary:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to delete saved summary',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Add an action item to a saved summary
+   */
+  async addSavedActionItem(summaryId: string, userId: string, request: SaveActionItemRequest): Promise<ApiResponse<SavedActionItem>> {
+    try {
+      const response = await this.client.post(`/api/savedsummary/${summaryId}/actionitems?userId=${userId}`, request);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error adding saved action item:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to add saved action item',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Update a saved action item
+   */
+  async updateSavedActionItem(summaryId: string, actionItemId: string, userId: string, request: UpdateSavedActionItemRequest): Promise<ApiResponse<SavedActionItem>> {
+    try {
+      const response = await this.client.put(`/api/savedsummary/${summaryId}/actionitems/${actionItemId}?userId=${userId}`, request);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error updating saved action item:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to update saved action item',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Delete a saved action item
+   */
+  async deleteSavedActionItem(summaryId: string, actionItemId: string, userId: string): Promise<ApiResponse<void>> {
+    try {
+      await this.client.delete(`/api/savedsummary/${summaryId}/actionitems/${actionItemId}?userId=${userId}`);
+      return {
+        success: true
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error deleting saved action item:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to delete saved action item',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
   }
 }
 

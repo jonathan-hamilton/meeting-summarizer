@@ -271,3 +271,86 @@ export interface ThemeContextType {
   toggleHighContrast: () => void;
   setHighContrast: (enabled: boolean) => void;
 }
+
+// ============================================================================
+// Summary Persistence Types (S6.10)
+// ============================================================================
+
+/**
+ * Saved summary with persistence metadata
+ */
+export interface SavedSummary {
+  id: string;
+  userId: string;
+  meetingId?: string;
+  title: string;
+  description?: string;
+  summaryData: MeetingSummary; // Deserialized summary content
+  transcriptFileName: string;
+  createdAt: string;
+  lastModifiedAt: string;
+  lastAccessedAt?: string;
+  actionItems: SavedActionItem[];
+}
+
+/**
+ * Saved action item with persistence metadata
+ */
+export interface SavedActionItem {
+  id: string;
+  summaryId: string;
+  description: string;
+  assignedTo: string;
+  confidence: number;
+  isExplicitAssignment: boolean;
+  sortOrder: number;
+  isCompleted: boolean;
+  createdAt: string;
+  lastModifiedAt: string;
+}
+
+/**
+ * Request payload for saving a summary
+ */
+export interface SaveSummaryRequest {
+  title: string;
+  description?: string;
+  summaryData: MeetingSummary;
+  transcriptFileName: string;
+  meetingId?: string;
+  actionItems: SaveActionItemRequest[];
+}
+
+/**
+ * Request payload for saving an action item
+ */
+export interface SaveActionItemRequest {
+  description: string;
+  assignedTo: string;
+  confidence: number;
+  isExplicitAssignment: boolean;
+  sortOrder: number;
+  isCompleted: boolean;
+}
+
+/**
+ * Request payload for updating a saved summary
+ */
+export interface UpdateSavedSummaryRequest {
+  title?: string;
+  description?: string;
+  summaryData?: MeetingSummary;
+  actionItems?: SaveActionItemRequest[];
+}
+
+/**
+ * Request payload for updating a saved action item
+ */
+export interface UpdateSavedActionItemRequest {
+  description?: string;
+  assignedTo?: string;
+  confidence?: number;
+  isExplicitAssignment?: boolean;
+  sortOrder?: number;
+  isCompleted?: boolean;
+}

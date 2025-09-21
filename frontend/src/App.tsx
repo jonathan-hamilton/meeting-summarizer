@@ -36,6 +36,7 @@ import {
   Help as HelpIcon,
   AccountCircle as AccountIcon,
   Accessibility as AccessibilityIcon,
+  Bookmark as BookmarkIcon,
 } from "@mui/icons-material";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
@@ -65,6 +66,7 @@ import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import TranscriptPage from "./components/TranscriptPage";
 import { AccessibilityControlPanel } from "./components/AccessibilityControlPanel";
+import SavedSummariesDrawer from "./components/SavedSummariesDrawer";
 import { sessionManager } from "./services/sessionManager";
 
 import type { TranscriptionResponse } from "./types";
@@ -189,6 +191,9 @@ const AppContent: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
   const [accessibilityPanelOpen, setAccessibilityPanelOpen] = useState(false);
+  
+  // Saved summaries drawer state (S6.10 Phase 5)
+  const [savedSummariesDrawerOpen, setSavedSummariesDrawerOpen] = useState(false);
 
   // Listen for session expiry events
   useEffect(() => {
@@ -479,6 +484,13 @@ const AppContent: React.FC = () => {
                 {/* Navigation Buttons - Only when authenticated in production mode */}
                 {appMode === 'production' && isAuthenticated && (
                   <>
+                    {/* Saved Summaries Button (S6.10 Phase 5) */}
+                    <Tooltip title="My Saved Summaries">
+                      <IconButton color="inherit" onClick={() => setSavedSummariesDrawerOpen(true)}>
+                        <BookmarkIcon />
+                      </IconButton>
+                    </Tooltip>
+                    
                     {location.pathname === '/history' ? (
                       <Tooltip title="Home">
                         <IconButton color="inherit" onClick={() => navigate('/app')}>
@@ -788,6 +800,16 @@ const AppContent: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Saved Summaries Drawer (S6.10 Phase 5) */}
+      <SavedSummariesDrawer
+        open={savedSummariesDrawerOpen}
+        onClose={() => setSavedSummariesDrawerOpen(false)}
+        onSummarySelected={(summary) => {
+          console.log('Selected summary:', summary.title);
+          // Additional logic for handling summary selection can be added here
+        }}
+      />
     </>
   );
 };
