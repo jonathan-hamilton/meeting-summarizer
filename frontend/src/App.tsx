@@ -59,6 +59,13 @@ const HelpDialog = React.lazy(() => import("./components/HelpDialog").then(m => 
 const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
 const AuthManager = React.lazy(() => import("./components/auth").then(m => ({ default: m.AuthManager })));
 
+// Legal dialog components (footer access)
+const TermsOfServiceDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.TermsOfServiceDialog })));
+const PrivacyPolicyFooterDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.PrivacyPolicyFooterDialog })));
+const DMCAPolicyDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.DMCAPolicyDialog })));
+const LiabilityDisclaimerDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.LiabilityDisclaimerDialog })));
+const LegalAcceptanceDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.LegalAcceptanceDialog })));
+
 import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
@@ -128,6 +135,15 @@ const AppContent: React.FC = () => {
 
   // State for forcing Privacy Policy dialog (for testing in dev mode)
   const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
+  
+  // State for forcing Legal Acceptance dialog (for testing in dev mode)
+  const [forceShowLegalAcceptance, setForceShowLegalAcceptance] = useState(false);
+  
+  // State for legal document dialogs
+  const [termsDialogOpen, setTermsDialogOpen] = useState(false);
+  const [dmcaDialogOpen, setDmcaDialogOpen] = useState(false);
+  const [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(false);
+  const [privacyFooterDialogOpen, setPrivacyFooterDialogOpen] = useState(false);
 
   // Wrapper function for theme toggle with accessibility announcement
   const handleThemeToggle = () => {
@@ -304,9 +320,9 @@ const AppContent: React.FC = () => {
   };
 
   const handleModeDoubleClick = () => {
-    // In development mode, allow triggering Privacy Policy for testing
+    // In development mode, allow triggering Legal Acceptance dialog for testing
     if (appMode === 'development') {
-      setForceShowPrivacyPolicy(true);
+      setForceShowLegalAcceptance(true);
     }
   };
 
@@ -440,8 +456,8 @@ const AppContent: React.FC = () => {
                     <Tooltip
                       title={
                         appMode === 'production'
-                          ? "Production mode (real API calls, Privacy Policy enabled)"
-                          : "Development mode (mocked API calls) - Double-click to test Privacy Policy"
+                          ? "Production mode (real API calls, Legal Acceptance enabled)"
+                          : "Development mode (mocked API calls) - Double-click to test Legal Acceptance"
                       }
                     >
                       <Switch
@@ -586,15 +602,15 @@ const AppContent: React.FC = () => {
             <SessionTimeoutWarningDialog />
           </Suspense>
 
-          {/* Privacy policy dialog (production only, first visit) */}
+          {/* Legal acceptance dialog (Terms + Liability for first-time users) */}
           <Suspense fallback={null}>
-            <PrivacyPolicyDialog 
-              forceShow={forceShowPrivacyPolicy}
-              onAccepted={() => setForceShowPrivacyPolicy(false)}
+            <LegalAcceptanceDialog 
+              forceShow={forceShowLegalAcceptance}
+              onAccepted={() => setForceShowLegalAcceptance(false)}
             />
           </Suspense>
 
-          {/* Manual privacy policy dialog (footer link) */}
+          {/* Manual privacy policy dialog (footer link) - Legacy support */}
           <Suspense fallback={null}>
             <PrivacyPolicyDialog 
               forceShow={privacyPolicyOpen}
@@ -613,6 +629,35 @@ const AppContent: React.FC = () => {
           {/* User Profile dialog */}
           <Suspense fallback={null}>
             <UserProfileDialog />
+          </Suspense>
+
+          {/* Footer Legal Dialogs */}
+          <Suspense fallback={null}>
+            <TermsOfServiceDialog 
+              open={termsDialogOpen}
+              onClose={() => setTermsDialogOpen(false)}
+            />
+          </Suspense>
+          
+          <Suspense fallback={null}>
+            <PrivacyPolicyFooterDialog 
+              open={privacyFooterDialogOpen}
+              onClose={() => setPrivacyFooterDialogOpen(false)}
+            />
+          </Suspense>
+          
+          <Suspense fallback={null}>
+            <DMCAPolicyDialog 
+              open={dmcaDialogOpen}
+              onClose={() => setDmcaDialogOpen(false)}
+            />
+          </Suspense>
+          
+          <Suspense fallback={null}>
+            <LiabilityDisclaimerDialog 
+              open={disclaimerDialogOpen}
+              onClose={() => setDisclaimerDialogOpen(false)}
+            />
           </Suspense>
 
           {/* Accessibility Control Panel */}
@@ -775,18 +820,50 @@ const AppContent: React.FC = () => {
           </Box>
           </main>
           
-          {/* Footer with privacy link */}
+          {/* Footer with legal links and company info */}
           <Box component="footer" sx={{ mt: 4, py: 2, borderTop: 1, borderColor: 'divider' }}>
+            {/* First line: Copyright and support contact */}
+            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 1 }}>
+              © 2025 Vertec Solutions LLC | support@meeting-summary.io
+            </Typography>
+            
+            {/* Second line: Legal document links */}
             <Typography variant="body2" color="text.secondary" align="center">
               <Link 
                 component="button" 
                 variant="body2" 
-                onClick={() => setPrivacyPolicyOpen(true)}
+                onClick={() => setTermsDialogOpen(true)}
                 sx={{ mr: 1 }}
               >
-                Privacy Policy
+                Terms
               </Link>
-              • Session-based storage • Your data stays private
+              |
+              <Link 
+                component="button" 
+                variant="body2" 
+                onClick={() => setPrivacyFooterDialogOpen(true)}
+                sx={{ mx: 1 }}
+              >
+                Privacy
+              </Link>
+              |
+              <Link 
+                component="button" 
+                variant="body2" 
+                onClick={() => setDmcaDialogOpen(true)}
+                sx={{ mx: 1 }}
+              >
+                DMCA
+              </Link>
+              |
+              <Link 
+                component="button" 
+                variant="body2" 
+                onClick={() => setDisclaimerDialogOpen(true)}
+                sx={{ ml: 1 }}
+              >
+                Disclaimer
+              </Link>
             </Typography>
           </Box>
         </Box>
