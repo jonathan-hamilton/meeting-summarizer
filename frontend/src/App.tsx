@@ -766,32 +766,20 @@ const AppContent: React.FC = () => {
                 spacing={4}
                 sx={{ mt: 2, width: "100%", minHeight: "200px" }}
               >
-                <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
-                  <section aria-labelledby="upload-heading">
-                    <Typography variant="h4" component="h3" id="upload-heading" gutterBottom>
-                      Upload Audio File
-                    </Typography>
-                    {/* Show upload component only if not in production mode or if authenticated AND not currently loading */}
-                    {(appMode !== 'production' || (isAuthenticated && !isAuthLoading)) ? (
+                {/* Only show upload section if not in production mode or if authenticated AND not currently loading */}
+                {(appMode !== 'production' || (isAuthenticated && !isAuthLoading)) && (
+                  <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
+                    <section aria-labelledby="upload-heading">
+                      <Typography variant="h4" component="h3" id="upload-heading" gutterBottom>
+                        Upload Audio File
+                      </Typography>
                       <FileUpload
                         onTranscriptionComplete={handleTranscriptionComplete}
                         isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
                       />
-                    ) : (
-                      <Box sx={{ 
-                        p: 4, 
-                        textAlign: 'center', 
-                        border: '1px dashed #ccc', 
-                        borderRadius: 2,
-                        backgroundColor: '#f5f5f5'
-                      }}>
-                        <Typography variant="body1" color="text.secondary">
-                          Please sign in to upload and process audio files.
-                        </Typography>
-                      </Box>
-                    )}
-                  </section>
-                </Grid>
+                    </section>
+                  </Grid>
+                )}
 
                 {transcriptionResults.length > 0 && (
                   <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
