@@ -17,7 +17,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 
 ## Progress Tracker
 
-**Overall Sprint 6 Progress: 80% Complete (8/10 stories)**
+**Overall Sprint 6 Progress: 73% Complete (8/11 stories)**
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
@@ -31,6 +31,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.9     | DevOps & Deployment                                | PLANNED 📋    | S6.10                |
 | S6.10    | Summary Persistence & User History Integration     | COMPLETE ✅   | S6.1, S6.2, S6.5    |
 | S6.11    | Refund Requirements                                | PLANNED 📋    | S6.3                 |
+| S6.12    | AI Chat Assistant for User Guidance               | PLANNED 📋    | S6.7                 |
 
 ## Story Files
 
