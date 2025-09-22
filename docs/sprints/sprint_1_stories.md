@@ -1,5 +1,14 @@
 # Sprint 1 User Stories - Core Transcription Pipeline
 
+## Progress Tracker
+
+**Overall Sprint 1 Progress: 100% Complete (2/2 stories)**
+
+| Story ID | Title | Status | Dependencies |
+|----------|-------|--------|--------------|
+| S1.1 | Audio Upload & Transcription Pipeline | COMPLETE ✅ | None |
+| S1.2 | Speaker Diarization & Display | COMPLETE ✅ | S1.1 |
+
 ## Sprint Overview
 
 Sprint 1 establishes the foundation of the Meeting-Summary.io by implementing a complete end-to-end transcription pipeline. This sprint transforms the application from basic scaffolding into a fully functional transcription service with production-ready OpenAI integration, speaker diarization capabilities, and comprehensive fallback mechanisms.

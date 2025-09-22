@@ -244,7 +244,7 @@ Sprint 4 completes the Azure Speech Services migration with comprehensive system
 - ✅ Azure Storage dependencies completely removed
 - ✅ Clean service architecture with logical folder organization
 
-## Sprint Progress Tracker
+## Progress Tracker
 
 ### Overall Progress: 94% Complete (3/4 stories) - 29/35 Story Points Complete
 

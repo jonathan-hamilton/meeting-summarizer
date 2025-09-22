@@ -43,17 +43,17 @@ This prompt handles the complete workflow for updating sprint documentation and 
 
 2. **Progress Tracker Synchronization** 🎯
    - **CRITICAL**: Update ALL Progress Tracker tables across the documentation ecosystem
-   - Update Sprint Progress Tracker (use smart file detection with naming validation):
-     - **NAMING RULE**: Sprint directories MUST use underscores: `sprint_X` (NOT `sprint-X`)
-     - **First**: Look for single file: `docs/sprints/sprint_*_stories.md`
-     - **If not found**: Look for directory structure: `docs/sprints/sprint_*/stories.md` 
-     - **Priority**: Directory-based structure takes precedence if both exist
-     - **Validation**: If both `sprint_X` and `sprint-X` exist, consolidate into `sprint_X` format
-     - Update Progress Tracker table (at top of main stories file)
-   - Update `README.md` Sprint status sections to reflect current story completion percentages
-   - Update `docs/requirements/requirements-roadmap.md` sprint progress status
-   - Ensure all tables show consistent status: PENDING ⏸️, IN PROGRESS ⚙️, X% COMPLETE 🏗️, COMPLETE ✅
-   - Verify completion percentages match across all files (README, sprint stories, requirements roadmap)
+   - **OFFICIAL PROGRESS TRACKER LOCATIONS** (must stay synchronized):
+     1. `docs/requirements/requirements-roadmap.md` - Strategic sprint planning tracker (top of file)
+     2. `docs/sprints/sprint_X_stories.md` - Single file sprints (small sprints)
+     3. `docs/sprints/sprint_X/README.md` - Folder-based sprints (large sprints with multiple story files)
+   - **PRIORITY RULE**: If both single file AND folder exist, folder structure takes precedence
+   - **SYNCHRONIZATION REQUIREMENTS**:
+     - All trackers must show IDENTICAL completion percentages (e.g., "80% COMPLETE")
+     - All trackers must show IDENTICAL story counts (e.g., "8/10 stories")
+     - All trackers must use consistent status icons: PENDING ⏸️, IN PROGRESS ⚙️, X% COMPLETE 🏗️, COMPLETE ✅
+     - **STANDARD FORMAT**: "## Progress Tracker" (standardized heading)
+   - **REMOVE REDUNDANT TRACKERS**: Eliminate progress info scattered in README.md or other locations
 
 2. **Sprint Progress Documentation**
    - Update the appropriate sprint stories file (use smart file detection with duplicate prevention):
@@ -231,9 +231,10 @@ The system will determine which documentation to update by:
 
 ### Always Update:
 - [ ] **PROGRESS TRACKERS** - Update ALL Progress Tracker tables for consistency 🎯
-  - [ ] `docs/sprints/sprint_X_stories.md` - Progress Tracker table at top of file
-  - [ ] `README.md` - Sprint status sections with completion percentages  
-  - [ ] `docs/requirements/requirements-roadmap.md` - Sprint progress status
+  - [ ] `docs/requirements/requirements-roadmap.md` - Strategic sprint planning tracker (top of file)
+  - [ ] `docs/sprints/sprint_X_stories.md` - Single file sprints (if not using folder structure)
+  - [ ] `docs/sprints/sprint_X/README.md` - Folder-based sprints (takes precedence if both exist)
+  - [ ] **SYNCHRONIZATION CHECK**: All trackers must show IDENTICAL percentages and story counts
 - [ ] `docs/sprints/sprint_X_stories.md` - Story completion status and implementation details
 - [ ] `README.md` - Project status dashboard and feature completion status
 - [ ] `docs/requirements/requirements-roadmap.md` - Requirements tracking and strategic sprint planning
