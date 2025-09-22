@@ -1,5 +1,19 @@
 # Sprint 2 User Stories - Speaker Role Mapping and AI Summarization
 
+## Progress Tracker
+
+**Overall Sprint 2 Progress: 100% Complete (7/7 stories)**
+
+| Story ID | Title | Status | Dependencies |
+|----------|-------|--------|--------------|
+| S2.1 | Audio File Format Validation | COMPLETE ✅ | S1.2 |
+| S2.2 | Speaker Role Mapping Interface | COMPLETE ✅ | S1.2 |
+| S2.3 | AI Meeting Summarization | COMPLETE ✅ | S2.2 |
+| S2.4 | Summary Display & Export | COMPLETE ✅ | S2.3 |
+| S2.5 | Speaker Management Enhancement | COMPLETE ✅ | S2.2 |
+| S2.6 | Real-time Status Updates | COMPLETE ✅ | S2.1 |
+| S2.7 | Manual Speaker Override | COMPLETE ✅ | S2.5 |
+
 ## Sprint Overview
 
 Sprint 2 builds upon the core transcription pipeline from Sprint 1 to add intelligent speaker role mapping and AI-powered meeting summarization. This sprint transforms raw transcripts into actionable insights by allowing users to assign real names and roles to speakers, then generating personalized summaries based on those roles.
