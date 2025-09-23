@@ -456,6 +456,24 @@ A modern web application for transcribing and summarizing meeting audio with AI-
 
 ## 🏗️ Architecture
 
+### Design Patterns & Standards
+**🚨 MANDATORY COMPLIANCE**: All development follows established design patterns documented in [`docs/architecture/design-patterns.md`](./docs/architecture/design-patterns.md).
+
+**Backend Patterns:**
+- **Service Layer Pattern**: All business logic through interfaces with dependency injection
+- **Repository Pattern**: Entity Framework DbContext for all data access
+- **Composite Pattern**: Multi-provider services with failover logic (transcription services)
+- **Security Patterns**: Attribute-based authorization, secure token management
+
+**Frontend Patterns:**
+- **Factory Pattern**: Mode-aware API service selection (`createApiService()`)
+- **State Management Pattern**: Zustand stores for ALL application state (no React `useState`)
+- **Provider Pattern**: React Context for dependency injection
+- **Lazy Loading Pattern**: Code splitting with React.lazy() + Suspense
+
+**Pattern Enforcement**: Implementation plans must validate pattern compliance. Code reviews use [`code-review-pattern-checklist.md`](./.prompts/code-review-pattern-checklist.md).
+
+### Backend (.NET 9 Web API)
 
 - **File Validation**: All audio file validation (basic and advanced) is now handled by `FileProcessingService` for maintainability and reliability
 - **AudioFileValidator**: Removed; all logic merged into `FileProcessingService`

@@ -240,6 +240,8 @@ The system will determine which documentation to update by:
 - [ ] `docs/requirements/requirements-roadmap.md` - Requirements tracking and strategic sprint planning
 
 ### Core Technical Documentation (Update If Applicable):
+- [ ] **`docs/architecture/design-patterns.md`** - **MANDATORY** pattern compliance validation and updates
+- [ ] `docs/architecture/zustand-store-directive.md` - State management pattern changes
 - [ ] `docs/features/technical-debt.md` - Technical debt changes
 - [ ] `docs/features/technical-improvements.md` - Improvements made
 - [ ] `docs/features/architecture.md` - Architecture changes
