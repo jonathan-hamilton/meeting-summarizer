@@ -158,6 +158,9 @@ builder.Services.AddScoped<IDataRetentionService, DataRetentionService>();
 // Register JWT Authentication Service (S6.2 Increment 1)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAuthenticationService, MeetingSummarizer.Api.Services.Authentication.JwtAuthenticationService>();
 
+// Register Email Verification Service (S6.8 Increment 2)
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.EmailVerification.IEmailVerificationService, MeetingSummarizer.Api.Services.EmailVerification.EmailVerificationService>();
+
 // Register SignalR for real-time meeting progress updates (S6.5 Increment 2)
 builder.Services.AddSignalR();
 builder.Services.AddScoped<MeetingSummarizer.Api.Hubs.IMeetingProgressNotificationService, MeetingSummarizer.Api.Hubs.MeetingProgressNotificationService>();

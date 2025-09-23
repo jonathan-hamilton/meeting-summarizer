@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { jwtDecode } from 'jwt-decode';
 import type { AuthState, AuthActions, User, JwtPayload } from '../types/auth';
 import AuthService from '../services/authService';
+import EmailVerificationService from '../services/emailVerificationService';
 
 type AuthStore = AuthState & AuthActions;
 
@@ -18,6 +19,9 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       isLoading: false,
       error: null,
+      // Email verification state (S6.8)
+      verificationPending: false,
+      verificationError: null,
 
       // Actions
       login: async (email: string, password: string) => {
@@ -72,7 +76,10 @@ export const useAuthStore = create<AuthStore>()(
             hasConsentedToDataProcessing: true, // If they logged in, they must have consented
             createdAt: new Date().toISOString(), // Will be updated from backend later
             lastActivityAt: new Date().toISOString(),
-            totalMeetings: 0 // Will be updated from backend later
+            totalMeetings: 0, // Will be updated from backend later
+            // Email verification fields (S6.8) - will be updated via checkVerificationStatus
+            emailVerified: false, // Default to false, will check with API
+            emailVerificationExpiry: undefined
           };
 
           // console.log('Created user object:', user);
@@ -89,6 +96,9 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null
           });
+
+          // Check email verification status (S6.8) - don't await to avoid blocking login
+          get().checkVerificationStatus().catch(console.error);
 
           return { success: true };
         } catch (error) {
@@ -143,6 +153,9 @@ export const useAuthStore = create<AuthStore>()(
             error: null
           });
 
+          // Check email verification status (S6.8) - don't await to avoid blocking registration
+          get().checkVerificationStatus().catch(console.error);
+
           return { success: true };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Registration failed';
@@ -193,7 +206,10 @@ export const useAuthStore = create<AuthStore>()(
             hasConsentedToDataProcessing: true, // Preserved from existing session
             createdAt: new Date().toISOString(), // Will be updated from backend later
             lastActivityAt: new Date().toISOString(),
-            totalMeetings: 0 // Will be updated from backend later
+            totalMeetings: 0, // Will be updated from backend later
+            // Email verification fields (S6.8) - will be refreshed via checkVerificationStatus
+            emailVerified: false, // Default to false, will check with API
+            emailVerificationExpiry: undefined
           };
 
           // Update stored tokens
@@ -207,6 +223,9 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: true,
             error: null
           });
+
+          // Check email verification status (S6.8) - don't await to avoid blocking token refresh
+          get().checkVerificationStatus().catch(console.error);
 
           return true;
         } catch (error) {
@@ -277,7 +296,10 @@ export const useAuthStore = create<AuthStore>()(
                 hasConsentedToDataProcessing: storedUser.hasConsentedToDataProcessing || true,
                 createdAt: storedUser.createdAt || new Date().toISOString(),
                 lastActivityAt: storedUser.lastActivityAt || new Date().toISOString(),
-                totalMeetings: storedUser.totalMeetings || 0
+                totalMeetings: storedUser.totalMeetings || 0,
+                // Email verification fields (S6.8) - prefer stored data, fallback to JWT claims
+                emailVerified: storedUser.emailVerified ?? (tokenClaims.emailVerified === 'true'),
+                emailVerificationExpiry: storedUser.emailVerificationExpiry
               };
 
               console.log('🔧 Re-created complete user:', completeUser);
@@ -314,6 +336,9 @@ export const useAuthStore = create<AuthStore>()(
               isLoading: false,
               error: null
             });
+
+            // Check email verification status (S6.8) - don't await to avoid blocking initialization
+            get().checkVerificationStatus().catch(console.error);
           }
         } catch (error) {
           console.error('Auth status check failed:', error);
@@ -324,6 +349,57 @@ export const useAuthStore = create<AuthStore>()(
 
       clearError: () => {
         set({ error: null });
+      },
+
+      // Email verification actions (S6.8)
+      resendVerificationEmail: async () => {
+        const { accessToken } = get();
+        if (!accessToken) {
+          return { success: false, error: 'Not authenticated' };
+        }
+
+        set({ verificationPending: true, verificationError: null });
+        
+        try {
+          const verificationService = EmailVerificationService.getInstance();
+          const response = await verificationService.resendVerificationEmail(accessToken);
+          
+          set({ verificationPending: false });
+          return { success: response.success };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to send verification email';
+          set({ 
+            verificationPending: false,
+            verificationError: errorMessage 
+          });
+          return { success: false, error: errorMessage };
+        }
+      },
+
+      checkVerificationStatus: async () => {
+        const { accessToken, user } = get();
+        if (!accessToken || !user) {
+          return;
+        }
+
+        try {
+          const verificationService = EmailVerificationService.getInstance();
+          const status = await verificationService.getVerificationStatus(accessToken);
+          
+          // Update user verification status
+          set({
+            user: {
+              ...user,
+              emailVerified: status.emailVerified
+            }
+          });
+        } catch (error) {
+          console.error('Failed to check verification status:', error);
+        }
+      },
+
+      clearVerificationError: () => {
+        set({ verificationError: null });
       }
     }),
     {

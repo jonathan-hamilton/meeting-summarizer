@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using MeetingSummarizer.Api.Attributes;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -33,6 +35,8 @@ public class SavedSummaryController : ControllerBase
     /// <response code="400">Invalid user ID format</response>
     /// <response code="500">Internal server error</response>
     [HttpGet("user/{userId}")]
+    [Authorize]
+    [RequireEmailVerification]
     [ProducesResponseType(typeof(List<SavedSummaryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -105,6 +109,8 @@ public class SavedSummaryController : ControllerBase
     /// <response code="400">Invalid request data</response>
     /// <response code="500">Internal server error</response>
     [HttpPost("user/{userId}")]
+    [Authorize]
+    [RequireEmailVerification]
     [ProducesResponseType(typeof(SavedSummaryDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

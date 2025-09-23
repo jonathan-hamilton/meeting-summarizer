@@ -16,7 +16,7 @@ import {
   Checkbox,
   Link
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Visibility, VisibilityOff, Email, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -48,6 +48,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -121,20 +122,9 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
     );
     
     if (result.success) {
-      // Only close dialog on successful registration
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        hasConsentedToDataProcessing: false
-      });
+      // Show verification success message instead of immediately closing
       setFormErrors({});
-      onClose();
-      
-      // Navigate to /app page using React Router (no page refresh)
-      navigate('/app');
+      setRegistrationSuccess(true);
     }
     // If result.success is false, dialog stays open and error will be shown via the error state from auth store
     // If result.success is false, dialog stays open and error will be shown via the error state from auth store
@@ -150,8 +140,27 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       hasConsentedToDataProcessing: false
     });
     setFormErrors({});
+    setRegistrationSuccess(false);
     clearError();
     onClose();
+  };
+
+  const handleContinueToApp = () => {
+    // Reset form and close dialog
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      hasConsentedToDataProcessing: false
+    });
+    setFormErrors({});
+    setRegistrationSuccess(false);
+    onClose();
+    
+    // Navigate to /app page using React Router (no page refresh)
+    navigate('/app');
   };
 
   const handleSwitchToLogin = () => {
@@ -180,14 +189,45 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
     >
       <DialogTitle>
         <Typography variant="h5" component="div" fontWeight="bold">
-          Create Account
+          {registrationSuccess ? 'Welcome to Meeting Summarizer!' : 'Create Account'}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Join Meeting Summarizer to get started
+          {registrationSuccess ? 'Your account has been created successfully' : 'Join Meeting Summarizer to get started'}
         </Typography>
       </DialogTitle>
 
-      <form onSubmit={handleSubmit}>
+      {registrationSuccess ? (
+        <DialogContent>
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
+            <Typography variant="h6" gutterBottom>
+              Account Created Successfully!
+            </Typography>
+            <Typography variant="body1" paragraph color="text.secondary">
+              Welcome {formData.firstName}! Your account has been created and you're now logged in.
+            </Typography>
+            
+            <Alert severity="info" sx={{ mb: 3, textAlign: 'left' }}>
+              <Typography variant="subtitle2" gutterBottom>
+                <Email sx={{ verticalAlign: 'middle', mr: 1, fontSize: '1rem' }} />
+                Email Verification Required
+              </Typography>
+              <Typography variant="body2">
+                We've sent a verification email to <strong>{formData.email}</strong>. 
+                Please check your inbox and click the verification link to access all features.
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                You can still explore the app, but some features will be limited until your email is verified.
+              </Typography>
+            </Alert>
+            
+            <Typography variant="body2" color="text.secondary">
+              Ready to start summarizing your meetings?
+            </Typography>
+          </Box>
+        </DialogContent>
+      ) : (
+        <form onSubmit={handleSubmit}>
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -362,7 +402,30 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
             </Button>
           </Box>
         </DialogActions>
-      </form>
+        </form>
+      )}
+
+      {registrationSuccess && (
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%', gap: 2 }}>
+            <Button
+              variant="contained"
+              fullWidth
+              size="large"
+              onClick={handleContinueToApp}
+              sx={{ height: 48 }}
+            >
+              Continue to App
+            </Button>
+            <Button
+              onClick={handleClose}
+              sx={{ textTransform: 'none' }}
+            >
+              Close
+            </Button>
+          </Box>
+        </DialogActions>
+      )}
     </Dialog>
   );
 };

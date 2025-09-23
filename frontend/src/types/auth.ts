@@ -12,6 +12,9 @@ export interface User {
   lastActivityAt: string;
   totalMeetings: number;
   role: 'User' | 'Admin' | 'SuperAdmin';
+  // Email verification fields (S6.8)
+  emailVerified?: boolean;
+  emailVerificationExpiry?: string;
 }
 
 export interface AuthResponse {
@@ -53,6 +56,9 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  // Email verification state (S6.8)
+  verificationPending: boolean;
+  verificationError: string | null;
 }
 
 export interface AuthActions {
@@ -62,4 +68,8 @@ export interface AuthActions {
   refreshAccessToken: () => Promise<boolean>;
   checkAuthStatus: () => Promise<void>;
   clearError: () => void;
+  // Email verification actions (S6.8)
+  resendVerificationEmail: () => Promise<{ success: boolean; error?: string }>;
+  checkVerificationStatus: () => Promise<void>;
+  clearVerificationError: () => void;
 }
