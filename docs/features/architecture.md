@@ -4,7 +4,19 @@
 
 **MeetingSummarizer** is a full-stack application built with .NET 9 Web API backend and React/TypeScript frontend that enables users to upload meeting audio files, which are then transcribed and summarized using OpenAI services. The system is designed to return either a full transcript or a concise natural-language summary, with optional role-based insights in future versions.
 
-The app is structured for modularity and extensibility. It includes endpoints for uploading files, triggering transcription via OpenAI Whisper, and summarizing content via GPT-4. Speaker diarization is used to label speakers in the transcript, and users can map these labels to real names and roles after the meeting. This role metadata can be used to generate personalized summaries in future iterations.
+The app is structured for modularity and extensibility using **established design patterns** documented in [`docs/architecture/design-patterns.md`](../architecture/design-patterns.md). The backend follows service layer patterns with dependency injection, while the frontend uses factory patterns for API services and Zustand for state management. All development must adhere to these architectural standards.
+
+## Design Pattern Implementation
+
+**🏗️ ARCHITECTURAL FOUNDATION**: This system implements mandatory design patterns that ensure consistency, testability, and maintainability across all development work.
+
+**Key Patterns:**
+- **Backend**: Service Layer, Repository (EF), Dependency Injection, Composite, Adapter
+- **Frontend**: Factory (API services), State Management (Zustand), Provider (React Context), Lazy Loading
+- **Security**: Attribute-based authorization, Token-based authentication
+- **Testing**: Universal providers, Factory mocks, Store testing patterns
+
+**Pattern Enforcement:** All new development must validate pattern compliance in implementation plans and code reviews. See [`design-patterns.md`](../architecture/design-patterns.md) for complete standards and enforcement procedures.
 
 ---
 

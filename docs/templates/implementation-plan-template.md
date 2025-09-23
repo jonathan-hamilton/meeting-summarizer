@@ -5,33 +5,46 @@
 
 ## 🏗️ **ARCHITECTURAL DIRECTIVES - MANDATORY**
 
+### **Design Pattern Compliance**
+⚠️ **CRITICAL**: ALL implementation must follow established design patterns documented in [`docs/architecture/design-patterns.md`](../architecture/design-patterns.md). 
+
+**Pattern deviations require architectural review and approval during user story planning.**
+
+### **Backend Pattern Requirements**
+- **Service Layer Pattern**: All business logic MUST use service interfaces with DI registration
+- **Repository Pattern**: Database access MUST use Entity Framework DbContext patterns
+- **Security Patterns**: Sensitive endpoints MUST use appropriate authorization attributes
+- **Configuration Pattern**: Environment-specific settings MUST use appsettings files
+
+### **Frontend Pattern Requirements**
+- **Factory Pattern**: API services MUST use `createApiService()` factory - no direct imports
+- **State Management Pattern**: ALL state MUST use Zustand stores (NO `useState` for application data)
+- **Provider Pattern**: Context dependencies MUST use established provider patterns
+- **Lazy Loading Pattern**: Large components MUST implement React.lazy() with Suspense
+
 ### **State Management Requirements**
 ⚠️ **CRITICAL**: Use Zustand stores for ALL state management - avoid local component state unless absolutely necessary for ephemeral UI state only (e.g., temporary hover states, input focus).
 
-### **Zustand Store Integration**
-- **Centralized Management**: All application state MUST go through appropriate Zustand stores
-- **No Local State**: Do not use `useState`, `useReducer`, or local component state for any feature that needs persistence or cross-component coordination
-- **Store Creation**: If new state is needed, extend existing stores or create dedicated stores following established patterns
-- **Existing Stores**: Use existing stores where appropriate:
-  - `accessibilityStore.ts` - Accessibility state (announcements, dialog states, keyboard navigation)
-  - `speakerSessionStore.ts` - Speaker mapping persistence
-  - Additional domain-specific stores as needed
-
-### **Implementation Pattern**
+### **Implementation Patterns**
 ```typescript
-// ✅ CORRECT: Use store-based state
-const { someState, someAction } = useSomeStore();
+// ✅ CORRECT Patterns
+const { someState, someAction } = useSomeStore();           // Zustand state
+const apiService = createApiService(mode);                   // Factory pattern
+const { userProfile, updateProfile } = useAuthStore();      // Domain stores
 
-// ❌ WRONG: Avoid local state for application features
-const [someState, setSomeState] = useState(''); // DON'T DO THIS unless ephemeral UI only
+// ❌ PROHIBITED Patterns  
+const [someState, setSomeState] = useState('');            // Local state for app data
+import realApiService from '../services/apiService';        // Direct service import
 ```
 
-### **Store Usage Guidelines**
-- **Dialog States**: Use stores for modal open/close states, not local useState
-- **Form Data**: Persistent form data goes through stores
-- **User Preferences**: All user settings and preferences in stores
-- **Global State**: Any state needed by multiple components must use stores
-- **Announcements**: Screen reader announcements and notifications through accessibilityStore
+### **Pattern Compliance Checklist**
+- [ ] Service layer pattern used for backend business logic
+- [ ] Factory pattern used for API service creation
+- [ ] Zustand stores used for ALL application state management
+- [ ] Provider pattern used for context dependencies
+- [ ] Security patterns followed for sensitive operations
+- [ ] Configuration patterns used for environment settings
+- [ ] No anti-patterns introduced (see design-patterns.md)
 
 ## User Story
 [Story details and acceptance criteria]
