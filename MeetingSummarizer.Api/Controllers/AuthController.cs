@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.UserManagement;
+using MeetingSummarizer.Api.Services.EmailVerification;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -16,15 +17,18 @@ public class AuthController : ControllerBase
 {
     private readonly IJwtAuthenticationService _jwtService;
     private readonly IUserManagementService _userService;
+    private readonly IEmailVerificationService _verificationService;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IJwtAuthenticationService jwtService,
         IUserManagementService userService,
+        IEmailVerificationService verificationService,
         ILogger<AuthController> logger)
     {
         _jwtService = jwtService;
         _userService = userService;
+        _verificationService = verificationService;
         _logger = logger;
     }
 
@@ -83,6 +87,26 @@ public class AuthController : ControllerBase
             };
 
             _logger.LogInformation("User registered successfully: {UserId} ({Email})", user.Id, user.Email);
+
+            // Send verification email (don't block registration if email fails)
+            try
+            {
+                var emailSent = await _verificationService.SendVerificationEmailAsync(user.Id);
+                if (emailSent)
+                {
+                    _logger.LogInformation("Verification email sent to new user {UserId}", user.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to send verification email to new user {UserId}", user.Id);
+                }
+            }
+            catch (Exception emailEx)
+            {
+                _logger.LogError(emailEx, "Error sending verification email to new user {UserId}", user.Id);
+                // Continue with successful registration even if email fails
+            }
+
             return CreatedAtAction(nameof(GetProfile), new { }, response);
         }
         catch (InvalidOperationException ex)

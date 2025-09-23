@@ -34,6 +34,10 @@ const router = createBrowserRouter([
     path: "/transcript/:id",
     element: <AppWithContext />,
   },
+  {
+    path: "/verify-email/:token",
+    element: <AppWithContext />,
+  },
 ], {
   future: {
     v7_relativeSplatPath: true,

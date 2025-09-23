@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.TokenManagement;
 using System.Security.Claims;
+using MeetingSummarizer.Api.Attributes;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -178,6 +179,7 @@ public class TokenController : ControllerBase
     /// <param name="request">Purchase request details</param>
     /// <returns>Payment Intent information for frontend</returns>
     [HttpPost("purchase/initiate")]
+    [RequireEmailVerification]
     [ProducesResponseType(typeof(PurchaseTokensResponse), 200)]
     [ProducesResponseType(400)]
     public async Task<ActionResult<PurchaseTokensResponse>> InitiatePurchase([FromBody] PurchaseTokensRequest request)
@@ -198,6 +200,7 @@ public class TokenController : ControllerBase
     /// <param name="request">Payment confirmation details</param>
     /// <returns>Confirmation result with new balance</returns>
     [HttpPost("purchase/confirm")]
+    [RequireEmailVerification]
     [ProducesResponseType(typeof(ConfirmPaymentResponse), 200)]
     [ProducesResponseType(400)]
     public async Task<ActionResult<ConfirmPaymentResponse>> ConfirmPurchase([FromBody] ConfirmPaymentRequest request)

@@ -89,4 +89,68 @@ stripe-signature: t=1640995200,v1=test_signature
   }
 }
 
+### === EMAIL VERIFICATION ENDPOINTS (S6.8) ===
+
+### 7. Register Test User with Email Verification (NEW - now sends verification email)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "verification-test@example.com",
+  "password": "TestPassword123!",
+  "firstName": "Verification",
+  "lastName": "Test",
+  "hasConsentedToDataProcessing": true
+}
+
+### 8. Get Email Verification Status
+GET {{MeetingSummarizer.Api_HostAddress}}/api/emailverification/status
+Authorization: Bearer {{auth_token}}
+
+### 9. Resend Verification Email  
+POST {{MeetingSummarizer.Api_HostAddress}}/api/emailverification/resend
+Authorization: Bearer {{auth_token}}
+
+### 10. Verify Email with Token (replace TOKEN_HERE with actual verification token from email)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/emailverification/verify/TOKEN_HERE
+
+### 11. Invalidate Current Verification Token
+DELETE {{MeetingSummarizer.Api_HostAddress}}/api/emailverification/token
+Authorization: Bearer {{auth_token}}
+
+### === FEATURE GATING TESTS (S6.8 Increment 4) ===
+
+### 12. Test Blocked Feature - Transcribe Audio (should fail for unverified users)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/summary/transcribe
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{auth_token}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="audioFile"; filename="test.mp3"
+Content-Type: audio/mpeg
+
+< ./test-audio.mp3
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 13. Test Blocked Feature - Token Purchase (should fail for unverified users)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/token/purchase/initiate
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "tokenAmount": 100,
+  "paymentAmount": 10.00
+}
+
+### 14. Test Blocked Feature - Save Summary (should fail for unverified users)
+POST {{MeetingSummarizer.Api_HostAddress}}/api/savedsummary/user/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "title": "Test Summary",
+  "summary": "This is a test summary",
+  "transcriptionId": "test-123"
+}
+
 ###

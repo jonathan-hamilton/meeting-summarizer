@@ -71,6 +71,7 @@ import FileUpload from "./components/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import TranscriptPage from "./components/TranscriptPage";
+import VerificationSuccessPage from "./components/VerificationSuccessPage";
 import { AccessibilityControlPanel } from "./components/AccessibilityControlPanel";
 import { sessionManager } from "./services/sessionManager";
 
@@ -760,6 +761,8 @@ const AppContent: React.FC = () => {
               <MeetingHistoryPage />
             ) : location.pathname.startsWith('/transcript/') ? (
               <TranscriptPage />
+            ) : location.pathname.startsWith('/verify-email/') ? (
+              <VerificationSuccessPage />
             ) : (
               <Grid
                 container

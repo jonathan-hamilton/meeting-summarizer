@@ -16,6 +16,22 @@ public class User
     [MaxLength(255)]
     public string Email { get; set; } = string.Empty;
     
+    /// <summary>
+    /// Indicates if the user's email address has been verified
+    /// </summary>
+    public bool EmailVerified { get; set; } = false;
+    
+    /// <summary>
+    /// Token for email verification (cryptographically secure, single-use)
+    /// </summary>
+    [MaxLength(128)]
+    public string? EmailVerificationToken { get; set; }
+    
+    /// <summary>
+    /// When the email verification token expires (24 hour default)
+    /// </summary>
+    public DateTime? EmailVerificationExpiry { get; set; }
+    
     [Required]
     [MaxLength(100)]
     public string FirstName { get; set; } = string.Empty;

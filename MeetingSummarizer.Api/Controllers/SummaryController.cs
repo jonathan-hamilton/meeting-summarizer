@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Attributes;
 using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services.Transcription;
 using MeetingSummarizer.Api.Services.Summarization;
@@ -59,6 +60,8 @@ public class SummaryController : ControllerBase
     /// <param name="request">The transcription request containing the audio file</param>
     /// <returns>Transcription result</returns>
     [HttpPost("transcribe")]
+    [Authorize]
+    [RequireEmailVerification]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(1024L * 1024L * 1024L)] // 1GB - matches AudioFileValidator.MaxFileSizeBytes
     [ProducesResponseType(typeof(TranscriptionResponse), 200)]
@@ -217,6 +220,8 @@ public class SummaryController : ControllerBase
     /// <param name="request">The transcription request containing the audio file</param>
     /// <returns>Enhanced transcription result with speaker segments</returns>
     [HttpPost("transcribe-enhanced")]
+    [Authorize]
+    [RequireEmailVerification]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(1024L * 1024L * 1024L)] // 1GB - matches AudioFileValidator.MaxFileSizeBytes
     [ProducesResponseType(typeof(TranscriptionResponse), 200)]
