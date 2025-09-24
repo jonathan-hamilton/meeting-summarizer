@@ -285,7 +285,7 @@ This document contains all requirements related to test coverage, validation, an
 - Ensures [Accessibility](./accessibility.md) compliance through comprehensive testing
 - Validates [Non-Functional Requirements](./non-functional.md) including performance and security
 - Tests [Demo Mode](./demo-mode.md) functionality and tour system
-- Verifies [Payment & Monetization](./payment-monetization.md) security and functionality
+- Verifies [Token System & Payment Requirements](./token-system-requirements.md) security and functionality
 - Validates [Azure Infrastructure](./azure-infrastructure.md) integration and reliability
 
 ### Quality Assurance Framework

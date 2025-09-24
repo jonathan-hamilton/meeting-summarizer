@@ -113,7 +113,7 @@ This document contains all requirements related to AI-powered summary generation
 - Integrates with [Audio Transcription](./audio-transcription.md) for source content processing
 - Provides summary content to [Email Communication](./email-communication.md) for sharing
 - Summary data feeds [Action Item Management](./action-item-management.md) for task extraction
-- Cost tracking integrates with [Payment & Monetization](./payment-monetization.md) systems
+- Cost tracking integrates with [Token System & Payment Requirements](./token-system-requirements.md) systems
 
 ### Data Flow
 1. **Input**: Completed transcripts with finalized speaker mappings

@@ -216,7 +216,7 @@ This document contains all requirements related to email sharing, notifications,
 - Uses [Speaker Management](./speaker-management.md) data for recipient suggestions and context
 - Connects with [User Management](./user-management.md) for sender information and preferences
 - Works within [Demo Mode](./demo-mode.md) for simulated email functionality
-- Utilizes [Payment & Monetization](./payment-monetization.md) for transaction notifications
+- Utilizes [Token System & Payment Requirements](./token-system-requirements.md) for transaction notifications
 
 ### Data Flow
 1. **Content Preparation**: Meeting summary and action items compiled into email format

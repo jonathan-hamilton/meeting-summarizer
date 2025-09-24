@@ -111,7 +111,7 @@ This document contains all requirements related to audio file handling, transcri
 - Audio processing integrates with [Speaker Management](./speaker-management.md) for speaker identification
 - Transcription services provide data for [AI Summarization](./ai-summarization.md) processing
 - Service configuration impacts [Azure Infrastructure](./azure-infrastructure.md) requirements
-- Cost monitoring feeds into [Payment & Monetization](./payment-monetization.md) systems
+- Cost monitoring feeds into [Token System & Payment Requirements](./token-system-requirements.md) systems
 
 ## Quality Metrics
 
