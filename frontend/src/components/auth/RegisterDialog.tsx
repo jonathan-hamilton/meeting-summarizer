@@ -31,7 +31,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   onClose, 
   onSwitchToLogin 
 }) => {
-  const { register, isLoading, error, clearError } = useAuthStore();
+  const { register, isLoading, error, clearError, resendVerificationEmail } = useAuthStore();
   const navigate = useNavigate();
   
   // Keep dialog open if there's an error to show, even if parent tries to close it
@@ -49,6 +49,8 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -141,6 +143,8 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
     });
     setFormErrors({});
     setRegistrationSuccess(false);
+    setResendLoading(false);
+    setResendSuccess(false);
     clearError();
     onClose();
   };
@@ -157,6 +161,8 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
     });
     setFormErrors({});
     setRegistrationSuccess(false);
+    setResendLoading(false);
+    setResendSuccess(false);
     onClose();
     
     // Navigate to /app page using React Router (no page refresh)
@@ -166,6 +172,25 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   const handleSwitchToLogin = () => {
     handleClose();
     onSwitchToLogin?.();
+  };
+
+  const handleResendVerificationEmail = async () => {
+    setResendLoading(true);
+    setResendSuccess(false);
+    
+    try {
+      await resendVerificationEmail();
+      setResendSuccess(true);
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setResendSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      // The error will be handled by the auth store and shown in the global error state
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   return (
@@ -219,6 +244,39 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
               <Typography variant="body2" sx={{ mt: 1 }}>
                 You can still explore the app, but some features will be limited until your email is verified.
               </Typography>
+              
+              {resendSuccess && (
+                <Alert severity="success" sx={{ mt: 2, mb: 1 }}>
+                  <Typography variant="body2">
+                    Verification email sent successfully! Please check your inbox.
+                  </Typography>
+                </Alert>
+              )}
+              
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="text"
+                  onClick={handleResendVerificationEmail}
+                  disabled={resendLoading}
+                  size="small"
+                  sx={{ 
+                    textTransform: 'none',
+                    color: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'action.hover'
+                    }
+                  }}
+                >
+                  {resendLoading ? (
+                    <>
+                      <CircularProgress size={16} sx={{ mr: 1 }} />
+                      Sending...
+                    </>
+                  ) : (
+                    'Resend verification email'
+                  )}
+                </Button>
+              </Box>
             </Alert>
             
             <Typography variant="body2" color="text.secondary">
@@ -416,12 +474,6 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
               sx={{ height: 48 }}
             >
               Continue to App
-            </Button>
-            <Button
-              onClick={handleClose}
-              sx={{ textTransform: 'none' }}
-            >
-              Close
             </Button>
           </Box>
         </DialogActions>

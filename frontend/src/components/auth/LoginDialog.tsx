@@ -85,8 +85,18 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
       setFormErrors({});
       onClose();
       
-      // Navigate to /app page using React Router (no page refresh)
-      navigate('/app');
+      // Check if user is email verified
+      // We need to wait for the verification status check that was triggered in login
+      setTimeout(() => {
+        const { user } = useAuthStore.getState();
+        if (user && !user.emailVerified) {
+          // User is logged in but not verified - redirect to verification dialog
+          navigate('/verify-email/unverified');
+        } else {
+          // User is verified - navigate to /app page
+          navigate('/app');
+        }
+      }, 100); // Small delay to allow verification status to be checked
     }
   };
 

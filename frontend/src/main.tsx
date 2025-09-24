@@ -16,12 +16,12 @@ const AppWithContext: React.FC = () => (
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/demo" replace />,
+    element: <Navigate to="/app" replace />,
   },
-  {
-    path: "/demo",
-    element: <AppWithContext />,
-  },
+  // {
+  //   path: "/demo",
+  //   element: <AppWithContext />,
+  // },
   {
     path: "/app", 
     element: <AppWithContext />,
@@ -36,6 +36,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/verify-email/:token",
+    element: <AppWithContext />,
+  },
+  {
+    path: "/verify-email/unverified",
     element: <AppWithContext />,
   },
 ], {

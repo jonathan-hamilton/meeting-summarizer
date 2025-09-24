@@ -18,6 +18,9 @@ import {
   AccountCircle as AccountIcon,
   Token as TokenIcon,
   CalendarToday as CalendarIcon,
+  Email as EmailIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useUserProfileStore, useUserProfileDialogState, useUserProfileDialogClose } from '../stores/userProfileStore';
 import { useAuthStore } from '../stores/authStore';
@@ -35,6 +38,7 @@ export const UserProfileDialog: React.FC = () => {
   
   // Get authenticated user from auth store
   const authUser = useAuthStore((state) => state.user);
+  const { resendVerificationEmail } = useAuthStore();
   
   // Get actions separately to avoid re-renders
   const setProfile = useUserProfileStore((state) => state.setProfile);
@@ -44,6 +48,8 @@ export const UserProfileDialog: React.FC = () => {
   const { openModal, closeModal, announceModalOpen, announceModalClose } = useAccessibilityStore();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   // TODO: Add function to load additional user stats from API when endpoints are available
 
@@ -76,12 +82,33 @@ export const UserProfileDialog: React.FC = () => {
   const handleClose = () => {
     setIsEditing(false);
     setError(null);
+    setResendLoading(false);
+    setResendSuccess(false);
     close();
   };
 
   const handleEditComplete = (updatedProfile: any) => {
     setProfile(updatedProfile);
     setIsEditing(false);
+  };
+
+  const handleResendVerificationEmail = async () => {
+    setResendLoading(true);
+    setResendSuccess(false);
+    
+    try {
+      await resendVerificationEmail();
+      setResendSuccess(true);
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setResendSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      // The error will be handled by the auth store and shown in the global error state
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -190,18 +217,70 @@ export const UserProfileDialog: React.FC = () => {
                     {displayUser.email}
                   </Typography>
                 </Box>
-                
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Account Type
-                  </Typography>
-                  <Chip 
-                    label={displayUser.isPaidUser ? 'Paid User' : 'Demo User'}
-                    color={displayUser.isPaidUser ? 'primary' : 'default'}
-                    size="small"
-                    sx={{ width: 'fit-content' }}
-                  />
-                </Box>
+
+                {/* Email Verification Status */}
+                {authUser && (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Email Verification
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 0.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {authUser.emailVerified ? (
+                          <>
+                            <CheckCircleIcon color="success" fontSize="small" />
+                            <Chip 
+                              label="Verified" 
+                              color="success" 
+                              size="small"
+                              sx={{ width: 'fit-content' }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <WarningIcon color="warning" fontSize="small" />
+                            <Chip 
+                              label="Unverified" 
+                              color="warning" 
+                              size="small"
+                              sx={{ width: 'fit-content' }}
+                            />
+                          </>
+                        )}
+                      </Box>
+                      
+                      {!authUser.emailVerified && (
+                        <Button
+                          variant="text"
+                          size="small"
+                          onClick={handleResendVerificationEmail}
+                          disabled={resendLoading}
+                          startIcon={resendLoading ? <CircularProgress size={16} /> : <EmailIcon />}
+                          sx={{ 
+                            textTransform: 'none',
+                            minWidth: 'auto'
+                          }}
+                        >
+                          {resendLoading ? 'Sending...' : 'Resend'}
+                        </Button>
+                      )}
+                    </Box>
+                    
+                    {resendSuccess && (
+                      <Alert severity="success" sx={{ mt: 1, py: 0.5 }}>
+                        <Typography variant="body2">
+                          Verification email sent successfully! Please check your inbox.
+                        </Typography>
+                      </Alert>
+                    )}
+                    
+                    {!authUser.emailVerified && (
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        Verify your email to access all features including file uploads and transcription.
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Box>
             </Box>
 
