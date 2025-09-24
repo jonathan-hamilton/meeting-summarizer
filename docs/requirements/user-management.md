@@ -190,7 +190,7 @@ This document contains all requirements related to authentication, user modes, a
 
 ### Related Systems
 - Provides authentication context to [Demo Mode](./demo-mode.md) for mode switching
-- Manages user data for [Payment & Monetization](./payment-monetization.md) token systems
+- Manages user data for [Token System & Payment Requirements](./token-system-requirements.md) token systems
 - Supplies user context to [Email Communication](./email-communication.md) for sender information
 - Integrates with [Azure Infrastructure](./azure-infrastructure.md) for user data storage
 - Connects to [Testing & QA](./testing-qa.md) for user workflow validation

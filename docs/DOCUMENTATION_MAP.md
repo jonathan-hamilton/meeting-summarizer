@@ -35,6 +35,16 @@ This document provides clear navigation paths and traceability between all proje
 |------|---------|--------------|-----------|
 | [`docs/planning/vision.md`](./planning/vision.md) | Product vision, mission, competitive advantages | Major feature completions, strategic pivots | All requirements documentation |
 | [`docs/planning/mobile-deployment-strategy-summary.md`](./planning/mobile-deployment-strategy-summary.md) | Mobile strategy executive summary | Mobile planning changes | Mobile requirements, technical assessments |
+| [`docs/planning/token-system-specification.md`](./planning/token-system-specification.md) | **CURRENT** Token system business model & pricing | Token system changes | Token requirements, Sprint 6.3 |
+
+### **1a. Strategic Level - OUTDATED FILES (Superseded)**
+| File | Status | Superseded By | Action Required |
+|------|--------|---------------|-----------------|
+| [`docs/planning/monetization-analysis.md`](./planning/monetization-analysis.md) | ❌ OUTDATED | `token-system-specification.md` | Archive or delete |
+| [`docs/planning/final-token-system-spec.md`](./planning/final-token-system-spec.md) | ❌ OUTDATED | `token-system-specification.md` | Archive or delete |
+| [`docs/planning/duration-based-token-analysis.md`](./planning/duration-based-token-analysis.md) | ❌ EMPTY | `token-system-specification.md` | Delete |
+| [`docs/requirements/payment-and-monetization.md`](./requirements/payment-and-monetization.md) | ❌ OUTDATED | `token-system-requirements.md` | Archive or delete |
+| [`docs/requirements/payment-monetization.md`](./requirements/payment-monetization.md) | ❌ OUTDATED | `token-system-requirements.md` | Archive or delete |
 
 ### **2. Requirements Level** 
 | File | Purpose | Updates When | Traces From | Traces To |
@@ -42,6 +52,7 @@ This document provides clear navigation paths and traceability between all proje
 | [`docs/requirements/README.md`](./requirements/README.md) | Requirements navigation index | New requirement files added | Vision.md | All requirement files |
 | [`docs/requirements/requirements-roadmap.md`](./requirements/requirements-roadmap.md) | Sprint planning & implementation tracking | Sprint completions, new requirements | Vision, all requirements | Sprint documentation |
 | [`docs/requirements/mobile-application-requirements.md`](./requirements/mobile-application-requirements.md) | Complete mobile app specifications | Mobile feature changes | Mobile strategy | Sprint 6-8 planning |
+| [`docs/requirements/token-system-requirements.md`](./requirements/token-system-requirements.md) | **CURRENT** Token system technical requirements | Token system changes | Token system specification | Sprint 6.3 implementation |
 
 ### **3. Sprint Level**
 | File Pattern | Purpose | Updates When | Traces From | Traces To |

@@ -122,6 +122,40 @@ public class SummaryController : ControllerBase
             _logger.LogInformation("File {FileName} estimated at {Duration} minutes - using real-time processing", 
                 request.AudioFile.FileName, estimatedDurationMinutes);
 
+            // Token validation for authenticated users (real-time processing)
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId.HasValue)
+            {
+                var user = await _context.Users.FindAsync(currentUserId.Value);
+                if (user == null)
+                {
+                    _logger.LogWarning("Authenticated user {UserId} not found in database", currentUserId.Value);
+                    return NotFound(new { error = "User not found" });
+                }
+
+                // Check if user has sufficient tokens for real-time processing
+                // Use same estimation as batch processing: 1 token per minute + 20% buffer
+                var estimatedTokens = Math.Max(1, (int)Math.Ceiling(estimatedDurationMinutes * 1.2));
+                
+                if (user.TokenBalance < estimatedTokens)
+                {
+                    _logger.LogWarning("User {UserId} ({Email}) has insufficient tokens for real-time processing. Required: {Required}, Available: {Available}",
+                        currentUserId.Value, user.Email, estimatedTokens, user.TokenBalance);
+                    
+                    return BadRequest(new 
+                    { 
+                        error = "Insufficient tokens to process this audio file",
+                        required = estimatedTokens,
+                        available = user.TokenBalance,
+                        estimatedDuration = estimatedDurationMinutes,
+                        processingType = "real-time"
+                    });
+                }
+
+                _logger.LogInformation("User {UserId} ({Email}) has sufficient tokens for real-time processing. Required: {Required}, Available: {Available}",
+                    currentUserId.Value, user.Email, estimatedTokens, user.TokenBalance);
+            }
+
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             try

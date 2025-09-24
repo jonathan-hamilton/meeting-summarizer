@@ -222,7 +222,7 @@ This document contains all requirements related to cloud storage, databases, ser
 ### Related Systems
 - Provides storage infrastructure for [Audio Transcription](./audio-transcription.md) processing
 - Supports [User Management](./user-management.md) with identity and database services
-- Enables [Payment & Monetization](./payment-monetization.md) through secure data storage
+- Enables [Token System & Payment Requirements](./token-system-requirements.md) through secure data storage
 - Integrates with [Email Communication](./email-communication.md) for notification services
 - Supports [Multi-Language](./multi-language.md) features through global infrastructure
 - Provides foundation for [Non-Functional Requirements](./non-functional.md) including security and scalability

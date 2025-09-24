@@ -24,7 +24,7 @@ This directory contains the complete requirements specification for the Meeting 
 - **[Email & Communication](./email-communication.md)** - Email sharing, notifications, delivery
 
 ### **Business & Infrastructure:**
-- **[Payment & Monetization](./payment-monetization.md)** - Payment processing, token management, billing
+- **[Token System & Payment Requirements](./token-system-requirements.md)** - Duration-based token system, payment processing, Stripe integration
 - **[Azure Services & Infrastructure](./azure-infrastructure.md)** - Cloud storage, databases, service integration
 - **[Multi-Language Support](./multi-language.md)** - Internationalization, language detection, localization
 
@@ -58,7 +58,7 @@ This directory contains the complete requirements specification for the Meeting 
 - **[Email & Communication](./email-communication.md)** - Email sharing, notifications, delivery
 
 ### Business & Infrastructure
-- **[Payment & Monetization](./payment-monetization.md)** - Payment processing, token management, billing
+- **[Token System & Payment Requirements](./token-system-requirements.md)** - Duration-based token system, payment processing, Stripe integration
 - **[Azure Services & Infrastructure](./azure-infrastructure.md)** - Cloud storage, databases, service integration
 - **[Multi-Language Support](./multi-language.md)** - Internationalization, language detection, localization
 

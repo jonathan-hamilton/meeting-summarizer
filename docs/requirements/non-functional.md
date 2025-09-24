@@ -230,7 +230,7 @@ This document contains all requirements related to performance, security, reliab
 - Supports [Azure Infrastructure](./azure-infrastructure.md) with performance and security standards
 - Enables [Testing & QA](./testing-qa.md) through quality and testing requirements
 - Underlies [User Management](./user-management.md) with security and privacy standards
-- Supports [Payment & Monetization](./payment-monetization.md) with security and reliability requirements
+- Supports [Token System & Payment Requirements](./token-system-requirements.md) with security and reliability requirements
 
 ### Cross-Cutting Concerns
 1. **Performance**: Affects all system components and user interactions

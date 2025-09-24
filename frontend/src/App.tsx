@@ -15,28 +15,15 @@ if (typeof __DEV_AXE_ENABLED__ !== 'undefined' && __DEV_AXE_ENABLED__) {
 import {
   Typography,
   Box,
-  AppBar,
-  Toolbar,
-  IconButton,
   Grid,
-  Switch,
   Link,
   Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Tooltip,
 } from "@mui/material";
-import { 
-  Brightness4, 
-  Brightness7, 
-  History as HistoryIcon,
-  Home as HomeIcon,
-  Help as HelpIcon,
-  AccountCircle as AccountIcon,
-  Accessibility as AccessibilityIcon,
-} from "@mui/icons-material";
+
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import "./styles/accessibility.css";
@@ -45,7 +32,7 @@ import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
 import { useTourStore } from "./stores/tourStore";
-import { useUserProfileDialogOpen } from "./stores/userProfileStore";
+
 import { useAuthStore } from "./stores/authStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
 import { useSpeakerMappingLifecycle } from "./hooks/useSpeakerMappingLifecycle";
@@ -54,26 +41,18 @@ import { useAccessibilityStore } from "./stores/accessibilityStore";
 // Lazy load dialog components to reduce initial bundle size
 // Health dialog component removed
 const SessionTimeoutWarningDialog = React.lazy(() => import("./components/SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
-const PrivacyPolicyDialog = React.lazy(() => import("./components/PrivacyPolicyDialog").then(m => ({ default: m.PrivacyPolicyDialog })));
-const HelpDialog = React.lazy(() => import("./components/HelpDialog").then(m => ({ default: m.HelpDialog })));
 const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
-const AuthManager = React.lazy(() => import("./components/auth").then(m => ({ default: m.AuthManager })));
 
-// Legal dialog components (footer access)
-const TermsOfServiceDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.TermsOfServiceDialog })));
-const PrivacyPolicyFooterDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.PrivacyPolicyFooterDialog })));
-const DMCAPolicyDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.DMCAPolicyDialog })));
-const LiabilityDisclaimerDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.LiabilityDisclaimerDialog })));
-const LegalAcceptanceDialog = React.lazy(() => import("./components/LegalDialogs").then(m => ({ default: m.LegalAcceptanceDialog })));
 
-import { SessionIndicator } from "./components/SessionIndicator";
 import FileUpload from "./components/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import TranscriptPage from "./components/TranscriptPage";
 import EmailVerificationDialog from "./components/EmailVerificationDialog";
-import { AccessibilityControlPanel } from "./components/AccessibilityControlPanel";
+
 import { sessionManager } from "./services/sessionManager";
+import { AppHeader } from "./components/layout/AppHeader";
+import { GlobalDialogs } from "./components/layout/GlobalDialogs";
 
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
@@ -107,7 +86,7 @@ const AppContent: React.FC = () => {
   }, []);
   const { addTranscript } = useSessionStore();
   const { isActive: isTourActive, isCurrentStep } = useTourStore();
-  const openProfileDialog = useUserProfileDialogOpen();
+
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -326,16 +305,6 @@ const AppContent: React.FC = () => {
 
   // Health dialog functions removed
 
-  // Sign-Out button handler
-  const handleSignOutClick = async () => {
-    // Production mode: sign out from auth system but stay on current page
-    const { logout } = useAuthStore.getState();
-    await logout();
-    // Don't call signOut() which redirects to demo - just clear auth state
-  };
-
-
-
   // Server health checking removed to reduce console errors
 
   // Health button color function removed
@@ -418,159 +387,15 @@ const AppContent: React.FC = () => {
             px: { xs: 2, sm: 2, md: 2 }, // Reduced padding for consistency
           }}
         >
-          <AppBar
-            position="static"
-            sx={getAppBarSx()}
-          >
-            <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
-              {/* Left-aligned controls */}
-              <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
-                {/* Development controls - only visible in local development environment and when authenticated */}
-                {import.meta.env.DEV && isAuthenticated && (
-                  <>
-                    {/* Mode Toggle Switch - Toggle between development and production modes */}
-                    <Tooltip
-                      title={
-                        appMode === 'production'
-                          ? "Production mode (real API calls, Legal Acceptance enabled)"
-                          : "Development mode (mocked API calls) - Double-click to test Legal Acceptance"
-                      }
-                    >
-                      <Switch
-                        checked={appMode === 'production'}
-                        onChange={handleModeToggle}
-                        onDoubleClick={handleModeDoubleClick}
-                        color="default"
-                        sx={{ mr: 1, cursor: 'pointer' }}
-                        inputProps={{ 
-                          'aria-label': 'Toggle between development and production mode',
-                          'aria-describedby': 'mode-switch-description'
-                        }}
-                        id="mode-switch"
-                      />
-                    </Tooltip>
-
-                    {/* Server health status button removed */}
-                  </>
-                )}
-              </Box>
-              
-              {/* Centered title */}
-              <Typography variant="h4" component="h1" sx={{ 
-                textAlign: "center",
-                fontWeight: "bold"
-              }}>
-                Meeting-Summary.io {appMode === 'demo' && '(Demo)'}
-              </Typography>
-              
-              {/* Right-aligned controls */}
-              <Box sx={{ position: "absolute", right: 0, display: "flex", alignItems: "center" }}>
-                {/* Hide SessionIndicator in demo mode OR production mode */}
-                {appMode === 'development' && (
-                  <SessionIndicator status={privacyControls.sessionStatus} />
-                )}
-                
-                {/* Buttons for authenticated users in production mode - ordered left to right */}
-                {appMode === 'production' && isAuthenticated && (
-                  <>
-                    {/* 1. SIGN OUT Button */}
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={handleSignOutClick}
-                      sx={{ 
-                        mr: 1,
-                        minWidth: '80px',
-                        fontWeight: 'bold',
-                        backgroundColor: '#1976d2',
-                        '&:hover': {
-                          backgroundColor: '#1565C0'
-                        }
-                      }}
-                    >
-                      SIGN OUT
-                    </Button>
-
-                    {/* 2. Account Button */}
-                    <Tooltip title="My Account">
-                      <IconButton color="inherit" onClick={openProfileDialog}>
-                        <AccountIcon />
-                      </IconButton>
-                    </Tooltip>
-
-                    {/* 3. History Button */}
-                    {location.pathname === '/history' ? (
-                      <Tooltip title="Home">
-                        <IconButton color="inherit" onClick={() => navigate('/app')}>
-                          <HomeIcon />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip title="Meeting History">
-                        <IconButton color="inherit" onClick={() => navigate('/history')}>
-                          <HistoryIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-
-                    {/* 4. Help & Privacy FAQ Button */}
-                    <Tooltip title="Help & Privacy FAQ">
-                      <IconButton 
-                        color="inherit" 
-                        onClick={() => setHelpDialogOpen(true)} 
-                        sx={{ ml: 1 }}
-                        aria-label="Help & Privacy FAQ"
-                      >
-                        <HelpIcon />
-                      </IconButton>
-                    </Tooltip>
-
-                    {/* 5. Accessibility Settings Button */}
-                    <Tooltip title="Accessibility Settings">
-                      <IconButton 
-                        color="inherit" 
-                        onClick={() => setAccessibilityPanelOpen(true)} 
-                        sx={{ ml: 1 }}
-                        aria-label="Accessibility settings and preferences"
-                      >
-                        <AccessibilityIcon />
-                      </IconButton>
-                    </Tooltip>
-
-                    {/* 6. Light/Dark Mode Toggle Button */}
-                    <IconButton 
-                      color="inherit" 
-                      onClick={handleThemeToggle} 
-                      sx={{ ml: 1 }}
-                      aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
-                    >
-                      {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-                    </IconButton>
-                  </>
-                )}
-
-                {/* Demo mode button - changed to SIGN UP for demo mode */}
-                {appMode === 'demo' && (
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => setRegisterDialogOpen(true)}
-                    sx={{ 
-                      ml: 1,
-                      minWidth: '80px',
-                      fontWeight: 'bold',
-                      backgroundColor: '#9C27B0',
-                      '&:hover': {
-                        backgroundColor: '#7B1FA2'
-                      }
-                    }}
-                  >
-                    SIGN UP
-                  </Button>
-                )}
-              </Box>
-            </Toolbar>
-          </AppBar>
+          <AppHeader
+            onHelpClick={() => setHelpDialogOpen(true)}
+            onAccessibilityClick={() => setAccessibilityPanelOpen(true)}
+            onModeToggle={handleModeToggle}
+            onModeDoubleClick={handleModeDoubleClick}
+            onRegisterClick={() => setRegisterDialogOpen(true)}
+            sessionStatus={privacyControls.sessionStatus}
+            getAppBarSx={getAppBarSx}
+          />
 
           {/* Health dialog removed */}
 
@@ -579,73 +404,22 @@ const AppContent: React.FC = () => {
             <SessionTimeoutWarningDialog />
           </Suspense>
 
-          {/* Legal acceptance dialog (Terms + Liability for first-time users) */}
+          {/* Global Dialogs Component - Consolidated modal management */}
           <Suspense fallback={null}>
-            <LegalAcceptanceDialog 
-              forceShow={forceShowLegalAcceptance}
-              onAccepted={() => setForceShowLegalAcceptance(false)}
-            />
-          </Suspense>
-
-          {/* Manual privacy policy dialog (footer link) - Legacy support */}
-          <Suspense fallback={null}>
-            <PrivacyPolicyDialog 
-              forceShow={privacyPolicyOpen}
-              onAccepted={() => setPrivacyPolicyOpen(false)}
-            />
-          </Suspense>
-
-          {/* Help & FAQ dialog */}
-          <Suspense fallback={null}>
-            <HelpDialog 
-              open={helpDialogOpen}
-              onClose={() => setHelpDialogOpen(false)}
-            />
-          </Suspense>
-
-          {/* User Profile dialog */}
-          <Suspense fallback={null}>
-            <UserProfileDialog />
-          </Suspense>
-
-          {/* Footer Legal Dialogs */}
-          <Suspense fallback={null}>
-            <TermsOfServiceDialog 
-              open={termsDialogOpen}
-              onClose={() => setTermsDialogOpen(false)}
-            />
-          </Suspense>
-          
-          <Suspense fallback={null}>
-            <PrivacyPolicyFooterDialog 
-              open={privacyFooterDialogOpen}
-              onClose={() => setPrivacyFooterDialogOpen(false)}
-            />
-          </Suspense>
-          
-          <Suspense fallback={null}>
-            <DMCAPolicyDialog 
-              open={dmcaDialogOpen}
-              onClose={() => setDmcaDialogOpen(false)}
-            />
-          </Suspense>
-          
-          <Suspense fallback={null}>
-            <LiabilityDisclaimerDialog 
-              open={disclaimerDialogOpen}
-              onClose={() => setDisclaimerDialogOpen(false)}
-            />
-          </Suspense>
-
-          {/* Accessibility Control Panel */}
-          <AccessibilityControlPanel
-            open={accessibilityPanelOpen}
-            onClose={() => setAccessibilityPanelOpen(false)}
-          />
-
-          {/* Authentication dialogs */}
-          <Suspense fallback={null}>
-            <AuthManager 
+            <GlobalDialogs
+              // Help dialog
+              helpDialogOpen={helpDialogOpen}
+              onHelpDialogClose={() => setHelpDialogOpen(false)}
+              
+              // Privacy policy dialog
+              privacyDialogForceShow={privacyPolicyOpen}
+              onPrivacyDialogAccepted={() => setPrivacyPolicyOpen(false)}
+              
+              // Accessibility panel
+              accessibilityPanelOpen={accessibilityPanelOpen}
+              onAccessibilityPanelClose={() => setAccessibilityPanelOpen(false)}
+              
+              // Auth manager
               loginOpen={loginDialogOpen}
               registerOpen={registerDialogOpen}
               onCloseLogin={() => setLoginDialogOpen(false)}
@@ -658,7 +432,26 @@ const AppContent: React.FC = () => {
                 setLoginDialogOpen(false);
                 setRegisterDialogOpen(true);
               }}
+              
+              // Legal dialogs
+              termsDialogOpen={termsDialogOpen}
+              onTermsDialogClose={() => setTermsDialogOpen(false)}
+              dmcaDialogOpen={dmcaDialogOpen}
+              onDmcaDialogClose={() => setDmcaDialogOpen(false)}
+              disclaimerDialogOpen={disclaimerDialogOpen}
+              onDisclaimerDialogClose={() => setDisclaimerDialogOpen(false)}
+              privacyFooterDialogOpen={privacyFooterDialogOpen}
+              onPrivacyFooterDialogClose={() => setPrivacyFooterDialogOpen(false)}
+              
+              // Legal acceptance
+              forceShowLegalAcceptance={forceShowLegalAcceptance}
+              onLegalAcceptanceAccepted={() => setForceShowLegalAcceptance(false)}
             />
+          </Suspense>
+
+          {/* User Profile dialog */}
+          <Suspense fallback={null}>
+            <UserProfileDialog />
           </Suspense>
 
           {/* Development mode sign-in dialog */}
