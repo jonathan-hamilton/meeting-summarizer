@@ -71,7 +71,7 @@ import FileUpload from "./components/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import TranscriptPage from "./components/TranscriptPage";
-import VerificationSuccessPage from "./components/VerificationSuccessPage";
+import EmailVerificationDialog from "./components/EmailVerificationDialog";
 import { AccessibilityControlPanel } from "./components/AccessibilityControlPanel";
 import { sessionManager } from "./services/sessionManager";
 
@@ -94,7 +94,7 @@ const SummaryDisplayDemo = React.lazy(
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
-  const { mode: appMode, setMode: setAppMode, signOut: goToDemo } = useAppMode();
+  const { mode: appMode, setMode: setAppMode } = useAppMode();
   useModeSync(); // Sync mode between context and store
   const { privacyControls } = useSessionManagement();
   
@@ -133,9 +133,6 @@ const AppContent: React.FC = () => {
   >([]);
   // Update OpenAI state based on app mode
   const [isOpenAIEnabled, setIsOpenAIEnabled] = useState<boolean | null>(null);
-
-  // State for forcing Privacy Policy dialog (for testing in dev mode)
-  const [forceShowPrivacyPolicy, setForceShowPrivacyPolicy] = useState(false);
   
   // State for forcing Legal Acceptance dialog (for testing in dev mode)
   const [forceShowLegalAcceptance, setForceShowLegalAcceptance] = useState(false);
@@ -428,30 +425,8 @@ const AppContent: React.FC = () => {
             <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
               {/* Left-aligned controls */}
               <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
-                {/* TRY DEMO button - for non-demo modes and when not authenticated */}
-                {appMode !== 'demo' && !isAuthenticated && (
-                  <Button
-                    variant="outlined"
-                    onClick={goToDemo}
-                    sx={{ 
-                      ml: 1,
-                      minWidth: '100px',
-                      fontWeight: 'bold',
-                      borderColor: '#6B46C1',
-                      color: '#6B46C1',
-                      '&:hover': {
-                        backgroundColor: '#6B46C1',
-                        color: 'white',
-                        borderColor: '#6B46C1'
-                      }
-                    }}
-                  >
-                    TRY DEMO
-                  </Button>
-                )}
-
-                {/* Development controls - only visible in local development environment */}
-                {import.meta.env.DEV && (
+                {/* Development controls - only visible in local development environment and when authenticated */}
+                {import.meta.env.DEV && isAuthenticated && (
                   <>
                     {/* Mode Toggle Switch - Toggle between development and production modes */}
                     <Tooltip
@@ -495,10 +470,35 @@ const AppContent: React.FC = () => {
                   <SessionIndicator status={privacyControls.sessionStatus} />
                 )}
                 
-                {/* Navigation Buttons - Only when authenticated in production mode */}
+                {/* Buttons for authenticated users in production mode - ordered left to right */}
                 {appMode === 'production' && isAuthenticated && (
                   <>
+                    {/* 1. SIGN OUT Button */}
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      onClick={handleSignOutClick}
+                      sx={{ 
+                        mr: 1,
+                        minWidth: '80px',
+                        fontWeight: 'bold',
+                        backgroundColor: '#1976d2',
+                        '&:hover': {
+                          backgroundColor: '#1565C0'
+                        }
+                      }}
+                    >
+                      SIGN OUT
+                    </Button>
 
+                    {/* 2. Account Button */}
+                    <Tooltip title="My Account">
+                      <IconButton color="inherit" onClick={openProfileDialog}>
+                        <AccountIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    {/* 3. History Button */}
                     {location.pathname === '/history' ? (
                       <Tooltip title="Home">
                         <IconButton color="inherit" onClick={() => navigate('/app')}>
@@ -512,36 +512,41 @@ const AppContent: React.FC = () => {
                         </IconButton>
                       </Tooltip>
                     )}
-                  </>
-                )}
 
-                {/* User Profile Button - Only when authenticated in production mode */}
-                {appMode === 'production' && isAuthenticated && (
-                  <Tooltip title="My Account">
-                    <IconButton color="inherit" onClick={openProfileDialog}>
-                      <AccountIcon />
+                    {/* 4. Help & Privacy FAQ Button */}
+                    <Tooltip title="Help & Privacy FAQ">
+                      <IconButton 
+                        color="inherit" 
+                        onClick={() => setHelpDialogOpen(true)} 
+                        sx={{ ml: 1 }}
+                        aria-label="Help & Privacy FAQ"
+                      >
+                        <HelpIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    {/* 5. Accessibility Settings Button */}
+                    <Tooltip title="Accessibility Settings">
+                      <IconButton 
+                        color="inherit" 
+                        onClick={() => setAccessibilityPanelOpen(true)} 
+                        sx={{ ml: 1 }}
+                        aria-label="Accessibility settings and preferences"
+                      >
+                        <AccessibilityIcon />
+                      </IconButton>
+                    </Tooltip>
+
+                    {/* 6. Light/Dark Mode Toggle Button */}
+                    <IconButton 
+                      color="inherit" 
+                      onClick={handleThemeToggle} 
+                      sx={{ ml: 1 }}
+                      aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
+                    >
+                      {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
                     </IconButton>
-                  </Tooltip>
-                )}
-                
-                {/* Authentication Button - Only show SIGN OUT when authenticated in production mode */}
-                {appMode === 'production' && isAuthenticated && (
-                  <Button
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleSignOutClick}
-                    sx={{ 
-                      ml: 1,
-                      minWidth: '80px',
-                      fontWeight: 'bold',
-                      backgroundColor: '#1976d2',
-                      '&:hover': {
-                        backgroundColor: '#1565C0'
-                      }
-                    }}
-                  >
-                    SIGN OUT
-                  </Button>
+                  </>
                 )}
 
                 {/* Demo mode button - changed to SIGN UP for demo mode */}
@@ -563,35 +568,6 @@ const AppContent: React.FC = () => {
                     SIGN UP
                   </Button>
                 )}
-                
-                <Tooltip title="Help & Privacy FAQ">
-                  <IconButton 
-                    color="inherit" 
-                    onClick={() => setHelpDialogOpen(true)} 
-                    sx={{ ml: 1 }}
-                    aria-label="Help & Privacy FAQ"
-                  >
-                    <HelpIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Accessibility Settings">
-                  <IconButton 
-                    color="inherit" 
-                    onClick={() => setAccessibilityPanelOpen(true)} 
-                    sx={{ ml: 1 }}
-                    aria-label="Accessibility settings and preferences"
-                  >
-                    <AccessibilityIcon />
-                  </IconButton>
-                </Tooltip>
-                <IconButton 
-                  color="inherit" 
-                  onClick={handleThemeToggle} 
-                  sx={{ ml: 1 }}
-                  aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
-                >
-                  {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-                </IconButton>
               </Box>
             </Toolbar>
           </AppBar>
@@ -761,8 +737,8 @@ const AppContent: React.FC = () => {
               <MeetingHistoryPage />
             ) : location.pathname.startsWith('/transcript/') ? (
               <TranscriptPage />
-            ) : location.pathname.startsWith('/verify-email/') ? (
-              <VerificationSuccessPage />
+            ) : location.pathname.startsWith('/verify-email') ? (
+              <EmailVerificationDialog />
             ) : (
               <Grid
                 container

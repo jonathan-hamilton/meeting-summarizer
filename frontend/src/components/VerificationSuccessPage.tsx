@@ -9,21 +9,29 @@ import {
   CircularProgress,
   Container
 } from '@mui/material';
-import { CheckCircle, Home, ArrowBack } from '@mui/icons-material';
+import { CheckCircle, Home, Email } from '@mui/icons-material';
 import { useAuthStore } from '../stores/authStore';
 import EmailVerificationService from '../services/emailVerificationService';
 
 const emailVerificationService = new EmailVerificationService();
 
-const VerificationSuccessPage: React.FC = () => {
+const EmailVerificationDialog: React.FC = () => {
   const navigate = useNavigate();
   const { token } = useParams<{ token: string }>();
   
-  const { user, checkVerificationStatus } = useAuthStore();
+  const { user, checkVerificationStatus, resendVerificationEmail } = useAuthStore();
   const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'error' | 'already-verified'>('verifying');
   const [error, setError] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
+    // If user is not authenticated, redirect to main app page
+    if (!user) {
+      navigate('/app');
+      return;
+    }
+
     const verifyToken = async () => {
       if (!token) {
         setVerificationStatus('error');
@@ -34,8 +42,11 @@ const VerificationSuccessPage: React.FC = () => {
       try {
         setVerificationStatus('verifying');
         
+        // URL decode the token to handle Base64 characters (+, /, =)
+        const decodedToken = decodeURIComponent(token);
+        
         // Attempt to verify the token
-        await emailVerificationService.verifyEmail(token);
+        await emailVerificationService.verifyEmail(decodedToken);
         
         // Refresh user verification status
         await checkVerificationStatus();
@@ -61,8 +72,29 @@ const VerificationSuccessPage: React.FC = () => {
     navigate('/');
   };
 
-  const handleBackToApp = () => {
-    navigate(-1);
+  const handleClose = () => {
+    navigate('/app');
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!user) return;
+    
+    setResendLoading(true);
+    setResendSuccess(false);
+    
+    try {
+      await resendVerificationEmail();
+      setResendSuccess(true);
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setResendSuccess(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Failed to resend verification email:', error);
+      // The error will be handled by the auth store and shown in the global error state
+    } finally {
+      setResendLoading(false);
+    }
   };
 
   if (verificationStatus === 'verifying') {
@@ -148,22 +180,41 @@ const VerificationSuccessPage: React.FC = () => {
                 {error}
               </Alert>
             )}
+            
+            {resendSuccess && (
+              <Alert severity="success" sx={{ mb: 3, textAlign: 'left' }}>
+                <Typography variant="body2">
+                  New verification email sent successfully! Please check your inbox and click the new verification link.
+                </Typography>
+              </Alert>
+            )}
+            
             <Typography variant="body2" paragraph color="text.secondary">
-              Please try requesting a new verification email from your account settings, or contact support if you continue to have issues.
+              You can request a new verification email below, or contact support if you continue to have issues.
             </Typography>
+            
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+              <Button
+                variant="outlined"
+                onClick={handleResendVerificationEmail}
+                disabled={resendLoading}
+                startIcon={resendLoading ? <CircularProgress size={16} /> : <Email />}
+                sx={{ 
+                  textTransform: 'none',
+                  borderColor: 'primary.main',
+                  color: 'primary.main'
+                }}
+              >
+                {resendLoading ? 'Sending New Verification Email...' : 'Send New Verification Email'}
+              </Button>
+            </Box>
+            
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
               <Button
                 variant="outlined"
-                startIcon={<ArrowBack />}
-                onClick={handleBackToApp}
+                onClick={handleClose}
               >
-                Back to App
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleContinueToApp}
-              >
-                Continue Anyway
+                Close
               </Button>
             </Box>
           </>
@@ -177,4 +228,4 @@ const VerificationSuccessPage: React.FC = () => {
   );
 };
 
-export default VerificationSuccessPage;
+export default EmailVerificationDialog;

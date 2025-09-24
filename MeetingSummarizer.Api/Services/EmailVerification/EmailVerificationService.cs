@@ -301,8 +301,10 @@ namespace MeetingSummarizer.Api.Services.EmailVerification
                 var token = await GenerateVerificationTokenAsync(userId);
 
                 // Create verification URL using configured frontend base URL
+                // URL encode the token to handle Base64 characters (+, /, =)
                 var frontendBaseUrl = _configuration["Frontend:BaseUrl"] ?? "https://meeting-summary.io";
-                var verificationUrl = $"{frontendBaseUrl}/verify-email/{token}";
+                var encodedToken = Uri.EscapeDataString(token);
+                var verificationUrl = $"{frontendBaseUrl}/verify-email/{encodedToken}";
 
                 // Generate email content
                 var htmlContent = GenerateVerificationEmailTemplate(user.FirstName, user.LastName, verificationUrl);
