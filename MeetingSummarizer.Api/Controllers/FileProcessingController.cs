@@ -29,7 +29,8 @@ public class FileProcessingController : ControllerBase
     /// <param name="audioFile">The audio file to validate</param>
     /// <returns>Detailed validation results</returns>
     [HttpPost("validate")]
-    public async Task<IActionResult> ValidateAudioFile([FromForm] IFormFile audioFile)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> ValidateAudioFile(IFormFile audioFile)
     {
         var correlationId = Guid.NewGuid().ToString("N")[..8];
         _logger.LogInformation("Audio file validation requested [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {Size}",
@@ -125,7 +126,8 @@ public class FileProcessingController : ControllerBase
     /// <param name="audioFile">The large audio file to process</param>
     /// <returns>Processing results with progress information</returns>
     [HttpPost("process-large")]
-    public async Task<IActionResult> ProcessLargeFile([FromForm] IFormFile audioFile)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> ProcessLargeFile(IFormFile audioFile)
     {
         var correlationId = Guid.NewGuid().ToString("N")[..8];
         _logger.LogInformation("Large file processing requested [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {Size}MB",

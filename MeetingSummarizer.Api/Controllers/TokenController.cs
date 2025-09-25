@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.TokenManagement;
+using MeetingSummarizer.Api.Data.Entities;
 using System.Security.Claims;
 using MeetingSummarizer.Api.Attributes;
 
@@ -270,6 +271,54 @@ public class TokenController : ControllerBase
         {
             _logger.LogError(ex, "Error recording token usage for meeting {MeetingId}", request.MeetingId);
             return StatusCode(500, "Failed to record token usage");
+        }
+    }
+
+    /// <summary>
+    /// Get token purchase history for the authenticated user
+    /// </summary>
+    /// <returns>List of token purchases</returns>
+    [HttpGet("purchases")]
+    [RequireEmailVerification]
+    [ProducesResponseType(typeof(IEnumerable<TokenPurchase>), 200)]
+    public async Task<ActionResult<IEnumerable<TokenPurchase>>> GetPurchaseHistory()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var purchases = await _tokenService.GetPurchaseHistoryAsync(userId);
+            
+            _logger.LogDebug("Retrieved {Count} purchase records for user {UserId}", purchases.Count(), userId);
+            return Ok(purchases);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving purchase history");
+            return StatusCode(500, "Failed to retrieve purchase history");
+        }
+    }
+
+    /// <summary>
+    /// Get token usage history for the authenticated user
+    /// </summary>
+    /// <returns>List of token usage records</returns>
+    [HttpGet("usage")]
+    [RequireEmailVerification]
+    [ProducesResponseType(typeof(IEnumerable<TokenUsage>), 200)]
+    public async Task<ActionResult<IEnumerable<TokenUsage>>> GetUsageHistory()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var usages = await _tokenService.GetUsageHistoryAsync(userId);
+            
+            _logger.LogDebug("Retrieved {Count} usage records for user {UserId}", usages.Count(), userId);
+            return Ok(usages);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving usage history");
+            return StatusCode(500, "Failed to retrieve usage history");
         }
     }
 

@@ -57,6 +57,7 @@ builder.Services.AddSwaggerGen(c =>
 // Configure environment-specific settings
 builder.Services.Configure<EnvironmentOptions>(builder.Configuration.GetSection(EnvironmentOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
+builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
 
 // Configure CORS based on environment
 var corsOptions = new CorsOptions();

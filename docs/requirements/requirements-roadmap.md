@@ -25,9 +25,20 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 
 ## Current State Analysis (September 19, 2025)
 
-### 🏗️ CURRENT SPRINT 6 PROGRESS - 83% COMPLETE (10/12 stories)
+### 🏗️ CURRENT SPRINT 6 PROGRESS - 85% COMPLETE (10.9/12 stories)
 
-#### Latest Sprint 6 Achievements (September 23, 2025)
+#### Latest Sprint 6 Achievements (September 25, 2025)
+**S6.11 Complete Token System Implementation: Phase 1 & 2 Nearly Complete** - **90% COMPLETE 🏗️**
+- **Backend Token Integration**: Duration-based token calculation and deduction fully implemented via TokenCalculationService ✅
+- **Frontend Payment System**: TokenPurchaseDialog with Stripe Elements working end-to-end payment processing ✅
+- **Token Balance Management**: Real-time balance display and state management via Zustand TokenStore ✅
+- **Payment Flow**: Complete payment intent creation and Stripe form processing with test mode configuration ✅
+- **SummaryController Fix**: Replaced incorrect 1 token/min formula with proper duration-based calculation ✅
+- **Token Deduction**: Implemented proper token usage tracking during transcription processing ✅
+- **Remaining Work**: Pre-flight token validation before file upload (1 item remaining) ❌
+- **Next Phases**: Webhook processing for payment confirmation and automatic refund system ⏳
+
+#### Previous Sprint 6 Achievements (September 23, 2025)
 **S6.3 Token System Documentation Architecture: Complete Business Model & Requirements** - **PHASE 1 COMPLETE ✅**
 - **Duration-Based Token System Specification**: Comprehensive business model with volume discounts (15min=100 tokens/$5, 30min=180 tokens/$9, etc.) ✅
 - **Technical Requirements Documentation**: 50+ detailed requirements covering payment processing, token calculation, system integration ✅

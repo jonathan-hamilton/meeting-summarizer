@@ -24,6 +24,7 @@ import { useAppMode } from '../../contexts/AppModeContext';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserProfileDialogOpen } from '../../stores/userProfileStore';
 import { SessionIndicator } from '../SessionIndicator';
+import { TokenBalanceDisplay } from '../TokenBalanceDisplay';
 
 interface AppHeaderProps {
   onHelpClick: () => void;
@@ -31,6 +32,7 @@ interface AppHeaderProps {
   onModeToggle: () => void;
   onModeDoubleClick: () => void;
   onRegisterClick: () => void;
+  onTokenPurchaseClick?: () => void;
   sessionStatus: 'active' | 'warning' | 'expired';
   getAppBarSx: () => any;
 }
@@ -41,6 +43,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onModeToggle,
   onModeDoubleClick,
   onRegisterClick,
+  onTokenPurchaseClick,
   sessionStatus,
   getAppBarSx,
 }) => {
@@ -111,6 +114,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Buttons for authenticated users in production mode - ordered left to right */}
           {appMode === 'production' && isAuthenticated && (
             <>
+              {/* 0. Token Balance Display */}
+              <TokenBalanceDisplay 
+                onPurchaseClick={onTokenPurchaseClick}
+                compact
+              />
+
               {/* 1. SIGN OUT Button */}
               <Button
                 variant="contained"

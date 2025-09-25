@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Configuration;
 using System.Reflection;
 using System.IO;
 
@@ -15,17 +16,20 @@ namespace MeetingSummarizer.Api.Controllers;
 public class EnvironmentController : ControllerBase
 {
     private readonly EnvironmentOptions _environmentOptions;
+    private readonly StripeOptions _stripeOptions;
     private readonly IWebHostEnvironment _hostEnvironment;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EnvironmentController> _logger;
 
     public EnvironmentController(
         IOptions<EnvironmentOptions> environmentOptions,
+        IOptions<StripeOptions> stripeOptions,
         IWebHostEnvironment hostEnvironment,
         IConfiguration configuration,
         ILogger<EnvironmentController> logger)
     {
         _environmentOptions = environmentOptions.Value;
+        _stripeOptions = stripeOptions.Value;
         _hostEnvironment = hostEnvironment;
         _configuration = configuration;
         _logger = logger;
@@ -277,5 +281,19 @@ public class EnvironmentController : ControllerBase
         if (key.StartsWith("ASPNETCORE_")) return "Environment";
         if (key.Contains(":")) return "Configuration Files";
         return "Other";
+    }
+
+    /// <summary>
+    /// Get Stripe configuration for frontend
+    /// </summary>
+    [HttpGet("stripe")]
+    public IActionResult GetStripeConfig()
+    {
+        return Ok(new
+        {
+            PublishableKey = _stripeOptions.PublishableKey,
+            IsTestMode = _stripeOptions.IsTestMode,
+            Environment = _stripeOptions.GetEnvironmentDescription()
+        });
     }
 }

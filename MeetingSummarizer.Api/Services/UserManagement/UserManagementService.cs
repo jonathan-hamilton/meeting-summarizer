@@ -49,7 +49,7 @@ public interface IUserManagementService
     /// <summary>
     /// Create a new meeting record
     /// </summary>
-    Task<Meeting> CreateMeetingAsync(Guid userId, CreateMeetingRequest request);
+    Task<Meeting> CreateMeetingAsync(Guid userId, CreateUserMeetingRequest request);
     
     /// <summary>
     /// Update meeting information
@@ -227,7 +227,7 @@ public class UserManagementService : IUserManagementService
             .ToListAsync();
     }
 
-    public async Task<Meeting> CreateMeetingAsync(Guid userId, CreateMeetingRequest request)
+    public async Task<Meeting> CreateMeetingAsync(Guid userId, CreateUserMeetingRequest request)
     {
         var user = await GetUserByIdAsync(userId);
         if (user == null)

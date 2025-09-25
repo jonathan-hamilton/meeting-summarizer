@@ -27,6 +27,7 @@ import type { FileUploadFile } from "./types";
 
 interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
+  onPurchaseTokens?: () => void;
   maxFileSize?: number;
   acceptedFileTypes?: string[];
   isAuthDialogOpen?: boolean;
@@ -41,6 +42,7 @@ interface TokenError {
 
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
+  onPurchaseTokens,
   maxFileSize: _maxFileSize = 1073741824, // 1GB default (unused for now)
   acceptedFileTypes: _acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'], // unused for now
   isAuthDialogOpen = false,
@@ -363,7 +365,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
         estimatedDuration={tokenError?.estimatedDuration || 0}
         fileName={tokenError?.fileName}
         onPurchaseTokens={() => {
-          console.log('Navigate to token purchase');
+          // Close the insufficient tokens dialog and open purchase dialog
+          setTokenDialogOpen(false);
+          // This should trigger opening the purchase dialog in the parent App component
+          if (onPurchaseTokens) {
+            onPurchaseTokens();
+          }
         }}
         onTrySmaller={() => {
           setTokenError(null);
