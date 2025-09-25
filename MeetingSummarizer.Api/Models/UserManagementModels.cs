@@ -59,7 +59,7 @@ public class UpdateUserRequest
 /// <summary>
 /// Request model for creating a new meeting record
 /// </summary>
-public class CreateMeetingRequest
+public class CreateUserMeetingRequest
 {
     [Required]
     [StringLength(200)]

@@ -34,7 +34,7 @@ public class UserStorageController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadAudio(
         [FromRoute] Guid userId,
-        [FromForm] IFormFile file)
+        IFormFile file)
     {
         if (file == null || file.Length == 0)
         {

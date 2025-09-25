@@ -34,6 +34,7 @@ import { useSessionStore } from "./stores/sessionStore";
 import { useTourStore } from "./stores/tourStore";
 
 import { useAuthStore } from "./stores/authStore";
+import { useTokenStore } from "./stores/tokenStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
 import { useSpeakerMappingLifecycle } from "./hooks/useSpeakerMappingLifecycle";
 import { useAccessibilityStore } from "./stores/accessibilityStore";
@@ -42,6 +43,7 @@ import { useAccessibilityStore } from "./stores/accessibilityStore";
 // Health dialog component removed
 const SessionTimeoutWarningDialog = React.lazy(() => import("./components/SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
 const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
+const TokenPurchaseDialog = React.lazy(() => import("./components/TokenPurchaseDialog").then(m => ({ default: m.TokenPurchaseDialog })));
 
 
 import FileUpload from "./components/FileUpload";
@@ -107,6 +109,16 @@ const AppContent: React.FC = () => {
   
   // Authentication integration  
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
+  const { refreshBalance, loadStripeConfig } = useTokenStore();
+  
+  // Initialize token store when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && appMode === 'production') {
+      // Load token balance and Stripe configuration
+      refreshBalance();
+      loadStripeConfig();
+    }
+  }, [isAuthenticated, appMode, refreshBalance, loadStripeConfig]);
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -182,6 +194,9 @@ const AppContent: React.FC = () => {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
   const [accessibilityPanelOpen, setAccessibilityPanelOpen] = useState(false);
+  
+  // Token management dialog state
+  const [tokenPurchaseDialogOpen, setTokenPurchaseDialogOpen] = useState(false);
   
 
 
@@ -393,6 +408,7 @@ const AppContent: React.FC = () => {
             onModeToggle={handleModeToggle}
             onModeDoubleClick={handleModeDoubleClick}
             onRegisterClick={() => setRegisterDialogOpen(true)}
+            onTokenPurchaseClick={() => setTokenPurchaseDialogOpen(true)}
             sessionStatus={privacyControls.sessionStatus}
             getAppBarSx={getAppBarSx}
           />
@@ -452,6 +468,14 @@ const AppContent: React.FC = () => {
           {/* User Profile dialog */}
           <Suspense fallback={null}>
             <UserProfileDialog />
+          </Suspense>
+
+          {/* Token Purchase dialog */}
+          <Suspense fallback={null}>
+            <TokenPurchaseDialog 
+              open={tokenPurchaseDialogOpen}
+              onClose={() => setTokenPurchaseDialogOpen(false)}
+            />
           </Suspense>
 
           {/* Development mode sign-in dialog */}
@@ -547,6 +571,7 @@ const AppContent: React.FC = () => {
                       </Typography>
                       <FileUpload
                         onTranscriptionComplete={handleTranscriptionComplete}
+                        onPurchaseTokens={() => setTokenPurchaseDialogOpen(true)}
                         isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
                       />
                     </section>

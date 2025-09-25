@@ -11,6 +11,7 @@ namespace MeetingSummarizer.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/payments")]
+[Route("api/Payment")] // Additional route for frontend compatibility
 [Authorize]
 public class PaymentController : ControllerBase
 {
@@ -31,6 +32,7 @@ public class PaymentController : ControllerBase
     /// <param name="request">Payment intent creation request</param>
     /// <returns>Payment intent with client secret</returns>
     [HttpPost("create-intent")]
+    [HttpPost("create-payment-intent")] // Additional route for frontend compatibility
     public async Task<ActionResult<PaymentIntentResult>> CreatePaymentIntent([FromBody] CreatePaymentIntentRequest request)
     {
         try
@@ -183,71 +185,4 @@ public class PaymentController : ControllerBase
             return StatusCode(500, "An error occurred while retrieving payment details");
         }
     }
-
-    /// <summary>
-    /// Process a refund for a payment
-    /// </summary>
-    /// <param name="paymentIntentId">Payment intent ID to refund</param>
-    /// <param name="request">Refund request details</param>
-    /// <returns>Refund processing result</returns>
-    [HttpPost("{paymentIntentId}/refund")]
-    [Authorize(Roles = "Admin")] // Only admins can process refunds
-    public async Task<ActionResult<RefundResult>> ProcessRefund(
-        string paymentIntentId, 
-        [FromBody] RefundRequest request)
-    {
-        try
-        {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            _logger.LogInformation("Processing refund for payment intent {PaymentIntentId} by admin {AdminUserId}", 
-                paymentIntentId, userIdClaim);
-
-            if (string.IsNullOrEmpty(paymentIntentId))
-            {
-                return BadRequest("Payment intent ID is required");
-            }
-
-            var result = await _paymentService.ProcessRefundAsync(
-                paymentIntentId, 
-                request.Amount, 
-                request.Reason);
-
-            if (!result.Success)
-            {
-                _logger.LogError("Refund processing failed for payment intent {PaymentIntentId}: {ErrorMessage}", 
-                    paymentIntentId, result.ErrorMessage);
-                
-                return BadRequest(new { 
-                    error = result.ErrorMessage, 
-                    code = result.ErrorCode 
-                });
-            }
-
-            _logger.LogInformation("Refund processed successfully: {RefundId}, Amount: {Amount}", 
-                result.RefundId, result.AmountRefunded);
-
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error processing refund for payment intent {PaymentIntentId}", paymentIntentId);
-            return StatusCode(500, "An error occurred while processing the refund");
-        }
-    }
-}
-
-/// <summary>
-/// Request model for processing refunds
-/// </summary>
-public class RefundRequest
-{
-    /// <summary>
-    /// Amount to refund (null for full refund)
-    /// </summary>
-    public decimal? Amount { get; set; }
-
-    /// <summary>
-    /// Reason for the refund
-    /// </summary>
-    public string? Reason { get; set; }
 }

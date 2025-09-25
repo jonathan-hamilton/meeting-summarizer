@@ -36,12 +36,10 @@ By using our service, you agree to:
 - **Processing Errors**: Automatic refunds for server-side processing failures
 - **Invalid Files**: Tokens restored for files detected as corrupted or invalid after upload
 
-### Manual Refund Requests
-- **Request Window**: 30 days from transaction date
-- **Process**: Submit request via email support with transaction details
-- **Review Period**: Manual requests reviewed within 24-48 hours
-- **Limitations**: Maximum 5 manual refund requests per user per month
-- **Eligibility**: Refunds considered for service failures not automatically detected
+### Sales Policy
+- **Final Sale**: All token purchases are final - no manual refunds or exchanges
+- **Service Credits**: Users receive automatic refunds only for verified system failures
+- **Support**: Technical support available for service-related issues, but no manual refund processing
 
 ## 4. Data Management & User Rights
 

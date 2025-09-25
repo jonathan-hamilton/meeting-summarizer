@@ -12,6 +12,7 @@ using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Services.Interfaces;
+using MeetingSummarizer.Api.Services.TokenManagement;
 using SpeakerServices = MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Helpers;
 using SpeakerMappingModel = MeetingSummarizer.Api.Models.SpeakerMapping;
@@ -33,6 +34,8 @@ public class SummaryController : ControllerBase
     private readonly AzureBatchTranscriptionService _batchService;
     private readonly IUserStorageService _userStorageService;
     private readonly IMeetingService _meetingService;
+    private readonly ITokenCalculationService _tokenCalculationService;
+    private readonly ITokenService _tokenService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
@@ -42,7 +45,9 @@ public class SummaryController : ControllerBase
         MeetingSummarizerDbContext context,
         AzureBatchTranscriptionService batchService,
         IUserStorageService userStorageService,
-        IMeetingService meetingService)
+        IMeetingService meetingService,
+        ITokenCalculationService tokenCalculationService,
+        ITokenService tokenService)
     {
         _logger = logger;
         _transcriptionService = transcriptionService;
@@ -52,6 +57,8 @@ public class SummaryController : ControllerBase
         _batchService = batchService;
         _userStorageService = userStorageService;
         _meetingService = meetingService;
+        _tokenCalculationService = tokenCalculationService;
+        _tokenService = tokenService;
     }
 
     /// <summary>
@@ -134,18 +141,19 @@ public class SummaryController : ControllerBase
                 }
 
                 // Check if user has sufficient tokens for real-time processing
-                // Use same estimation as batch processing: 1 token per minute + 20% buffer
-                var estimatedTokens = Math.Max(1, (int)Math.Ceiling(estimatedDurationMinutes * 1.2));
+                // Use proper duration-based calculation with volume discounts
+                var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
+                var requiredTokens = calculation.FinalTokens;
                 
-                if (user.TokenBalance < estimatedTokens)
+                if (user.TokenBalance < requiredTokens)
                 {
                     _logger.LogWarning("User {UserId} ({Email}) has insufficient tokens for real-time processing. Required: {Required}, Available: {Available}",
-                        currentUserId.Value, user.Email, estimatedTokens, user.TokenBalance);
+                        currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
                     
                     return BadRequest(new 
                     { 
                         error = "Insufficient tokens to process this audio file",
-                        required = estimatedTokens,
+                        required = requiredTokens,
                         available = user.TokenBalance,
                         estimatedDuration = estimatedDurationMinutes,
                         processingType = "real-time"
@@ -153,7 +161,7 @@ public class SummaryController : ControllerBase
                 }
 
                 _logger.LogInformation("User {UserId} ({Email}) has sufficient tokens for real-time processing. Required: {Required}, Available: {Available}",
-                    currentUserId.Value, user.Email, estimatedTokens, user.TokenBalance);
+                    currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
             }
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
@@ -186,6 +194,34 @@ public class SummaryController : ControllerBase
 
                 // Update the meeting record with transcription results
                 await UpdateMeetingWithTranscriptionResults(meetingId, transcriptionResult);
+
+                // Record token usage for authenticated users (real-time processing)
+                if (currentUserId.HasValue)
+                {
+                    try
+                    {
+                        var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
+                        var tokensUsed = calculation.FinalTokens;
+                        
+                        await _tokenService.RecordTokenUsageAsync(
+                            currentUserId.Value.ToString(),
+                            meetingId?.ToString() ?? throw new InvalidOperationException("Meeting ID is null"),
+                            tokensUsed,
+                            (int)estimatedDurationMinutes,
+                            calculation.VolumeDiscountMultiplier > 0 ? 
+                                (decimal)(calculation.BaseTokens - calculation.FinalTokens) : 0m
+                        );
+                        
+                        _logger.LogInformation("Recorded token usage for user {UserId}: {TokensUsed} tokens for real-time transcription of {FileName} ({Duration} minutes)",
+                            currentUserId.Value, tokensUsed, request.AudioFile.FileName, estimatedDurationMinutes);
+                    }
+                    catch (Exception tokenEx)
+                    {
+                        _logger.LogError(tokenEx, "Failed to record token usage for user {UserId} and meeting {MeetingId} - transcription succeeded but token tracking failed",
+                            currentUserId.Value, meetingId);
+                        // Don't fail the request if token tracking fails - transcription was successful
+                    }
+                }
 
                 return Ok(response);
             }
@@ -753,8 +789,9 @@ public class SummaryController : ControllerBase
                 return Unauthorized(new { error = "Authentication required for batch processing" });
             }
 
-            // Check if user has sufficient tokens (rough estimate: 1 token per minute + 20% buffer)
-            var estimatedTokens = (int)Math.Ceiling(estimatedDurationMinutes * 1.2);
+            // Check if user has sufficient tokens using proper duration-based calculation
+            var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
+            var requiredTokens = calculation.FinalTokens;
             var user = await _context.Users.FindAsync(userId.Value);
             
             if (user == null)
@@ -762,15 +799,15 @@ public class SummaryController : ControllerBase
                 return NotFound(new { error = "User not found" });
             }
 
-            if (user.TokenBalance < estimatedTokens)
+            if (user.TokenBalance < requiredTokens)
             {
                 _logger.LogWarning("User {UserId} has insufficient tokens for batch processing. Required: {Required}, Available: {Available}",
-                    userId, estimatedTokens, user.TokenBalance);
+                    userId, requiredTokens, user.TokenBalance);
                 
                 return BadRequest(new 
                 { 
                     error = "Insufficient tokens for batch processing",
-                    required = estimatedTokens,
+                    required = requiredTokens,
                     available = user.TokenBalance,
                     estimatedDuration = estimatedDurationMinutes
                 });
@@ -783,7 +820,7 @@ public class SummaryController : ControllerBase
                 UserId = userId.Value,
                 FileName = audioFile.FileName,
                 EstimatedDurationMinutes = estimatedDurationMinutes,
-                TokensCharged = estimatedTokens,
+                TokensCharged = requiredTokens,
                 Status = "submitted",
                 SubmittedAt = DateTime.UtcNow
             };
@@ -806,13 +843,13 @@ public class SummaryController : ControllerBase
             _logger.LogInformation("Audio file uploaded to blob storage: {BlobUrl}", uploadResult.BlobUrl);
 
             // Deduct tokens immediately
-            user.TokenBalance -= estimatedTokens;
+            user.TokenBalance -= requiredTokens;
 
             _context.BatchTranscriptionJobs.Add(batchJob);
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Created batch job {JobId} for user {UserId}, file: {FileName}, charged {Tokens} tokens", 
-                batchJob.Id, userId, audioFile.FileName, estimatedTokens);
+                batchJob.Id, userId, audioFile.FileName, requiredTokens);
 
             // Return batch job response compatible with frontend expecting TranscriptionResponse
             var response = new 
@@ -834,7 +871,7 @@ public class SummaryController : ControllerBase
                 // Batch processing indicators
                 isBatchProcessing = true,
                 estimatedDurationMinutes = estimatedDurationMinutes,
-                tokensCharged = estimatedTokens
+                tokensCharged = requiredTokens
             };
 
             return Accepted(response); // HTTP 202 Accepted for async processing

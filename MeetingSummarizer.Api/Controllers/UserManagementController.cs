@@ -247,7 +247,7 @@ public class UserManagementController : ControllerBase
     [HttpPost("{userId:guid}/meetings")]
     public async Task<ActionResult<MeetingResponse>> CreateMeeting(
         Guid userId, 
-        [FromBody] CreateMeetingRequest request)
+        [FromBody] CreateUserMeetingRequest request)
     {
         try
         {

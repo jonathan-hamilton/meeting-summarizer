@@ -1,4 +1,5 @@
 using MeetingSummarizer.Api.Models.Payment;
+using MeetingSummarizer.Api.Configuration;
 using Microsoft.Extensions.Options;
 using Stripe;
 using System.Text.Json;
@@ -12,23 +13,23 @@ public class StripePaymentService : IPaymentService
 {
     private readonly ILogger<StripePaymentService> _logger;
     private readonly StripeClient _stripeClient;
-    private readonly string _webhookSecret;
+    private readonly StripeOptions _stripeOptions;
 
     public StripePaymentService(
         ILogger<StripePaymentService> logger,
-        IConfiguration configuration)
+        IOptions<StripeOptions> stripeOptions)
     {
         _logger = logger;
+        _stripeOptions = stripeOptions.Value;
         
-        var secretKey = configuration["Stripe:SecretKey"] 
-            ?? throw new InvalidOperationException("Stripe SecretKey is not configured");
-        
-        _webhookSecret = configuration["Stripe:WebhookSecret"] 
-            ?? throw new InvalidOperationException("Stripe WebhookSecret is not configured");
+        if (!_stripeOptions.IsValid())
+        {
+            throw new InvalidOperationException("Stripe configuration is invalid. Please check SecretKey, PublishableKey, and WebhookSecret.");
+        }
 
-        _stripeClient = new StripeClient(secretKey);
+        _stripeClient = new StripeClient(_stripeOptions.SecretKey);
         
-        _logger.LogInformation("StripePaymentService initialized");
+        _logger.LogInformation("StripePaymentService initialized in {Mode}", _stripeOptions.GetEnvironmentDescription());
     }
 
     /// <inheritdoc />
@@ -161,7 +162,7 @@ public class StripePaymentService : IPaymentService
             _logger.LogInformation("Processing Stripe webhook");
 
             // Validate webhook signature
-            if (!ValidateWebhookSignature(json, signature, _webhookSecret))
+            if (!ValidateWebhookSignature(json, signature, _stripeOptions.WebhookSecret))
             {
                 _logger.LogWarning("Invalid webhook signature received");
                 return new WebhookProcessingResult
@@ -171,7 +172,7 @@ public class StripePaymentService : IPaymentService
                 };
             }
 
-            var stripeEvent = EventUtility.ConstructEvent(json, signature, _webhookSecret);
+            var stripeEvent = EventUtility.ConstructEvent(json, signature, _stripeOptions.WebhookSecret);
             
             _logger.LogInformation("Processing Stripe event: {EventType}, ID: {EventId}", 
                 stripeEvent.Type, stripeEvent.Id);

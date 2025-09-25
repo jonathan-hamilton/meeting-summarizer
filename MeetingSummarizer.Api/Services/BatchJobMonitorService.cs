@@ -8,6 +8,7 @@ using MeetingSummarizer.Api.Services.Configuration;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Services.Transcription;
 using MeetingSummarizer.Api.Services.Interfaces;
+using MeetingSummarizer.Api.Services.TokenManagement;
 using System.Text.Json;
 
 namespace MeetingSummarizer.Api.Services;
@@ -328,7 +329,10 @@ public class BatchJobMonitorService : BackgroundService
             job.ErrorMessage = null;
 
             // S6.5 Increment 5: Create persistent meeting record on successful completion
-            await CreateMeetingRecordAsync(job, context);
+            var meetingId = await CreateMeetingRecordAsync(job, context);
+
+            // S6.11 Increment 6: Record token usage tracking for completed batch job
+            await RecordBatchJobTokenUsageAsync(job, meetingId, context);
 
             _logger.LogInformation("Successfully completed job {JobId} in {Duration}", 
                 job.Id, job.ProcessingDuration);
@@ -515,7 +519,7 @@ public class BatchJobMonitorService : BackgroundService
     /// Create persistent meeting record after successful batch job completion
     /// Part of S6.5 Increment 5: Meeting History Integration
     /// </summary>
-    private async Task CreateMeetingRecordAsync(
+    private async Task<Guid?> CreateMeetingRecordAsync(
         BatchTranscriptionJob job,
         MeetingSummarizerDbContext context)
     {
@@ -526,14 +530,14 @@ public class BatchJobMonitorService : BackgroundService
             {
                 _logger.LogDebug("Meeting record already exists for job {JobId}: {MeetingId}", 
                     job.Id, job.MeetingId.Value);
-                return;
+                return job.MeetingId.Value;
             }
 
             // Check if we have enough information to create a meeting
             if (job.UserId == Guid.Empty)
             {
                 _logger.LogWarning("Cannot create meeting for job {JobId}: missing UserId", job.Id);
-                return;
+                return null;
             }
 
             // Get meeting service from DI container
@@ -642,11 +646,14 @@ public class BatchJobMonitorService : BackgroundService
 
             _logger.LogInformation("Successfully created meeting {MeetingId} for job {JobId}", 
                 meeting.Id, job.Id);
+            
+            return meeting.Id;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create meeting record for job {JobId}", job.Id);
             // Don't throw - meeting creation failure shouldn't fail the batch job
+            return null;
         }
     }
 
@@ -716,6 +723,47 @@ public class BatchJobMonitorService : BackgroundService
         {
             _logger.LogError(ex, "Failed to calculate speaker count for job {JobId}", job.Id);
             return 0; // Return 0 on error to avoid breaking the flow
+        }
+    }
+
+    /// <summary>
+    /// Record token usage tracking for completed batch transcription job
+    /// Part of S6.11 Increment 6: Usage Tracking Integration
+    /// </summary>
+    private async Task RecordBatchJobTokenUsageAsync(
+        BatchTranscriptionJob job,
+        Guid? meetingId,
+        MeetingSummarizerDbContext context)
+    {
+        try
+        {
+            if (!meetingId.HasValue)
+            {
+                _logger.LogWarning("Cannot record token usage for job {JobId}: no meeting ID available", job.Id);
+                return;
+            }
+
+            // Get token service from DI container
+            using var scope = _serviceProvider.CreateScope();
+            var tokenService = scope.ServiceProvider.GetRequiredService<ITokenService>();
+            
+            // Note: Batch jobs already deduct tokens when submitted, but we still need to record usage for tracking
+            await tokenService.RecordTokenUsageAsync(
+                job.UserId.ToString(),
+                meetingId.Value.ToString(),
+                job.TokensCharged,
+                job.EstimatedDurationMinutes,
+                0m // No additional discount applied at completion - already factored into TokensCharged
+            );
+
+            _logger.LogInformation("Recorded token usage for batch job {JobId}: {TokensUsed} tokens for meeting {MeetingId} ({Duration} minutes)",
+                job.Id, job.TokensCharged, meetingId.Value, job.EstimatedDurationMinutes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to record token usage for batch job {JobId} and meeting {MeetingId}",
+                job.Id, meetingId);
+            // Don't throw - token tracking failure shouldn't fail the batch job completion
         }
     }
 }
