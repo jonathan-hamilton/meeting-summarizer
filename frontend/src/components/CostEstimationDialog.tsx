@@ -131,21 +131,6 @@ const CostEstimationDialog: React.FC<CostEstimationDialogProps> = ({
               </Box>
             </Stack>
           </Paper>
-
-          {/* Success Message */}
-          {hasSufficientTokens ? (
-            <Alert severity="success" icon={<CheckIcon />}>
-              <Typography variant="body2">
-                ✓ You have sufficient tokens to process this file
-              </Typography>
-            </Alert>
-          ) : (
-            <Alert severity="warning">
-              <Typography variant="body2">
-                ⚠️ You need <strong>{tokenDeficit}</strong> more token{tokenDeficit !== 1 ? 's' : ''} to process this file
-              </Typography>
-            </Alert>
-          )}
         </Stack>
       </DialogContent>
 

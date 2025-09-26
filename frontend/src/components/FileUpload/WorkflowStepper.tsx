@@ -6,8 +6,6 @@ import type { FileUploadFile, BatchJobStatus } from './types';
 interface WorkflowStepperProps {
   uploadFile: FileUploadFile;
   batchJob?: BatchJobStatus;
-  isDemo?: boolean;
-  simulatedProgress?: number;
 }
 
 interface StepperStep {
@@ -21,8 +19,6 @@ interface StepperStep {
 export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   uploadFile,
   batchJob,
-  isDemo = false,
-  simulatedProgress = 0,
 }) => {
   const [realTimeProgress, setRealTimeProgress] = useState<{
     status?: string;
@@ -80,7 +76,7 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
         { label: "Complete", icon: <CheckCircle />, completed: currentStatus === 'completed', active: false, error: currentStatus === 'failed' }
       ];
     } else {
-      return [
+      const steps = [
         { label: "File Selected", icon: <AudioFile />, completed: true, active: false, error: false },
         { 
           label: "Uploading", 
@@ -98,32 +94,37 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
         },
         { label: "Complete", icon: <CheckCircle />, completed: uploadFile.status === "completed", active: false, error: uploadFile.status === "error" }
       ];
+      return steps;
     }
-  };
-
-  const getDemoWorkflowSteps = (): StepperStep[] => {
-    const isSimulating = isDemo && simulatedProgress < 100;
-    
-    return [
-      { label: "File Selected", icon: <AudioFile />, completed: true, active: false, error: false },
-      { label: "Uploading", icon: <Upload />, completed: !isSimulating || simulatedProgress === 100, active: isSimulating && simulatedProgress <= 90, error: false },
-      { label: "Processing & Transcription", icon: <Psychology />, completed: !isSimulating && simulatedProgress === 100, active: isSimulating && simulatedProgress > 90, error: false },
-      { label: "Complete", icon: <CheckCircle />, completed: !isSimulating && simulatedProgress === 100, active: false, error: false }
-    ];
   };
 
   const getActiveStep = (): number => {
-    const steps = isDemo ? getDemoWorkflowSteps() : getUnifiedWorkflowSteps();
+    const steps = getUnifiedWorkflowSteps();
+    
+    // First, check for any active steps
     for (let i = 0; i < steps.length; i++) {
-      if (steps[i].active) return i;
+      if (steps[i].active) {
+        return i;
+      }
     }
+    
+    // If no active steps, check if all steps are completed
+    const allCompleted = steps.every(step => step.completed);
+    if (allCompleted) {
+      return steps.length; // This tells Material-UI that no step is currently active
+    }
+    
+    // If no active steps and not all completed, find the last completed step
     for (let i = steps.length - 1; i >= 0; i--) {
-      if (steps[i].completed) return i;
+      if (steps[i].completed) {
+        return i;
+      }
     }
+    
     return 0;
   };
 
-  const steps = isDemo ? getDemoWorkflowSteps() : getUnifiedWorkflowSteps();
+  const steps = getUnifiedWorkflowSteps();
 
   return (
     <Box sx={{ mt: 2 }}>

@@ -11,12 +11,11 @@ import {
 } from "@mui/material";
 import { CheckCircle, Error as ErrorIcon } from "@mui/icons-material";
 import { useAppMode } from "../../contexts/AppModeContext";
-import { useTourStore } from "../../stores/tourStore";
-import { TourPopover } from "../TourPopover";
 import InsufficientTokensDialog from "../InsufficientTokensDialog";
 import CostEstimationDialog from "../CostEstimationDialog";
 import { createApiService } from "../../services/apiServiceFactory";
 // import { useEnhancedSessionStore } from "../../stores/enhancedSessionStore"; // Not used due to interface mismatch
+import { useUploadQueueStore } from '../../stores/uploadQueueStore';
 import { useBatchJobPollingStore } from "../../hooks/useBatchJobPollingStore";
 import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
@@ -34,6 +33,8 @@ interface FileUploadProps {
   maxFileSize?: number;
   acceptedFileTypes?: string[];
   isAuthDialogOpen?: boolean;
+  onClearPreviousData?: () => void;
+  hasPreviousResults?: boolean;
 }
 
 interface TokenError {
@@ -48,18 +49,61 @@ const FileUpload: React.FC<FileUploadProps> = ({
   onPurchaseTokens,
   maxFileSize: _maxFileSize = 1073741824, // 1GB default (unused for now)
   acceptedFileTypes: _acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'], // unused for now
-  isAuthDialogOpen = false,
+  isAuthDialogOpen: _isAuthDialogOpen = false, // Available for future use to disable upload when auth dialogs are open
+  onClearPreviousData,
+  hasPreviousResults = false,
 }) => {
-  const { isDemo, mode } = useAppMode();
-  const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction } = useTourStore();
-  // const { sessionToken } = useEnhancedSessionStore(); // Not available in current interface
-  const { currentJob: batchJob, startPolling, pollingError: batchError, isPolling } = useBatchJobPollingStore();
+  const { mode } = useAppMode();
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
+  const { uploadFiles, setUploadFiles, clearUploadQueue: storeClearUploadQueue } = useUploadQueueStore();
+  
+  const { currentJob: batchJob, startPolling, pollingError: batchError, isPolling } = useBatchJobPollingStore({
+    onJobCompleted: useCallback((jobId: string) => {
+      console.log('✅ Batch job completed:', jobId);
+      
+      // Find the upload file with this batch job ID and mark it as completed
+      setUploadFiles((prev) => {
+        const updated = prev.map((f) => {
+          if (f.batchJobId === jobId && f.status === "uploading") {
+            return {
+              ...f,
+              status: "completed" as const,
+              progress: 100,
+              result: batchJob?.results,
+            };
+          }
+          return f;
+        });
+        
+        // Find the completed file and call the completion callback
+        const completedFile = updated.find(f => f.batchJobId === jobId && f.status === "completed");
+        if (completedFile?.result && onTranscriptionComplete) {
+          console.log('📞 Calling onTranscriptionComplete for batch job:', jobId);
+          onTranscriptionComplete(completedFile.result);
+        }
+        
+        return updated;
+      });
+      
+      // Refresh token balance after completion
+      refreshBalance();
+    }, [onTranscriptionComplete, refreshBalance]),
+    
+    onJobFailed: useCallback((jobId: string, error?: string) => {
+      console.log('❌ Batch job failed:', jobId, error);
+      setUploadFiles((prev) =>
+        prev.map((f) =>
+          f.batchJobId === jobId
+            ? { ...f, status: "error", error: error || "Batch job failed" }
+            : f
+        )
+      );
+    }, [])
+  });
   
   // S6.5: Add SignalR for real-time progress updates (unused for now)
   // const signalRProgress = useSignalRBatchProgress();
 
-  const [uploadFiles, setUploadFiles] = useState<FileUploadFile[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [tokenError, setTokenError] = useState<TokenError | null>(null);
   const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
@@ -68,17 +112,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const [costDialogOpen, setCostDialogOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
 
-  // Demo-related placeholders since context doesn't provide these
-  const mockTranscripts: any[] = [];
-  const isSimulatingUpload = false;
-  const demoFileName = "";
-  const simulatedProgress = 0;
-  const startDemoUpload = () => {}; // Placeholder function
-
   const apiService = createApiService(mode);
-  const hasCompletedFile = uploadFiles.some(f => f.status === 'completed');
-  // Only disable dropzone when there are active uploads (uploading or pending)
-  const hasActiveUploads = uploadFiles.some(f => f.status === 'uploading' || f.status === 'pending');
 
   // Pre-flight token validation
   const validateTokenBalance = useCallback(async (file: File): Promise<{ valid: boolean; required?: number; estimatedDuration?: number }> => {
@@ -133,7 +167,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         if (response.success) {
           if (response.data && 'batchJobId' in response.data && (response.data as any).batchJobId) {
-            console.log('⏳ BATCH JOB DETECTED - Starting polling for:', (response.data as any).batchJobId);
+            // Batch job processing
             startPolling((response.data as any).batchJobId);
             setUploadFiles((prev) =>
               prev.map((f) =>
@@ -148,7 +182,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
               )
             );
           } else {
-            console.log('⚡ IMMEDIATE TRANSCRIPTION DETECTED');
+            // Immediate transcription response
+            console.log('⚡ Immediate transcription completed:', uploadFile.file.name);
+            
+            // Show success message mentioning history for all successful transcriptions
+            const successMessage = 'Transcription completed successfully! Transcript saved to history.';
+              
             setUploadFiles((prev) =>
               prev.map((f) =>
                 f.id === uploadFile.id
@@ -157,6 +196,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                       status: "completed",
                       progress: 100,
                       result: response.data,
+                      successMessage,
                     }
                   : f
               )
@@ -164,7 +204,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
             // Refresh token balance after successful transcription (tokens were consumed)
             refreshBalance();
             if (onTranscriptionComplete && response.data) {
+              console.log('📞 Calling onTranscriptionComplete for immediate result:', uploadFile.file.name);
               onTranscriptionComplete(response.data);
+            } else {
+              console.log('❌ Missing callback or data for:', uploadFile.file.name, { hasCallback: !!onTranscriptionComplete, hasData: !!response.data });
             }
           }
         } else {
@@ -241,22 +284,29 @@ const FileUpload: React.FC<FileUploadProps> = ({
     });
   }, [uploadFileToServer, validateTokenBalance, tokenBalance]);
 
+  const clearUploadQueue = useCallback(() => {
+    console.log('🧹 Clearing upload queue');
+    storeClearUploadQueue();
+  }, [storeClearUploadQueue]);
+
   // Handle cost estimation confirmation
   const handleCostConfirm = useCallback(() => {
     if (pendingFile) {
+      // Clear previous data if there are previous results
+      if (hasPreviousResults && onClearPreviousData) {
+        console.log('🧹 Processing 2nd+ file - clearing previous data');
+        onClearPreviousData();
+        clearUploadQueue();
+      }
+      
       processFiles([pendingFile]);
       setPendingFile(null);
     }
-  }, [pendingFile, processFiles]);
+  }, [pendingFile, processFiles, hasPreviousResults, onClearPreviousData, clearUploadQueue]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-      if (isDemo) {
-        startDemoUpload();
-        triggerStepAction('file-select');
-        return;
-      }
-      
+      console.log('🎯 onDrop triggered:', { acceptedFiles: acceptedFiles.length, rejections: fileRejections.length });
       if (fileRejections.length > 0) {
         const errorMessages = fileRejections.map((rejection) => {
           const errors = rejection.errors.map((error) => error.message).join(", ");
@@ -284,7 +334,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       // For multiple files, proceed with existing logic (could be enhanced later)
       await processFiles(validFiles);
     },
-    [processFiles, isDemo, startDemoUpload, triggerStepAction]
+    [processFiles]
   );
 
   return (
@@ -304,23 +354,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       </Typography>
       
       {/* File Dropzone */}
-      <FileDropzone
-        onFilesDropped={onDrop}
-        isDemo={isDemo}
-        hasCompletedFile={hasActiveUploads}
-        isSimulatingUpload={isSimulatingUpload}
-        mockTranscripts={mockTranscripts}
-        onDemoStart={startDemoUpload}
-        onStepAction={triggerStepAction}
-      >
-        {/* Step 1 Tour Popover - File Upload */}
-        <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(1) && !isAuthDialogOpen}
-          step={1}
-          onClose={() => closeStep(1)}
-          position={{ top: '-3px', right: '55px' }}
-        />
-      </FileDropzone>
+      <FileDropzone onFilesDropped={onDrop} />
 
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
@@ -344,56 +378,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </Box>
       )}
 
-      {/* Demo Upload Simulation */}
-      {isDemo && isSimulatingUpload && (
-        <Card 
-          sx={{ mt: 3, width: "100%" }}
-          component="section"
-          role="status"
-          aria-live="polite"
-          aria-label="File upload progress"
-        >
-          <CardContent>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-              <Typography variant="h6" component="h3">Upload Queue (1)</Typography>
-              <Chip
-                icon={<CircularProgress size={16} />}
-                label="1 processing"
-                color="warning"
-                size="small"
-              />
-            </Box>
-            <Typography variant="body1">{demoFileName}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Simulating upload and transcription... {simulatedProgress}%
-            </Typography>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Demo Results */}
-      {isDemo && !isSimulatingUpload && mockTranscripts.length > 0 && (
-        <Card sx={{ mt: 3, width: "100%" }}>
-          <CardContent>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-              <Typography variant="h6">Upload Queue (1)</Typography>
-              <Chip icon={<CheckCircle />} label="Completed" color="success" size="small" />
-            </Box>
-            <Typography variant="body1">{demoFileName}</Typography>
-            <Alert severity="success" sx={{ mt: 1 }}>
-              <Typography variant="body2">
-                <strong>Transcription completed in 45s</strong>
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Detected 3 speakers
-              </Typography>
-            </Alert>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Upload Queue */}
-      {!isDemo && uploadFiles.length > 0 && (
+      {uploadFiles.length > 0 && (
         <Card sx={{ mt: 3, width: "100%" }}>
           <CardContent>
             <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -476,7 +462,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         }}
         onTrySmaller={() => {
           setTokenError(null);
-          console.log('User will try a smaller file');
+          // User will try a smaller file
         }}
       />
     </Box>

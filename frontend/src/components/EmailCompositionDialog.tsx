@@ -132,11 +132,11 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
       .filter(speaker => speaker.email && speaker.email.trim())
       .map(speaker => speaker.email!.trim());
     
-    console.log('📧 Debug - filtered emails:', emails);
+    // Email validation and filtering logic
     
     // Remove duplicates using Set
     const uniqueEmails = Array.from(new Set(emails));
-    console.log('📧 Debug - unique emails:', uniqueEmails);
+    // Remove duplicate emails
     return uniqueEmails;
   };
 

@@ -6,6 +6,7 @@ export interface FileUploadFile {
   error?: string;
   analysisId?: string;
   batchJobId?: string;
+  successMessage?: string;
   result?: {
     processingTimeMs?: number;
     speakerCount?: number;
