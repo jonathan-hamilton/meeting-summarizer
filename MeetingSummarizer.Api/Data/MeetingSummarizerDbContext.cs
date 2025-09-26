@@ -38,6 +38,11 @@ public class MeetingSummarizerDbContext : DbContext
     public DbSet<TokenUsage> TokenUsages { get; set; } = null!;
     
     /// <summary>
+    /// Webhook events for replay attack prevention
+    /// </summary>
+    public DbSet<WebhookEvent> WebhookEvents { get; set; } = null!;
+    
+    /// <summary>
     /// Batch transcription jobs for longer meetings
     /// </summary>
     public DbSet<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = null!;
@@ -277,6 +282,24 @@ public class MeetingSummarizerDbContext : DbContext
                 .WithMany(s => s.ActionItems)
                 .HasForeignKey(a => a.SummaryId)
                 .OnDelete(DeleteBehavior.Cascade); // When summary deleted, delete its action items
+        });
+
+        // Configure WebhookEvent entity
+        modelBuilder.Entity<WebhookEvent>(entity =>
+        {
+            entity.HasKey(we => we.Id);
+            entity.HasIndex(we => we.EventId).IsUnique(); // Prevent duplicate event processing
+            entity.HasIndex(we => we.PaymentIntentId); // For payment intent lookups
+            entity.HasIndex(we => we.ProcessedAt); // For chronological queries
+            entity.HasIndex(we => new { we.EventType, we.ProcessedAt }); // For event type filtering
+            
+            entity.Property(we => we.EventId).IsRequired().HasMaxLength(255);
+            entity.Property(we => we.EventType).IsRequired().HasMaxLength(100);
+            entity.Property(we => we.PaymentIntentId).HasMaxLength(255);
+            entity.Property(we => we.Status).IsRequired().HasMaxLength(50);
+            entity.Property(we => we.ErrorMessage).HasMaxLength(1000);
+            entity.Property(we => we.ProcessedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(we => we.RawPayload).HasColumnType("nvarchar(max)");
         });
 
         // Configure enums
