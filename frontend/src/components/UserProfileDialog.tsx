@@ -24,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useUserProfileStore, useUserProfileDialogState, useUserProfileDialogClose } from '../stores/userProfileStore';
 import { useAuthStore } from '../stores/authStore';
+import { useTokenStore } from '../stores/tokenStore';
 import { UserProfileForm } from './UserProfileForm';
 import { useAccessibilityStore } from '../stores/accessibilityStore';
 import FocusTrap from 'focus-trap-react';
@@ -39,6 +40,9 @@ export const UserProfileDialog: React.FC = () => {
   // Get authenticated user from auth store
   const authUser = useAuthStore((state) => state.user);
   const { resendVerificationEmail } = useAuthStore();
+  
+  // Get current token balance from token store (this updates after transactions)
+  const currentTokenBalance = useTokenStore((state) => state.balance);
   
   // Get actions separately to avoid re-renders
   const setProfile = useUserProfileStore((state) => state.setProfile);
@@ -305,7 +309,7 @@ export const UserProfileDialog: React.FC = () => {
                 color: 'primary.contrastText'
               }}>
                 <Typography variant="h4" component="span">
-                  {displayUser.tokenBalance.toLocaleString()}
+                  {currentTokenBalance.toLocaleString()}
                 </Typography>
                 <Typography variant="body1">
                   tokens available

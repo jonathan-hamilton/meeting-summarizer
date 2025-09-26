@@ -18,6 +18,7 @@ interface FileDropzoneProps {
   onDemoStart?: () => void;
   onStepAction?: (action: string) => void;
   children?: React.ReactNode;
+  disabled?: boolean; // Add explicit disabled prop
 }
 
 const acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'];
@@ -30,7 +31,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   mockTranscripts = [],
   onDemoStart,
   onStepAction,
-  children
+  children,
+  disabled = false
 }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: onFilesDropped,
@@ -39,7 +41,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
-    disabled: hasCompletedFile,
+    disabled: disabled || isDemo, // Use explicit disabled prop
     noClick: isDemo,
     noKeyboard: isDemo,
   });

@@ -218,6 +218,8 @@ const AppContent: React.FC = () => {
     setTranscriptionResults((prev) => [result, ...prev]);
     // Also add to sessionStore for consistent session data tracking
     addTranscript(result);
+    // Refresh token balance after successful transcription (tokens were consumed)
+    refreshBalance();
     // Announce completion to screen readers
     announceTranscriptionComplete();
   };

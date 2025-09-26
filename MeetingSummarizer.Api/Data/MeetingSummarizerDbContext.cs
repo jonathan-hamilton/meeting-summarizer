@@ -43,6 +43,11 @@ public class MeetingSummarizerDbContext : DbContext
     public DbSet<WebhookEvent> WebhookEvents { get; set; } = null!;
     
     /// <summary>
+    /// Token refunds for failed transcriptions
+    /// </summary>
+    public DbSet<TokenRefund> TokenRefunds { get; set; } = null!;
+    
+    /// <summary>
     /// Batch transcription jobs for longer meetings
     /// </summary>
     public DbSet<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = null!;
@@ -300,6 +305,31 @@ public class MeetingSummarizerDbContext : DbContext
             entity.Property(we => we.ErrorMessage).HasMaxLength(1000);
             entity.Property(we => we.ProcessedAt).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(we => we.RawPayload).HasColumnType("nvarchar(max)");
+        });
+
+        // Configure TokenRefund entity
+        modelBuilder.Entity<TokenRefund>(entity =>
+        {
+            entity.HasKey(tr => tr.Id);
+            entity.HasIndex(tr => tr.UserId);
+            entity.HasIndex(tr => tr.BatchJobId);
+            entity.HasIndex(tr => tr.RefundedAt);
+            
+            entity.Property(tr => tr.Reason).IsRequired().HasMaxLength(500);
+            entity.Property(tr => tr.BalanceBefore).HasColumnType("decimal(18,2)");
+            entity.Property(tr => tr.BalanceAfter).HasColumnType("decimal(18,2)");
+            entity.Property(tr => tr.RefundedAt).HasDefaultValueSql("GETUTCDATE()");
+            
+            // Configure relationships
+            entity.HasOne(tr => tr.User)
+                .WithMany()
+                .HasForeignKey(tr => tr.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
+            entity.HasOne(tr => tr.BatchJob)
+                .WithMany()
+                .HasForeignKey(tr => tr.BatchJobId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Configure enums

@@ -4,9 +4,11 @@ import {
   List,
   ListItem,
   Typography,
-  Alert
+  Alert,
+  IconButton,
+  Tooltip
 } from '@mui/material';
-import { AudioFile, CheckCircle, Psychology } from '@mui/icons-material';
+import { AudioFile, CheckCircle, Psychology, Clear } from '@mui/icons-material';
 import { WorkflowStepper } from './WorkflowStepper';
 import { BatchJobHandler } from './BatchJobHandler';
 // Import removed - formatDuration not used
@@ -17,6 +19,8 @@ interface UploadProgressProps {
   batchJob?: BatchJobStatus | null;
   isPolling?: boolean;
   batchError?: string | null;
+  onClearFile?: (fileId: string) => void;
+  onRetryFile?: (fileId: string) => void;
 }
 
 const getStatusIcon = (status: FileUploadFile["status"]) => {
@@ -48,7 +52,9 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
   uploadFiles,
   batchJob,
   isPolling = false,
-  batchError
+  batchError,
+  onClearFile,
+  onRetryFile: _onRetryFile // Unused for now
 }) => {
   if (uploadFiles.length === 0) {
     return null;
@@ -87,7 +93,23 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
 
             {/* Error Display */}
             {uploadFile.error && (
-              <Alert severity="error" sx={{ mt: 1 }}>
+              <Alert 
+                severity="error" 
+                sx={{ mt: 1 }}
+                action={
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Tooltip title="Try again with a different file">
+                      <IconButton
+                        color="inherit"
+                        size="small"
+                        onClick={() => onClearFile?.(uploadFile.id)}
+                      >
+                        <Clear />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                }
+              >
                 {uploadFile.error}
               </Alert>
             )}
