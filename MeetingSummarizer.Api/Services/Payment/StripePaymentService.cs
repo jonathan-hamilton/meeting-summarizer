@@ -1,6 +1,9 @@
 using MeetingSummarizer.Api.Models.Payment;
 using MeetingSummarizer.Api.Configuration;
+using MeetingSummarizer.Api.Data;
+using MeetingSummarizer.Api.Data.Entities;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using Stripe;
 using System.Text.Json;
 
@@ -14,13 +17,16 @@ public class StripePaymentService : IPaymentService
     private readonly ILogger<StripePaymentService> _logger;
     private readonly StripeClient _stripeClient;
     private readonly StripeOptions _stripeOptions;
+    private readonly MeetingSummarizerDbContext _context;
 
     public StripePaymentService(
         ILogger<StripePaymentService> logger,
-        IOptions<StripeOptions> stripeOptions)
+        IOptions<StripeOptions> stripeOptions,
+        MeetingSummarizerDbContext context)
     {
         _logger = logger;
         _stripeOptions = stripeOptions.Value;
+        _context = context;
         
         if (!_stripeOptions.IsValid())
         {
@@ -56,7 +62,7 @@ public class StripePaymentService : IPaymentService
                 {
                     ["userId"] = request.UserId,
                     ["tokenCount"] = request.TokenCount.ToString(),
-                    ["amountUsd"] = request.Amount.ToString("F2")
+                    ["expectedAmount"] = request.Amount.ToString("F2")
                 },
                 AutomaticPaymentMethods = new PaymentIntentAutomaticPaymentMethodsOptions
                 {
@@ -172,10 +178,53 @@ public class StripePaymentService : IPaymentService
                 };
             }
 
-            var stripeEvent = EventUtility.ConstructEvent(json, signature, _stripeOptions.WebhookSecret);
+            var stripeEvent = EventUtility.ConstructEvent(json, signature, _stripeOptions.WebhookSecret, throwOnApiVersionMismatch: false);
             
             _logger.LogInformation("Processing Stripe event: {EventType}, ID: {EventId}", 
                 stripeEvent.Type, stripeEvent.Id);
+
+            // Check if this event has already been processed (prevent replay attacks)
+            var existingEvent = await _context.WebhookEvents
+                .FirstOrDefaultAsync(we => we.EventId == stripeEvent.Id);
+            
+            if (existingEvent != null)
+            {
+                _logger.LogWarning("Webhook event {EventId} already processed at {ProcessedAt} with status {Status}", 
+                    stripeEvent.Id, existingEvent.ProcessedAt, existingEvent.Status);
+                
+                return new WebhookProcessingResult
+                {
+                    Success = existingEvent.Status == "success",
+                    ErrorMessage = existingEvent.Status == "success" ? null : "Event already processed with failure",
+                    EventType = stripeEvent.Type
+                };
+            }
+
+            // Create webhook event record (mark as processing)
+            var webhookEvent = new WebhookEvent
+            {
+                EventId = stripeEvent.Id,
+                EventType = stripeEvent.Type,
+                Status = "processing",
+                RawPayload = json,
+                ProcessedAt = DateTime.UtcNow
+            };
+
+            // Extract payment intent ID if available
+            if (stripeEvent.Data?.Object is PaymentIntent paymentIntent)
+            {
+                webhookEvent.PaymentIntentId = paymentIntent.Id;
+                if (paymentIntent.Metadata?.ContainsKey("userId") == true)
+                {
+                    if (Guid.TryParse(paymentIntent.Metadata["userId"], out var userId))
+                    {
+                        webhookEvent.UserId = userId;
+                    }
+                }
+            }
+
+            _context.WebhookEvents.Add(webhookEvent);
+            await _context.SaveChangesAsync(); // Save immediately to prevent race conditions
 
             var result = new WebhookProcessingResult
             {
@@ -204,12 +253,36 @@ public class StripePaymentService : IPaymentService
                     break;
             }
 
+            // Update webhook event status based on processing result
+            webhookEvent.Status = result.Success ? "success" : "failed";
+            webhookEvent.ErrorMessage = result.Success ? null : result.ErrorMessage;
+            await _context.SaveChangesAsync();
+
             result.EventType = stripeEvent.Type;
             return result;
         }
         catch (StripeException ex)
         {
             _logger.LogError(ex, "Stripe error processing webhook: {ErrorMessage}", ex.Message);
+            
+            // Try to update webhook status if we have the event
+            try
+            {
+                var failedEvent = await _context.WebhookEvents
+                    .FirstOrDefaultAsync(we => we.Status == "processing" 
+                        && we.ProcessedAt >= DateTime.UtcNow.AddMinutes(-5)); // Last 5 minutes
+                if (failedEvent != null)
+                {
+                    failedEvent.Status = "failed";
+                    failedEvent.ErrorMessage = ex.Message;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception dbEx)
+            {
+                _logger.LogError(dbEx, "Failed to update webhook event status after Stripe error");
+            }
+            
             return new WebhookProcessingResult
             {
                 Success = false,
@@ -220,6 +293,25 @@ public class StripePaymentService : IPaymentService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error processing webhook");
+            
+            // Try to update webhook status if we have the event
+            try
+            {
+                var failedEvent = await _context.WebhookEvents
+                    .FirstOrDefaultAsync(we => we.Status == "processing" 
+                        && we.ProcessedAt >= DateTime.UtcNow.AddMinutes(-5)); // Last 5 minutes
+                if (failedEvent != null)
+                {
+                    failedEvent.Status = "failed";
+                    failedEvent.ErrorMessage = ex.Message;
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception dbEx)
+            {
+                _logger.LogError(dbEx, "Failed to update webhook event status after unexpected error");
+            }
+            
             return new WebhookProcessingResult
             {
                 Success = false,
@@ -422,48 +514,81 @@ public class StripePaymentService : IPaymentService
     {
         try
         {
-            EventUtility.ConstructEvent(payload, signature, secret);
+            _logger.LogInformation("Validating webhook signature - Payload length: {PayloadLength}, Signature: {Signature}, Secret: {Secret}", 
+                payload?.Length ?? 0, signature, secret);
+            
+            EventUtility.ConstructEvent(payload, signature, secret, throwOnApiVersionMismatch: false);
+            _logger.LogInformation("Webhook signature validation passed");
             return true;
         }
-        catch (StripeException)
+        catch (StripeException ex)
         {
+            _logger.LogWarning("Webhook signature validation failed: {ErrorMessage}", ex.Message);
             return false;
         }
     }
 
     #region Private Helper Methods
 
-    private async Task<WebhookProcessingResult> HandlePaymentSucceededAsync(Event stripeEvent)
+    private Task<WebhookProcessingResult> HandlePaymentSucceededAsync(Event stripeEvent)
     {
         var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
         if (paymentIntent == null)
         {
-            return new WebhookProcessingResult
+            return Task.FromResult(new WebhookProcessingResult
             {
                 Success = false,
                 ErrorMessage = "Invalid payment intent data in webhook"
-            };
+            });
         }
 
         var userId = paymentIntent.Metadata.GetValueOrDefault("userId");
         var tokenCountStr = paymentIntent.Metadata.GetValueOrDefault("tokenCount");
+        var expectedAmountStr = paymentIntent.Metadata.GetValueOrDefault("expectedAmount");
 
         if (string.IsNullOrEmpty(userId) || !int.TryParse(tokenCountStr, out var tokenCount))
         {
             _logger.LogWarning("Missing or invalid metadata in payment intent {PaymentIntentId}", paymentIntent.Id);
-            return new WebhookProcessingResult
+            return Task.FromResult(new WebhookProcessingResult
             {
                 Success = false,
                 ErrorMessage = "Missing required metadata in payment intent"
-            };
+            });
         }
 
         var amountPaid = paymentIntent.Amount / 100m; // Convert from cents to dollars
 
+        // Validate payment amount matches expected amount (if provided)
+        if (!string.IsNullOrEmpty(expectedAmountStr) && decimal.TryParse(expectedAmountStr, out var expectedAmount))
+        {
+            if (Math.Abs(amountPaid - expectedAmount) > 0.01m) // Allow 1 cent tolerance for rounding
+            {
+                _logger.LogWarning("Payment amount mismatch for payment intent {PaymentIntentId}: Expected ${ExpectedAmount}, got ${ActualAmount}", 
+                    paymentIntent.Id, expectedAmount, amountPaid);
+                return Task.FromResult(new WebhookProcessingResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Payment amount mismatch: expected ${expectedAmount}, got ${amountPaid}"
+                });
+            }
+        }
+
+        // Validate token count makes sense (basic sanity check)
+        if (tokenCount <= 0 || tokenCount > 100000) // Max 100K tokens per purchase
+        {
+            _logger.LogWarning("Invalid token count {TokenCount} in payment intent {PaymentIntentId}", 
+                tokenCount, paymentIntent.Id);
+            return Task.FromResult(new WebhookProcessingResult
+            {
+                Success = false,
+                ErrorMessage = $"Invalid token count: {tokenCount}"
+            });
+        }
+
         _logger.LogInformation("Payment succeeded for user {UserId}, tokens {TokenCount}, amount {AmountPaid}, payment intent {PaymentIntentId}", 
             userId, tokenCount, amountPaid, paymentIntent.Id);
 
-        return new WebhookProcessingResult
+        return Task.FromResult(new WebhookProcessingResult
         {
             Success = true,
             EventType = Events.PaymentIntentSucceeded,
@@ -471,19 +596,19 @@ public class StripePaymentService : IPaymentService
             UserId = userId,
             TokensToAdd = tokenCount,
             AmountPaid = amountPaid
-        };
+        });
     }
 
-    private async Task<WebhookProcessingResult> HandlePaymentFailedAsync(Event stripeEvent)
+    private Task<WebhookProcessingResult> HandlePaymentFailedAsync(Event stripeEvent)
     {
         var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
         if (paymentIntent == null)
         {
-            return new WebhookProcessingResult
+            return Task.FromResult(new WebhookProcessingResult
             {
                 Success = false,
                 ErrorMessage = "Invalid payment intent data in webhook"
-            };
+            });
         }
 
         var userId = paymentIntent.Metadata.GetValueOrDefault("userId");
@@ -491,35 +616,35 @@ public class StripePaymentService : IPaymentService
         _logger.LogWarning("Payment failed for user {UserId}, payment intent {PaymentIntentId}", 
             userId, paymentIntent.Id);
 
-        return new WebhookProcessingResult
+        return Task.FromResult(new WebhookProcessingResult
         {
             Success = true,
             EventType = Events.PaymentIntentPaymentFailed,
             PaymentIntentId = paymentIntent.Id,
             UserId = userId
-        };
+        });
     }
 
-    private async Task<WebhookProcessingResult> HandleDisputeCreatedAsync(Event stripeEvent)
+    private Task<WebhookProcessingResult> HandleDisputeCreatedAsync(Event stripeEvent)
     {
         var dispute = stripeEvent.Data.Object as Dispute;
         if (dispute == null)
         {
-            return new WebhookProcessingResult
+            return Task.FromResult(new WebhookProcessingResult
             {
                 Success = false,
                 ErrorMessage = "Invalid dispute data in webhook"
-            };
+            });
         }
 
         _logger.LogWarning("Dispute created for charge {ChargeId}, amount {Amount}", 
             dispute.ChargeId, dispute.Amount / 100m);
 
-        return new WebhookProcessingResult
+        return Task.FromResult(new WebhookProcessingResult
         {
             Success = true,
             EventType = Events.ChargeDisputeCreated
-        };
+        });
     }
 
     #endregion

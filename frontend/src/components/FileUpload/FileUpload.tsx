@@ -17,6 +17,7 @@ import InsufficientTokensDialog from "../InsufficientTokensDialog";
 import { createApiService } from "../../services/apiServiceFactory";
 // import { useEnhancedSessionStore } from "../../stores/enhancedSessionStore"; // Not used due to interface mismatch
 import { useBatchJobPollingStore } from "../../hooks/useBatchJobPollingStore";
+import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
 
 import { FileDropzone } from "./FileDropzone";
@@ -51,6 +52,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction } = useTourStore();
   // const { sessionToken } = useEnhancedSessionStore(); // Not available in current interface
   const { currentJob: batchJob, startPolling, pollingError: batchError, isPolling } = useBatchJobPollingStore();
+  const { balance: tokenBalance, refreshBalance } = useTokenStore();
   
   // S6.5: Add SignalR for real-time progress updates (unused for now)
   // const signalRProgress = useSignalRBatchProgress();
@@ -69,6 +71,55 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const apiService = createApiService(mode);
   const hasCompletedFile = uploadFiles.some(f => f.status === 'completed');
+
+  // Token calculation function (matches backend TokenCalculationService)
+  const calculateTokensRequired = useCallback((durationMinutes: number): number => {
+    if (durationMinutes <= 0) return 100; // Minimum 1 increment
+    
+    // Base calculation: 100 tokens per 15-minute increment (rounded up)
+    const baseTokens = Math.ceil(durationMinutes / 15.0) * 100;
+    
+    // Apply volume discount multiplier (matches backend logic)
+    let discountMultiplier = 1.0;
+    if (durationMinutes >= 60) discountMultiplier = 0.7;        // 30% discount
+    else if (durationMinutes >= 45) discountMultiplier = 0.8;   // 20% discount  
+    else if (durationMinutes >= 30) discountMultiplier = 0.9;   // 10% discount
+    // else 15-29 minutes = 1.0 (no discount)
+    
+    return Math.floor(baseTokens * discountMultiplier);
+  }, []);
+
+  // Pre-flight token validation
+  const validateTokenBalance = useCallback(async (file: File): Promise<{ valid: boolean; required?: number; estimatedDuration?: number }> => {
+    try {
+      // Refresh token balance to ensure we have the latest data
+      await refreshBalance();
+      
+      // Estimate duration based on file size (rough approximation)
+      // Assuming ~1MB per minute for typical audio files
+      const fileSizeMB = file.size / (1024 * 1024);
+      const estimatedDurationMinutes = Math.max(1, Math.ceil(fileSizeMB));
+      
+      // Calculate required tokens
+      const requiredTokens = calculateTokensRequired(estimatedDurationMinutes);
+      
+      // Check if user has sufficient balance
+      if (tokenBalance < requiredTokens) {
+        return {
+          valid: false,
+          required: requiredTokens,
+          estimatedDuration: estimatedDurationMinutes
+        };
+      }
+      
+      return { valid: true };
+      
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      // On error, allow upload to proceed (backend will handle validation)
+      return { valid: true };
+    }
+  }, [tokenBalance, refreshBalance, calculateTokensRequired]);
 
   const uploadFileToServer = useCallback(
     async (uploadFile: FileUploadFile) => {
@@ -167,7 +218,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   );
 
   const onDrop = useCallback(
-    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
+    async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       if (isDemo) {
         startDemoUpload();
         triggerStepAction('file-select');
@@ -190,6 +241,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
         setValidationErrors(errors);
       }
 
+      // Pre-flight token validation for each file
+      for (const file of validFiles) {
+        const validation = await validateTokenBalance(file);
+        
+        if (!validation.valid && validation.required && validation.estimatedDuration) {
+          // Show insufficient tokens dialog
+          setTokenError({
+            required: validation.required,
+            available: tokenBalance,
+            estimatedDuration: validation.estimatedDuration,
+            fileName: file.name,
+          });
+          setTokenDialogOpen(true);
+          return; // Stop processing if insufficient tokens
+        }
+      }
+
       const newFiles: FileUploadFile[] = validFiles.map((file) => ({
         file,
         id: `${file.name}-${Date.now()}-${Math.random()}`,
@@ -202,7 +270,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         uploadFileToServer(uploadFile);
       });
     },
-    [uploadFileToServer, isDemo, startDemoUpload, triggerStepAction]
+    [uploadFileToServer, isDemo, startDemoUpload, triggerStepAction, validateTokenBalance, tokenBalance]
   );
 
   return (

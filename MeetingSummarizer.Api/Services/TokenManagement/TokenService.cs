@@ -84,6 +84,29 @@ public class TokenService : ITokenService
                 throw new ArgumentException($"User {userId} not found", nameof(userId));
             }
 
+            // Check for duplicate payment (unique constraint should prevent this, but double-check)
+            var existingPurchase = await _context.TokenPurchases
+                .FirstOrDefaultAsync(tp => tp.PaymentId == stripePaymentIntentId);
+            
+            if (existingPurchase != null)
+            {
+                _logger.LogWarning("Duplicate payment attempt detected for payment ID {PaymentId}. Existing purchase: {ExistingId}", 
+                    stripePaymentIntentId, existingPurchase.Id);
+                return existingPurchase; // Return existing purchase instead of creating duplicate
+            }
+
+            // Validate token amount is reasonable
+            if (tokenAmount <= 0 || tokenAmount > 100000)
+            {
+                throw new ArgumentException($"Invalid token amount: {tokenAmount}. Must be between 1 and 100,000", nameof(tokenAmount));
+            }
+
+            // Validate amount paid is reasonable
+            if (amountPaid <= 0 || amountPaid > 10000) // Max $10,000 per purchase
+            {
+                throw new ArgumentException($"Invalid amount paid: ${amountPaid}. Must be between $0.01 and $10,000", nameof(amountPaid));
+            }
+
             var purchase = new TokenPurchase
             {
                 UserId = userGuid,
