@@ -64,7 +64,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // S6.5 Phase 3: Email dialog state using Zustand store
-  const { isDialogOpen: emailDialogOpen, openDialog: openEmailDialog, closeDialog: closeEmailDialog } = useEmailStore();
+  const { openDialog: openEmailDialog, closeDialog: closeEmailDialog } = useEmailStore();
   const location = useLocation();
 
   // Email button ref for direct event listener attachment
@@ -190,18 +190,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       const currentDetectedSpeakers = activeSpeakers; // Use activeSpeakers from centralized store
       const currentStoreMappings = getAllMappings();
       
-      // DEBUG: Log transcription ID info
-      console.log('=== TRANSCRIPT DISPLAY DEBUG ===');
-      console.log('transcription.transcriptionId:', transcription.transcriptionId);
-      console.log('Current session transcriptionId:', currentTranscriptionId);
-      console.log('All detected speakers:', allDetectedSpeakers);
-      console.log('Current store mappings:', currentStoreMappings);
-      console.log('Speaker segments sample:', transcription.speakerSegments?.slice(0, 3));
-      console.log('Individual speakers from segments:', transcription.speakerSegments?.map(s => (s as any).Speaker || s.speaker));
-      console.log('detectedSpeakers:', detectedSpeakers);
-      console.log('currentlyActiveSpeakers:', currentlyActiveSpeakers);
-      console.log('filteredDetectedSpeakers:', filteredDetectedSpeakers);
-      
       // Check if this is a new transcription (different ID)
       const isNewTranscription = currentTranscriptionId !== transcription.transcriptionId;
       
@@ -279,10 +267,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   // Create stable event handler using refs to avoid stale closures
   const stableEmailHandler = useCallback(() => {
-    console.log('🚨🚨🚨 STABLE HANDLER CALLED 🚨🚨🚨');
-    console.log('Current openEmailDialog:', typeof openEmailDialog);
-    console.log('Current transcription:', transcription?.transcriptionId);
-    
     openEmailDialog({
       transcriptData: {
         transcriptionId: transcription.transcriptionId,
@@ -292,23 +276,15 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       },
       speakerMappings: storeSpeakerMappings,
     });
-    console.log('✅ openEmailDialog called from stable handler');
   }, [openEmailDialog, transcription.transcriptionId, transcription.fileName, transcription.transcribedText, speakerSegments, storeSpeakerMappings]);
 
   // Direct event listener for email button to bypass React synthetic events
   useEffect(() => {
     const button = emailButtonRef.current;
     if (button) {
-      console.log('🔧 USEEFFECT: Email button found, attaching direct event listener', button);
-      console.log('🔧 Button element ID for tracking:', button.getAttribute('data-button-id') || 'no-id');
-      
       const handleDirectClick = (event: Event) => {
-        console.log('🚨🚨🚨 DIRECT EVENT LISTENER FIRED 🚨🚨🚨');
-        console.log('Direct event:', event);
         event.preventDefault();
         event.stopPropagation();
-        
-        console.log('About to call stable handler...');
         stableEmailHandler();
       };
 
@@ -317,19 +293,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       button.setAttribute('data-button-id', buttonId);
       
       button.addEventListener('click', handleDirectClick, true); // Use capture phase
-      console.log('🔧 Direct event listener attached with capture=true, button ID:', buttonId);
 
       return () => {
-        console.log('🔧 CLEANUP: Removing event listener from button ID:', button.getAttribute('data-button-id'));
         if (button && button.removeEventListener) {
           button.removeEventListener('click', handleDirectClick, true);
-          console.log('🔧 Direct event listener removed successfully');
-        } else {
-          console.log('🔧 Button element no longer available for cleanup');
         }
       };
-    } else {
-      console.log('🔧 USEEFFECT: Email button ref not found');
     }
   }, [stableEmailHandler]); // Only depend on the stable handler
 
@@ -487,22 +456,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   const isTranscriptPage = location.pathname.startsWith('/transcript');
   const shouldShowEmailButton = isAppPage || isTranscriptPage;
   
-  console.log('=== EMAIL BUTTON DEBUG ===');
-  console.log('location.pathname:', location.pathname);
-  console.log('isAppPage:', isAppPage);
-  console.log('isTranscriptPage:', isTranscriptPage);
-  console.log('shouldShowEmailButton:', shouldShowEmailButton);
-  console.log('emailDialogOpen:', emailDialogOpen);
-  console.log('isActionDisabledDuringTour(email-transcript):', isActionDisabledDuringTour('email-transcript'));
-  
   const handleEmailTranscript = useCallback(() => {
-    console.log('🔥🔥🔥 EMAIL BUTTON CLICKED - FUNCTION CALLED 🔥🔥🔥');
-    console.log('Current location:', location.pathname);
-    console.log('shouldShowEmailButton:', shouldShowEmailButton);
-    console.log('Current emailDialogOpen state:', emailDialogOpen);
-    console.log('openEmailDialog function:', openEmailDialog);
-    console.log('Opening email dialog with Zustand store...');
-    
     // Open dialog with transcript context
     openEmailDialog({
       transcriptData: {
@@ -521,24 +475,17 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   const handleEmailSend = useCallback(async (emailData: any) => {
     try {
-      console.log('Sending transcript email:', emailData);
-      
       const result = await emailService.emailTranscript(transcription.transcriptionId, {
         recipients: emailData.recipients,
         subject: emailData.subject,
         includeTranscript: emailData.includeTranscript !== false // default to true
       });
       
-      if (result.success) {
-        console.log('✅ Transcript email sent successfully');
-        // You could show a success toast here
-      } else {
+      if (!result.success) {
         console.error('❌ Failed to send transcript email:', result.message);
-        // You could show an error toast here
       }
     } catch (error) {
       console.error('❌ Error sending transcript email:', error);
-      // You could show an error toast here
     } finally {
       closeEmailDialog();
     }
@@ -689,14 +636,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         )}
 
         {/* Speaker segments display */}
-        {(() => {
-          console.log('🔍 RENDER PATH DEBUG:', {
-            speakerSegments: speakerSegments?.length || 0,
-            hasSegments: !!(speakerSegments && speakerSegments.length > 0),
-            transcribedText: !!transcription.transcribedText
-          });
-          return null;
-        })()}
         {speakerSegments && speakerSegments.length > 0 ? (
           <Box
             id="transcript-display"
@@ -738,8 +677,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                       size="small"
                       startIcon={<Email />}
                       onClick={(e) => {
-                        console.log('🎯🎯🎯 EMAIL BUTTON CLICKED!!! 🎯🎯🎯');
-                        console.log('🚀 Triggering email dialog from onClick event...');
                         e.preventDefault();
                         e.stopPropagation();
                         handleEmailTranscript();
@@ -926,10 +863,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       {/* Email Composition Dialog - for transcript emails on /app and /transcript pages */}
       {shouldShowEmailButton && (
         <>
-          {(() => {
-            console.log('📧 RENDERING EmailCompositionDialog directly (no lazy loading), shouldShowEmailButton:', shouldShowEmailButton);
-            return null;
-          })()}
           <EmailCompositionDialog
             onSend={handleEmailSend}
           />

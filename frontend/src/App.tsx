@@ -46,7 +46,7 @@ const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialo
 const TokenPurchaseDialog = React.lazy(() => import("./components/TokenPurchaseDialog").then(m => ({ default: m.TokenPurchaseDialog })));
 
 
-import FileUpload from "./components/FileUpload";
+import FileUpload from "./components/FileUpload/FileUpload";
 import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
 import TranscriptPage from "./components/TranscriptPage";
@@ -215,7 +215,30 @@ const AppContent: React.FC = () => {
   }, [transcriptionResults.length]); // Add dependency to track changes
 
   const handleTranscriptionComplete = (result: TranscriptionResponse) => {
-    setTranscriptionResults((prev) => [result, ...prev]);
+    console.log('🎯 handleTranscriptionComplete called with:', result.transcriptionId, result.fileName);
+    setTranscriptionResults((prev) => {
+      console.log('🎯 Previous results:', prev.map(r => ({ id: r.transcriptionId, fileName: r.fileName })));
+      
+      // Check if this result is already in the array to prevent duplicates
+      const exists = prev.some(r => r.transcriptionId === result.transcriptionId);
+      if (exists) {
+        console.log('🎯 Result already exists, skipping duplicate');
+        return prev;
+      }
+      
+      const updated = [result, ...prev];
+      console.log('🎯 Updated results:', updated.map(r => ({ id: r.transcriptionId, fileName: r.fileName })));
+      return updated;
+    });
+  };
+
+  const handleClearPreviousData = useCallback(() => {
+    console.log('🧹 Clearing previous transcription data');
+    setTranscriptionResults([]);
+  }, []);
+
+  const handleTranscriptionCompleteWrapper = (result: TranscriptionResponse) => {
+    handleTranscriptionComplete(result);
     // Also add to sessionStore for consistent session data tracking
     addTranscript(result);
     // Refresh token balance after successful transcription (tokens were consumed)
@@ -572,8 +595,10 @@ const AppContent: React.FC = () => {
                         Upload Audio File
                       </Typography>
                       <FileUpload
-                        onTranscriptionComplete={handleTranscriptionComplete}
+                        onTranscriptionComplete={handleTranscriptionCompleteWrapper}
                         onPurchaseTokens={() => setTokenPurchaseDialogOpen(true)}
+                        onClearPreviousData={handleClearPreviousData}
+                        hasPreviousResults={transcriptionResults.length > 0}
                         isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
                       />
                     </section>

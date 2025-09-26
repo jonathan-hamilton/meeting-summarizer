@@ -118,10 +118,11 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
             {uploadFile.result && (
               <Alert severity="success" sx={{ mt: 1 }}>
                 <Typography variant="body2">
-                  ✅ Transcription completed in{" "}
-                  {uploadFile.result.processingTimeMs && !isNaN(uploadFile.result.processingTimeMs) 
-                    ? formatTime(Math.round(uploadFile.result.processingTimeMs / 1000))
-                    : "N/A"}
+                  {uploadFile.successMessage || `✅ Transcription completed in ${
+                    uploadFile.result.processingTimeMs && !isNaN(uploadFile.result.processingTimeMs) 
+                      ? formatTime(Math.round(uploadFile.result.processingTimeMs / 1000))
+                      : "N/A"
+                  }`}
                 </Typography>
                 {uploadFile.result.speakerCount &&
                   uploadFile.result.speakerCount > 1 && (

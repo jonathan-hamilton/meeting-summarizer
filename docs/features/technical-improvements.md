@@ -6,6 +6,7 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[September 26: S6.11 FileUpload Enhancement & Performance Optimization](technical-improvements/2025/09-26-s6.11-fileupload-enhancement-performance.md)** - Complete FileUpload system overhaul with upload queue state management and console performance optimization
 - **[September 20: S6.6 Accessibility Store Architecture & Keyboard Navigation](technical-improvements/2025/09-20-s6.6-accessibility-store-architecture.md)** - Centralized accessibility state management with comprehensive keyboard navigation implementation
 - **[September 15: S6.5 DateTime Fix & Code Cleanup](technical-improvements/2025/09-15-s6.5-datetime-fix-code-cleanup.md)** - Entity Framework timezone handling and statistics code removal
 - **[September 13: S6.5 Meeting History Implementation Plan](technical-improvements/2025/09-13-s6.5-meeting-history-implementation-plan.md)** - Complete 3-phase architecture roadmap for persistent meeting management platform

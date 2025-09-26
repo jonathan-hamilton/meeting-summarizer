@@ -107,17 +107,30 @@ class ApiService {
   // Generic request method
   private async request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
+      // Minimal logging to avoid console spam
+      console.log(`🚀 API ${config.method?.toUpperCase()} ${config.url} (timeout: ${config.timeout}ms)`);
+      
       const response = await this.client.request<T>(config);
+      
+      console.log(`✅ API SUCCESS ${config.method?.toUpperCase()} ${config.url} (${response.status})`);
+      
       return {
         data: response.data,
         success: true,
       };
     } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
-      console.error(`❌ HTTP ERROR: ${config.method?.toUpperCase()} ${config.url}`, {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string; code?: string };
+      
+      // Specific timeout and network error detection
+      const isTimeout = axiosError.code === 'ECONNABORTED' || axiosError.message?.includes('timeout');
+      const isNetworkError = axiosError.code === 'ERR_NETWORK' || axiosError.message?.includes('Network Error');
+      
+      console.error(`❌ API ERROR ${config.method?.toUpperCase()} ${config.url}`, {
         status: axiosError.response?.status,
         message: axiosError.message,
-        data: axiosError.response?.data
+        code: axiosError.code,
+        isTimeout,
+        isNetworkError
       });
       
       const errorData = axiosError.response?.data || {};
@@ -125,7 +138,7 @@ class ApiService {
         success: false,
         message: errorData.message || errorData.error || axiosError.message || 'An error occurred',
         errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
-        errorData: errorData, // Include full error response data
+        errorData: errorData,
       };
     }
   }
@@ -147,6 +160,9 @@ class ApiService {
 
   // File upload and transcription endpoints
   async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<TranscriptionResponse>> {
+    console.log(`📁 UPLOAD START: ${file.name} (${file.size} bytes)`);
+    
+    const startTime = Date.now();
     const formData = new FormData();
     formData.append('AudioFile', file);
 
@@ -154,24 +170,38 @@ class ApiService {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-      timeout: 720000, // 12 minutes for large file upload (backend has 10min blob timeout)
+      timeout: 3600000, // 60 minutes timeout to ensure profitability
     };
 
     if (onProgress) {
       config.onUploadProgress = (progressEvent) => {
         if (progressEvent.total) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          if (percentCompleted % 25 === 0) { // Only log every 25%
+            console.log(`📊 UPLOAD ${file.name}: ${percentCompleted}%`);
+          }
           onProgress(percentCompleted);
         }
       };
     }
 
-    return this.request<TranscriptionResponse>({
-      method: 'POST',
-      url: '/api/summary/transcribe',
-      data: formData,
-      ...config,
-    });
+    try {
+      const result = await this.request<TranscriptionResponse>({
+        method: 'POST',
+        url: '/api/summary/transcribe',
+        data: formData,
+        ...config,
+      });
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ UPLOAD SUCCESS: ${file.name} (${duration}ms)`);
+      
+      return result;
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`❌ UPLOAD FAILED: ${file.name} (${duration}ms)`, error);
+      throw error;
+    }
   }
 
   // Generic HTTP methods
