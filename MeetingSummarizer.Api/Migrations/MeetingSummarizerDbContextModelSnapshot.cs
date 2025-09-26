@@ -394,6 +394,51 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("TokenPurchases");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenRefund", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("BalanceAfter")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BalanceBefore")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("BatchJobId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsAutomatic")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("RefundedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("TokensRefunded")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BatchJobId");
+
+                    b.HasIndex("RefundedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TokenRefunds");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenUsage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -687,6 +732,25 @@ namespace MeetingSummarizer.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TokenRefund", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.BatchTranscriptionJob", "BatchJob")
+                        .WithMany()
+                        .HasForeignKey("BatchJobId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("BatchJob");
 
                     b.Navigation("User");
                 });

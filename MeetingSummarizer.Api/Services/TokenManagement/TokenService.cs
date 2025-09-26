@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Models.Payment;
 
 namespace MeetingSummarizer.Api.Services.TokenManagement;
 
@@ -290,6 +291,137 @@ public class TokenService : ITokenService
         {
             _logger.LogError(ex, "Error generating token statistics for user {UserId}", userId);
             throw;
+        }
+    }
+
+    public async Task<bool> IsRefundAlreadyProcessedAsync(Guid batchJobId)
+    {
+        try
+        {
+            return await _context.TokenRefunds
+                .AnyAsync(tr => tr.BatchJobId == batchJobId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking if refund already processed for batch job {BatchJobId}", batchJobId);
+            return false; // Default to assuming not processed to avoid missing refunds
+        }
+    }
+
+    public async Task<TokenRefundResult> ProcessAutomaticRefundAsync(Guid batchJobId, string reason)
+    {
+        try
+        {
+            _logger.LogInformation("Processing automatic token refund for batch job {BatchJobId}. Reason: {Reason}", 
+                batchJobId, reason);
+
+            // Check if refund already processed
+            var existingRefund = await _context.TokenRefunds
+                .FirstOrDefaultAsync(tr => tr.BatchJobId == batchJobId);
+            
+            if (existingRefund != null)
+            {
+                _logger.LogWarning("Refund for batch job {BatchJobId} already processed on {RefundedAt}", 
+                    batchJobId, existingRefund.RefundedAt);
+                
+                return new TokenRefundResult
+                {
+                    Success = true,
+                    AlreadyProcessed = true,
+                    TokensRefunded = existingRefund.TokensRefunded,
+                    BalanceBefore = existingRefund.BalanceBefore,
+                    BalanceAfter = existingRefund.BalanceAfter,
+                    Reason = existingRefund.Reason
+                };
+            }
+
+            // Get the batch job with token usage information
+            var batchJob = await _context.BatchTranscriptionJobs
+                .FirstOrDefaultAsync(bj => bj.Id == batchJobId);
+
+            if (batchJob == null)
+            {
+                var error = $"Batch job {batchJobId} not found";
+                _logger.LogError(error);
+                return new TokenRefundResult { Success = false, ErrorMessage = error };
+            }
+
+            // Only refund if tokens were actually charged
+            if (batchJob.TokensCharged <= 0)
+            {
+                _logger.LogInformation("No tokens were charged for batch job {BatchJobId}, no refund needed", batchJobId);
+                return new TokenRefundResult 
+                { 
+                    Success = true, 
+                    TokensRefunded = 0,
+                    Reason = "No tokens were charged for this job"
+                };
+            }
+
+            // Get the user to refund tokens to
+            var user = await _context.Users.FindAsync(batchJob.UserId);
+            if (user == null)
+            {
+                var error = $"User {batchJob.UserId} not found for batch job {batchJobId}";
+                _logger.LogError(error);
+                return new TokenRefundResult { Success = false, ErrorMessage = error };
+            }
+
+            var tokensToRefund = batchJob.TokensCharged;
+            var balanceBefore = user.TokenBalance;
+            var balanceAfter = balanceBefore + tokensToRefund;
+
+            // Create refund record
+            var tokenRefund = new TokenRefund
+            {
+                UserId = user.Id,
+                BatchJobId = batchJobId,
+                TokensRefunded = tokensToRefund,
+                Reason = reason,
+                BalanceBefore = balanceBefore,
+                BalanceAfter = balanceAfter,
+                IsAutomatic = true,
+                RefundedAt = DateTime.UtcNow
+            };
+
+            // Update user balance
+            user.TokenBalance = balanceAfter;
+
+            // Save changes in a transaction
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _context.TokenRefunds.Add(tokenRefund);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Automatic token refund processed for user {UserId}: {TokensRefunded} tokens refunded. Balance: {BalanceBefore} -> {BalanceAfter}", 
+                    user.Id, tokensToRefund, balanceBefore, balanceAfter);
+
+                return new TokenRefundResult
+                {
+                    Success = true,
+                    TokensRefunded = tokensToRefund,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    Reason = reason
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to save automatic refund for batch job {BatchJobId}", batchJobId);
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing automatic token refund for batch job {BatchJobId}", batchJobId);
+            return new TokenRefundResult 
+            { 
+                Success = false, 
+                ErrorMessage = ex.Message 
+            };
         }
     }
 }

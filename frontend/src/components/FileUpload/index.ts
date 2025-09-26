@@ -1,3 +1,4 @@
+export { default } from './FileUpload';
 export { FileDropzone } from './FileDropzone';
 export { WorkflowStepper } from './WorkflowStepper';
 export { UploadProgress } from './UploadProgress';

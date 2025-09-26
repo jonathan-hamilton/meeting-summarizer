@@ -1,5 +1,6 @@
 using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Models.Payment;
 
 namespace MeetingSummarizer.Api.Services.TokenManagement;
 
@@ -78,4 +79,20 @@ public interface ITokenService
     /// <param name="userId">User identifier</param>
     /// <returns>Token statistics including balance, total purchased, total used</returns>
     Task<TokenStatistics> GetTokenStatisticsAsync(string userId);
+
+    /// <summary>
+    /// Checks if a refund has already been processed for a batch job
+    /// </summary>
+    /// <param name="batchJobId">The batch job to check</param>
+    /// <returns>True if refund already processed</returns>
+    Task<bool> IsRefundAlreadyProcessedAsync(Guid batchJobId);
+
+    /// <summary>
+    /// Process an automatic token refund for a failed batch transcription job.
+    /// Restores tokens to user's balance when system failures occur.
+    /// </summary>
+    /// <param name="batchJobId">The failed batch job</param>
+    /// <param name="reason">Reason for the refund</param>
+    /// <returns>Result indicating success and details</returns>
+    Task<TokenRefundResult> ProcessAutomaticRefundAsync(Guid batchJobId, string reason);
 }

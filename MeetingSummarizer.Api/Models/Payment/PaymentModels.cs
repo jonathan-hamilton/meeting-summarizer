@@ -260,3 +260,44 @@ public class PaymentDetails
     /// </summary>
     public Dictionary<string, string> Metadata { get; set; } = new();
 }
+
+/// <summary>
+/// Result of automatic token refund processing
+/// </summary>
+public class TokenRefundResult
+{
+    /// <summary>
+    /// Whether the refund was processed successfully
+    /// </summary>
+    public required bool Success { get; set; }
+
+    /// <summary>
+    /// Number of tokens that were refunded
+    /// </summary>
+    public int TokensRefunded { get; set; }
+
+    /// <summary>
+    /// User's token balance before the refund
+    /// </summary>
+    public decimal BalanceBefore { get; set; }
+
+    /// <summary>
+    /// User's token balance after the refund
+    /// </summary>
+    public decimal BalanceAfter { get; set; }
+
+    /// <summary>
+    /// Reason for the refund
+    /// </summary>
+    public string? Reason { get; set; }
+
+    /// <summary>
+    /// Error message if refund failed
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Whether this refund was already processed
+    /// </summary>
+    public bool AlreadyProcessed { get; set; } = false;
+}
