@@ -210,6 +210,10 @@ builder.Services.AddHttpClient<AzureBatchTranscriptionService>();
 builder.Services.AddScoped<AzureBatchTranscriptionService>();
 builder.Services.AddHostedService<BatchJobMonitorService>();
 
+// Register Fast Transcription Service (Performance Optimization)
+builder.Services.AddHttpClient<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>();
+builder.Services.AddScoped<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>();
+
 // Configure Kestrel server for large file uploads
 builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
 {

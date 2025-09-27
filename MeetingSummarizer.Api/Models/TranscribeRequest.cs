@@ -3,6 +3,25 @@ using System.ComponentModel.DataAnnotations;
 namespace MeetingSummarizer.Api.Models;
 
 /// <summary>
+/// Request model for estimating audio file duration without upload
+/// </summary>
+public class EstimateDurationRequest
+{
+    /// <summary>
+    /// The file size in bytes
+    /// </summary>
+    [Required]
+    [Range(1, long.MaxValue, ErrorMessage = "File size must be greater than 0")]
+    public long FileSizeBytes { get; set; }
+
+    /// <summary>
+    /// The file name (used to determine file type for accurate estimation)
+    /// </summary>
+    [Required(ErrorMessage = "File name is required")]
+    public string FileName { get; set; } = string.Empty;
+}
+
+/// <summary>
 /// Request model for audio transcription
 /// </summary>
 public class TranscribeRequest
