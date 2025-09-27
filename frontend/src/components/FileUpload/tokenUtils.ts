@@ -1,4 +1,5 @@
 // Shared utilities for token calculations and formatting
+import { apiService } from '../../services/apiService';
 
 export interface TokenCalculation {
   requiredTokens: number;
@@ -45,12 +46,57 @@ export const getDiscountInfo = (durationMinutes: number): { hasDiscount: boolean
 };
 
 /**
- * Estimate file duration based on file size (rough approximation)
- * Assuming ~1MB per minute for typical audio files
+ * Estimate file duration using API (preferred method for accuracy)
  */
-export const estimateFileDuration = (fileSizeBytes: number): number => {
-  const fileSizeMB = fileSizeBytes / (1024 * 1024);
-  return Math.max(1, Math.ceil(fileSizeMB));
+export const estimateFileDurationAsync = async (fileSizeBytes: number, fileName: string): Promise<number> => {
+  try {
+    const response = await apiService.estimateDuration(fileSizeBytes, fileName);
+    if (response.success && response.data) {
+      return response.data.durationMinutes;
+    } else {
+      console.warn('API duration estimation failed, falling back to client-side calculation:', response.message);
+      return estimateFileDuration(fileSizeBytes, fileName);
+    }
+  } catch (error) {
+    console.warn('Error calling duration estimation API, falling back to client-side calculation:', error);
+    return estimateFileDuration(fileSizeBytes, fileName);
+  }
+};
+
+/**
+ * Estimate file duration based on file size using realistic bitrates (fallback method)
+ * Matches backend EstimateAudioDurationMinutes logic
+ */
+export const estimateFileDuration = (fileSizeBytes: number, fileName?: string): number => {
+  const fileSizeBytes_actual = fileSizeBytes;
+  
+  // Determine bitrate based on file extension (matching backend logic)
+  const extension = fileName ? fileName.toLowerCase().split('.').pop() : 'unknown';
+  let bitrateKbps: number;
+  
+  switch (extension) {
+    case 'wav':
+      bitrateKbps = 700; // Realistic for meeting recordings
+      break;
+    case 'mp3':
+      bitrateKbps = 128;
+      break;
+    case 'flac':
+      bitrateKbps = 800;
+      break;
+    case 'm4a':
+      bitrateKbps = 128;
+      break;
+    default:
+      bitrateKbps = 256; // Conservative default
+      break;
+  }
+  
+  // Calculate duration: (file_size_bytes * 8) / (bitrate_kbps * 1000) / 60
+  const durationSeconds = (fileSizeBytes_actual * 8) / (bitrateKbps * 1000);
+  const durationMinutes = durationSeconds / 60;
+  
+  return Math.max(1, Math.round(durationMinutes));
 };
 
 /**
@@ -74,10 +120,43 @@ export const calculateEstimatedCost = (tokens: number): string => {
 };
 
 /**
+ * Get complete token calculation for a file (using API for accuracy)
+ */
+export const getTokenCalculationAsync = async (file: File): Promise<TokenCalculation> => {
+  const estimatedDuration = await estimateFileDurationAsync(file.size, file.name);
+  const requiredTokens = calculateTokensRequired(estimatedDuration);
+  const estimatedCost = calculateEstimatedCost(requiredTokens);
+  const discountInfo = getDiscountInfo(estimatedDuration);
+  
+  return {
+    requiredTokens,
+    estimatedDuration,
+    estimatedCost,
+    hasDiscount: discountInfo.hasDiscount,
+    discountPercentage: discountInfo.discountPercentage,
+  };
+};
+
+/**
+ * Get file estimation details for display (using API for accuracy)
+ */
+export const getFileEstimationAsync = async (file: File): Promise<FileEstimation> => {
+  const fileSizeMB = file.size / (1024 * 1024);
+  const estimatedDuration = await estimateFileDurationAsync(file.size, file.name);
+  
+  return {
+    fileName: file.name,
+    fileSize: formatFileSize(file.size),
+    fileSizeMB,
+    estimatedDuration,
+  };
+};
+
+/**
  * Get complete token calculation for a file
  */
 export const getTokenCalculation = (file: File): TokenCalculation => {
-  const estimatedDuration = estimateFileDuration(file.size);
+  const estimatedDuration = estimateFileDuration(file.size, file.name);
   const requiredTokens = calculateTokensRequired(estimatedDuration);
   const estimatedCost = calculateEstimatedCost(requiredTokens);
   const discountInfo = getDiscountInfo(estimatedDuration);

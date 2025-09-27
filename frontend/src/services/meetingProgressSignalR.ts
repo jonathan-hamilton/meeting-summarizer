@@ -36,20 +36,28 @@ class MeetingProgressSignalRService {
     this.connection = new HubConnectionBuilder()
       .withUrl(`${this.baseUrl}/meetingProgressHub`, {
         accessTokenFactory: () => token,
-        withCredentials: true
+        withCredentials: true,
+        // Add timeout and skip negotiation for better reliability
+        skipNegotiation: false,
+        transport: 1, // WebSockets with fallback
+        timeout: 30000 // 30 second timeout
       })
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext: any) => {
-          // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-          return Math.min(1000 * Math.pow(2, retryContext.previousRetryCount), 16000);
+          // More aggressive retry for first few attempts, then back off
+          if (retryContext.previousRetryCount < 3) {
+            return 1000; // 1 second for first 3 attempts
+          }
+          // Exponential backoff: 2s, 4s, 8s, 16s
+          return Math.min(2000 * Math.pow(2, retryContext.previousRetryCount - 3), 16000);
         }
       })
-      .configureLogging(LogLevel.Information)
+      .configureLogging(LogLevel.Warning) // Reduce noise, only warnings and errors
       .build();
 
-    // Handle connection events
-    this.connection.onreconnecting(() => {
-      console.log('SignalR: Reconnecting...');
+    // Handle connection events with better error handling
+    this.connection.onreconnecting((error: any) => {
+      console.log('SignalR: Reconnecting...', error ? `(${error.message})` : '');
     });
 
     this.connection.onreconnected(() => {
@@ -57,17 +65,17 @@ class MeetingProgressSignalRService {
     });
 
     this.connection.onclose((error: any) => {
-      console.log('SignalR: Connection closed', error);
+      console.log('SignalR: Connection closed', error?.message || 'No error');
       this.connection = null;
     });
 
     try {
       await this.connection.start();
       console.log('SignalR: Connected to MeetingProgressHub');
-    } catch (error) {
-      console.error('SignalR: Failed to connect:', error);
+    } catch (error: any) {
+      console.warn('SignalR: Failed to connect (falling back to polling):', error?.message || error);
       this.connection = null;
-      throw error;
+      // Don't throw - allow app to continue with polling fallback
     }
   }
 

@@ -893,6 +893,32 @@ class ApiService {
       };
     }
   }
+
+  /**
+   * Estimate audio file duration without uploading the full file
+   */
+  async estimateDuration(fileSizeBytes: number, fileName: string): Promise<ApiResponse<{ durationMinutes: number; fileName: string; fileSizeBytes: number }>> {
+    try {
+      const response = await this.client.post('/api/summary/estimate-duration', {
+        fileSizeBytes,
+        fileName
+      });
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('Error estimating duration:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to estimate duration',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
 }
 
 // Export singleton instance

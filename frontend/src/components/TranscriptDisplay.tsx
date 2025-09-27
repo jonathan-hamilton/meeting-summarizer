@@ -53,7 +53,6 @@ interface TranscriptDisplayProps {
 const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   transcription,
   loading = false,
-  speakerMappings,
   aiSummaryRef,
 }) => {
 
@@ -70,24 +69,19 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Email button ref for direct event listener attachment
   const emailButtonRef = useRef<HTMLButtonElement>(null);
 
-  
-  // Ref to track which transcription ID we've already loaded mappings for
-  const loadedTranscriptionRef = useRef<string | null>(null);
-
   // Centralized store state and actions
   const storeSpeakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const storeCurrentSegments = useSpeakerSessionStore(state => state.currentSegments);
-  const storeDetectedSpeakers = storeSpeakerMappings.map(mapping => mapping.speakerId);
-  const initializeSession = useSpeakerSessionStore(state => state.initializeSession);
+  const storeTranscriptionId = useSpeakerSessionStore(state => state.transcriptionId);
+  const initializeSessionWithAutoLoad = useSpeakerSessionStore(state => state.initializeSessionWithAutoLoad);
   const reassignSegment = useSpeakerSessionStore(state => state.reassignSegment);
-  const loadSpeakerMappingsFromApi = useSpeakerSessionStore(state => state.loadSpeakerMappingsFromApi);
   const saveSpeakerMappingsToApi = useSpeakerSessionStore(state => state.saveSpeakerMappingsToApi);
   
   // Use current segments from store (reflects reassignments), fallback to original transcription
   const speakerSegments = storeCurrentSegments.length > 0 ? storeCurrentSegments : (transcription.speakerSegments || []);
   
-  // Compatibility functions to match legacy interface
-  const initializeSpeakers = (transcriptionId: string, _detectedSpeakers: string[], existingMappings: SpeakerMapping[] = []) => {
+  // Simplified initialization - the store handles all the complexity
+  const initializeForTranscript = useCallback(async (transcriptionId: string) => {
     const rawSegments = transcription.speakerSegments || [];
     
     // Transform API segments (capitalized properties) to store format (lowercase properties)
@@ -102,18 +96,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       };
     });
     
-    // Filter mappings to only include those for this specific transcript
-    const transcriptMappings = existingMappings.filter(
-      mapping => mapping.transcriptionId === transcriptionId
-    );
-    
-    initializeSession(transcriptionId, segmentsForStore, transcriptMappings);
-  };
+    // Use the new reactive method that handles loading automatically
+    return await initializeSessionWithAutoLoad(transcriptionId, segmentsForStore);
+  }, [transcription.speakerSegments, initializeSessionWithAutoLoad]);
   
-  const getAllMappings = () => {
-    return storeSpeakerMappings;
-  };
-
   // Centralized store hooks
   const activeSpeakers = useActiveSpeakers();
 
@@ -139,7 +125,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     return storeSpeakerMappings;
   }, [storeSpeakerMappings]);
 
-  // Memoize detected speakers with fallback
+  // Memoize detected speakers with fallback - derive from store mappings
+  const storeDetectedSpeakers = useMemo(() => {
+    return storeSpeakerMappings.map(mapping => mapping.speakerId);
+  }, [storeSpeakerMappings]);
+
   const detectedSpeakers = useMemo(() => {
     return storeDetectedSpeakers.length > 0
       ? storeDetectedSpeakers
@@ -183,87 +173,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     return sessionManager.getOverrides();
   }, [forceUpdate]);
 
-  // Initialize store when component mounts or transcription changes
+  // Simple reactive initialization - when transcript changes, initialize the session
   useEffect(() => {
-    try {
-      const currentTranscriptionId = useSpeakerSessionStore.getState().transcriptionId;
-      const currentDetectedSpeakers = activeSpeakers; // Use activeSpeakers from centralized store
-      const currentStoreMappings = getAllMappings();
-      
-      // Check if this is a new transcription (different ID)
-      const isNewTranscription = currentTranscriptionId !== transcription.transcriptionId;
-      
-      if (isNewTranscription || currentDetectedSpeakers.length === 0) {
-        // Clear session overrides for new transcriptions
-        if (isNewTranscription) {
-          sessionManager.clearSpeakerOverrides();
-        }
-        
-        // Filter store mappings to only include those for the current transcript
-        const transcriptSpecificMappings = currentStoreMappings.filter(
-          mapping => mapping.transcriptionId === transcription.transcriptionId
-        );
-        
-        // Use transcript-specific mappings if available, otherwise use provided mappings
-        const existingMappings = transcriptSpecificMappings.length > 0 
-          ? transcriptSpecificMappings 
-          : speakerMappings || transcription.speakerMappings || [];
-        
-        initializeSpeakers(
-          transcription.transcriptionId,
-          allDetectedSpeakers,
-          existingMappings
-        );
-      }
-    } catch (error) {
-      console.error("Error initializing speakers:", error);
+    if (transcription.transcriptionId && storeTranscriptionId !== transcription.transcriptionId) {
+      // Clear session overrides for new transcriptions
+      sessionManager.clearSpeakerOverrides();
+      initializeForTranscript(transcription.transcriptionId);
     }
-  }, [
-    transcription.transcriptionId,
-    speakerMappings,
-    transcription.speakerMappings,
-    initializeSpeakers,
-    getAllMappings,
-    storeSpeakerMappings,
-  ]); // Re-initialize when store mappings change
-
-  // Load existing speaker mappings from database when transcript loads
-  useEffect(() => {
-    const loadExistingSpeakerMappings = async () => {
-      // Only load if we haven't already loaded mappings for this transcription
-      if (loadedTranscriptionRef.current === transcription.transcriptionId) {
-        return;
-      }
-      
-      try {
-        const success = await loadSpeakerMappingsFromApi(transcription.transcriptionId);
-        
-        if (success) {
-          // Filter to only use mappings for this specific transcript
-          const transcriptMappings = storeSpeakerMappings.filter(
-            mapping => mapping.transcriptionId === transcription.transcriptionId
-          );
-          
-          // Force re-initialization with the loaded mappings
-          initializeSpeakers(
-            transcription.transcriptionId,
-            allDetectedSpeakers,
-            transcriptMappings
-          );
-        }
-        
-        // Mark this transcription as loaded
-        loadedTranscriptionRef.current = transcription.transcriptionId;
-      } catch (error) {
-        console.error('Failed to load existing speaker mappings:', error);
-      }
-    };
-
-    // Load mappings for new transcriptions
-    if (transcription.transcriptionId) {
-      loadExistingSpeakerMappings();
-    }
-  }, [transcription.transcriptionId, allDetectedSpeakers, initializeSpeakers, loadSpeakerMappingsFromApi, storeSpeakerMappings]);
+  }, [transcription.transcriptionId, storeTranscriptionId, initializeForTranscript]);
 
   // Create stable event handler using refs to avoid stale closures
   const stableEmailHandler = useCallback(() => {
@@ -357,21 +274,12 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
   const handleSpeakerMappingsSaved = useCallback(async (savedMappings: SpeakerMapping[]) => {
     try {
-      // Save mappings to API via store
+      // Save mappings to API via store - the store handles all synchronization
       const success = await saveSpeakerMappingsToApi(savedMappings);
       
       if (success) {
-        // Reload mappings from database to ensure UI is updated with saved data
-        const reloadSuccess = await loadSpeakerMappingsFromApi(transcription.transcriptionId);
-        
-        if (reloadSuccess) {
-          // Re-initialize speakers with fresh mappings from store
-          initializeSpeakers(
-            transcription.transcriptionId,
-            allDetectedSpeakers,
-            storeSpeakerMappings
-          );
-        }
+        // Store automatically updates its state, no manual synchronization needed
+        console.log('Speaker mappings saved successfully');
       }
       
     } catch (error) {
@@ -381,7 +289,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
     
     setSpeakerMappingDialogOpen(false);
     setForceUpdate((prev) => prev + 1);
-  }, [transcription.transcriptionId, allDetectedSpeakers, initializeSpeakers, saveSpeakerMappingsToApi, loadSpeakerMappingsFromApi, storeSpeakerMappings]);
+  }, [saveSpeakerMappingsToApi]);
 
   const handleSpeakerSegmentChange = useCallback(
     (segmentIndex: number, newSpeaker: string) => {
@@ -848,7 +756,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         open={speakerMappingDialogOpen}
         onClose={() => setSpeakerMappingDialogOpen(false)}
         transcriptionId={transcription.transcriptionId}
-        existingMappings={getAllMappings?.() || []}
+        existingMappings={storeSpeakerMappings || []}
         detectedSpeakers={detectedSpeakers}
         onMappingsSaved={handleSpeakerMappingsSaved}
       />

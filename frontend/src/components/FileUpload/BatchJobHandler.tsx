@@ -29,7 +29,6 @@ export const BatchJobHandler: React.FC<BatchJobHandlerProps> = ({
     if (batchError || batchJob.status === 'failed') return 'error';
     switch (batchJob.status) {
       case 'completed': return 'success';
-      case 'failed': return 'error';
       default: return 'info';
     }
   };

@@ -20,7 +20,6 @@ import {
   Add,
 } from '@mui/icons-material';
 import { useEmailStore } from '../stores/emailStore';
-import { useAccessibilityStore } from '../stores/accessibilityStore';
 import { EmailService } from '../services/emailService';
 import FocusTrap from 'focus-trap-react';
 
@@ -59,10 +58,6 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     transcriptData,
     setIncludeTranscript,
   } = useEmailStore();
-
-  // Accessibility store for modal management
-  const { openModal, closeModal, announceModalOpen, announceModalClose } = useAccessibilityStore();
-
 
   console.log('📧 EMAIL DIALOG DEBUG:', {
     open,
@@ -139,26 +134,6 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     // Remove duplicate emails
     return uniqueEmails;
   };
-
-
-
-  // Modal lifecycle management
-  React.useEffect(() => {
-    if (open) {
-      openModal('emailComposition');
-      announceModalOpen('Share Meeting Summary via Email');
-    } else {
-      closeModal('emailComposition');
-      announceModalClose('Share Meeting Summary via Email');
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      if (open) {
-        closeModal('emailComposition');
-      }
-    };
-  }, [open, openModal, closeModal, announceModalOpen, announceModalClose]);
 
   const handleClose = () => {
     console.log('📧 Closing dialog');

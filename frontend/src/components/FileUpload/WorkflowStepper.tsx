@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Stepper, Step, StepLabel, CircularProgress } from '@mui/material';
 import { CheckCircle, Error as ErrorIcon, AudioFile, Upload, Psychology } from '@mui/icons-material';
 import type { FileUploadFile, BatchJobStatus } from './types';
@@ -16,6 +16,40 @@ interface StepperStep {
   error: boolean;
 }
 
+// Smooth progress transition hook
+const useSmoothProgress = (targetProgress: number, shouldAnimate: boolean = true) => {
+  const [displayProgress, setDisplayProgress] = useState(targetProgress);
+  
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setDisplayProgress(targetProgress);
+      return;
+    }
+    
+    // Smooth progress animation to prevent jarring jumps
+    const difference = Math.abs(targetProgress - displayProgress);
+    if (difference <= 1) {
+      setDisplayProgress(targetProgress);
+      return;
+    }
+    
+    const animationFrame = requestAnimationFrame(() => {
+      const increment = difference > 10 ? 2 : 1;
+      setDisplayProgress(prev => {
+        if (targetProgress > prev) {
+          return Math.min(prev + increment, targetProgress);
+        } else {
+          return Math.max(prev - increment, targetProgress);
+        }
+      });
+    });
+    
+    return () => cancelAnimationFrame(animationFrame);
+  }, [targetProgress, displayProgress, shouldAnimate]);
+  
+  return displayProgress;
+};
+
 export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   uploadFile,
   batchJob,
@@ -26,11 +60,29 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
     jobId?: string;
   }>({});
 
+  // Smooth progress animation to prevent UI jank
+  const currentProgress = batchJob?.progressPercentage || realTimeProgress.progressPercentage || 0;
+  const smoothProgress = useSmoothProgress(currentProgress, true);
+
+  // Debounced update handler to prevent excessive re-renders during rapid updates
+  const debouncedProgressUpdate = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (update: typeof realTimeProgress) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          setRealTimeProgress(update);
+        }, 50); // 50ms debounce for smooth animations
+      };
+    })(),
+    []
+  );
+
   useEffect(() => {
     const handleBatchJobProgress = (event: CustomEvent) => {
       const update = event.detail;
       if (batchJob && update.jobId === batchJob.jobId) {
-        setRealTimeProgress({
+        debouncedProgressUpdate({
           status: update.status,
           progressPercentage: update.progressPercentage,
           jobId: update.jobId
@@ -41,7 +93,7 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
     const handleMeetingProgress = (event: CustomEvent) => {
       const update = event.detail;
       if (update.batchJobId && batchJob && update.batchJobId === batchJob.jobId) {
-        setRealTimeProgress({
+        debouncedProgressUpdate({
           status: update.status,
           progressPercentage: update.progressPercentage,
           jobId: update.batchJobId
@@ -56,12 +108,13 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
       window.removeEventListener('batchJobProgress', handleBatchJobProgress as EventListener);
       window.removeEventListener('meetingProgress', handleMeetingProgress as EventListener);
     };
-  }, [batchJob?.jobId]);
+  }, [batchJob?.jobId, debouncedProgressUpdate]);
 
   const getUnifiedWorkflowSteps = (): StepperStep[] => {
     if (batchJob) {
       const currentStatus = realTimeProgress.status || batchJob.status;
-      const currentProgress = realTimeProgress.progressPercentage ?? batchJob.progressPercentage;
+      // Use smooth progress to prevent jarring animation jumps
+      const currentProgress = smoothProgress;
       
       return [
         { label: "File Selected", icon: <AudioFile />, completed: true, active: false, error: false },

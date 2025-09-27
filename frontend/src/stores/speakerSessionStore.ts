@@ -37,6 +37,7 @@ interface SpeakerSessionState {
   
   // Actions
   initializeSession: (transcriptionId: string, segments: SpeakerSegment[], mappings?: SpeakerMapping[]) => void;
+  initializeSessionWithAutoLoad: (transcriptionId: string, segments: SpeakerSegment[]) => Promise<boolean>;
   reassignSegment: (segmentIndex: number, newSpeaker: string) => void;
   updateSpeakerMapping: (speakerId: string, mapping: Partial<SpeakerMapping>) => void;
   addSpeakerMapping: (mapping: SpeakerMapping) => void;
@@ -164,6 +165,34 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
         };
         
         set(newState);
+      },
+
+      // Initialize session and automatically load existing mappings from API
+      initializeSessionWithAutoLoad: async (transcriptionId, segments) => {
+        try {
+          // First initialize with empty mappings
+          get().initializeSession(transcriptionId, segments, []);
+          
+          // Then try to load existing mappings from API
+          const success = await get().loadSpeakerMappingsFromApi(transcriptionId);
+          
+          if (success) {
+            // Get the loaded mappings and filter for this transcription
+            const state = get();
+            const transcriptMappings = state.speakerMappings.filter(
+              mapping => mapping.transcriptionId === transcriptionId
+            );
+            
+            // Re-initialize with loaded mappings
+            get().initializeSession(transcriptionId, segments, transcriptMappings);
+            return true;
+          }
+          
+          return false;
+        } catch (error) {
+          console.error('Store - Failed to auto-load speaker mappings:', error);
+          return false;
+        }
       },
 
       // Reassign a specific segment to a different speaker

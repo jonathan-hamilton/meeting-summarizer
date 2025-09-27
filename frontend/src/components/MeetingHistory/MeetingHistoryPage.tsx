@@ -36,6 +36,46 @@ import {
 import { useMeetingHistoryStore } from '../../stores/meetingHistoryStore';
 import { useMeetingHistorySignalR } from '../../hooks/useMeetingHistorySignalR';
 import type { MeetingListItem } from '../../types/meeting';
+
+// Smooth progress component to prevent jarring updates during real-time progress
+const SmoothProgressIndicator: React.FC<{ 
+  meeting: MeetingListItem; 
+  targetProgress?: number; 
+}> = ({ meeting, targetProgress }) => {
+  const [smoothProgress, setSmoothProgress] = useState(meeting.progressPercentage || 0);
+  const target = targetProgress ?? meeting.progressPercentage ?? 0;
+  
+  useEffect(() => {
+    if (Math.abs(target - smoothProgress) <= 1) {
+      setSmoothProgress(target);
+      return;
+    }
+    
+    const animationFrame = requestAnimationFrame(() => {
+      setSmoothProgress(prev => {
+        const diff = target - prev;
+        const increment = Math.abs(diff) > 5 ? Math.sign(diff) * 2 : Math.sign(diff);
+        return prev + increment;
+      });
+    });
+    
+    return () => cancelAnimationFrame(animationFrame);
+  }, [target, smoothProgress]);
+  
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+      <CircularProgress 
+        size={16} 
+        sx={{ mr: 1 }}
+        variant="determinate"
+        value={smoothProgress}
+      />
+      <Typography variant="caption">
+        {Math.round(smoothProgress)}%
+      </Typography>
+    </Box>
+  );
+};
 import { apiService } from '../../services/apiService';
 
 const MeetingHistoryPage: React.FC = () => {
@@ -285,12 +325,7 @@ const MeetingHistoryPage: React.FC = () => {
                         size="small"
                       />
                       {(meeting.status === 'Transcribing' || meeting.status === 'Summarizing') && (
-                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                          <CircularProgress size={16} sx={{ mr: 1 }} />
-                          <Typography variant="caption">
-                            {meeting.progressPercentage}%
-                          </Typography>
-                        </Box>
+                        <SmoothProgressIndicator meeting={meeting} />
                       )}
                     </TableCell>
                     <TableCell>{meeting.formattedDuration || '—'}</TableCell>

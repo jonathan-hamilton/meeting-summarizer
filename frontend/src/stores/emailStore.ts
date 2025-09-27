@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { MeetingSummary, SpeakerMapping, ActionItem } from '../types';
+import { useAccessibilityStore } from './accessibilityStore';
 
 interface TranscriptData {
   transcriptionId: string;
@@ -137,10 +138,20 @@ export const useEmailStore = create<EmailState>()((set, get) => ({
       isSending: false,
     });
     console.log('🏪 STORE set() called, isDialogOpen should now be true');
+    
+    // Integrate with accessibility store for modal management
+    const accessibilityStore = useAccessibilityStore.getState();
+    accessibilityStore.openModal('emailComposition');
+    accessibilityStore.announceModalOpen('Share Meeting Summary via Email');
   },
 
   closeDialog: () => {
     set({ isDialogOpen: false });
+    
+    // Integrate with accessibility store for modal management
+    const accessibilityStore = useAccessibilityStore.getState();
+    accessibilityStore.closeModal('emailComposition');
+    accessibilityStore.announceModalClose('Share Meeting Summary via Email');
   },
 
   setSubject: (subject) => {
