@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Attributes;
 using MeetingSummarizer.Api.Models.BatchTranscription;
@@ -36,6 +37,7 @@ public class SummaryController : ControllerBase
     private readonly IMeetingService _meetingService;
     private readonly ITokenCalculationService _tokenCalculationService;
     private readonly ITokenService _tokenService;
+    private readonly Services.Transcription.AzureFastTranscriptionService _fastTranscriptionService;
 
     public SummaryController(
         ILogger<SummaryController> logger,
@@ -47,7 +49,8 @@ public class SummaryController : ControllerBase
         IUserStorageService userStorageService,
         IMeetingService meetingService,
         ITokenCalculationService tokenCalculationService,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        Services.Transcription.AzureFastTranscriptionService fastTranscriptionService)
     {
         _logger = logger;
         _transcriptionService = transcriptionService;
@@ -59,6 +62,7 @@ public class SummaryController : ControllerBase
         _meetingService = meetingService;
         _tokenCalculationService = tokenCalculationService;
         _tokenService = tokenService;
+        _fastTranscriptionService = fastTranscriptionService;
     }
 
     /// <summary>
@@ -79,6 +83,8 @@ public class SummaryController : ControllerBase
     [ProducesResponseType(500)]
     public async Task<IActionResult> TranscribeAudio([FromForm] TranscribeRequest request)
     {
+        Guid? meetingId = null;
+        
         try
         {
             _logger.LogInformation("Received transcription request for file: {FileName}, Size: {FileSize}",
@@ -98,6 +104,8 @@ public class SummaryController : ControllerBase
 
             // S6.3.6: Check if file should be processed with batch transcription (5+ minutes)
             var estimatedDurationMinutes = EstimateAudioDurationMinutes(request.AudioFile.Length, request.AudioFile.FileName);
+            _logger.LogInformation("🎯 MAIN TRANSCRIBE ENDPOINT: Duration estimated as {Duration} minutes for file {FileName}", 
+                estimatedDurationMinutes, request.AudioFile.FileName);
             
             if (estimatedDurationMinutes >= 5)
             {
@@ -165,7 +173,6 @@ public class SummaryController : ControllerBase
             }
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-            Guid? meetingId = null;
 
             try
             {
@@ -335,7 +342,63 @@ public class SummaryController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing transcription request");
-            return StatusCode(500, new { error = "Failed to submit batch transcription job" });
+            
+            // Update meeting status to Failed if meeting was created
+            if (meetingId.HasValue)
+            {
+                try
+                {
+                    await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                    _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to unexpected error", meetingId.Value);
+                }
+                catch (Exception meetingUpdateEx)
+                {
+                    _logger.LogError(meetingUpdateEx, "Failed to update meeting {MeetingId} status to Failed", meetingId.Value);
+                }
+            }
+            
+            return StatusCode(500, new { error = "Internal server error, please try again" });
+        }
+    }
+
+    /// <summary>
+    /// Estimate audio file duration without uploading the full file
+    /// </summary>
+    /// <param name="request">File size and name for duration estimation</param>
+    /// <returns>Estimated duration in minutes</returns>
+    [HttpPost("estimate-duration")]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(400)]
+    public IActionResult EstimateDuration([FromBody] EstimateDurationRequest request)
+    {
+        try
+        {
+            if (request.FileSizeBytes <= 0)
+            {
+                return BadRequest(new { error = "File size must be greater than 0" });
+            }
+
+            if (string.IsNullOrEmpty(request.FileName))
+            {
+                return BadRequest(new { error = "File name is required for accurate duration estimation" });
+            }
+
+            var estimatedDurationMinutes = EstimateAudioDurationMinutes(request.FileSizeBytes, request.FileName);
+            
+            _logger.LogInformation("Duration estimated via API: {FileName} ({FileSize} bytes) = {Duration} minutes", 
+                request.FileName, request.FileSizeBytes, estimatedDurationMinutes);
+
+            return Ok(new 
+            { 
+                durationMinutes = estimatedDurationMinutes,
+                fileName = request.FileName,
+                fileSizeBytes = request.FileSizeBytes
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error estimating duration for file: {FileName}", request.FileName);
+            return StatusCode(500, new { error = "Failed to estimate duration" });
         }
     }
 
@@ -789,16 +852,18 @@ public class SummaryController : ControllerBase
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         
-        // Approximate bitrates by format (kbps)
+        // More realistic bitrates by format (kbps)
+        // Updated to reflect typical meeting recording quality rather than maximum quality
         var avgBitrates = new Dictionary<string, int>
         {
             { ".mp3", 128 },
-            { ".wav", 1411 }, // Uncompressed
+            { ".wav", 700 },   // More realistic for typical meeting recordings (was 1411)
             { ".m4a", 128 },
-            { ".flac", 800 },
+            { ".flac", 150 },  // Much lower due to lossless compression efficiency - FLAC can compress 25min to ~4MB
             { ".ogg", 128 },
             { ".wma", 128 },
-            { ".aac", 128 }
+            { ".aac", 128 },
+            { ".webm", 128 }   // Added webm support
         };
 
         var bitrate = avgBitrates.GetValueOrDefault(extension, 128); // Default to 128 kbps
@@ -809,8 +874,22 @@ public class SummaryController : ControllerBase
         var durationSeconds = fileSizeBits / bitratePerSecond;
         var durationMinutes = (int)Math.Ceiling(durationSeconds / 60.0);
 
-        _logger.LogDebug("Estimated duration for {FileName} ({SizeMB:F1}MB, {Extension}): {Duration} minutes (bitrate: {Bitrate} kbps)",
-            fileName, fileSizeBytes / (1024.0 * 1024), extension, durationMinutes, bitrate);
+        // Special handling for FLAC files - they can be VERY efficiently compressed
+        // If a FLAC file is >2MB, assume it's likely longer than our 5-minute threshold
+        if (extension == ".flac" && fileSizeBytes > 2 * 1024 * 1024) // 2MB threshold
+        {
+            var adjustedMinutes = Math.Max(durationMinutes, 6); // Force batch processing for larger FLAC files
+            _logger.LogInformation("FLAC file >2MB detected - adjusting duration from {OriginalDuration} to {AdjustedDuration} minutes to ensure batch processing", 
+                durationMinutes, adjustedMinutes);
+            durationMinutes = adjustedMinutes;
+        }
+
+        _logger.LogInformation("=== DURATION ESTIMATION DEBUG ===");
+        _logger.LogInformation("File: {FileName}, Size: {SizeBytes} bytes ({SizeMB:F1}MB)", fileName, fileSizeBytes, fileSizeBytes / (1024.0 * 1024));
+        _logger.LogInformation("Extension: {Extension}, Bitrate: {Bitrate} kbps", extension, bitrate);
+        _logger.LogInformation("Calculation: {FileSizeBits} bits ÷ {BitratePerSecond} bps = {DurationSeconds:F1}s = {Duration} minutes",
+            fileSizeBits, bitratePerSecond, durationSeconds, durationMinutes);
+        _logger.LogInformation("=== END DURATION DEBUG ===");
 
         return Math.Max(1, durationMinutes); // At least 1 minute
     }
@@ -882,6 +961,26 @@ public class SummaryController : ControllerBase
                 SubmittedAt = DateTime.UtcNow
             };
 
+            // Create meeting record upfront so it appears in history immediately
+            var meetingTitle = !string.IsNullOrEmpty(audioFile.FileName) 
+                ? Path.GetFileNameWithoutExtension(audioFile.FileName)
+                : "Batch Transcription";
+
+            var meeting = await _meetingService.CreateMeetingAsync(
+                userId.Value,
+                meetingTitle,
+                $"Batch transcription job submitted for {audioFile.FileName}",
+                audioFile.FileName,
+                audioFile.Length,
+                estimatedDurationMinutes * 60, // Convert to seconds
+                ""); // Blob storage path will be set after upload
+
+            // Link the batch job to the meeting
+            batchJob.MeetingId = meeting.Id;
+
+            _logger.LogInformation("Created meeting {MeetingId} for batch job {JobId}, file: {FileName}", 
+                meeting.Id, batchJob.Id, audioFile.FileName);
+
             // Upload audio file to Azure Blob Storage for batch processing
             _logger.LogInformation("Uploading audio file to blob storage for batch job {JobId}", batchJob.Id);
             StorageUploadResult uploadResult;
@@ -896,6 +995,10 @@ public class SummaryController : ControllerBase
 
             // Store the blob URL for Azure Speech Services
             batchJob.AudioBlobUrl = uploadResult.BlobUrl;
+            
+            // Update meeting with blob storage path and set status to Transcribing
+            meeting.TranscriptionJson = JsonSerializer.Serialize(new { BlobUrl = uploadResult.BlobUrl });
+            meeting.Status = MeetingStatus.Transcribing;
             
             _logger.LogInformation("Audio file uploaded to blob storage: {BlobUrl}", uploadResult.BlobUrl);
 
@@ -1077,6 +1180,79 @@ public class SummaryController : ControllerBase
         {
             _logger.LogError(ex, "Failed to update meeting {MeetingId} with transcription results", meetingId.Value);
             // Don't throw - transcription was successful, meeting update is supplementary
+        }
+    }
+
+    /// <summary>
+    /// Test endpoint for Azure Fast Transcription API
+    /// </summary>
+    /// <param name="audioFile">Audio file to transcribe</param>
+    /// <returns>Fast transcription result with performance metrics</returns>
+    [HttpPost("fast-transcription-test")]
+    //[Authorize] // Temporarily disabled for testing
+    [RequestSizeLimit(500_000_000)] // 500MB limit
+    [RequestFormLimits(MultipartBodyLengthLimit = 500_000_000)]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(500)]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> TestFastTranscription(IFormFile audioFile)
+    {
+        try
+        {
+            if (audioFile == null || audioFile.Length == 0)
+            {
+                return BadRequest(new { error = "No audio file provided." });
+            }
+
+            var allowedExtensions = new[] { ".wav", ".mp3", ".m4a", ".flac", ".aac", ".ogg" };
+            var fileExtension = Path.GetExtension(audioFile.FileName)?.ToLower();
+            
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                return BadRequest(new { error = "Unsupported audio file format. Supported formats: WAV, MP3, M4A, FLAC, AAC, OGG." });
+            }
+
+            // Convert file to byte array for processing
+            byte[] audioData;
+            using (var stream = audioFile.OpenReadStream())
+            using (var memoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memoryStream);
+                audioData = memoryStream.ToArray();
+            }
+            
+            _logger.LogInformation("Starting fast transcription test for file: {FileName} ({Size} bytes)", 
+                audioFile.FileName, audioFile.Length);
+
+            // Call the fast transcription service
+            var transcriptionResult = await _fastTranscriptionService.TranscribeAsync(
+                audioData, 
+                audioFile.FileName);
+
+            _logger.LogInformation("Fast transcription test completed in {ElapsedTime}ms for file: {FileName}", 
+                transcriptionResult.ProcessingTimeMs, audioFile.FileName);
+
+            if (!transcriptionResult.Success)
+            {
+                return StatusCode(500, new { error = "Transcription failed", details = transcriptionResult.Error });
+            }
+
+            return Ok(new
+            {
+                success = transcriptionResult.Success,
+                transcriptionTime = TimeSpan.FromMilliseconds(transcriptionResult.ProcessingTimeMs).ToString(@"mm\:ss\.fff"),
+                transcriptionTimeMs = transcriptionResult.ProcessingTimeMs,
+                fileName = transcriptionResult.FileName,
+                fileSizeBytes = transcriptionResult.FileSizeBytes,
+                fileSizeMB = Math.Round(transcriptionResult.FileSizeBytes / (1024.0 * 1024.0), 2),
+                transcriptionJson = transcriptionResult.TranscriptionJson
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during fast transcription test for file: {FileName}", audioFile?.FileName);
+            return StatusCode(500, new { error = "An error occurred during transcription.", details = ex.Message });
         }
     }
 
