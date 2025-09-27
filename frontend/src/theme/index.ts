@@ -45,9 +45,9 @@ const lightThemeOptions: ThemeOptions = {
   palette: {
     mode: 'light',
     primary: {
-      main: '#1976d2',
+      main: '#1565c0', // Slightly darker, less vibrant blue
       light: '#42a5f5',
-      dark: '#1565c0',
+      dark: '#1557b0',
     },
     secondary: {
       main: '#dc004e',
@@ -60,12 +60,17 @@ const lightThemeOptions: ThemeOptions = {
       dark: '#e65100',
     },
     background: {
-      default: '#fafafa',
-      paper: '#ffffff',
+      default: '#e8e8e8', // Much dimmer than #f0f0f0
+      paper: '#f0f0f0',   // Dimmer off-white instead of #fafafa
     },
     text: {
-      primary: '#333333',
-      secondary: '#666666',
+      primary: '#1a1a1a',   // Even darker text for better contrast
+      secondary: '#3a3a3a', // Darker secondary text
+    },
+    divider: '#c8c8c8', // More visible dividers
+    action: {
+      hover: 'rgba(0, 0, 0, 0.08)', // Stronger hover states
+      selected: 'rgba(0, 0, 0, 0.15)',
     },
   },
   typography: {
@@ -112,6 +117,87 @@ const lightThemeOptions: ThemeOptions = {
       focusOutline: '4px solid #0066cc',
     },
   },
+  components: {
+    // Add subtle elevation to paper components
+    MuiPaper: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundImage: 'none', // Remove default gradient
+          ...(theme.palette.mode === 'dark' && {
+            backgroundColor: '#1a1a1a', // Consistent elevated surface
+          }),
+        }),
+        elevation1: ({ theme }) => ({
+          ...(theme.palette.mode === 'light' && {
+            boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.12), 0px 1px 2px rgba(0, 0, 0, 0.16)',
+          }),
+          ...(theme.palette.mode === 'dark' && {
+            boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.4), 0px 1px 2px rgba(0, 0, 0, 0.6)',
+          }),
+        }),
+        elevation2: ({ theme }) => ({
+          ...(theme.palette.mode === 'light' && {
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.12), 0px 1px 3px rgba(0, 0, 0, 0.16)',
+          }),
+          ...(theme.palette.mode === 'dark' && {
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.4), 0px 1px 3px rgba(0, 0, 0, 0.6)',
+          }),
+        }),
+        elevation4: ({ theme }) => ({
+          ...(theme.palette.mode === 'light' && {
+            boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.12), 0px 2px 6px rgba(0, 0, 0, 0.16)',
+          }),
+          ...(theme.palette.mode === 'dark' && {
+            boxShadow: '0px 4px 16px rgba(0, 0, 0, 0.5), 0px 2px 6px rgba(0, 0, 0, 0.7)',
+          }),
+        }),
+      },
+    },
+    // Improve card definition
+    MuiCard: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          ...(theme.palette.mode === 'light' && {
+            boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.12)',
+          }),
+          ...(theme.palette.mode === 'dark' && {
+            backgroundColor: '#1a1a1a',
+            border: '1px solid #333333',
+            boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.4)',
+          }),
+        }),
+      },
+    },
+    // Better dialog styling
+    MuiDialog: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          ...(theme.palette.mode === 'light' && {
+            boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.16), 0px 4px 16px rgba(0, 0, 0, 0.12)',
+          }),
+          ...(theme.palette.mode === 'dark' && {
+            backgroundColor: '#1a1a1a',
+            boxShadow: '0px 8px 32px rgba(0, 0, 0, 0.6), 0px 4px 16px rgba(0, 0, 0, 0.8)',
+          }),
+        }),
+      },
+    },
+    // Softer AppBar
+    MuiAppBar: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundImage: 'none',
+          ...(theme.palette.mode === 'light' && {
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+          }),
+          ...(theme.palette.mode === 'dark' && {
+            backgroundColor: '#1a1a1a',
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.5)',
+          }),
+        }),
+      },
+    },
+  },
 };
 
 // Dark theme configuration
@@ -119,8 +205,8 @@ const darkThemeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90caf9',
-      light: '#bbdefb',
+      main: '#90caf9',      // Light blue for better visibility on dark
+      light: '#e3f2fd',
       dark: '#42a5f5',
     },
     secondary: {
@@ -134,12 +220,18 @@ const darkThemeOptions: ThemeOptions = {
       dark: '#ff8f00',
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: '#0a0a0a',   // True dark background
+      paper: '#1a1a1a',     // Elevated surfaces
     },
     text: {
-      primary: '#ffffff',
-      secondary: '#aaaaaa',
+      primary: '#ffffff',   // Pure white for maximum readability
+      secondary: '#b3b3b3', // Better contrast than #aaaaaa
+    },
+    divider: '#333333',     // Visible but subtle dividers
+    action: {
+      hover: 'rgba(255, 255, 255, 0.08)',     // Subtle white hover
+      selected: 'rgba(255, 255, 255, 0.12)',  // Subtle white selection
+      disabled: 'rgba(255, 255, 255, 0.3)',
     },
   },
   typography: lightThemeOptions.typography,

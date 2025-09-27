@@ -415,6 +415,8 @@ const AppContent: React.FC = () => {
         sx={{
           width: "100%",
           minHeight: "100vh",
+          backgroundColor: (theme) => 
+            theme.palette.mode === 'dark' ? '#000000' : '#dcdcdc', // Much dimmer gray for light mode
         }}
       >
         <Box
@@ -528,13 +530,31 @@ const AppContent: React.FC = () => {
           </Dialog>
 
           <main role="main" aria-label="Main content" id="main-content">
-            <Box sx={{ py: 4, width: "100%" }}>
+            <Box sx={{ 
+              py: 4, 
+              width: "100%",
+              backgroundColor: (theme) => 
+                theme.palette.mode === 'dark' ? '#0a0a0a' : '#e8e8e8', // Much dimmer for light mode
+              borderRadius: 3,
+              boxShadow: (theme) => 
+                theme.palette.mode === 'dark' 
+                  ? '0px 2px 12px rgba(0, 0, 0, 0.8)' 
+                  : '0px 2px 12px rgba(0, 0, 0, 0.15)', // Slightly stronger shadow
+              px: 3,
+              border: (theme) => 
+                theme.palette.mode === 'dark' 
+                  ? '1px solid #333333' 
+                  : '1px solid #d0d0d0', // More visible border
+            }}>
               <Typography
                 variant="h5"
                 component="h2"
                 gutterBottom
                 align="center"
-                color="text.secondary"
+                sx={{ 
+                  color: (theme) => 
+                    theme.palette.mode === 'dark' ? '#ffffff' : '#1a1a1a' // Much darker text
+                }}
               >
                 AI-Powered Meeting Transcription and Summarization
               </Typography>
@@ -544,10 +564,20 @@ const AppContent: React.FC = () => {
                 <Box sx={{ 
                   mt: 3, 
                   p: 3, 
-                  border: '2px solid #1976d2', 
-                  borderRadius: 2, 
-                  backgroundColor: 'rgba(25, 118, 210, 0.04)',
-                  textAlign: 'center' 
+                  border: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? '1px solid #444444' 
+                      : '1px solid #c0c0c0', // More visible border
+                  borderRadius: 3, 
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? '#1a1a1a' 
+                      : '#e0e0e0', // Much dimmer background
+                  textAlign: 'center',
+                  boxShadow: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? '0px 2px 8px rgba(0, 0, 0, 0.6)' 
+                      : '0px 2px 8px rgba(0, 0, 0, 0.12)',
                 }}>
                   <Typography variant="h6" color="primary" gutterBottom>
                     Sign in to access full features

@@ -11,10 +11,8 @@ import {
   Divider,
   Alert,
   CircularProgress,
-  IconButton,
 } from '@mui/material';
 import {
-  Close as CloseIcon,
   AccountCircle as AccountIcon,
   Token as TokenIcon,
   CalendarToday as CalendarIcon,
@@ -156,7 +154,7 @@ export const UserProfileDialog: React.FC = () => {
       <FocusTrap 
         active={isOpen && !isLoading}
         focusTrapOptions={{
-          allowOutsideClick: false,
+          allowOutsideClick: true,
           escapeDeactivates: true,
         }}
       >
@@ -164,7 +162,6 @@ export const UserProfileDialog: React.FC = () => {
       <DialogTitle sx={{ 
         display: 'flex', 
         alignItems: 'center', 
-        justifyContent: 'space-between',
         pb: 1
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -173,9 +170,6 @@ export const UserProfileDialog: React.FC = () => {
             {isEditing ? 'Edit Profile' : 'My Account'}
           </Typography>
         </Box>
-        <IconButton onClick={handleClose} size="small">
-          <CloseIcon />
-        </IconButton>
       </DialogTitle>
 
       <DialogContent>

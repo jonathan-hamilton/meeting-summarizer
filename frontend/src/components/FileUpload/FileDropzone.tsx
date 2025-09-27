@@ -48,16 +48,25 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         border: "2px dashed",
         borderColor: isDragActive 
           ? "primary.main" 
-          : "grey.300",
+          : (theme) => theme.palette.mode === 'dark' ? '#555555' : '#a0a0a0', // Darker border for better contrast
         backgroundColor: isDragActive 
           ? "primary.50" 
-          : "background.paper",
+          : (theme) => theme.palette.mode === 'dark' ? '#1a1a1a' : '#e8e8e8', // Dimmer light mode
         textAlign: "center",
         cursor: "pointer",
         transition: "all 0.2s ease-in-out",
+        boxShadow: (theme) => 
+          theme.palette.mode === 'dark' 
+            ? "0px 2px 8px rgba(0, 0, 0, 0.6)" 
+            : "0px 2px 8px rgba(0, 0, 0, 0.12)",
         "&:hover": {
           borderColor: "primary.main",
           backgroundColor: "primary.50",
+          boxShadow: (theme) => 
+            theme.palette.mode === 'dark' 
+              ? "0px 4px 12px rgba(0, 0, 0, 0.8)" 
+              : "0px 4px 12px rgba(0, 0, 0, 0.16)",
+          transform: "translateY(-1px)",
         },
       }}
     >
@@ -68,7 +77,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           fontSize: 48,
           color: isDragActive 
             ? "primary.main" 
-            : "grey.400",
+            : (theme) => theme.palette.mode === 'dark' ? '#999999' : '#666666', // Darker for better contrast
           mb: 2,
         }}
       />
@@ -79,11 +88,16 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           : "Drag & drop audio files here, or click to select"}
       </Typography>
       
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Typography variant="body2" sx={{ 
+        color: (theme) => theme.palette.mode === 'dark' ? '#b3b3b3' : '#4a4a4a', // Darker text for dimmer background
+        mb: 2 
+      }}>
         Supported formats: {acceptedFileTypes.join(", ")}
       </Typography>
       
-      <Typography variant="body2" color="text.secondary">
+      <Typography variant="body2" sx={{ 
+        color: (theme) => theme.palette.mode === 'dark' ? '#b3b3b3' : '#4a4a4a' // Darker text for dimmer background
+      }}>
         Maximum file size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
       
