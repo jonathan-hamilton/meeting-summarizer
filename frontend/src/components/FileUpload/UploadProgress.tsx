@@ -21,6 +21,7 @@ interface UploadProgressProps {
   batchError?: string | null;
   onClearFile?: (fileId: string) => void;
   onRetryFile?: (fileId: string) => void;
+  onRetryBatchJob?: () => void;
 }
 
 const getStatusIcon = (status: FileUploadFile["status"]) => {
@@ -54,7 +55,8 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
   isPolling = false,
   batchError,
   onClearFile,
-  onRetryFile: _onRetryFile // Unused for now
+  onRetryFile: _onRetryFile, // Unused for now
+  onRetryBatchJob
 }) => {
   if (uploadFiles.length === 0) {
     return null;
@@ -88,6 +90,7 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
                 batchJob={batchJob}
                 isPolling={isPolling}
                 batchError={batchError}
+                onRetry={onRetryBatchJob}
               />
             )}
 

@@ -560,7 +560,7 @@ const AppContent: React.FC = () => {
               </Typography>
 
               {/* Authentication Notice for Production Mode */}
-              {appMode === 'production' && !isAuthenticated && (
+              {appMode === 'production' && !isAuthenticated && !isAuthLoading && (
                 <Box sx={{ 
                   mt: 3, 
                   p: 3, 
@@ -601,6 +601,35 @@ const AppContent: React.FC = () => {
                       Register
                     </Button>
                   </Box>
+                </Box>
+              )}
+
+              {/* Loading state for authentication in production mode */}
+              {appMode === 'production' && isAuthLoading && (
+                <Box sx={{ 
+                  mt: 3, 
+                  p: 3, 
+                  border: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? '1px solid #444444' 
+                      : '1px solid #c0c0c0',
+                  borderRadius: 3, 
+                  backgroundColor: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? '#1a1a1a' 
+                      : '#e0e0e0',
+                  textAlign: 'center',
+                  boxShadow: (theme) => 
+                    theme.palette.mode === 'dark' 
+                      ? '0px 2px 8px rgba(0, 0, 0, 0.6)' 
+                      : '0px 2px 8px rgba(0, 0, 0, 0.12)',
+                }}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Checking authentication status...
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 2 }}>
+                    Please wait while we verify your session.
+                  </Typography>
                 </Box>
               )}
 

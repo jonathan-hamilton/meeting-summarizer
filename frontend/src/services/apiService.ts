@@ -133,11 +133,61 @@ class ApiService {
         isNetworkError
       });
       
+      // Get user-friendly error message based on status code
+      const getUserFriendlyMessage = (status?: number, rawMessage?: string, errorData?: any): string => {
+        // Prefer backend error message if available and user-friendly
+        if (errorData?.message && !errorData.message.includes('status code')) {
+          return errorData.message;
+        }
+        if (errorData?.error && !errorData.error.includes('status code')) {
+          return errorData.error;
+        }
+        
+        // Provide user-friendly messages for common HTTP status codes
+        switch (status) {
+          case 503:
+            return 'Internal server error, please try again';
+          case 502:
+            return 'Service temporarily unavailable, please try again';
+          case 500:
+            return 'Internal server error, please try again';
+          case 504:
+            return 'Request timed out, please try again';
+          case 401:
+            return 'Authentication required. Please sign in again.';
+          case 403:
+            return 'Access denied. You do not have permission for this action.';
+          case 404:
+            return 'The requested resource was not found.';
+          case 400:
+            return 'Invalid request. Please check your input and try again.';
+          case 429:
+            return 'Too many requests. Please wait a moment and try again.';
+          default:
+            // For timeouts and network errors
+            if (isTimeout) return 'Request timed out, please try again';
+            if (isNetworkError) return 'Network connection error, please check your internet and try again';
+            
+            // Fallback for any status code errors
+            if (rawMessage && rawMessage.includes('status code')) {
+              return 'Internal server error, please try again';
+            }
+            
+            return rawMessage || 'An error occurred';
+        }
+      };
+      
       const errorData = axiosError.response?.data || {};
+      const userFriendlyMessage = getUserFriendlyMessage(
+        axiosError.response?.status, 
+        axiosError.message, 
+        errorData
+      );
+      
       return {
         success: false,
-        message: errorData.message || errorData.error || axiosError.message || 'An error occurred',
-        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        message: userFriendlyMessage,
+        errors: errorData.errors || [userFriendlyMessage],
         errorData: errorData,
       };
     }

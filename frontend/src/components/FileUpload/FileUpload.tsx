@@ -57,7 +57,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
   const { uploadFiles, setUploadFiles, clearUploadQueue: storeClearUploadQueue } = useUploadQueueStore();
   
-  const { currentJob: batchJob, startPolling, pollingError: batchError, isPolling } = useBatchJobPollingStore({
+  const { 
+    currentJob: batchJob, 
+    startPolling, 
+    pollingError: batchError, 
+    isPolling, 
+    retry: retryBatchJob 
+  } = useBatchJobPollingStore({
     onJobCompleted: useCallback((jobId: string) => {
       console.log('✅ Batch job completed:', jobId);
       
@@ -254,6 +260,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // Process files after cost confirmation
   const processFiles = useCallback(async (validFiles: File[]) => {
+    // Clear previous data when processing new files
+    if (uploadFiles.length > 0) {
+      console.log('🧹 Clearing previous upload queue for new upload session');
+      if (onClearPreviousData) {
+        onClearPreviousData();
+      }
+      storeClearUploadQueue();
+    }
+
     // Pre-flight token validation for each file
     for (const file of validFiles) {
       const validation = await validateTokenBalance(file);
@@ -278,11 +293,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
       progress: 0,
     }));
 
-    setUploadFiles((prev) => [...prev, ...newFiles]);
+    // Start with fresh queue - replace instead of append
+    setUploadFiles(newFiles);
     newFiles.forEach((uploadFile) => {
       uploadFileToServer(uploadFile);
     });
-  }, [uploadFileToServer, validateTokenBalance, tokenBalance]);
+  }, [uploadFileToServer, validateTokenBalance, tokenBalance, uploadFiles.length, onClearPreviousData, storeClearUploadQueue]);
 
   const clearUploadQueue = useCallback(() => {
     console.log('🧹 Clearing upload queue');
@@ -420,6 +436,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               isPolling={isPolling}
               batchError={batchError}
               onClearFile={handleClearFile}
+              onRetryBatchJob={retryBatchJob}
             />
           </CardContent>
         </Card>
