@@ -169,10 +169,7 @@ public class BatchJobMonitorService : BackgroundService
         // Ensure we have a valid audio blob URL
         if (string.IsNullOrEmpty(job.AudioBlobUrl))
         {
-            job.Status = "failed";
-            job.ErrorMessage = "Audio file not found in blob storage - missing AudioBlobUrl";
-            job.CompletedAt = DateTime.UtcNow;
-            _logger.LogError("Job {JobId} failed: Missing AudioBlobUrl for uploaded audio file", job.Id);
+            await HandleJobFailure(job, context, "Audio file not found in blob storage - missing AudioBlobUrl");
             return;
         }
 
@@ -205,10 +202,8 @@ public class BatchJobMonitorService : BackgroundService
         }
         catch (Exception ex)
         {
-            // Mark job as failed and log the error
-            job.Status = "failed";
-            job.ErrorMessage = $"Failed to submit to Azure Speech Services: {ex.Message}";
-            job.CompletedAt = DateTime.UtcNow;
+            // Mark job as failed using centralized failure handling
+            await HandleJobFailure(job, context, $"Failed to submit to Azure Speech Services: {ex.Message}");
             
             _logger.LogError(ex, "Failed to submit batch job {JobId} for file {FileName}. Error: {ErrorMessage}", 
                 job.Id, job.FileName, ex.Message);
@@ -230,27 +225,49 @@ public class BatchJobMonitorService : BackgroundService
 
         _logger.LogDebug("Checking status for job {JobId} (Azure: {AzureJobId})", job.Id, job.AzureJobId);
 
-        var azureStatus = await batchService.GetJobStatusAsync(job.AzureJobId);
-
-        // Update progress based on Azure status
-        switch (azureStatus.Status.ToLowerInvariant())
+        try
         {
-            case "notstarted":
-                job.ProgressPercentage = 15;
-                break;
-            case "running":
-                job.ProgressPercentage = Math.Min(80, job.ProgressPercentage + 10);
-                break;
-            case "succeeded":
-                await HandleJobCompletion(job, context, batchService, azureStatus, userStorageService, transcriptParsingService);
-                break;
-            case "failed":
-                await HandleJobFailure(job, context, azureStatus.Error ?? "Azure processing failed");
-                break;
-        }
+            var azureStatus = await batchService.GetJobStatusAsync(job.AzureJobId);
 
-        _logger.LogDebug("Job {JobId} status: {Status}, Progress: {Progress}%", 
-            job.Id, azureStatus.Status, job.ProgressPercentage);
+            // Update progress based on Azure status
+            switch (azureStatus.Status.ToLowerInvariant())
+            {
+                case "notstarted":
+                    job.ProgressPercentage = 15;
+                    break;
+                case "running":
+                    job.ProgressPercentage = Math.Min(80, job.ProgressPercentage + 10);
+                    break;
+                case "succeeded":
+                    await HandleJobCompletion(job, context, batchService, azureStatus, userStorageService, transcriptParsingService);
+                    break;
+                case "failed":
+                    await HandleJobFailure(job, context, azureStatus.Error ?? "Azure processing failed");
+                    break;
+            }
+
+            _logger.LogDebug("Job {JobId} status: {Status}, Progress: {Progress}%", 
+                job.Id, azureStatus.Status, job.ProgressPercentage);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get status for job {JobId} (Azure: {AzureJobId}): {ErrorMessage}", 
+                job.Id, job.AzureJobId, ex.Message);
+            
+            // Handle different types of exceptions differently
+            string userFriendlyMessage = GetUserFriendlyErrorMessage(ex);
+            
+            // For temporary service issues (503, 502, timeouts), we should retry
+            if (IsTemporaryServiceError(ex))
+            {
+                _logger.LogInformation("Temporary service error for job {JobId}, will retry on next monitoring cycle", job.Id);
+                // Don't mark as failed yet, let it retry on the next monitoring cycle
+                return;
+            }
+            
+            // For permanent errors (401, 404, etc.), fail the job immediately  
+            await HandleJobFailure(job, context, userFriendlyMessage);
+        }
     }
 
     /// <summary>
@@ -470,6 +487,28 @@ public class BatchJobMonitorService : BackgroundService
             // Permanently failed - issue refund
             job.Status = "failed";
             job.CompletedAt = DateTime.UtcNow;
+
+            // Update associated meeting status to Failed
+            if (job.MeetingId.HasValue)
+            {
+                var meeting = await context.Meetings.FindAsync(job.MeetingId.Value);
+                if (meeting != null)
+                {
+                    meeting.Status = MeetingStatus.Failed;
+                    meeting.CompletedAt = DateTime.UtcNow;
+                    _logger.LogInformation("Updated meeting {MeetingId} status to Failed for failed job {JobId}", 
+                        job.MeetingId.Value, job.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Meeting {MeetingId} not found for failed job {JobId}", 
+                        job.MeetingId.Value, job.Id);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No meeting associated with failed job {JobId}, cannot update meeting status", job.Id);
+            }
 
             if (!job.RefundIssued)
             {
@@ -765,5 +804,64 @@ public class BatchJobMonitorService : BackgroundService
                 job.Id, meetingId);
             // Don't throw - token tracking failure shouldn't fail the batch job completion
         }
+    }
+
+    /// <summary>
+    /// Convert technical error messages to user-friendly messages
+    /// </summary>
+    private static string GetUserFriendlyErrorMessage(Exception ex)
+    {
+        var message = ex.Message.ToLowerInvariant();
+        
+        if (message.Contains("503") || message.Contains("service unavailable"))
+        {
+            return "The transcription service is temporarily unavailable due to high demand. Please try again in a few minutes.";
+        }
+        
+        if (message.Contains("502") || message.Contains("bad gateway"))
+        {
+            return "There was a temporary connection problem with the transcription service.";
+        }
+        
+        if (message.Contains("timeout") || message.Contains("request timeout"))
+        {
+            return "The request timed out. This can happen with very large files.";
+        }
+        
+        if (message.Contains("401") || message.Contains("unauthorized"))
+        {
+            return "Authentication failed with the transcription service.";
+        }
+        
+        if (message.Contains("404") || message.Contains("not found"))
+        {
+            return "The transcription job was not found on the server.";
+        }
+        
+        if (message.Contains("429") || message.Contains("too many requests"))
+        {
+            return "The system is currently processing too many requests. Please try again later.";
+        }
+        
+        // Generic fallback
+        return "The transcription service encountered an error while processing your file.";
+    }
+
+    /// <summary>
+    /// Determine if an error is temporary and should be retried
+    /// </summary>
+    private static bool IsTemporaryServiceError(Exception ex)
+    {
+        var message = ex.Message.ToLowerInvariant();
+        
+        // Temporary errors that should be retried
+        return message.Contains("503") || 
+               message.Contains("service unavailable") ||
+               message.Contains("502") || 
+               message.Contains("bad gateway") ||
+               message.Contains("timeout") ||
+               message.Contains("request timeout") ||
+               message.Contains("429") ||
+               message.Contains("too many requests");
     }
 }

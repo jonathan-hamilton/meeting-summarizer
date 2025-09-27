@@ -165,11 +165,12 @@ public class SummaryController : ControllerBase
             }
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            Guid? meetingId = null;
 
             try
             {
                 // S6.5: Create meeting record FIRST for consistent ID usage (aligns with batch processing)
-                var meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
+                meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
 
                 // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
                 using var audioStream = request.AudioFile.OpenReadStream();
@@ -230,6 +231,20 @@ public class SummaryController : ControllerBase
                 stopwatch.Stop();
                 _logger.LogError(ex, "Transcription service error during transcription for file: {FileName}", request.AudioFile.FileName);
 
+                // Update meeting status to Failed if meeting was created
+                if (meetingId.HasValue)
+                {
+                    try
+                    {
+                        await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                        _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to transcription service error", meetingId.Value);
+                    }
+                    catch (Exception meetingUpdateEx)
+                    {
+                        _logger.LogError(meetingUpdateEx, "Failed to update meeting {MeetingId} status to Failed", meetingId.Value);
+                    }
+                }
+
                 var errorResponse = TranscriptionResponse.FromError(
                     request.AudioFile.FileName,
                     request.AudioFile.Length,
@@ -243,6 +258,20 @@ public class SummaryController : ControllerBase
             {
                 stopwatch.Stop();
                 _logger.LogError(ex, "Authentication error during transcription for file: {FileName}", request.AudioFile.FileName);
+
+                // Update meeting status to Failed if meeting was created
+                if (meetingId.HasValue)
+                {
+                    try
+                    {
+                        await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                        _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to authentication error", meetingId.Value);
+                    }
+                    catch (Exception meetingUpdateEx)
+                    {
+                        _logger.LogError(meetingUpdateEx, "Failed to update meeting {MeetingId} status to Failed", meetingId.Value);
+                    }
+                }
 
                 var errorResponse = TranscriptionResponse.FromError(
                     request.AudioFile.FileName,
@@ -258,6 +287,20 @@ public class SummaryController : ControllerBase
                 stopwatch.Stop();
                 _logger.LogError(ex, "Transcription timeout for file: {FileName}", request.AudioFile.FileName);
 
+                // Update meeting status to Failed if meeting was created
+                if (meetingId.HasValue)
+                {
+                    try
+                    {
+                        await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                        _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to timeout", meetingId.Value);
+                    }
+                    catch (Exception meetingUpdateEx)
+                    {
+                        _logger.LogError(meetingUpdateEx, "Failed to update meeting {MeetingId} status to Failed", meetingId.Value);
+                    }
+                }
+
                 var errorResponse = TranscriptionResponse.FromError(
                     request.AudioFile.FileName,
                     request.AudioFile.Length,
@@ -271,6 +314,20 @@ public class SummaryController : ControllerBase
             {
                 stopwatch.Stop();
                 _logger.LogError(ex, "File I/O error during transcription for file: {FileName}", request.AudioFile.FileName);
+
+                // Update meeting status to Failed if meeting was created
+                if (meetingId.HasValue)
+                {
+                    try
+                    {
+                        await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                        _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to I/O error", meetingId.Value);
+                    }
+                    catch (Exception meetingUpdateEx)
+                    {
+                        _logger.LogError(meetingUpdateEx, "Failed to update meeting {MeetingId} status to Failed", meetingId.Value);
+                    }
+                }
 
                 return BadRequest(new { error = "Unable to read the uploaded file. Please try uploading again." });
             }
