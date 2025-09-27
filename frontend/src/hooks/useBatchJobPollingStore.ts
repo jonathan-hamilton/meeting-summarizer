@@ -16,7 +16,7 @@ export const useBatchJobPollingStore = ({
     currentJob,
     isPolling,
     pollingError,
-    pollInterval,
+    getOptimalPollInterval,
     startBatchJob,
     updateJobStatus,
     setPolling,
@@ -61,11 +61,12 @@ export const useBatchJobPollingStore = ({
           onJobFailed?.(jobId, response.data.errorMessage);
         }
 
-        // Schedule next poll if needed
+        // Schedule next poll if needed with optimal interval
         if (shouldContinuePolling()) {
+          const optimalInterval = getOptimalPollInterval();
           pollTimeoutRef.current = setTimeout(() => {
             fetchJobStatus(jobId);
-          }, pollInterval);
+          }, optimalInterval);
         }
       } else {
         throw new Error(response.message || 'Failed to fetch job status');
@@ -80,11 +81,12 @@ export const useBatchJobPollingStore = ({
       // Retry logic
       if (canRetry()) {
         incrementRetry();
-        console.warn(`🔄 STORE POLLING: Retrying in ${pollInterval}ms (attempt ${useBatchJobStore.getState().retryCount})`);
+        const retryInterval = getOptimalPollInterval();
+        console.warn(`🔄 STORE POLLING: Retrying in ${retryInterval}ms (attempt ${useBatchJobStore.getState().retryCount})`);
         
         pollTimeoutRef.current = setTimeout(() => {
           fetchJobStatus(jobId);
-        }, pollInterval);
+        }, retryInterval);
       } else {
         // Max retries reached
         console.error(`❌ STORE POLLING: Max retries reached for job ${jobId}`);
@@ -96,7 +98,7 @@ export const useBatchJobPollingStore = ({
   }, [
     updateJobStatus,
     shouldContinuePolling,
-    pollInterval,
+    getOptimalPollInterval,
     canRetry,
     incrementRetry,
     setPollingError,

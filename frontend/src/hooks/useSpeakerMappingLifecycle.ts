@@ -4,12 +4,10 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useSpeakerSessionStore } from '../stores/speakerSessionStore';
 
 export const useSpeakerMappingLifecycle = () => {
-  const location = useLocation();
   const { isAuthenticated, user } = useAuthStore();
   const { clearSession } = useSpeakerSessionStore();
   

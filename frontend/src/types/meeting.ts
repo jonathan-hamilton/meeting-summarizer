@@ -19,6 +19,7 @@ export interface MeetingListItem {
   formattedFileSize: string;
   formattedDuration: string;
   progressPercentage: number;
+  formattedProcessingDuration: string;
 }
 
 export interface MeetingResponse {

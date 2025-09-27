@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import type { FileRejection } from "react-dropzone";
 import {
   Box,
@@ -23,7 +23,7 @@ import type { TranscriptionResponse } from "../../types";
 import { FileDropzone } from "./FileDropzone";
 import { UploadProgress } from "./UploadProgress";
 import { validateFiles } from "./validation";
-import { getTokenCalculation, getFileEstimation } from "./tokenUtils";
+import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
 // import { useSignalRBatchProgress } from "../../hooks/useSignalRProgress"; // Unused for now
 
@@ -57,6 +57,33 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
   const { uploadFiles, setUploadFiles, clearUploadQueue: storeClearUploadQueue } = useUploadQueueStore();
   
+  // Cleanup effect: Clear upload queue when component unmounts or when navigating away
+  // This prevents old/stuck files from interfering with new uploads
+  // BUT only clear completed/error files, preserve active batch jobs
+  useEffect(() => {
+    return () => {
+      console.log('🧹 FileUpload component cleanup - clearing completed/error files only');
+      setUploadFiles((prev) => {
+        const activeFiles = prev.filter(f => 
+          f.status === "uploading" && f.batchJobId // Keep active batch jobs
+        );
+        const removedCount = prev.length - activeFiles.length;
+        if (removedCount > 0) {
+          console.log(`🧹 Removed ${removedCount} completed/error files, kept ${activeFiles.length} active batch jobs`);
+        }
+        return activeFiles;
+      });
+    };
+  }, [setUploadFiles]);
+
+  // Clear upload queue when auth dialogs open (user is navigating away from upload)
+  useEffect(() => {
+    if (_isAuthDialogOpen) {
+      console.log('🧹 Auth dialog opened - clearing upload queue to prevent interference');
+      storeClearUploadQueue();
+    }
+  }, [_isAuthDialogOpen, storeClearUploadQueue]);
+  
   const { 
     currentJob: batchJob, 
     startPolling, 
@@ -66,17 +93,24 @@ const FileUpload: React.FC<FileUploadProps> = ({
   } = useBatchJobPollingStore({
     onJobCompleted: useCallback((jobId: string) => {
       console.log('✅ Batch job completed:', jobId);
+      console.log('📊 Current batch job results:', batchJob?.results ? 'Available' : 'Missing');
       
       // Find the upload file with this batch job ID and mark it as completed
       setUploadFiles((prev) => {
+        const targetFile = prev.find(f => f.batchJobId === jobId);
+        console.log('🎯 Target file for completed job:', targetFile ? `${targetFile.file.name} (status: ${targetFile.status})` : 'Not found');
+        
         const updated = prev.map((f) => {
           if (f.batchJobId === jobId && f.status === "uploading") {
-            return {
+            const completedFile = {
               ...f,
               status: "completed" as const,
               progress: 100,
               result: batchJob?.results,
+              successMessage: 'Batch transcription completed successfully! Transcript saved to history.',
             };
+            console.log('✅ Marked file as completed:', f.file.name);
+            return completedFile;
           }
           return f;
         });
@@ -84,8 +118,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
         // Find the completed file and call the completion callback
         const completedFile = updated.find(f => f.batchJobId === jobId && f.status === "completed");
         if (completedFile?.result && onTranscriptionComplete) {
-          console.log('📞 Calling onTranscriptionComplete for batch job:', jobId);
+          console.log('📞 Calling onTranscriptionComplete for batch job:', jobId, 'File:', completedFile.file.name);
           onTranscriptionComplete(completedFile.result);
+        } else {
+          console.warn('⚠️ Batch job completed but no callback triggered:', {
+            hasCompletedFile: !!completedFile,
+            hasResult: !!completedFile?.result,
+            hasCallback: !!onTranscriptionComplete,
+            jobId
+          });
         }
         
         return updated;
@@ -96,14 +137,25 @@ const FileUpload: React.FC<FileUploadProps> = ({
     }, [onTranscriptionComplete, refreshBalance]),
     
     onJobFailed: useCallback((jobId: string, error?: string) => {
-      console.log('❌ Batch job failed:', jobId, error);
-      setUploadFiles((prev) =>
-        prev.map((f) =>
+      console.error('❌ Batch job failed:', jobId, 'Error:', error);
+      setUploadFiles((prev) => {
+        const targetFile = prev.find(f => f.batchJobId === jobId);
+        console.log('🎯 Target file for failed job:', targetFile ? `${targetFile.file.name} (status: ${targetFile.status})` : 'Not found');
+        
+        return prev.map((f) =>
           f.batchJobId === jobId
-            ? { ...f, status: "error", error: error || "Batch job failed" }
+            ? { 
+                ...f, 
+                status: "error", 
+                error: error || "Batch transcription failed. Please try again or contact support.",
+                progress: 0 // Reset progress on failure
+              }
             : f
-        )
-      );
+        );
+      });
+      
+      // Show user-friendly error message
+      setValidationErrors([`Transcription failed: ${error || "Unknown error occurred during batch processing"}`]);
     }, [])
   });
   
@@ -117,6 +169,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
   // Cost estimation dialog state
   const [costDialogOpen, setCostDialogOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingTokenCalc, setPendingTokenCalc] = useState<{ 
+    tokenCalc: Awaited<ReturnType<typeof getTokenCalculationAsync>>;
+    fileEstimation: Awaited<ReturnType<typeof getFileEstimationAsync>>;
+  } | null>(null);
 
   const apiService = createApiService(mode);
 
@@ -126,8 +182,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
       // Refresh token balance to ensure we have the latest data
       await refreshBalance();
       
-      // Get token calculation using shared utils
-      const tokenCalc = getTokenCalculation(file);
+      // Get token calculation using shared utils (API-based for accuracy)
+      const tokenCalc = await getTokenCalculationAsync(file);
       
       // Check if user has sufficient balance
       if (tokenBalance < tokenCalc.requiredTokens) {
@@ -260,13 +316,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // Process files after cost confirmation
   const processFiles = useCallback(async (validFiles: File[]) => {
-    // Clear previous data when processing new files
-    if (uploadFiles.length > 0) {
-      console.log('🧹 Clearing previous upload queue for new upload session');
-      if (onClearPreviousData) {
-        onClearPreviousData();
+    console.log('🚀 Processing files - ensuring clean upload queue state');
+    
+    // Only clear completed/error files, preserve active batch jobs
+    setUploadFiles((prev) => {
+      const activeJobs = prev.filter(f => f.status === "uploading" && f.batchJobId);
+      if (activeJobs.length > 0) {
+        console.log(`🔄 Preserving ${activeJobs.length} active batch jobs while starting new upload`);
+        return activeJobs; // Keep only active batch jobs
       }
-      storeClearUploadQueue();
+      console.log('🧹 No active batch jobs found, clearing all previous files');
+      return []; // Clear everything if no active jobs
+    });
+    
+    // Clear previous data when processing new files
+    if (onClearPreviousData) {
+      console.log('🧹 Clearing previous transcription data for new upload session');
+      onClearPreviousData();
     }
 
     // Pre-flight token validation for each file
@@ -343,7 +409,22 @@ const FileUpload: React.FC<FileUploadProps> = ({
       if (validFiles.length === 1) {
         const file = validFiles[0];
         setPendingFile(file);
-        setCostDialogOpen(true);
+        
+        // Calculate token data using API for accuracy
+        try {
+          const [tokenCalc, fileEstimation] = await Promise.all([
+            getTokenCalculationAsync(file),
+            getFileEstimationAsync(file)
+          ]);
+          
+          setPendingTokenCalc({ tokenCalc, fileEstimation });
+          setCostDialogOpen(true);
+        } catch (error) {
+          console.error('Error calculating token data:', error);
+          // Fallback to synchronous calculation if API fails
+          setPendingTokenCalc(null);
+          setCostDialogOpen(true);
+        }
         return;
       }
 
@@ -449,15 +530,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
           onClose={() => {
             setCostDialogOpen(false);
             setPendingFile(null);
+            setPendingTokenCalc(null);
           }}
           onConfirm={handleCostConfirm}
-          fileName={getFileEstimation(pendingFile).fileName}
-          fileSize={getFileEstimation(pendingFile).fileSize}
-          estimatedDuration={getTokenCalculation(pendingFile).estimatedDuration}
-          requiredTokens={getTokenCalculation(pendingFile).requiredTokens}
+          fileName={pendingTokenCalc?.fileEstimation.fileName || getFileEstimation(pendingFile).fileName}
+          fileSize={pendingTokenCalc?.fileEstimation.fileSize || getFileEstimation(pendingFile).fileSize}
+          estimatedDuration={pendingTokenCalc?.tokenCalc.estimatedDuration || getTokenCalculation(pendingFile).estimatedDuration}
+          requiredTokens={pendingTokenCalc?.tokenCalc.requiredTokens || getTokenCalculation(pendingFile).requiredTokens}
           availableTokens={tokenBalance}
-          hasDiscount={getTokenCalculation(pendingFile).hasDiscount}
-          discountPercentage={getTokenCalculation(pendingFile).discountPercentage}
+          hasDiscount={pendingTokenCalc?.tokenCalc.hasDiscount || getTokenCalculation(pendingFile).hasDiscount}
+          discountPercentage={pendingTokenCalc?.tokenCalc.discountPercentage || getTokenCalculation(pendingFile).discountPercentage}
         />
       )}
 

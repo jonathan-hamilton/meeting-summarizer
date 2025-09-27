@@ -17,7 +17,6 @@ import {
   AccessTime as TimeIcon,
   AttachMoney as CostIcon,
   FilePresent as FileIcon,
-  CheckCircle as CheckIcon,
   Discount as DiscountIcon,
 } from '@mui/icons-material';
 
@@ -47,7 +46,6 @@ const CostEstimationDialog: React.FC<CostEstimationDialogProps> = ({
   discountPercentage,
 }) => {
   const hasSufficientTokens = availableTokens >= requiredTokens;
-  const tokenDeficit = requiredTokens - availableTokens;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
