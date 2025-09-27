@@ -11,20 +11,15 @@ import {
   Tooltip,
 } from '@mui/material';
 import {
-  Brightness4,
-  Brightness7,
   History as HistoryIcon,
   Home as HomeIcon,
-  Help as HelpIcon,
-  AccountCircle as AccountIcon,
-  Accessibility as AccessibilityIcon,
 } from '@mui/icons-material';
-import { useTheme } from '../../theme/useTheme';
 import { useAppMode } from '../../contexts/AppModeContext';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserProfileDialogOpen } from '../../stores/userProfileStore';
 import { SessionIndicator } from '../SessionIndicator';
 import { TokenBalanceDisplay } from '../TokenBalanceDisplay';
+import { MoreMenu } from './MoreMenu';
 
 interface AppHeaderProps {
   onHelpClick: () => void;
@@ -49,14 +44,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { mode, toggleTheme } = useTheme();
   const { mode: appMode } = useAppMode();
   const { isAuthenticated, logout } = useAuthStore();
   const openProfileDialog = useUserProfileDialogOpen();
-
-  const handleThemeToggle = () => {
-    toggleTheme();
-  };
 
   const handleSignOutClick = () => {
     logout();
@@ -111,88 +101,60 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <SessionIndicator status={sessionStatus} />
           )}
           
-          {/* Buttons for authenticated users in production mode - ordered left to right */}
-          {appMode === 'production' && isAuthenticated && (
+          {/* Authentication-based controls */}
+          {appMode === 'production' && (
             <>
-              {/* 0. Token Balance Display */}
-              <TokenBalanceDisplay 
-                onPurchaseClick={onTokenPurchaseClick}
-                compact
-              />
+              {isAuthenticated ? (
+                /* Authenticated user controls - reordered for consistent SIGN OUT position */
+                <>
+                  {/* Token Balance Display */}
+                  <TokenBalanceDisplay 
+                    onPurchaseClick={onTokenPurchaseClick}
+                    compact
+                  />
 
-              {/* 1. SIGN OUT Button */}
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleSignOutClick}
-                sx={{ 
-                  mr: 1,
-                  minWidth: '80px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#1976d2',
-                  '&:hover': {
-                    backgroundColor: '#1565C0'
-                  }
-                }}
-              >
-                SIGN OUT
-              </Button>
+                  {/* History Button */}
+                  {location.pathname === '/history' ? (
+                    <Tooltip title="Home">
+                      <IconButton color="inherit" onClick={() => navigate('/app')}>
+                        <HomeIcon />
+                      </IconButton>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip title="Meeting History">
+                      <IconButton color="inherit" onClick={() => navigate('/history')}>
+                        <HistoryIcon />
+                      </IconButton>
+                    </Tooltip>
+                  )}
 
-              {/* 2. Account Button */}
-              <Tooltip title="My Account">
-                <IconButton color="inherit" onClick={openProfileDialog}>
-                  <AccountIcon />
-                </IconButton>
-              </Tooltip>
+                  {/* More Menu Dropdown */}
+                  <MoreMenu 
+                    onHelpClick={onHelpClick}
+                    onAccessibilityClick={onAccessibilityClick}
+                    onProfileClick={openProfileDialog}
+                  />
 
-              {/* 3. History Button */}
-              {location.pathname === '/history' ? (
-                <Tooltip title="Home">
-                  <IconButton color="inherit" onClick={() => navigate('/app')}>
-                    <HomeIcon />
-                  </IconButton>
-                </Tooltip>
-              ) : (
-                <Tooltip title="Meeting History">
-                  <IconButton color="inherit" onClick={() => navigate('/history')}>
-                    <HistoryIcon />
-                  </IconButton>
-                </Tooltip>
-              )}
-
-              {/* 4. Help & Privacy FAQ Button */}
-              <Tooltip title="Help & Privacy FAQ">
-                <IconButton 
-                  color="inherit" 
-                  onClick={onHelpClick} 
-                  sx={{ ml: 1 }}
-                  aria-label="Help & Privacy FAQ"
-                >
-                  <HelpIcon />
-                </IconButton>
-              </Tooltip>
-
-              {/* 5. Accessibility Settings Button */}
-              <Tooltip title="Accessibility Settings">
-                <IconButton 
-                  color="inherit" 
-                  onClick={onAccessibilityClick} 
-                  sx={{ ml: 1 }}
-                  aria-label="Accessibility settings and preferences"
-                >
-                  <AccessibilityIcon />
-                </IconButton>
-              </Tooltip>
-
-              {/* 6. Light/Dark Mode Toggle Button */}
-              <IconButton 
-                color="inherit" 
-                onClick={handleThemeToggle} 
-                sx={{ ml: 1 }}
-                aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
-              >
-                {mode === "dark" ? <Brightness7 /> : <Brightness4 />}
-              </IconButton>
+                  {/* SIGN OUT Button - moved to far right for consistency */}
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleSignOutClick}
+                    sx={{ 
+                      ml: 1,
+                      mr: 2,
+                      minWidth: '80px',
+                      fontWeight: 'bold',
+                      backgroundColor: '#1976d2',
+                      '&:hover': {
+                        backgroundColor: '#1565C0'
+                      }
+                    }}
+                  >
+                    SIGN OUT
+                  </Button>
+                </>
+              ) : null}
             </>
           )}
 

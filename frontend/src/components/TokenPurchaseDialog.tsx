@@ -9,7 +9,6 @@ import {
   Box,
   Card,
   CardContent,
-  Grid,
   Chip,
   CircularProgress,
   Alert,
@@ -270,26 +269,38 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
           )}
         </Typography>
 
-        <Grid container spacing={2}>
+        <Box sx={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: 2 
+        }}>
           {TOKEN_PACKAGES.map((pkg) => (
-            <Grid item xs={12} sm={6} key={pkg.id}>
+            <Box key={pkg.id}>
               <Card 
                 sx={{ 
                   cursor: 'pointer',
+                  height: '200px', // Fixed height for equal-sized tiles
+                  display: 'flex',
+                  flexDirection: 'column',
                   '&:hover': { 
                     boxShadow: 3,
                     transform: 'translateY(-2px)',
                   },
                   transition: 'all 0.2s ease-in-out',
                 }}
-                onClick={(e) => {
+                onClick={() => {
                   console.log('🎯 Card clicked!', pkg);
                   handlePackageSelect(pkg);
                 }}
               >
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Typography variant="h6" component="h3">
+                <CardContent sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  height: '100%',
+                  padding: 2,
+                }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                    <Typography variant="h6" component="h3" sx={{ fontSize: '1rem', fontWeight: 'bold' }}>
                       {pkg.name}
                     </Typography>
                     {pkg.isPopular && (
@@ -297,26 +308,31 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
                     )}
                   </Box>
                   
-                  <Typography variant="h4" color="primary" sx={{ mb: 1 }}>
+                  <Typography variant="h4" color="primary" sx={{ mb: 1, fontSize: '1.5rem' }}>
                     ${pkg.priceUsd}
                   </Typography>
                   
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontSize: '0.875rem' }}>
                     {pkg.tokenCount.toLocaleString()} tokens
                   </Typography>
                   
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontSize: '0.875rem' }}>
                     ${(pkg.priceUsd / pkg.tokenCount).toFixed(4)} per token
                   </Typography>
                   
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ 
+                    fontSize: '0.8rem',
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'flex-end'
+                  }}>
                     {pkg.description}
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
           ))}
-        </Grid>
+        </Box>
 
         {tokenStoreError && (
           <Alert severity="error" sx={{ mt: 2 }}>
