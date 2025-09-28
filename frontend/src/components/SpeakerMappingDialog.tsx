@@ -29,9 +29,6 @@ import { getSpeakerColor } from "../theme/speakerColors";
 import { ConfirmDeleteDialog } from "./dialogs/ConfirmDeleteDialog";
 import { SpeakerMappingField } from "./speaker/SpeakerMappingField";
 import { useSpeakerValidation } from "../hooks/useSpeakerValidation";
-import { useAppMode } from "../contexts/AppModeContext";
-import { useTourStore } from "../stores/tourStore";
-import { TourPopover } from "./TourPopover";
 
 // Helper function to format speaker label without duplication
 const formatSpeakerLabel = (speakerId: string): string => {
@@ -68,9 +65,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   existingMappings = [],
   onMappingsSaved,
 }) => {
-  const { isDemo } = useAppMode();
-  const { isActive: isTourActive, isCurrentStep, closeStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
-  
   // Accessibility store for modal management and announcements
   const { openModal, closeModal, announceModalOpen, announceModalClose } = useAccessibilityStore();
   const modalId = 'speakerMappingDialog';
@@ -82,7 +76,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
   // Track the baseline mappings for change detection
   const [baselineMappings, setBaselineMappings] = useState<SpeakerMapping[]>([]);
 
-  // Use centralized store for real-time speaker management
+  // Use centralized store for speaker management
   const speakerMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const addSpeakerMapping = useSpeakerSessionStore(state => state.addSpeakerMapping);
   const updateSpeakerMapping = useSpeakerSessionStore(state => state.updateSpeakerMapping);
@@ -363,12 +357,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       newMapping.role
     );
     setError(null);
-    
-    // Trigger tour step advancement if in demo mode
-    if (isDemo && isTourActive) {
-      triggerStepAction('add-speaker');
-    }
-  }, [handleAddSpeaker, addSpeakerToStore, isDemo, isTourActive, triggerStepAction]);
+  }, [handleAddSpeaker, addSpeakerToStore]);
 
   const handleRemoveSpeakerLocal = useCallback(
     (index: number) => {
@@ -394,11 +383,11 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
       const mapping = mappings[index];
       if (!mapping) return;
 
-      // Update in Zustand store immediately for real-time updates
+      // Update in Zustand store immediately
       updateSpeakerInStore(mapping.speakerId, { [field]: value });
       setError(null);
 
-      // Real-time validation during edit mode
+      // Validation during edit mode
       if (editingMappings.has(mapping.speakerId)) {
         // Validate the updated mapping
         const updatedMapping = { ...mapping, [field]: value };
@@ -431,7 +420,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
       // Note: We allow empty names for unedited speakers - validation only checks for duplicates
 
-      // Get current mappings from Zustand store (they're already updated in real-time)
+      // Get current mappings from Zustand store
       const currentMappings = getAllMappings();
 
       // Store session overrides for any modified speakers
@@ -595,13 +584,8 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
 
   // Check if the form is valid and ready to save
   const canSave = useMemo(() => {
-    // In demo mode, enable save button when tour is active and no active edits
-    if (isDemo && isTourActive && !hasActiveEdits) {
-      return !hasValidationErrors && !loading;
-    }
-    
     return hasChanges && !hasValidationErrors && !loading;
-  }, [isDemo, isTourActive, hasActiveEdits, hasChanges, hasValidationErrors, loading]);
+  }, [hasChanges, hasValidationErrors, loading]);
 
   // Memoize UI components
   const speakerChips = useMemo(() => {
@@ -688,7 +672,7 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           sx: { minHeight: "400px" },
         }}
         sx={{
-          zIndex: 10000, // Higher than tour popover z-index (9999)
+          zIndex: 10000, // Higher than default dialog z-index
         }}
       >
         <FocusTrap 
@@ -752,15 +736,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
               Auto-detected Speakers:
             </Typography>
             {speakerChips}
-            
-            {/* Step 4 Tour Popover - Add Speaker */}
-            <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(4)}
-              step={4}
-              onClose={() => closeStep(4)}
-              position={{ top: '100px', left: '50px' }}
-              maxWidth="300px"
-            />
           </Box>
 
           <Divider sx={{ my: 2 }} />
@@ -772,32 +747,14 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
               startIcon={<PersonAddIcon />}
               variant="outlined"
               size="small"
-              disabled={loading || isActionDisabledDuringTour('add-speaker')}
+              disabled={loading}
             >
               Add Speaker
             </Button>
-            
-            {/* Step 5 Tour Popover - Speaker Added Successfully */}
-            <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(5)}
-              step={5}
-              onClose={() => closeStep(5)}
-              position={{ top: '-10px', left: '275px' }}
-              maxWidth="300px"
-            />
           </Box>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3, position: 'relative' }}>
             {mappingFields}
-            
-            {/* Step 6 Tour Popover - Edit/Delete Speaker */}
-            <TourPopover
-              open={isDemo && isTourActive && isCurrentStep(6)}
-              step={6}
-              onClose={() => closeStep(6)}
-              position={{ top: '50px', right: '0px' }}
-              maxWidth="300px"
-            />
           </Box>
 
           {mappings.length === 0 && (
@@ -827,17 +784,14 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
             </Box>
           )}
 
-          <Button onClick={handleClose} disabled={loading || isActionDisabledDuringTour('cancel-mappings')}>
+          <Button onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
 
           <Button
-            onClick={() => {
-              triggerStepAction('final-save');
-              handleSave();
-            }}
+            onClick={handleSave}
             variant="contained"
-            disabled={!canSave || hasActiveEdits || isActionDisabledDuringTour('save-mappings')}
+            disabled={!canSave || hasActiveEdits}
             startIcon={loading ? <CircularProgress size={16} /> : <SaveIcon />}
             title={
               hasValidationErrors
@@ -853,15 +807,6 @@ export const SpeakerMappingDialog: React.FC<SpeakerMappingDialogProps> = ({
           >
             {loading ? "Saving..." : "Save Mappings"}
           </Button>
-
-          {/* Step 8 Tour Popover - SAVE MAPPINGS */}
-          <TourPopover
-            open={isDemo && isTourActive && isCurrentStep(8)}
-            step={8}
-            onClose={() => closeStep(8)}
-            position={{ top: '600px', right: '10px' }}
-            maxWidth="300px"
-          />
         </DialogActions>
           </div>
         </FocusTrap>

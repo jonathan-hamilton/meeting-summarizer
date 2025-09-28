@@ -7,7 +7,7 @@ using System.Text.Json;
 namespace MeetingSummarizer.Api.Services.Transcription;
 
 /// <summary>
-/// Service for parsing Azure batch transcription results into structured database segments
+/// Service for parsing Azure transcription results into structured database segments
 /// </summary>
 public class TranscriptParsingService : ITranscriptParsingService
 {
@@ -118,7 +118,7 @@ public class TranscriptParsingService : ITranscriptParsingService
             JsonElement recognizedPhrases;
             if (azureData.TryGetProperty("combinedRecognizedPhrases", out recognizedPhrases))
             {
-                result.DetectedFormat = "Azure Batch Transcription v3.1 (combinedRecognizedPhrases)";
+                result.DetectedFormat = "Azure Transcription v3.1 (combinedRecognizedPhrases)";
             }
             else if (azureData.TryGetProperty("recognizedPhrases", out recognizedPhrases))
             {

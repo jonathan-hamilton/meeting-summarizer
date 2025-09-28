@@ -5,7 +5,7 @@ namespace MeetingSummarizer.Api.Data.Entities;
 
 /// <summary>
 /// Entity for tracking Azure Fast Transcription jobs
-/// Supports async job processing with simplified architecture (no batch monitoring)
+/// Supports async job processing with simplified architecture
 /// </summary>
 [Table("FastTranscriptionJobs")]
 public class FastTranscriptionJob
@@ -126,6 +126,11 @@ public class FastTranscriptionJob
     /// Navigation property to parsed transcript segments
     /// </summary>
     public virtual ICollection<TranscriptSegment> TranscriptSegments { get; set; } = new List<TranscriptSegment>();
+
+    /// <summary>
+    /// Navigation property to token refunds related to this job
+    /// </summary>
+    public virtual ICollection<TokenRefund> TokenRefunds { get; set; } = new List<TokenRefund>();
 
     /// <summary>
     /// Check if the job is in a final state

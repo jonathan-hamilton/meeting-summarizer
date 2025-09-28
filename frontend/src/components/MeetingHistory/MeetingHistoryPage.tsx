@@ -37,7 +37,7 @@ import { useMeetingHistoryStore } from '../../stores/meetingHistoryStore';
 import { useMeetingHistorySignalR } from '../../hooks/useMeetingHistorySignalR';
 import type { MeetingListItem } from '../../types/meeting';
 
-// Smooth progress component to prevent jarring updates during real-time progress
+// Smooth progress component to prevent jarring updates during progress updates
 const SmoothProgressIndicator: React.FC<{ 
   meeting: MeetingListItem; 
   targetProgress?: number; 
@@ -107,7 +107,7 @@ const MeetingHistoryPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<MeetingListItem | null>(null);
 
-  // Enable SignalR real-time updates
+  // Enable SignalR live updates
   useMeetingHistorySignalR();
 
   // Load data on component mount

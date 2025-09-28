@@ -206,7 +206,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       fullWidth
       disableEscapeKeyDown={isLoading}
       sx={{
-        zIndex: 2000 // Ensure dialog appears above tour steps (which typically use z-index around 1300-1500)
+        zIndex: 2000 // Ensure dialog appears above other elements
       }}
       PaperProps={{
         sx: { borderRadius: 2 }

@@ -77,8 +77,8 @@ export const useSummaryStore = create<SummaryState>()(
         
         try {
           // Use provided mode (should always be provided from AppModeContext)
-          // Fallback to demo mode if not provided (safer default)
-          const apiMode = mode || 'demo';
+          // Fallback to production mode if not provided 
+          const apiMode = mode || 'production';
           
           // Get the appropriate API service based on mode only
           const apiService = createApiService(apiMode);

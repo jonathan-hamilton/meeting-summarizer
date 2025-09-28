@@ -17,15 +17,12 @@ import type { TranscriptionJobStatus } from '../../types/transcriptionJob';
 
 interface UploadProgressProps {
   uploadFiles: FileUploadFile[];
-  transcriptionJob?: TranscriptionJobStatus | null; // Updated from batchJob
-  batchJob?: TranscriptionJobStatus | null; // Legacy support during migration
+  transcriptionJob?: TranscriptionJobStatus | null;
   isPolling?: boolean;
-  transcriptionError?: string | null; // Updated from batchError
-  batchError?: string | null; // Legacy support during migration
+  transcriptionError?: string | null;
   onClearFile?: (fileId: string) => void;
   onRetryFile?: (fileId: string) => void;
-  onRetryTranscriptionJob?: () => void; // Updated from onRetryBatchJob
-  onRetryBatchJob?: () => void; // Legacy support during migration
+  onRetryTranscriptionJob?: () => void;
 }
 
 const getStatusIcon = (status: FileUploadFile["status"]) => {
@@ -56,14 +53,11 @@ const formatTime = (seconds: number): string => {
 export const UploadProgress: React.FC<UploadProgressProps> = ({
   uploadFiles,
   transcriptionJob,
-  batchJob,
   isPolling = false,
   transcriptionError,
-  batchError,
   onClearFile,
   onRetryFile: _onRetryFile, // Unused for now
-  onRetryTranscriptionJob,
-  onRetryBatchJob
+  onRetryTranscriptionJob
 }) => {
   if (uploadFiles.length === 0) {
     return null;
@@ -86,18 +80,15 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
             </Box>
 
             {/* Workflow Progress Stepper */}
-            <WorkflowStepper 
-              uploadFile={uploadFile} 
-              batchJob={(transcriptionJob || batchJob) as any || undefined} 
-            />
+            <WorkflowStepper />
 
             {/* Transcription Job Status Information */}
-            {(transcriptionJob || batchJob) && (
+            {transcriptionJob && (
               <TranscriptionHandler 
-                transcriptionJob={transcriptionJob || batchJob!}
+                transcriptionJob={transcriptionJob!}
                 isPolling={isPolling}
-                transcriptionError={transcriptionError || batchError}
-                onRetry={onRetryTranscriptionJob || onRetryBatchJob}
+                transcriptionError={transcriptionError}
+                onRetry={onRetryTranscriptionJob}
               />
             )}
 

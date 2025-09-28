@@ -5,7 +5,7 @@ export interface FileUploadFile {
   status: 'pending' | 'uploading' | 'completed' | 'error';
   error?: string;
   analysisId?: string;
-  batchJobId?: string;
+  transcriptionJobId?: string;
   successMessage?: string;
   result?: {
     processingTimeMs?: number;
@@ -23,24 +23,8 @@ export interface WorkflowStep {
 export interface UploadResponse {
   success: boolean;
   analysisId?: string;
-  batchJobId?: string;
+  transcriptionJobId?: string;
   error?: string;
-}
-
-export interface BatchJobStatus {
-  jobId: string;
-  status: 'submitted' | 'processing' | 'completed' | 'failed';
-  progressPercentage: number;
-  submittedAt: string;
-  completedAt?: string;
-  estimatedDurationMinutes: number;
-  fileName: string;
-  errorMessage?: string;
-  retryCount: number;
-  maxRetries: number;
-  refundIssued: boolean;
-  processingDuration?: string;
-  results?: any;
 }
 
 export const ACCEPTED_AUDIO_FORMATS = [

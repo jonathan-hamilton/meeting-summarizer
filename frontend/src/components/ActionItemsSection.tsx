@@ -30,45 +30,30 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import TourPopover from './TourPopover';
 import SortableActionItem from './SortableActionItem';
-import { useTourStore } from '../stores/tourStore';
 import type { ActionItem, SpeakerMapping } from '../types';
 
 interface ActionItemsSectionProps {
   actionItems: ActionItem[];
   speakerMappings: SpeakerMapping[];
-  isDemo: boolean;
-  isTourActive: boolean;
-  isCurrentStep: (step: number) => boolean;
   onCreateActionItem: () => void;
   onEditActionItem: (item: ActionItem) => void;
   onDeleteActionItem: (id: string) => void;
   onReorderActionItems: (items: ActionItem[]) => void;
   onUpdateActionItem: (id: string, updates: Partial<ActionItem>) => void;
-  onCloseStep: (step: number) => void;
-  triggerStepAction: (action: string) => void;
   onSnackbar: (message: string, severity: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
   actionItems,
   speakerMappings,
-  isDemo,
-  isTourActive,
-  isCurrentStep,
   onCreateActionItem,
   onEditActionItem,
   onDeleteActionItem,
   onReorderActionItems,
   onUpdateActionItem,
-  onCloseStep,
-  triggerStepAction,
   onSnackbar,
 }) => {
-  // Tour control integration
-  const isActionDisabledDuringTour = useTourStore(state => state.isActionDisabledDuringTour);
-  
   // Accordion expansion state - track which speaker accordions are expanded
   const [expandedAccordions, setExpandedAccordions] = useState<Set<string>>(new Set());
 
@@ -86,8 +71,6 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
       const newSet = new Set(prev);
       if (isExpanded) {
         newSet.add(speakerId);
-        // Trigger step action when accordion is expanded for the first time
-        triggerStepAction('expand-action-items');
       } else {
         newSet.delete(speakerId);
       }
@@ -203,7 +186,6 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
             startIcon={<Add />}
             onClick={onCreateActionItem}
             size="small"
-            disabled={isActionDisabledDuringTour('add-item')}
           >
             Add Item
           </Button>
@@ -237,20 +219,10 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
           startIcon={<Add />}
           onClick={onCreateActionItem}
           size="small"
-          disabled={isActionDisabledDuringTour('add-item')}
         >
           Add Item
         </Button>
       </Box>
-      
-      {/* Step 11 Tour Popover - Expand Action Items */}
-      <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(11)}
-        step={11}
-        onClose={() => onCloseStep(11)}
-        position={{ top: '310px', left: '575px' }}
-        maxWidth="400px"
-      />
       
       <DndContext
         sensors={sensors}

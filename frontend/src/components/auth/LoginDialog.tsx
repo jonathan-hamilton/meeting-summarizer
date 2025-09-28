@@ -125,7 +125,7 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
       fullWidth
       disableEscapeKeyDown={isLoading}
       sx={{
-        zIndex: 2000 // Ensure dialog appears above tour steps
+        zIndex: 2000 // Ensure dialog appears above other elements
       }}
       PaperProps={{
         sx: { borderRadius: 2 }

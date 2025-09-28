@@ -184,7 +184,7 @@ public class SummaryController : ControllerBase
 
             try
             {
-                // S6.5: Create meeting record FIRST for consistent ID usage (aligns with batch processing)
+                // Create meeting record FIRST for consistent ID usage
                 meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
 
                 // S6.13: Use Fast Transcription service for all files ≤2hr/200MB
@@ -1088,7 +1088,7 @@ public class SummaryController : ControllerBase
                 meetingId.Value,
                 transcriptionJson,
                 speakerMappingsJson,
-                0); // No tokens consumed for real-time transcriptions
+                0); // No tokens consumed for fast transcriptions
 
             // Update speaker count
             await _meetingService.UpdateMeetingSpeakerCountAsync(meetingId.Value, speakerCount);

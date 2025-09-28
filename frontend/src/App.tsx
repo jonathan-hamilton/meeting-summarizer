@@ -31,7 +31,6 @@ import { useAppMode } from "./contexts/AppModeContext";
 import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
-import { useTourStore } from "./stores/tourStore";
 
 import { useAuthStore } from "./stores/authStore";
 import { useTokenStore } from "./stores/tokenStore";
@@ -60,19 +59,6 @@ import { useTranscriptionJobStore } from "./stores/transcriptionJobStore";
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
 
-// Lazy load demo component only when needed (currently disabled)
-/* 
-const TranscriptDisplayDemo = React.lazy(
-  () => import("./demo/TranscriptDisplayDemo")
-);
-const SpeakerMappingDemo = React.lazy(
-  () => import("./demo/SpeakerMappingDemo")
-);
-const SummaryDisplayDemo = React.lazy(
-  () => import("./demo/SummaryDisplayDemo")
-);
-*/
-
 // Main app content component
 const AppContent: React.FC = () => {
   const { mode, toggleTheme } = useTheme();
@@ -88,7 +74,6 @@ const AppContent: React.FC = () => {
     window.scrollTo(0, 0);
   }, []);
   const { addTranscript } = useSessionStore();
-  const { isActive: isTourActive, isCurrentStep } = useTourStore();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -121,7 +106,7 @@ const AppContent: React.FC = () => {
     }
   }, [isAuthenticated, appMode, refreshBalance, loadStripeConfig]);
 
-  // Initialize batch job store from session storage when app starts
+  // Initialize transcription job store from session storage when app starts
   const { initializeFromStorage } = useTranscriptionJobStore();
   useEffect(() => {
     initializeFromStorage();
@@ -239,11 +224,13 @@ const AppContent: React.FC = () => {
     });
   };
 
+  // Clear previous data when starting new session
   const handleClearPreviousData = useCallback(() => {
     console.log('🧹 Clearing previous transcription data');
     setTranscriptionResults([]);
   }, []);
 
+  // Wrapper for transcription completion handling
   const handleTranscriptionCompleteWrapper = (result: TranscriptionResponse) => {
     handleTranscriptionComplete(result);
     // Also add to sessionStore for consistent session data tracking
@@ -253,30 +240,6 @@ const AppContent: React.FC = () => {
     // Announce completion to screen readers
     announceTranscriptionComplete();
   };
-
-  // Ref callback for Step 2 tour scroll - scrolls when element is mounted and tour is on Step 2
-  const transcriptionResultsRef = useCallback((node: HTMLElement | null) => {
-    if (node && appMode === 'demo' && isTourActive && isCurrentStep(2)) {
-      node.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
-      });
-    }
-  }, [appMode, isTourActive, isCurrentStep]);
-
-  // Ref callback for tour scroll - handles Step 11 when summary content mounts
-  const aiSummaryRef = useCallback((node: HTMLElement | null) => {
-    // Step 11: When the AI-Powered Meeting Summary element mounts and Step 11 is active
-    if (node && appMode === 'demo' && isTourActive && isCurrentStep(11)) {
-      // Scroll to the AI-Powered Meeting Summary heading when it mounts
-      node.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start',
-        inline: 'nearest'
-      });
-    }
-  }, [appMode, isTourActive, isCurrentStep]);
 
   // Health status checking removed to reduce console errors
 
@@ -333,7 +296,7 @@ const AppContent: React.FC = () => {
   }, [reduceMotion]);
 
   const handleModeToggle = async () => {
-    // Toggle between development and production modes (demo stays demo)
+    // Toggle between development and production modes
     if (appMode === 'production') {
       setAppMode('development');
       announceModeChange('development');
@@ -362,16 +325,7 @@ const AppContent: React.FC = () => {
   };
 
   const getAppBarSx = () => {
-    // Demo mode gets a purple/teal color scheme, different from production orange/blue
-    if (appMode === 'demo') {
-      return {
-        width: "100%",
-        backgroundColor: "#6B46C1", // Purple color for demo mode
-        color: "#FFFFFF"
-      };
-    }
-    
-    // Production mode uses existing logic
+    // Use existing logic for production mode
     const baseColor = getAppBarColor();
     return {
       width: "100%",
@@ -441,7 +395,6 @@ const AppContent: React.FC = () => {
             onAccessibilityClick={() => setAccessibilityPanelOpen(true)}
             onModeToggle={handleModeToggle}
             onModeDoubleClick={handleModeDoubleClick}
-            onRegisterClick={() => setRegisterDialogOpen(true)}
             onTokenPurchaseClick={() => setTokenPurchaseDialogOpen(true)}
             sessionStatus={privacyControls.sessionStatus}
             getAppBarSx={getAppBarSx}
@@ -660,12 +613,10 @@ const AppContent: React.FC = () => {
                       <Typography variant="h4" component="h3" id="upload-heading" gutterBottom>
                         Upload Audio File
                       </Typography>
-                      <FileUpload
+                      <FileUpload 
                         onTranscriptionComplete={handleTranscriptionCompleteWrapper}
-                        onPurchaseTokens={() => setTokenPurchaseDialogOpen(true)}
                         onClearPreviousData={handleClearPreviousData}
                         hasPreviousResults={transcriptionResults.length > 0}
-                        isAuthDialogOpen={loginDialogOpen || registerDialogOpen}
                       />
                     </section>
                   </Grid>
@@ -675,8 +626,7 @@ const AppContent: React.FC = () => {
                   <Grid size={12} sx={{ maxWidth: "100%", minWidth: "100%" }}>
                     <section 
                       aria-labelledby="transcription-heading"
-                      id="transcription-results" 
-                      ref={transcriptionResultsRef}
+                      id="transcription-results"
                     >
                       <Box sx={{ width: "100%" }}>
                         <Typography variant="h4" component="h3" id="transcription-heading" gutterBottom>
@@ -686,7 +636,6 @@ const AppContent: React.FC = () => {
                           <TranscriptDisplay
                             key={result.transcriptionId}
                             transcription={result}
-                            aiSummaryRef={aiSummaryRef}
                           />
                         ))}
                       </Box>

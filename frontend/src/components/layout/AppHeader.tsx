@@ -26,7 +26,6 @@ interface AppHeaderProps {
   onAccessibilityClick: () => void;
   onModeToggle: () => void;
   onModeDoubleClick: () => void;
-  onRegisterClick: () => void;
   onTokenPurchaseClick?: () => void;
   sessionStatus: 'active' | 'warning' | 'expired';
   getAppBarSx: () => any;
@@ -37,7 +36,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onAccessibilityClick,
   onModeToggle,
   onModeDoubleClick,
-  onRegisterClick,
   onTokenPurchaseClick,
   sessionStatus,
   getAppBarSx,
@@ -91,12 +89,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           textAlign: "center",
           fontWeight: "bold"
         }}>
-          Meeting-Summary.io {appMode === 'demo' && '(Demo)'}
+          Meeting-Summary.io
         </Typography>
         
         {/* Right-aligned controls */}
         <Box sx={{ position: "absolute", right: 0, display: "flex", alignItems: "center" }}>
-          {/* Hide SessionIndicator in demo mode OR production mode */}
           {appMode === 'development' && (
             <SessionIndicator status={sessionStatus} />
           )}
@@ -156,26 +153,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </>
               ) : null}
             </>
-          )}
-
-          {/* Demo mode button - changed to SIGN UP for demo mode */}
-          {appMode === 'demo' && (
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={onRegisterClick}
-              sx={{ 
-                ml: 1,
-                minWidth: '80px',
-                fontWeight: 'bold',
-                backgroundColor: '#9C27B0',
-                '&:hover': {
-                  backgroundColor: '#7B1FA2'
-                }
-              }}
-            >
-              SIGN UP
-            </Button>
           )}
         </Box>
       </Toolbar>

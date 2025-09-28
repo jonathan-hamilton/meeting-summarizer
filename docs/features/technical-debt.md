@@ -1,5 +1,45 @@
 # Technical Debt & Known Issues
 
+## Recently Resolved Technical Debt
+
+### S6.13 Legacy Architecture Cleanup ✅ RESOLVED
+
+**Date Identified**: Sprint 6 Planning  
+**Date Resolved**: September 28, 2025  
+**Sprint**: S6.13 Fast Transcription Migration  
+**Resolution Duration**: 2 days
+
+**Problem Resolved**:
+- Legacy dual-processing architecture with batch/real-time complexity
+- Obsolete batch job monitoring and status management systems
+- Inconsistent terminology ("batch processing" vs "fast transcription") across codebase
+- Tour system with 18-step guided demo creating maintenance overhead
+- Demo functionality references scattered throughout frontend
+- Type system confusion with BatchJobStatus and TranscriptionJobStatus coexistence
+- Database schema containing deprecated BatchTranscriptionJob table
+
+**Root Cause**:
+- Historical architecture decisions from early development phases
+- Gradual migration approach left legacy code and references in place
+- Complex dual-processing system created maintenance burden
+- Tour/demo systems no longer aligned with production requirements
+
+**Solution Implemented**:
+- ✅ **Database Migration**: Applied `20250928222033_RemoveBatchTranscriptionJobAndCleanData.cs`
+- ✅ **Frontend Cleanup**: Removed batchJobStore.ts, tourStore.ts, tour/ directory, demo functionality
+- ✅ **Type System**: Migrated from BatchJobStatus to TranscriptionJobStatus across all interfaces
+- ✅ **Service Layer**: Removed AzureBatchTranscriptionService and related batch processing logic
+- ✅ **Component Cleanup**: Eliminated tour components, demo handlers, batch-specific UI elements
+- ✅ **Terminology**: Standardized on "fast transcription" throughout codebase
+- ✅ **File Cleanup**: Removed obsolete test scripts, backup files, and legacy components
+
+**Technical Impact**:
+- **Architecture Simplification**: Single Azure Fast Transcription API processing path
+- **Reduced Complexity**: Eliminated dual-processing logic and batch monitoring
+- **Improved Maintainability**: Consistent terminology and simplified component structure
+- **Performance**: 96.8% improvement (45 seconds vs 19+ minutes for 25-minute meetings)
+- **Code Quality**: Removed ~2000+ lines of legacy code and references
+
 ## Current Technical Debt
 
 ### S3.4 Speaker Email Field Persistence Bug ✅ RESOLVED

@@ -8,7 +8,7 @@ namespace MeetingSummarizer.Api.Data.Entities
     public class TranscriptSegment
     {
         /// <summary>
-        /// Reference to the batch transcription job
+        /// Reference to the fast transcription job
         /// </summary>
         public Guid JobId { get; set; }
 
@@ -46,8 +46,8 @@ namespace MeetingSummarizer.Api.Data.Entities
 
         // Navigation property
         /// <summary>
-        /// Reference to the parent batch transcription job
+        /// Reference to the parent fast transcription job
         /// </summary>
-        public BatchTranscriptionJob Job { get; set; } = null!;
+        public FastTranscriptionJob Job { get; set; } = null!;
     }
 }

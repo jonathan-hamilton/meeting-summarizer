@@ -25,7 +25,6 @@ export interface MeetingListItem {
 export interface MeetingResponse {
   id: string;
   userId: string;
-  batchJobId: string | null;
   transcriptBlobUrl: string | null;
   resultsJson: string | null;
   fileName: string;

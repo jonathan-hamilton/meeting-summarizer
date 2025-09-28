@@ -7,7 +7,7 @@ import type { MeetingListItem } from '../types/meeting';
 
 /**
  * Hook to integrate SignalR meeting progress updates with the meeting history store
- * Automatically connects when authenticated and updates meeting status in real-time
+ * Automatically connects when authenticated and updates meeting status live
  */
 export const useMeetingHistorySignalR = () => {
   const { isAuthenticated, accessToken } = useAuthStore();
@@ -52,7 +52,7 @@ export const useMeetingHistorySignalR = () => {
       } catch (error) {
         console.warn('📡 Meeting History SignalR: Failed to connect (non-critical):', error);
         // SignalR connection failure is not critical - the app should still work
-        // Real-time updates just won't be available
+        // Live updates just won't be available
       }
     };
 

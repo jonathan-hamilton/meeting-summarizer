@@ -255,7 +255,7 @@ public class MeetingsController : ControllerBase
         }
     }
 
-    // Internal endpoints for system use (batch job completion, etc.)
+    // Internal endpoints for system use
 
     /// <summary>
     /// Update meeting processing status (internal use)
@@ -453,37 +453,37 @@ public class MeetingsController : ControllerBase
                 return BadRequest("Meeting has no transcription segments available");
             }
 
-            // Get speaker mappings - transcriptionId is typically the BatchJob ID, not the meeting ID
+            // Get speaker mappings - transcriptionId is the fast job ID or meeting ID
             SpeakerMappingResponse? speakerMappings = null;
             
             _logger.LogInformation("Attempting to get speaker mappings for meeting {MeetingId}", id);
             _logger.LogInformation("Meeting details: Title={Title}, Status={Status}, HasSpeakerMappingsJson={HasMappings}", 
                 meeting.Title, meeting.Status, !string.IsNullOrEmpty(meeting.SpeakerMappingsJson));
             
-            // First try using meeting ID (might work for real-time transcriptions)
+            // First try using meeting ID
             speakerMappings = await _speakerMappingService.GetSpeakerMappingsAsync(id.ToString());
             _logger.LogInformation("Session mappings with meeting ID: Found={Found}, Count={Count}", 
                 speakerMappings != null, speakerMappings?.MappedSpeakerCount ?? 0);
             
-            // If not found, query the database to find the batch job ID for this meeting
+            // If not found, query the database to find the fast transcription job ID for this meeting
             if (speakerMappings == null)
             {
-                var batchJob = await _context.BatchTranscriptionJobs
-                    .Where(b => b.MeetingId == id)
+                var fastJob = await _context.FastTranscriptionJobs
+                    .Where(f => f.MeetingId == id)
                     .FirstOrDefaultAsync();
                     
-                _logger.LogInformation("Batch job lookup for meeting {MeetingId}: Found={Found}", id, batchJob != null);
-                if (batchJob != null)
+                _logger.LogInformation("Fast job lookup for meeting {MeetingId}: Found={Found}", id, fastJob != null);
+                if (fastJob != null)
                 {
-                    var batchJobId = batchJob.Id.ToString();
-                    _logger.LogInformation("Found batch job {BatchJobId} for meeting {MeetingId}, Status={Status}", batchJobId, id, batchJob.Status);
-                    speakerMappings = await _speakerMappingService.GetSpeakerMappingsAsync(batchJobId);
-                    _logger.LogInformation("Session mappings with batch job ID: Found={Found}, Count={Count}", 
+                    var fastJobId = fastJob.Id.ToString();
+                    _logger.LogInformation("Found fast job {FastJobId} for meeting {MeetingId}, Status={Status}", fastJobId, id, fastJob.Status);
+                    speakerMappings = await _speakerMappingService.GetSpeakerMappingsAsync(fastJobId);
+                    _logger.LogInformation("Session mappings with fast job ID: Found={Found}, Count={Count}", 
                         speakerMappings != null, speakerMappings?.MappedSpeakerCount ?? 0);
                 }
                 else
                 {
-                    _logger.LogInformation("No batch job found for meeting {MeetingId} - this might be a real-time transcription", id);
+                    _logger.LogInformation("No fast job found for meeting {MeetingId}", id);
                 }
             }
             

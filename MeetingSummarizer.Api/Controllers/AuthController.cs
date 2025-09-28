@@ -54,7 +54,7 @@ public class AuthController : ControllerBase
                 LastName = request.LastName,
                 Password = request.Password,
                 HasConsentedToDataProcessing = request.HasConsentedToDataProcessing,
-                IsPaidUser = false, // New users start as demo users
+                IsPaidUser = false, // New users start with basic access
                 InitialTokenBalance = 0,
                 Role = Data.Enums.UserRole.User // Default role
             };
@@ -246,17 +246,17 @@ public class AuthController : ControllerBase
     /// Get current user profile (requires authentication)
     /// </summary>
     [HttpGet("profile")]
-    public async Task<ActionResult<UserResponse>> GetProfile()
+    public Task<ActionResult<UserResponse>> GetProfile()
     {
         try
         {
             // For now, return a placeholder - this will be enhanced with JWT middleware
-            return Ok(new { message = "Profile endpoint - JWT middleware integration coming next" });
+            return Task.FromResult<ActionResult<UserResponse>>(Ok(new { message = "Profile endpoint - JWT middleware integration coming next" }));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving user profile");
-            return StatusCode(500, new { message = "An error occurred while retrieving profile" });
+            return Task.FromResult<ActionResult<UserResponse>>(StatusCode(500, new { message = "An error occurred while retrieving profile" }));
         }
     }
 

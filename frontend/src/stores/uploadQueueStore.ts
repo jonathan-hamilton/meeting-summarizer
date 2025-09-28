@@ -7,8 +7,7 @@ export interface FileUploadFile {
   progress: number;
   result?: any;
   error?: string;
-  transcriptionJobId?: string; // Updated from batchJobId
-  batchJobId?: string; // Legacy support during migration
+  transcriptionJobId?: string;
   successMessage?: string;
 }
 

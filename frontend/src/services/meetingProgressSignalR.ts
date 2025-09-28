@@ -6,19 +6,9 @@ interface MeetingProgressUpdate {
   progressPercentage: number;
   statusMessage?: string;
   updatedAt: string;
-  batchJobId?: string;
 }
 
-interface BatchJobProgressUpdate {
-  jobId: string;
-  meetingId: string;
-  status: string;
-  progressPercentage: number;
-  statusMessage?: string;
-  updatedAt: string;
-}
-
-export type ProgressUpdateCallback = (update: MeetingProgressUpdate | BatchJobProgressUpdate) => void;
+export type ProgressUpdateCallback = (update: MeetingProgressUpdate) => void;
 
 class MeetingProgressSignalRService {
   private connection: HubConnection | null = null;
@@ -102,16 +92,6 @@ class MeetingProgressSignalRService {
     this.connection.on('MeetingProgressUpdate', callback);
   }
 
-  // Subscribe to batch job progress updates
-  onBatchJobProgressUpdate(callback: (update: BatchJobProgressUpdate) => void): void {
-    if (!this.connection) {
-      console.warn('SignalR: Cannot subscribe - not connected');
-      return;
-    }
-
-    this.connection.on('BatchJobProgressUpdate', callback);
-  }
-
   // Join a specific meeting room for targeted updates
   async joinMeetingRoom(meetingId: string): Promise<void> {
     if (!this.connection) {
@@ -161,7 +141,6 @@ class MeetingProgressSignalRService {
   removeAllListeners(): void {
     if (this.connection) {
       this.connection.off('MeetingProgressUpdate');
-      this.connection.off('BatchJobProgressUpdate');
     }
   }
 }
@@ -182,4 +161,4 @@ export const getMeetingProgressSignalRService = (baseUrl: string = ''): MeetingP
 };
 
 // Export types for use in components
-export type { MeetingProgressUpdate, BatchJobProgressUpdate };
+export type { MeetingProgressUpdate };

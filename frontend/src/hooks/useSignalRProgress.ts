@@ -1,11 +1,10 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { getMeetingProgressSignalRService } from '../services/meetingProgressSignalR';
-import type { MeetingProgressUpdate, BatchJobProgressUpdate } from '../services/meetingProgressSignalR';
+import type { MeetingProgressUpdate } from '../services/meetingProgressSignalR';
 
 interface UseSignalRProgressOptions {
   onMeetingUpdate?: (update: MeetingProgressUpdate) => void;
-  onBatchJobUpdate?: (update: BatchJobProgressUpdate) => void;
   autoConnect?: boolean;
   meetingId?: string;
 }
@@ -21,7 +20,6 @@ interface SignalRProgressState {
 
 export const useSignalRProgress = ({
   onMeetingUpdate,
-  onBatchJobUpdate,
   autoConnect = true,
   meetingId
 }: UseSignalRProgressOptions = {}): SignalRProgressState => {
@@ -115,16 +113,11 @@ export const useSignalRProgress = ({
       service.onMeetingProgressUpdate(onMeetingUpdate);
     }
 
-    // Subscribe to batch job progress updates
-    if (onBatchJobUpdate) {
-      service.onBatchJobProgressUpdate(onBatchJobUpdate);
-    }
-
     // Cleanup function
     return () => {
       service.removeAllListeners();
     };
-  }, [onMeetingUpdate, onBatchJobUpdate, isConnectedRef.current]);
+  }, [onMeetingUpdate, isConnectedRef.current]);
 
   // Auto-connect when token is available
   useEffect(() => {
@@ -155,50 +148,6 @@ export const useSignalRProgress = ({
     joinMeetingRoom,
     leaveMeetingRoom
   };
-};
-
-// Enhanced hook that integrates with existing batch job polling store
-export const useSignalRBatchProgress = () => {
-  const { accessToken } = useAuthStore();
-  
-  const handleBatchJobUpdate = useCallback((update: BatchJobProgressUpdate) => {
-    console.log('SignalR Batch Job Update:', update);
-    
-    // You can integrate this with your existing batch job store
-    // For example, trigger a state update in useBatchJobPollingStore
-    // or create a new SignalR-specific store
-    
-    // Dispatch a custom event that the existing components can listen to
-    const customEvent = new CustomEvent('batchJobProgress', {
-      detail: {
-        jobId: update.jobId,
-        status: update.status,
-        progressPercentage: update.progressPercentage,
-        statusMessage: update.statusMessage,
-        updatedAt: update.updatedAt,
-        meetingId: update.meetingId
-      }
-    });
-    
-    window.dispatchEvent(customEvent);
-  }, []);
-
-  const handleMeetingUpdate = useCallback((update: MeetingProgressUpdate) => {
-    console.log('SignalR Meeting Update:', update);
-    
-    // Dispatch meeting progress event
-    const customEvent = new CustomEvent('meetingProgress', {
-      detail: update
-    });
-    
-    window.dispatchEvent(customEvent);
-  }, []);
-
-  return useSignalRProgress({
-    onBatchJobUpdate: handleBatchJobUpdate,
-    onMeetingUpdate: handleMeetingUpdate,
-    autoConnect: !!accessToken
-  });
 };
 
 export default useSignalRProgress;

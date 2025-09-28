@@ -47,7 +47,7 @@ public class User
     public decimal TokenBalance { get; set; } = 0;
     
     /// <summary>
-    /// Indicates if user is in paid mode or demo mode
+    /// Indicates if user is in paid mode
     /// </summary>
     public bool IsPaidUser { get; set; } = false;
     
@@ -104,12 +104,7 @@ public class User
     public virtual ICollection<TokenUsage> TokenUsages { get; set; } = new List<TokenUsage>();
     
     /// <summary>
-    /// Navigation property for user's batch transcription jobs (LEGACY - being phased out)
-    /// </summary>
-    public virtual ICollection<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = new List<BatchTranscriptionJob>();
-    
-    /// <summary>
-    /// Navigation property for user's fast transcription jobs (NEW - Azure Fast Transcription API)
+    /// Navigation property for user's fast transcription jobs
     /// </summary>
     public virtual ICollection<FastTranscriptionJob> FastTranscriptionJobs { get; set; } = new List<FastTranscriptionJob>();
     

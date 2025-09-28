@@ -162,8 +162,8 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ open, onClose }) => {
             <List dense>
               <ListItem>
                 <ListItemText 
-                  primary="Real-time email delivery"
-                  secondary="Send professional meeting summaries directly from the application with real SMTP delivery."
+                  primary="Instant email delivery"
+                  secondary="Send professional meeting summaries directly from the application with SMTP delivery."
                 />
               </ListItem>
               <ListItem>

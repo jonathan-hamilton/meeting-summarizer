@@ -294,35 +294,35 @@ public class TokenService : ITokenService
         }
     }
 
-    public async Task<bool> IsRefundAlreadyProcessedAsync(Guid batchJobId)
+    public async Task<bool> IsRefundAlreadyProcessedAsync(Guid fastJobId)
     {
         try
         {
             return await _context.TokenRefunds
-                .AnyAsync(tr => tr.BatchJobId == batchJobId);
+                .AnyAsync(tr => tr.FastJobId == fastJobId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking if refund already processed for batch job {BatchJobId}", batchJobId);
+            _logger.LogError(ex, "Error checking if refund already processed for fast job {FastJobId}", fastJobId);
             return false; // Default to assuming not processed to avoid missing refunds
         }
     }
 
-    public async Task<TokenRefundResult> ProcessAutomaticRefundAsync(Guid batchJobId, string reason)
+    public async Task<TokenRefundResult> ProcessAutomaticRefundAsync(Guid fastJobId, string reason)
     {
         try
         {
-            _logger.LogInformation("Processing automatic token refund for batch job {BatchJobId}. Reason: {Reason}", 
-                batchJobId, reason);
+            _logger.LogInformation("Processing automatic token refund for fast job {FastJobId}. Reason: {Reason}", 
+                fastJobId, reason);
 
             // Check if refund already processed
             var existingRefund = await _context.TokenRefunds
-                .FirstOrDefaultAsync(tr => tr.BatchJobId == batchJobId);
+                .FirstOrDefaultAsync(tr => tr.FastJobId == fastJobId);
             
             if (existingRefund != null)
             {
-                _logger.LogWarning("Refund for batch job {BatchJobId} already processed on {RefundedAt}", 
-                    batchJobId, existingRefund.RefundedAt);
+                _logger.LogWarning("Refund for fast job {FastJobId} already processed on {RefundedAt}", 
+                    fastJobId, existingRefund.RefundedAt);
                 
                 return new TokenRefundResult
                 {
@@ -335,21 +335,21 @@ public class TokenService : ITokenService
                 };
             }
 
-            // Get the batch job with token usage information
-            var batchJob = await _context.BatchTranscriptionJobs
-                .FirstOrDefaultAsync(bj => bj.Id == batchJobId);
+            // Get the fast transcription job with token usage information
+            var fastJob = await _context.FastTranscriptionJobs
+                .FirstOrDefaultAsync(fj => fj.Id == fastJobId);
 
-            if (batchJob == null)
+            if (fastJob == null)
             {
-                var error = $"Batch job {batchJobId} not found";
+                var error = $"Fast transcription job {fastJobId} not found";
                 _logger.LogError(error);
                 return new TokenRefundResult { Success = false, ErrorMessage = error };
             }
 
             // Only refund if tokens were actually charged
-            if (batchJob.TokensCharged <= 0)
+            if (fastJob.TokensCharged <= 0)
             {
-                _logger.LogInformation("No tokens were charged for batch job {BatchJobId}, no refund needed", batchJobId);
+                _logger.LogInformation("No tokens were charged for fast job {FastJobId}, no refund needed", fastJobId);
                 return new TokenRefundResult 
                 { 
                     Success = true, 
@@ -359,15 +359,15 @@ public class TokenService : ITokenService
             }
 
             // Get the user to refund tokens to
-            var user = await _context.Users.FindAsync(batchJob.UserId);
+            var user = await _context.Users.FindAsync(fastJob.UserId);
             if (user == null)
             {
-                var error = $"User {batchJob.UserId} not found for batch job {batchJobId}";
+                var error = $"User {fastJob.UserId} not found for fast job {fastJobId}";
                 _logger.LogError(error);
                 return new TokenRefundResult { Success = false, ErrorMessage = error };
             }
 
-            var tokensToRefund = batchJob.TokensCharged;
+            var tokensToRefund = fastJob.TokensCharged;
             var balanceBefore = user.TokenBalance;
             var balanceAfter = balanceBefore + tokensToRefund;
 
@@ -375,7 +375,7 @@ public class TokenService : ITokenService
             var tokenRefund = new TokenRefund
             {
                 UserId = user.Id,
-                BatchJobId = batchJobId,
+                FastJobId = fastJobId,
                 TokensRefunded = tokensToRefund,
                 Reason = reason,
                 BalanceBefore = balanceBefore,
@@ -410,13 +410,13 @@ public class TokenService : ITokenService
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "Failed to save automatic refund for batch job {BatchJobId}", batchJobId);
+                _logger.LogError(ex, "Failed to save automatic refund for fast job {FastJobId}", fastJobId);
                 throw;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing automatic token refund for batch job {BatchJobId}", batchJobId);
+            _logger.LogError(ex, "Error processing automatic token refund for fast job {FastJobId}", fastJobId);
             return new TokenRefundResult 
             { 
                 Success = false, 

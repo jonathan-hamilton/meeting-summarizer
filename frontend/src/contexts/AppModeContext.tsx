@@ -1,13 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useTourStore } from '../stores/tourStore';
 
-export type AppMode = 'demo' | 'development' | 'production';
+export type AppMode = 'development' | 'production';
 
 interface AppModeContextType {
   mode: AppMode;
-  isDemo: boolean;
   isDevelopment: boolean;
   isProduction: boolean;
   setMode: (mode: AppMode) => void;
@@ -28,7 +26,7 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   // Determine initial mode based on current route
   const getInitialMode = (): AppMode => {
     if (location.pathname.startsWith('/app') || location.pathname === '/history' || location.pathname.startsWith('/transcript/') || location.pathname.startsWith('/verify-email/')) return 'production';
-    return 'demo'; // default for / and /demo
+    return 'production'; // Default to production mode
   };
   
   const [mode, setMode] = useState<AppMode>(getInitialMode());
@@ -41,17 +39,6 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
     }
   }, [location.pathname, mode]);
   
-  // Auto-start tour when entering demo mode
-  useEffect(() => {
-    if (mode === 'demo') {
-      // Start tour via Zustand store
-      useTourStore.getState().startTour();
-    } else {
-      // Stop tour when leaving demo mode
-      useTourStore.getState().stopTour();
-    }
-  }, [mode]);
-  
   const signIn = async (): Promise<void> => {
     // TODO: Implement actual authentication logic
     // For now, just navigate to production mode
@@ -61,14 +48,13 @@ export const AppModeProvider: React.FC<AppModeProviderProps> = ({ children }) =>
   
   const signOut = (): void => {
     // TODO: Implement actual sign out logic
-    // For now, just navigate to demo mode
-    navigate('/demo');
-    setMode('demo');
+    // For now, just navigate to home
+    navigate('/');
+    setMode('production');
   };
   
   const contextValue: AppModeContextType = {
     mode,
-    isDemo: mode === 'demo',
     isDevelopment: mode === 'development',
     isProduction: mode === 'production',
     setMode,
@@ -91,7 +77,6 @@ export const useAppMode = (): AppModeContextType => {
     // Return safe fallback values
     return {
       mode: 'development' as AppMode,
-      isDemo: false,
       isDevelopment: true,
       isProduction: false,
       setMode: () => {},

@@ -81,18 +81,18 @@ public interface ITokenService
     Task<TokenStatistics> GetTokenStatisticsAsync(string userId);
 
     /// <summary>
-    /// Checks if a refund has already been processed for a batch job
+    /// Checks if a refund has already been processed for a fast transcription job
     /// </summary>
-    /// <param name="batchJobId">The batch job to check</param>
+    /// <param name="fastJobId">The fast transcription job to check</param>
     /// <returns>True if refund already processed</returns>
-    Task<bool> IsRefundAlreadyProcessedAsync(Guid batchJobId);
+    Task<bool> IsRefundAlreadyProcessedAsync(Guid fastJobId);
 
     /// <summary>
-    /// Process an automatic token refund for a failed batch transcription job.
+    /// Process an automatic token refund for a failed fast transcription job.
     /// Restores tokens to user's balance when system failures occur.
     /// </summary>
-    /// <param name="batchJobId">The failed batch job</param>
+    /// <param name="fastJobId">The failed fast transcription job</param>
     /// <param name="reason">Reason for the refund</param>
     /// <returns>Result indicating success and details</returns>
-    Task<TokenRefundResult> ProcessAutomaticRefundAsync(Guid batchJobId, string reason);
+    Task<TokenRefundResult> ProcessAutomaticRefundAsync(Guid fastJobId, string reason);
 }

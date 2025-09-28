@@ -47,29 +47,29 @@ public class ExportController : ControllerBase
 
             _logger.LogInformation("PDF download requested for transcriptionId: {TranscriptionId} by user: {UserId}", transcriptionId, userId);
 
-            // Find the meeting by transcription ID (could be batch job ID or meeting ID)
+            // Find the meeting by transcription ID (could be fast transcription job ID or meeting ID)
             Meeting? meeting = null;
             
             if (Guid.TryParse(transcriptionId, out var transcriptionGuid))
             {
                 _logger.LogDebug("Parsed transcriptionId as GUID: {Guid}", transcriptionGuid);
                 
-                // First try to find by batch job ID
-                var batchJob = await _context.BatchTranscriptionJobs
-                    .Where(b => b.Id == transcriptionGuid && b.UserId == userId)
+                // First try to find by fast transcription job ID
+                var fastJob = await _context.FastTranscriptionJobs
+                    .Where(f => f.Id == transcriptionGuid && f.UserId == userId)
                     .FirstOrDefaultAsync();
 
-                if (batchJob != null && batchJob.MeetingId.HasValue)
+                if (fastJob != null && fastJob.MeetingId.HasValue)
                 {
-                    _logger.LogDebug("Found batch job {BatchJobId} linked to meeting {MeetingId}", batchJob.Id, batchJob.MeetingId);
-                    // Found batch job, get the associated meeting
+                    _logger.LogDebug("Found fast job {FastJobId} linked to meeting {MeetingId}", fastJob.Id, fastJob.MeetingId);
+                    // Found fast job, get the associated meeting
                     meeting = await _context.Meetings
-                        .Where(m => m.Id == batchJob.MeetingId.Value && m.UserId == userId)
+                        .Where(m => m.Id == fastJob.MeetingId.Value && m.UserId == userId)
                         .FirstOrDefaultAsync();
                 }
                 else
                 {
-                    _logger.LogDebug("No batch job found, trying to find meeting by ID directly");
+                    _logger.LogDebug("No fast transcription job found, trying to find meeting by ID directly");
                     // Try to find meeting by ID directly
                     meeting = await _context.Meetings
                         .Where(m => m.Id == transcriptionGuid && m.UserId == userId)
@@ -155,14 +155,14 @@ public class ExportController : ControllerBase
             
             if (Guid.TryParse(transcriptionId, out var transcriptionGuid))
             {
-                var batchJob = await _context.BatchTranscriptionJobs
-                    .Where(b => b.Id == transcriptionGuid && b.UserId == userId)
+                var fastJob = await _context.FastTranscriptionJobs
+                    .Where(f => f.Id == transcriptionGuid && f.UserId == userId)
                     .FirstOrDefaultAsync();
 
-                if (batchJob != null && batchJob.MeetingId.HasValue)
+                if (fastJob != null && fastJob.MeetingId.HasValue)
                 {
                     meeting = await _context.Meetings
-                        .Where(m => m.Id == batchJob.MeetingId.Value && m.UserId == userId)
+                        .Where(m => m.Id == fastJob.MeetingId.Value && m.UserId == userId)
                         .FirstOrDefaultAsync();
                 }
                 else

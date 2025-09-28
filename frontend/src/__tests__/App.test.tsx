@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from '../App';
 
 // Import global mocks - these provide comprehensive store mocking
-import './mocks/tourStoreMock';
 import './mocks/speakerSessionStoreMock';
 
 // Use the proven renderWithProviders pattern from working tests
@@ -82,7 +81,7 @@ describe('App Component', () => {
   });
 
   it('renders the main app structure', () => {
-    renderWithProviders(<App />, { initialMode: 'demo' });
+    renderWithProviders(<App />, { initialMode: 'development' });
     
     // Check for main app bar
     expect(screen.getByRole('banner')).toBeInTheDocument();
@@ -91,17 +90,9 @@ describe('App Component', () => {
   });
 
   it('displays the correct title based on app mode', () => {
-    // Demo mode - title includes (Demo) 
-    const { unmount } = renderWithProviders(<App />, { initialMode: 'demo' });
-    expect(screen.getByText(/Meeting-Summary\.io/)).toBeInTheDocument();
-    // Look for the (Demo) text specifically in the title area
-    expect(screen.getByText(/\(Demo\)/)).toBeInTheDocument();
-    unmount();
-
-    // Development mode - no demo indicator in title  
+    // Development mode
     renderWithProviders(<App />, { initialMode: 'development' });
     expect(screen.getByText(/Meeting-Summary\.io/)).toBeInTheDocument();
-    // Note: Development mode may still show demo elements due to component defaults
   });
 
   it('renders theme toggle button', () => {
@@ -133,11 +124,6 @@ describe('App Component', () => {
     expect(privacyLink).toBeInTheDocument();
   });
 
-  it('renders mode indicator in demo mode', () => {
-    renderWithProviders(<App />, { initialMode: 'demo' });
-    expect(screen.getByText(/demo mode/i)).toBeInTheDocument();
-  });
-
   it('renders mode indicator in development mode', () => {
     renderWithProviders(<App />, { initialMode: 'development' });
     // Check that the component renders successfully - mode context is complex
@@ -151,7 +137,6 @@ describe('App Component', () => {
     // Production mode should render the basic app structure
     expect(screen.getByText(/Meeting-Summary\.io/)).toBeInTheDocument();
     expect(screen.getByRole('main')).toBeInTheDocument();
-    // Note: Component may still show demo elements due to internal logic
   });
 
   it('handles theme toggle click', () => {

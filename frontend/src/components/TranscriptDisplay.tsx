@@ -32,14 +32,12 @@ import EmailCompositionDialog from "./EmailCompositionDialog";
 
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
-import { TourPopover } from "./TourPopover";
 import { sessionManager } from "../services/sessionManager";
 
 import { useSpeakerSessionStore, useActiveSpeakers } from "../stores/speakerSessionStore";
 import { useSessionManagement } from "../hooks/useSessionManagement";
 import { ConfirmTranscriptionDeleteDialog } from "./dialogs/ConfirmTranscriptionDeleteDialog";
-import { useAppMode } from "../contexts/AppModeContext";
-import { useTourStore } from "../stores/tourStore";
+// import { useAppMode } from "../contexts/AppModeContext"; // Available for future use
 import { apiService } from "../services/apiService";
 import { emailService } from "../services/emailService";
 
@@ -47,7 +45,7 @@ interface TranscriptDisplayProps {
   transcription: TranscriptionResponse;
   loading?: boolean;
   speakerMappings?: SpeakerMapping[]; // Optional external speaker mappings
-  aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for Step 9->10 tour scroll
+  aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for scroll positioning
 }
 
 const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
@@ -107,9 +105,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   // Session management for privacy controls (currently unused but kept for future use)
   const { privacyControls: _privacyControls } = useSessionManagement();
 
-  // Tour state management
-  const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, isCurrentStep, isActionDisabledDuringTour } = useTourStore();
+  // App mode management
+  // const { mode } = useAppMode(); // Available for future use
 
   // Memoize extracted unique speakers from original transcript segments (not modified ones)
   const allDetectedSpeakers = useMemo(() => {
@@ -517,16 +514,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             )}
             
           </Stack>
-
-          {/* Step 2 Tour Popover - Transcription Statistics Overview */}
-          <TourPopover
-            open={isDemo && isTourActive && isCurrentStep(2)}
-            step={2}
-            onClose={() => closeStep(2)}
-            position={{ top: '85px', left: '50px' }}
-            maxWidth="350px"
-            sx={{ zIndex: 99999 }}
-          />
         </Box>
 
         <Divider sx={{ mb: 3 }} />
@@ -563,7 +550,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   <IconButton
                     size="small"
                     onClick={handleDownloadPdf}
-                    disabled={isActionDisabledDuringTour('download-transcript') || isDownloadingPdf}
+                    disabled={isDownloadingPdf}
                     color={isDownloadingPdf ? "primary" : "default"}
                     aria-label="Download transcript as PDF"
                     aria-describedby="download-pdf-tooltip"
@@ -590,7 +577,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                         handleEmailTranscript();
                       }}
                       sx={{ ml: 1 }}
-                      disabled={isActionDisabledDuringTour('email-transcript')}
                       aria-label="Email transcript"
                     >
                       Email
@@ -602,14 +588,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
             {/* Speaker segments */}
             <Box sx={{ maxHeight: "400px", overflowY: "auto", position: "relative" }}>
-              {/* Step 9 Tour Popover - Reassign Speaker Transcript Segments */}
-              <TourPopover
-                open={isDemo && isTourActive && isCurrentStep(9)}
-                step={9}
-                onClose={() => closeStep(9)}
-                position={{ top: '20px', right: '70px' }}
-                maxWidth="350px"
-              />
               
               {speakerSegments.map((segment, index) => (
                 <Box 
@@ -651,7 +629,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   <IconButton
                     size="small"
                     onClick={handleDownloadPdf}
-                    disabled={isActionDisabledDuringTour('download-transcript') || isDownloadingPdf}
+                    disabled={isDownloadingPdf}
                     color={isDownloadingPdf ? "primary" : "default"}
                     aria-label="Download transcript as PDF"
                     aria-describedby="download-pdf-tooltip"

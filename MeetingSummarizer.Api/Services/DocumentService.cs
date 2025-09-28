@@ -26,21 +26,21 @@ public class DocumentService : IDocumentService
     {
         try
         {
-            // Find the meeting by transcription ID (could be batch job ID or meeting ID)
+            // Find the meeting by transcription ID (could be fast transcription job ID or meeting ID)
             Meeting? meeting = null;
             
             if (Guid.TryParse(transcriptionId, out var transcriptionGuid))
             {
-                // First try to find by batch job ID
-                var batchJob = await _context.BatchTranscriptionJobs
-                    .Where(b => b.Id == transcriptionGuid)
+                // First try to find by fast transcription job ID
+                var fastJob = await _context.FastTranscriptionJobs
+                    .Where(f => f.Id == transcriptionGuid)
                     .FirstOrDefaultAsync();
 
-                if (batchJob != null && batchJob.MeetingId.HasValue)
+                if (fastJob != null && fastJob.MeetingId.HasValue)
                 {
-                    // Found batch job, get the associated meeting
+                    // Found fast job, get the associated meeting
                     meeting = await _context.Meetings
-                        .Where(m => m.Id == batchJob.MeetingId.Value)
+                        .Where(m => m.Id == fastJob.MeetingId.Value)
                         .FirstOrDefaultAsync();
                 }
                 else
