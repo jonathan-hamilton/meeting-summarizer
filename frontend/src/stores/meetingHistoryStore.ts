@@ -7,7 +7,7 @@ import type {
   MeetingListItem 
 } from '../types/meeting';
 
-// Debounce utility for batch updates
+// Debounce utility for grouped updates
 const createDebouncer = () => {
   let timeoutId: NodeJS.Timeout | null = null;
   let pendingUpdates: Map<string, Partial<MeetingListItem>> = new Map();
@@ -23,7 +23,7 @@ const createDebouncer = () => {
         clearTimeout(timeoutId);
       }
       
-      // Set new timeout to batch updates
+      // Set new timeout to group updates
       timeoutId = setTimeout(() => {
         callback();
         pendingUpdates.clear();
@@ -174,7 +174,7 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
         
         if (!meetingId) return;
         
-        // Use debouncer to batch rapid updates and prevent animation interruption
+        // Use debouncer to group rapid updates and prevent animation interruption
         updateDebouncer.addUpdate(meetingId, update, () => {
           const currentState = get();
           const pendingUpdates = updateDebouncer.getPendingUpdates();

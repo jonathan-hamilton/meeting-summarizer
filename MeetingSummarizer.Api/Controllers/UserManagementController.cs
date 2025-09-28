@@ -427,9 +427,9 @@ public class UserManagementController : ControllerBase
 
     private static MeetingResponse MapToMeetingResponse(Meeting meeting)
     {
-        // Get the most recent batch job for this meeting (for progress tracking)
-        var latestBatchJob = meeting.BatchTranscriptionJobs?
-            .OrderByDescending(bj => bj.SubmittedAt)
+        // Get the most recent fast transcription job for this meeting (for progress tracking)
+        var latestFastJob = meeting.FastTranscriptionJobs?
+            .OrderByDescending(fj => fj.SubmittedAt)
             .FirstOrDefault();
 
         return new MeetingResponse
@@ -446,13 +446,13 @@ public class UserManagementController : ControllerBase
             TranscriptionText = meeting.TranscriptionJson,
             SummaryText = meeting.SummaryJson,
             CreatedAt = meeting.CreatedAt,
-            ProcessingStartedAt = latestBatchJob?.SubmittedAt,
+            ProcessingStartedAt = latestFastJob?.SubmittedAt,
             ProcessingCompletedAt = meeting.CompletedAt,
             
-            // S6.5: Include batch job progress information
-            BatchJobId = latestBatchJob?.Id,
-            BatchJobStatus = latestBatchJob?.Status,
-            ProgressPercentage = latestBatchJob?.ProgressPercentage,
+            // Include fast transcription job progress information
+            FastJobId = latestFastJob?.Id,
+            FastJobStatus = latestFastJob?.Status,
+            ProgressPercentage = latestFastJob?.ProgressPercentage,
             ScheduledDeletionAt = meeting.ScheduledDeletionAt
         };
     }

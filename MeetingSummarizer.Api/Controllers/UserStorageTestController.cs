@@ -6,8 +6,8 @@ using System.Text;
 namespace MeetingSummarizer.Api.Controllers;
 
 /// <summary>
-/// Test controller for User Storage Service functionality (S6.1 Increment 3)
-/// This controller demonstrates per-user storage isolation and blob management
+/// Test controller for User Storage Service functionality
+/// This controller provides per-user storage isolation and file management
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]

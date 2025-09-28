@@ -11,7 +11,6 @@ import {
 // Lazy load SpeakerMappingDialog to reduce bundle size
 const SpeakerMappingDialog = React.lazy(() => import("./SpeakerMappingDialog").then(m => ({ default: m.SpeakerMappingDialog })));
 
-import { TourPopover } from "./TourPopover";
 import type { SpeakerMapping, SpeakerSource } from "../types";
 import {
   sessionManager,
@@ -19,8 +18,6 @@ import {
 } from "../services/sessionManager";
 import { useActiveSpeakers, useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { getSpeakerColor, getSpeakerTextColor } from "../theme/speakerColors";
-import { useAppMode } from "../contexts/AppModeContext";
-import { useTourStore } from "../stores/tourStore";
 import { useAccessibilityStore } from "../stores/accessibilityStore";
 
 // Helper function to format speaker label without duplication
@@ -53,9 +50,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Tour state management
-  const { isDemo } = useAppMode();
-  const { isActive: isTourActive, closeStep, triggerStepAction, isCurrentStep, isActionDisabledDuringTour } = useTourStore();
   const { highContrast } = useAccessibilityStore();
   
   // Use centralized store for simplified state management
@@ -120,11 +114,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
   const handleOpenDialog = useCallback(() => {
     setDialogOpen(true);
-    // Trigger tour step advancement if in demo mode
-    if (isDemo) {
-      triggerStepAction('manage-names');
-    }
-  }, [isDemo, triggerStepAction]);
+  }, []);
 
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
@@ -330,7 +320,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   }, [computedSpeakerData.unmappedSpeakers, effectiveData]);
 
   // Memoize header section
-  // Render header section directly (not memoized to ensure tour state updates)
+  // Render header section directly (not memoized to ensure state updates)
   const headerSection = (
     <Box
       sx={{
@@ -350,14 +340,11 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         size="small"
         startIcon={<EditIcon />}
         onClick={handleOpenDialog}
-        disabled={isActionDisabledDuringTour('manage-speakers')}
         aria-label="Open speaker management dialog"
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            if (!isActionDisabledDuringTour('manage-speakers')) {
-              handleOpenDialog();
-            }
+            handleOpenDialog();
           }
         }}
       >
@@ -425,15 +412,6 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
       }}
     >
       {headerSection}
-
-      {/* Step 3 Tour Popover - Speaker Management */}
-      <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(3)}
-        step={3}
-        onClose={() => closeStep(3)}
-        position={{ top: '-40px', right: '190px' }}
-      />
-
       {mappedSpeakersSection}
       {unmappedSpeakersSection}
       {emptyState}

@@ -102,7 +102,7 @@ const InsufficientTokensDialog: React.FC<InsufficientTokensDialogProps> = ({
                 variant="outlined"
               />
               <Typography variant="body2" color="text.secondary">
-                Large files require batch processing with token consumption
+                Large files require processing with token consumption
               </Typography>
             </Stack>
           </Box>

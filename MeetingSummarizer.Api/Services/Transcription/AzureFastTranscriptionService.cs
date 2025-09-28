@@ -206,7 +206,7 @@ public class AzureFastTranscriptionService
                     }
                 }
             }
-            // Fallback to legacy batch format if it exists
+            // Fallback to alternative format if it exists
             else if (root.TryGetProperty("combinedRecognizedPhrases", out var combinedRecognizedPhrases))
             {
                 _logger.LogInformation("Found combinedRecognizedPhrases structure (legacy)");

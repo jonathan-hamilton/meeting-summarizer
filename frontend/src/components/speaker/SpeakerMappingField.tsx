@@ -13,9 +13,6 @@ import type {
   SpeakerSource,
   ValidationError,
 } from "../../types";
-import { useTourStore } from "../../stores/tourStore";
-import { TourPopover } from "../TourPopover";
-import { useAppMode } from "../../contexts/AppModeContext";
 
 interface SpeakerMappingFieldProps {
   mapping: {
@@ -56,13 +53,6 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
   onCancelEdit,
   onRemove,
 }) => {
-  const { triggerStepAction, isCurrentStep, isActive: isTourActive, closeStep, isActionDisabledDuringTour } = useTourStore();
-  
-  // Check if Step 7 has been completed (indicating possible backward navigation)
-  const tourState = useTourStore();
-  const isStep7Completed = tourState.completedSteps?.has(7) || false;
-  const { isDemo } = useAppMode();
-  
   const nameError = validationErrors?.find((err) => err.field === "name");
   const roleError = validationErrors?.find((err) => err.field === "role");
   const emailError = validationErrors?.find((err) => err.field === "email"); // S3.4: Email validation
@@ -135,13 +125,12 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
             <>
               <IconButton
                 onClick={() => {
-                  triggerStepAction('save-row');
                   onConfirmEdit(mapping.speakerId);
                 }}
                 size="small"
                 color="primary"
                 title="Save Changes"
-                disabled={isLoading || hasValidationErrors || isActionDisabledDuringTour('save-row', index)}
+                disabled={isLoading || hasValidationErrors}
               >
                 <CheckIcon fontSize="small" />
               </IconButton>
@@ -150,7 +139,7 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
                 size="small"
                 color="default"
                 title="Cancel Edit"
-                disabled={isLoading || isActionDisabledDuringTour('cancel-edit', index)}
+                disabled={isLoading}
               >
                 <CancelIcon fontSize="small" />
               </IconButton>
@@ -158,13 +147,12 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           ) : (
             <IconButton
               onClick={() => {
-                triggerStepAction('edit-speaker');
                 onStartEdit(mapping.speakerId);
               }}
               size="small"
               color="primary"
               title="Edit Speaker"
-              disabled={isLoading || isActionDisabledDuringTour('edit-speaker', index)}
+              disabled={isLoading}
             >
               <EditIcon fontSize="small" />
             </IconButton>
@@ -174,7 +162,7 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           <IconButton
             onClick={() => onRemove(index)}
             size="small"
-            disabled={isLoading || !canRemove || isActionDisabledDuringTour('delete-speaker', index)}
+            disabled={isLoading || !canRemove}
             color="error"
             title="Remove Speaker"
           >
@@ -191,7 +179,7 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           value={mapping.name}
           onChange={(e) => onMappingChange(index, "name", e.target.value)}
           sx={{ flex: "1 1 250px", minWidth: "200px" }}
-          disabled={isLoading || !isEditing || isActionDisabledDuringTour('edit-form-fields', index)}
+          disabled={isLoading || !isEditing}
           error={!!nameError}
           helperText={
             nameError?.message ||
@@ -208,7 +196,7 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           value={mapping.role}
           onChange={(e) => onMappingChange(index, "role", e.target.value)}
           sx={{ flex: "1 1 200px", minWidth: "150px" }}
-          disabled={isLoading || !isEditing || isActionDisabledDuringTour('edit-form-fields', index)}
+          disabled={isLoading || !isEditing}
           error={!!roleError}
           helperText={
             roleError?.message ||
@@ -225,7 +213,7 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           value={mapping.email || ""}
           onChange={(e) => onMappingChange(index, "email", e.target.value)}
           sx={{ flex: "1 1 250px", minWidth: "200px" }}
-          disabled={isLoading || !isEditing || isActionDisabledDuringTour('edit-form-fields', index)}
+          disabled={isLoading || !isEditing}
           error={!!emailError}
           helperText={
             emailError?.message ||
@@ -237,15 +225,6 @@ export const SpeakerMappingField: React.FC<SpeakerMappingFieldProps> = ({
           type="email"
         />
       </Box>
-      
-      {/* Step 7 Tour Popover - Save Row - Show on first speaker row when navigating backwards */}
-      <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(7) && (isEditing || (isStep7Completed && index === 0))}
-        step={7}
-        onClose={() => closeStep(7)}
-        position={{ bottom: '-260px', right: '10px' }}
-        maxWidth="300px"
-      />
     </Box>
   );
 };

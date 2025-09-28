@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from '../App';
 
 // Import global mocks - these provide comprehensive store mocking
-import './mocks/tourStoreMock';
 import './mocks/speakerSessionStoreMock';
 
 // Use the proven renderWithProviders pattern from working tests
@@ -82,11 +81,6 @@ describe('App Component', () => {
   });
 
   it('displays the correct title based on app mode', () => {
-    // Demo mode
-    const { unmount } = renderWithProviders(<App />, { initialMode: 'demo' });
-    expect(screen.getByText('Meeting Summary - Demo Mode')).toBeInTheDocument();
-    unmount();
-
     // Development mode
     renderWithProviders(<App />, { initialMode: 'development' });
     expect(screen.getByText('Meeting Summary')).toBeInTheDocument();
@@ -118,11 +112,6 @@ describe('App Component', () => {
 
     const privacyLink = screen.getByText(/privacy policy/i);
     expect(privacyLink).toBeInTheDocument();
-  });
-
-  it('renders mode indicator in demo mode', () => {
-    renderWithProviders(<App />, { initialMode: 'demo' });
-    expect(screen.getByText(/demo mode/i)).toBeInTheDocument();
   });
 
   it('renders mode indicator in development mode', () => {

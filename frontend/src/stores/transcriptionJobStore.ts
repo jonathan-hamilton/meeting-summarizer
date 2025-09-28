@@ -216,7 +216,7 @@ export const useTranscriptionJobStore = create<TranscriptionJobState>((set, get)
       }
     }
     
-    // Legacy batch processing intervals (backward compatibility)
+    // S6.13: Fast Transcription intervals (direct processing)
     else {
       // For early stages, poll more frequently to show quick progress
       if (job.status === 'submitted' || job.progressPercentage < 10) {
@@ -251,13 +251,10 @@ export const useTranscriptionJobStore = create<TranscriptionJobState>((set, get)
           submittedAt: '',
           progressPercentage: 0,
           estimatedDurationMinutes: 0,
-          processingMethod: (stored.processingMethod as 'fast' | 'batch') || 'fast',
+          processingMethod: 'fast', // Always use fast transcription after S6.13 migration
           refundIssued: false
         }
       });
     }
   }
 }));
-
-// Legacy export for backward compatibility during migration
-export const useBatchJobStore = useTranscriptionJobStore;

@@ -10,18 +10,6 @@ import { vi } from 'vitest';
 import { AppModeProvider } from '../../contexts/AppModeContext';
 import type { AppMode } from '../../contexts/AppModeContext';
 
-// Mock tour store for tests
-vi.mock('../../stores/tourStore', () => ({
-  useTourStore: vi.fn(() => ({
-    isActive: false,
-    currentStep: 0,
-    isCurrentStep: vi.fn((_step: number) => false),
-    triggerStepAction: vi.fn(),
-    closeStep: vi.fn(),
-    getTotalSteps: vi.fn(() => 17),
-  }))
-}));
-
 interface TestProvidersProps {
   children: ReactNode;
   initialMode?: AppMode;
@@ -64,7 +52,7 @@ export const renderWithProviders = (
     initialPath?: string;
   } = {}
 ) => {
-  const { initialMode = 'demo', initialPath = '/' } = options;
+  const { initialMode = 'development', initialPath = '/' } = options;
   const { render } = require('@testing-library/react');
   
   return render(ui, {
@@ -79,9 +67,8 @@ export const renderWithProviders = (
 /**
  * Mock AppModeContext for tests that need specific mode behavior
  */
-export const mockAppModeContext = (mode: AppMode = 'demo') => ({
+export const mockAppModeContext = (mode: AppMode = 'development') => ({
   mode,
-  isDemo: mode === 'demo',
   isDevelopment: mode === 'development', 
   isProduction: mode === 'production',
   setMode: vi.fn(),

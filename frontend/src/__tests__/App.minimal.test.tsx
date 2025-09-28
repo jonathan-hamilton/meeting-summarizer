@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Import global mocks - these provide comprehensive store mocking
-import './mocks/tourStoreMock';
 import './mocks/speakerSessionStoreMock';
 
 // Use the proven renderWithProviders pattern from working tests

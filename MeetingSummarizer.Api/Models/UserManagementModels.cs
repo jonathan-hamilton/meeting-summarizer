@@ -31,7 +31,7 @@ public class CreateUserRequest
     public bool HasConsentedToDataProcessing { get; set; }
 
     /// <summary>
-    /// Password for user authentication (optional for demo users)
+    /// Password for user authentication
     /// </summary>
     [StringLength(100, MinimumLength = 6)]
     public string? Password { get; set; }
@@ -150,9 +150,9 @@ public class MeetingResponse
     public DateTime? ProcessingStartedAt { get; set; }
     public DateTime? ProcessingCompletedAt { get; set; }
     
-    // S6.5: Batch job progress information
-    public Guid? BatchJobId { get; set; }
-    public string? BatchJobStatus { get; set; }
+    // Job progress information
+    public Guid? FastJobId { get; set; }
+    public string? FastJobStatus { get; set; }
     public int? ProgressPercentage { get; set; }
     public DateTime? ScheduledDeletionAt { get; set; }
 }

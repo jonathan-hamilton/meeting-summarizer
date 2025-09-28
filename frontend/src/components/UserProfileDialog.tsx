@@ -55,10 +55,10 @@ export const UserProfileDialog: React.FC = () => {
 
   // TODO: Add function to load additional user stats from API when endpoints are available
 
-  // Clear any demo profile data when component mounts if we have real auth user
+  // Clear any test profile data when component mounts if we have authenticated user
   useEffect(() => {
     if (authUser && profile && profile.email === 'demo@meetingsummary.io') {
-      // Clear demo profile so we use auth user data instead
+      // Clear test profile so we use auth user data instead
       setProfile(null);
     }
   }, [authUser, profile, setProfile]);

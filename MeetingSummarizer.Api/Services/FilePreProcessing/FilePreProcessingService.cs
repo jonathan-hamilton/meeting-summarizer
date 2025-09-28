@@ -352,7 +352,7 @@ public class FilePreProcessingService : IFilePreProcessingService
                     GC.WaitForPendingFinalizers();
                 }
 
-                // Simulate processing delay for demonstration
+                // Small delay for processing
                 await Task.Delay(10, cancellationToken);
             }
 

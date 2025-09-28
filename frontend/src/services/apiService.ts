@@ -6,7 +6,6 @@ import type {
   DetailedHealthStatus, 
   RequestConfig, 
   TranscriptionResponse,
-  TranscriptionResult,
   SpeakerMappingRequest,
   SpeakerMappingResponse,
   MeetingSummaryRequest,
@@ -465,58 +464,6 @@ class ApiService {
       url: `/api/summary/${transcriptionId}/summarize`,
       data: request,
       timeout: 60000, // 1 minute for AI generation
-    });
-  }
-
-  // Batch Job Methods
-  async getBatchJobStatus(jobId: string): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus>> {
-    console.log(`🌐 API SERVICE: About to make HTTP request for job ${jobId}`);
-    console.log(`🌐 URL: ${this.baseURL}/api/batchjob/${jobId}/status`);
-    
-    try {
-      const response = await this.request<import('../types/batchJob').BatchJobStatus>({
-        method: 'GET',
-        url: `/api/batchjob/${jobId}/status`,
-      });
-      
-      console.log(`🌐 API SERVICE: Got HTTP response for job ${jobId}:`, response);
-      return response;
-    } catch (error) {
-      console.error(`❌ API SERVICE: HTTP request failed for job ${jobId}:`, error);
-      throw error;
-    }
-  }
-
-  async getBatchJobTranscript(jobId: string): Promise<ApiResponse<TranscriptionResult>> {
-    console.log(`📄 API SERVICE: About to fetch transcript for job ${jobId}`);
-    console.log(`📄 URL: ${this.baseURL}/api/batchjob/${jobId}/transcript`);
-    
-    try {
-      const response = await this.request<TranscriptionResult>({
-        method: 'GET',
-        url: `/api/batchjob/${jobId}/transcript`,
-        timeout: 60000, // 1 minute for large transcript retrieval
-      });
-      
-      console.log(`📄 API SERVICE: Got transcript response for job ${jobId}:`, response);
-      return response;
-    } catch (error) {
-      console.error(`❌ API SERVICE: Transcript request failed for job ${jobId}:`, error);
-      throw error;
-    }
-  }
-
-  async getUserBatchJobs(status?: string, limit?: number): Promise<ApiResponse<import('../types/batchJob').BatchJobStatus[]>> {
-    const params = new URLSearchParams();
-    if (status) params.append('status', status);
-    if (limit) params.append('limit', limit.toString());
-    
-    const queryString = params.toString();
-    const url = queryString ? `/api/batchjob?${queryString}` : '/api/batchjob';
-    
-    return this.request<import('../types/batchJob').BatchJobStatus[]>({
-      method: 'GET',
-      url,
     });
   }
 

@@ -358,13 +358,13 @@ public class SpeakerMappingController : ControllerBase
     /// Persist speaker mappings to Meeting entity for export functionality
     /// This bridges the gap between session-based storage and persistent export needs
     /// </summary>
-    /// <param name="transcriptionId">The transcription ID (could be fast transcription job ID, batch job ID, or meeting ID)</param>
+    /// <param name="transcriptionId">The transcription ID (could be fast transcription job ID or meeting ID)</param>
     /// <param name="speakerMappings">The speaker mappings to persist</param>
     private async Task PersistSpeakerMappingsToMeetingAsync(string transcriptionId, SpeakerMappingResponse speakerMappings)
     {
         try
         {
-            // First try to parse as Guid (fast transcription job ID, batch job ID, or meeting ID)
+            // First try to parse as Guid (fast transcription job ID or meeting ID)
             if (Guid.TryParse(transcriptionId, out var transcriptionGuid))
             {
                 // Look for fast transcription job with this ID first
@@ -394,33 +394,9 @@ public class SpeakerMappingController : ControllerBase
                         _logger.LogWarning("Fast transcription job {JobId} found but associated meeting {MeetingId} not found", fastJob.Id, fastJob.MeetingId);
                     }
                 }
-
-                // No fast transcription job found, try legacy batch job lookup for backward compatibility
-                var batchJob = await _context.BatchTranscriptionJobs
-                    .Where(b => b.Id == transcriptionGuid)
-                    .FirstOrDefaultAsync();
-
-                if (batchJob != null)
+                else
                 {
-                    // Found legacy batch job, get the associated meeting
-                    var meeting = await _context.Meetings
-                        .Where(m => m.Id == batchJob.MeetingId)
-                        .FirstOrDefaultAsync();
-
-                    if (meeting != null)
-                    {
-                        // Serialize speaker mappings to JSON and save
-                        meeting.SpeakerMappingsJson = JsonSerializer.Serialize(speakerMappings);
-                        await _context.SaveChangesAsync();
-
-                        _logger.LogInformation("Successfully persisted {Count} speaker mappings to Meeting {MeetingId} via legacy batch job {JobId}", 
-                            speakerMappings.MappedSpeakerCount, meeting.Id, batchJob.Id);
-                        return;
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Legacy batch job {BatchJobId} found but associated meeting {MeetingId} not found", batchJob.Id, batchJob.MeetingId);
-                    }
+                    _logger.LogWarning("No fast transcription job found for ID {TranscriptionId}", transcriptionId);
                 }
 
                 // No transcription job found, try direct meeting lookup
@@ -443,7 +419,7 @@ public class SpeakerMappingController : ControllerBase
                 _logger.LogWarning("Transcription ID {TranscriptionId} is not a valid GUID", transcriptionId);
             }
 
-            _logger.LogWarning("Could not find meeting, fast transcription job, or legacy batch job for transcription ID {TranscriptionId}", transcriptionId);
+            _logger.LogWarning("Could not find meeting or fast transcription job for transcription ID {TranscriptionId}", transcriptionId);
         }
         catch (Exception ex)
         {

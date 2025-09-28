@@ -11,7 +11,6 @@ import {
   Divider,
   Stack,
 } from "@mui/material";
-import TourPopover from "./TourPopover";
 import SummaryHeader from "./SummaryHeader";
 import ActionItemsSection from "./ActionItemsSection";
 
@@ -21,7 +20,6 @@ import {
 import type { SpeakerMapping, MeetingSummary, ActionItem } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
 import { useSummaryStore } from "../stores/summaryStore";
-import { useTourStore } from "../stores/tourStore";
 import { useEmailStore } from "../stores/emailStore";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useAuthStore } from "../stores/authStore";
@@ -36,7 +34,7 @@ interface SummaryDisplayProps {
   speakerMappings?: SpeakerMapping[];
   detectedSpeakers?: string[];
   onSummaryGenerated?: (summary: MeetingSummary) => void;
-  aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for Step 9->10 tour scroll
+  aiSummaryRef?: React.RefCallback<HTMLElement>; // Optional ref for scroll positioning
   // Additional props for email functionality
   fileName?: string;
   speakerSegments?: any[];
@@ -88,10 +86,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const { user, isLoading: isAuthLoading } = useAuthStore();
   
   // Get the current app mode to pass to the summary generation
-  const { mode, isDemo } = useAppMode();
-
-  // Tour store for managing tour state and closed steps
-  const { isActive: isTourActive, closeStep, isCurrentStep, triggerStepAction, isActionDisabledDuringTour } = useTourStore();
+  const { mode } = useAppMode();
   
   // Email store for handling email dialog
   const { openDialog: openEmailDialog } = useEmailStore();
@@ -197,18 +192,18 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   
   // Enable auto-save when component mounts with authenticated user and valid context
   useEffect(() => {
-    if (user?.id && fileName && !isDemo && mode === 'production') {
+    if (user?.id && fileName && mode === 'production') {
       enableAutoSave(user.id, fileName, transcriptionId);
       
       return () => {
         disableAutoSave();
       };
     }
-  }, [user?.id, fileName, transcriptionId, isDemo, mode, enableAutoSave, disableAutoSave]);
+  }, [user?.id, fileName, transcriptionId, mode, enableAutoSave, disableAutoSave]);
   
   // Debounced auto-save trigger on summary or action items change
   const triggerDebouncedAutoSave = useCallback(() => {
-    if (!autoSaveEnabled || !summary || isDemo) return;
+    if (!autoSaveEnabled || !summary) return;
     
     // Clear existing timeout
     if (autoSaveTimeoutRef.current) {
@@ -219,7 +214,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     autoSaveTimeoutRef.current = setTimeout(() => {
       triggerAutoSave();
     }, 5000);
-  }, [autoSaveEnabled, summary, isDemo, triggerAutoSave]);
+  }, [autoSaveEnabled, summary, triggerAutoSave]);
   
   // Trigger auto-save when summary or action items change
   useEffect(() => {
@@ -295,11 +290,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       }
 
       await generateSummary(transcriptText, mappingsToUse, mode);
-      
-      // Trigger Step 11 tour advancement when summary generation completes
-      if (isDemo && isTourActive) {
-        triggerStepAction('summary-generated');
-      }
       
       // Call the callback if provided
       if (onSummaryGenerated && summary) {
@@ -428,11 +418,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               variant="contained"
               size="large"
               startIcon={<Psychology />}
-              onClick={() => {
-                triggerStepAction('generate-summary');
-                handleGenerateSummary();
-              }}
-              disabled={!transcriptText || isActionDisabledDuringTour('generate-summary')}
+              onClick={handleGenerateSummary}
+              disabled={!transcriptText}
               sx={{ mb: 2 }}
             >
               Generate Meeting Summary
@@ -469,16 +456,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           </Alert>
         )}
 
-        {/* Step 10 Tour Popover - Generate Summary */}
-        <TourPopover
-          open={isDemo && isTourActive && isCurrentStep(10)}
-          step={10}
-          onClose={() => closeStep(10)}
-          position={{ top: '-40px', right: '50px' }}
-          maxWidth="300px"
-          sx={{ zIndex: 10000 }}
-        />
-
         {/* Summary Content */}
         {summary && !isGenerating && (
           <Box>
@@ -486,13 +463,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             <SummaryHeader
               summary={summary}
               totalActionItems={getTotalActionItems()}
-              isDemo={isDemo}
-              isTourActive={isTourActive}
-              isCurrentStep={isCurrentStep}
               onShareClick={handleEmailShare}
               onCopyClick={() => handleCopyToClipboard(summary.meetingOverview, "Summary")}
-              onCloseStep={closeStep}
-              triggerStepAction={triggerStepAction}
             />
 
 
@@ -500,7 +472,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             {/* Meeting Overview */}
             <Box sx={{ mb: 3 }}>
               <Typography variant="h6" gutterBottom>
-                {mode === 'demo' ? 'Demo Meeting Overview' : mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}
+                {mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}
               </Typography>
               <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
                 {summary.meetingOverview}
@@ -513,16 +485,11 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             <ActionItemsSection
               actionItems={actionItems}
               speakerMappings={effectiveSpeakerMappings}
-              isDemo={isDemo}
-              isTourActive={isTourActive}
-              isCurrentStep={isCurrentStep}
               onCreateActionItem={handleCreateActionItem}
               onEditActionItem={handleEditActionItem}
               onDeleteActionItem={handleDeleteActionItem}
               onReorderActionItems={reorderActionItems}
               onUpdateActionItem={updateActionItem}
-              onCloseStep={closeStep}
-              triggerStepAction={triggerStepAction}
               onSnackbar={showSnackbar}
             />
 
@@ -551,15 +518,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         onSave={handleSaveActionItem}
         actionItem={editingActionItem}
         speakers={availableSpeakers}
-      />
-
-      {/* Step 18 Tour Popover - Tour Completion */}
-      <TourPopover
-        open={isDemo && isTourActive && isCurrentStep(18)}
-        step={18}
-        onClose={() => closeStep(18)}
-        position={{ top: '325px', left: '375px' }}
-        maxWidth="400px"
       />
     </Card>
   );

@@ -5,8 +5,8 @@ using System.Security.Claims;
 namespace MeetingSummarizer.Api.Hubs;
 
 /// <summary>
-/// SignalR hub for real-time meeting progress updates
-/// Enables cross-device synchronization of batch job status
+/// SignalR hub for meeting progress updates
+/// Enables cross-device synchronization of transcription job status
 /// </summary>
 [Authorize]
 public class MeetingProgressHub : Hub
@@ -84,11 +84,6 @@ public interface IMeetingProgressNotificationService
     /// Send progress update to all clients watching a specific meeting
     /// </summary>
     Task SendMeetingProgressUpdateAsync(Guid meetingId, Guid userId, MeetingProgressUpdate update);
-
-    /// <summary>
-    /// Send batch job status update to all user's connected devices
-    /// </summary>
-    Task SendBatchJobUpdateAsync(Guid userId, BatchJobProgressUpdate update);
 }
 
 /// <summary>
@@ -125,21 +120,6 @@ public class MeetingProgressNotificationService : IMeetingProgressNotificationSe
             _logger.LogError(ex, "Failed to send meeting progress update for meeting {MeetingId}", meetingId);
         }
     }
-
-    public async Task SendBatchJobUpdateAsync(Guid userId, BatchJobProgressUpdate update)
-    {
-        try
-        {
-            await _hubContext.Clients.Group($"user_{userId}")
-                .SendAsync("BatchJobProgressUpdate", update);
-
-            _logger.LogInformation("Sent batch job update for job {JobId} to user {UserId}", update.JobId, userId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send batch job update for job {JobId}", update.JobId);
-        }
-    }
 }
 
 /// <summary>
@@ -147,20 +127,6 @@ public class MeetingProgressNotificationService : IMeetingProgressNotificationSe
 /// </summary>
 public class MeetingProgressUpdate
 {
-    public Guid MeetingId { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public int ProgressPercentage { get; set; }
-    public string? StatusMessage { get; set; }
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-    public Guid? BatchJobId { get; set; }
-}
-
-/// <summary>
-/// Batch job progress update model for SignalR
-/// </summary>
-public class BatchJobProgressUpdate
-{
-    public Guid JobId { get; set; }
     public Guid MeetingId { get; set; }
     public string Status { get; set; } = string.Empty;
     public int ProgressPercentage { get; set; }

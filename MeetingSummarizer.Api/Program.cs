@@ -162,7 +162,7 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.Authentication.IJwtAut
 // Register Email Verification Service (S6.8 Increment 2)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.EmailVerification.IEmailVerificationService, MeetingSummarizer.Api.Services.EmailVerification.EmailVerificationService>();
 
-// Register SignalR for real-time meeting progress updates (S6.5 Increment 2)
+// Register SignalR for meeting progress updates (S6.5 Increment 2)
 builder.Services.AddSignalR();
 builder.Services.AddScoped<MeetingSummarizer.Api.Hubs.IMeetingProgressNotificationService, MeetingSummarizer.Api.Hubs.MeetingProgressNotificationService>();
 
@@ -324,7 +324,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Map SignalR hub for real-time meeting progress updates (S6.5 Increment 2)
+// Map SignalR hub for meeting progress updates (S6.5 Increment 2)
 app.MapHub<MeetingSummarizer.Api.Hubs.MeetingProgressHub>("/meetingProgressHub");
 
 app.Run();

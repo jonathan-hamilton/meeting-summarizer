@@ -1,6 +1,5 @@
 import realApiService from './apiService';
 import mockApiService from './apiService.mock';
-import demoApiService from './demoApiService';
 import type { AppMode } from '../contexts/AppModeContext';
 
 /**
@@ -9,14 +8,12 @@ import type { AppMode } from '../contexts/AppModeContext';
  */
 export const createApiService = (mode: AppMode) => {
   switch (mode) {
-    case 'demo':
-      return demoApiService;
     case 'development':
       return mockApiService;
     case 'production':
       return realApiService;
     default:
-      return demoApiService;
+      return realApiService; // Default to production API
   }
 };
 

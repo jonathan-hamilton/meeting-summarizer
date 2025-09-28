@@ -68,7 +68,7 @@ export const useTranscriptionJobPolling = () => {
         console.log(`✅ TRANSCRIPTION COMPLETE: Job ${jobId} finished with status: ${jobStatus.status}`);
         cleanup();
       } else {
-        // Check for timeout (6 minutes for Fast Transcription vs 15+ for batch)
+        // Check for timeout (6 minutes for Fast Transcription)
         const elapsed = Date.now() - (startTimeRef.current || Date.now());
         if (elapsed > maxPollingDuration) {
           console.warn(`⏰ TRANSCRIPTION TIMEOUT: Job ${jobId} exceeded maximum polling duration`);
@@ -151,6 +151,3 @@ export const useTranscriptionJobPolling = () => {
     currentJob
   };
 };
-
-// Legacy export for backward compatibility during migration
-export const useBatchJobPollingStore = useTranscriptionJobPolling;

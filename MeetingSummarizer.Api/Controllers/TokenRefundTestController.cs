@@ -7,7 +7,7 @@ namespace MeetingSummarizer.Api.Controllers
 {
     /// <summary>
     /// Test controller for verifying the token refund system (S6.11 Phase 4)
-    /// Updated to support both Fast Transcription and legacy Batch jobs
+    /// Updated to support Fast Transcription
     /// This can be removed after testing is complete
     /// </summary>
     [ApiController]
@@ -32,21 +32,21 @@ namespace MeetingSummarizer.Api.Controllers
         {
             try
             {
-                _logger.LogInformation("Testing token refund for transcription job {JobId}", request.BatchJobId);
+                _logger.LogInformation("Testing token refund for fast transcription job {JobId}", request.FastJobId);
 
                 // Test 1: Check if refund already processed
-                var alreadyProcessed = await _tokenService.IsRefundAlreadyProcessedAsync(request.BatchJobId);
+                var alreadyProcessed = await _tokenService.IsRefundAlreadyProcessedAsync(request.FastJobId);
                 if (alreadyProcessed)
                 {
                     return Ok(new { 
                         Success = true, 
-                        Message = $"Refund for transcription job {request.BatchJobId} was already processed",
+                        Message = $"Refund for fast transcription job {request.FastJobId} was already processed",
                         AlreadyProcessed = true
                     });
                 }
 
                 // Test 2: Process the refund
-                var result = await _tokenService.ProcessAutomaticRefundAsync(request.BatchJobId, request.Reason ?? "Test refund");
+                var result = await _tokenService.ProcessAutomaticRefundAsync(request.FastJobId, request.Reason ?? "Test refund");
 
                 if (result.Success)
                 {
@@ -71,7 +71,7 @@ namespace MeetingSummarizer.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error testing token refund for transcription job {JobId}", request.BatchJobId);
+                _logger.LogError(ex, "Error testing token refund for fast transcription job {JobId}", request.FastJobId);
                 return StatusCode(500, new {
                     Success = false,
                     Message = "Internal server error during refund test",
@@ -112,7 +112,7 @@ namespace MeetingSummarizer.Api.Controllers
     /// </summary>
     public class TestRefundRequest
     {
-        public Guid BatchJobId { get; set; }
+        public Guid FastJobId { get; set; }
         public string? Reason { get; set; }
     }
 }

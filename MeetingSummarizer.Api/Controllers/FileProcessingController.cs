@@ -338,7 +338,7 @@ public class FileProcessingController : ControllerBase
             < 10 * 1024 * 1024 => "Standard validation recommended",
             < 50 * 1024 * 1024 => "Standard validation with progress monitoring",
             < 500 * 1024 * 1024 => "Large file streaming processing recommended",
-            _ => "Large file streaming with batch transcription API recommended"
+            _ => "Large file streaming with transcription API recommended"
         };
     }
 

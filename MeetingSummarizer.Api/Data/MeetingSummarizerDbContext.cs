@@ -46,14 +46,9 @@ public class MeetingSummarizerDbContext : DbContext
     /// Token refunds for failed transcriptions
     /// </summary>
     public DbSet<TokenRefund> TokenRefunds { get; set; } = null!;
-    
-    /// <summary>
-    /// Batch transcription jobs for longer meetings (LEGACY - being phased out)
-    /// </summary>
-    public DbSet<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = null!;
 
     /// <summary>
-    /// Fast transcription jobs for all meetings (NEW - Azure Fast Transcription API)
+    /// Fast transcription jobs for all meetings (Azure Fast Transcription API)
     /// </summary>
     public DbSet<FastTranscriptionJob> FastTranscriptionJobs { get; set; } = null!;
 
@@ -187,38 +182,6 @@ public class MeetingSummarizerDbContext : DbContext
                 .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
         });
         
-        // Configure BatchTranscriptionJob entity
-        modelBuilder.Entity<BatchTranscriptionJob>(entity =>
-        {
-            entity.HasKey(btj => btj.Id);
-            entity.HasIndex(btj => btj.UserId); // For user-specific job queries
-            entity.HasIndex(btj => btj.MeetingId); // For meeting-specific job queries
-            entity.HasIndex(btj => btj.Status); // For status-based filtering
-            entity.HasIndex(btj => btj.SubmittedAt); // For chronological ordering
-            entity.HasIndex(btj => btj.AzureJobId).IsUnique(); // Unique Azure job tracking
-            
-            entity.Property(btj => btj.FileName).IsRequired().HasMaxLength(255);
-            entity.Property(btj => btj.Status).IsRequired().HasMaxLength(50);
-            entity.Property(btj => btj.AzureJobId).HasMaxLength(100);
-#pragma warning disable CS0618 // Type or member is obsolete
-            entity.Property(btj => btj.ResultsJson).HasColumnType("nvarchar(max)");
-#pragma warning restore CS0618 // Type or member is obsolete
-            entity.Property(btj => btj.ErrorMessage).HasMaxLength(1000);
-            entity.Property(btj => btj.SubmittedAt).HasDefaultValueSql("GETUTCDATE()");
-            
-            // Configure relationship with User
-            entity.HasOne(btj => btj.User)
-                .WithMany(u => u.BatchTranscriptionJobs)
-                .HasForeignKey(btj => btj.UserId)
-                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
-            
-            // Configure relationship with Meeting
-            entity.HasOne(btj => btj.Meeting)
-                .WithMany(m => m.BatchTranscriptionJobs)
-                .HasForeignKey(btj => btj.MeetingId)
-                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
-        });
-
         // Configure FastTranscriptionJob entity
         modelBuilder.Entity<FastTranscriptionJob>(entity =>
         {
@@ -262,9 +225,9 @@ public class MeetingSummarizerDbContext : DbContext
             entity.Property(ts => ts.Text).IsRequired().HasMaxLength(1000);
             entity.Property(ts => ts.SpeakerId).HasMaxLength(50);
             
-            // Configure relationship with BatchTranscriptionJob
+            // Configure relationship with FastTranscriptionJob
             entity.HasOne(ts => ts.Job)
-                .WithMany(btj => btj.TranscriptSegments)
+                .WithMany(ftj => ftj.TranscriptSegments)
                 .HasForeignKey(ts => ts.JobId)
                 .OnDelete(DeleteBehavior.Cascade); // Segments should be deleted with the job
         });
@@ -349,7 +312,6 @@ public class MeetingSummarizerDbContext : DbContext
         {
             entity.HasKey(tr => tr.Id);
             entity.HasIndex(tr => tr.UserId);
-            entity.HasIndex(tr => tr.BatchJobId);
             entity.HasIndex(tr => tr.RefundedAt);
             
             entity.Property(tr => tr.Reason).IsRequired().HasMaxLength(500);
@@ -361,11 +323,6 @@ public class MeetingSummarizerDbContext : DbContext
             entity.HasOne(tr => tr.User)
                 .WithMany()
                 .HasForeignKey(tr => tr.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-                
-            entity.HasOne(tr => tr.BatchJob)
-                .WithMany()
-                .HasForeignKey(tr => tr.BatchJobId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 

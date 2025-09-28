@@ -100,7 +100,7 @@ public interface IUserStorageService
     /// Store large transcript JSON in compressed blob storage
     /// </summary>
     /// <param name="userId">User identifier for storage isolation</param>
-    /// <param name="jobId">Batch transcription job identifier</param>
+    /// <param name="jobId">Fast transcription job identifier</param>
     /// <param name="transcriptJson">Large transcript JSON content</param>
     /// <returns>Storage result with blob URL and compression stats</returns>
     Task<TranscriptStorageResult> StoreTranscriptAsync(Guid userId, Guid jobId, string transcriptJson);

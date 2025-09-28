@@ -128,12 +128,7 @@ public class Meeting
     public virtual ICollection<MeetingHistory> History { get; set; } = new List<MeetingHistory>();
 
     /// <summary>
-    /// Navigation property for batch transcription jobs associated with this meeting (LEGACY - being phased out)
-    /// </summary>
-    public virtual ICollection<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = new List<BatchTranscriptionJob>();
-
-    /// <summary>
-    /// Navigation property for fast transcription jobs associated with this meeting (NEW - Azure Fast Transcription API)
+    /// Navigation property for fast transcription jobs associated with this meeting
     /// </summary>
     public virtual ICollection<FastTranscriptionJob> FastTranscriptionJobs { get; set; } = new List<FastTranscriptionJob>();
 }

@@ -30,9 +30,6 @@ export interface DetailedHealthStatus extends HealthStatus {
   };
 }
 
-// Batch Job Types
-export * from './batchJob';
-
 // File Upload Types
 export interface SpeakerSegment {
   start: number;
@@ -61,7 +58,7 @@ export interface TranscriptionResponse {
   speakerMappings?: SpeakerMapping[]; // S2.2: Speaker mappings
 }
 
-// Transcription Result for batch job transcript endpoint
+// Transcription Result interface
 export interface TranscriptionResult {
   text: string;
   segments: SpeakerSegment[];

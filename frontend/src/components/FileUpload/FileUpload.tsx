@@ -16,7 +16,6 @@ import CostEstimationDialog from "../CostEstimationDialog";
 import { createApiService } from "../../services/apiServiceFactory";
 // import { useEnhancedSessionStore } from "../../stores/enhancedSessionStore"; // Not used due to interface mismatch
 import { useUploadQueueStore } from '../../stores/uploadQueueStore';
-import { useBatchJobPollingStore } from "../../hooks/useBatchJobPollingStore";
 import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
 
@@ -25,7 +24,6 @@ import { UploadProgress } from "./UploadProgress";
 import { validateFiles } from "./validation";
 import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
-// import { useSignalRBatchProgress } from "../../hooks/useSignalRProgress"; // Unused for now
 
 interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
@@ -59,17 +57,17 @@ const FileUpload: React.FC<FileUploadProps> = ({
   
   // Cleanup effect: Clear upload queue when component unmounts or when navigating away
   // This prevents old/stuck files from interfering with new uploads
-  // BUT only clear completed/error files, preserve active batch jobs
+  // BUT only clear completed/error files, preserve active uploads
   useEffect(() => {
     return () => {
       console.log('🧹 FileUpload component cleanup - clearing completed/error files only');
       setUploadFiles((prev) => {
         const activeFiles = prev.filter(f => 
-          f.status === "uploading" && f.batchJobId // Keep active batch jobs
+          f.status === "uploading" // Keep active uploads
         );
         const removedCount = prev.length - activeFiles.length;
         if (removedCount > 0) {
-          console.log(`🧹 Removed ${removedCount} completed/error files, kept ${activeFiles.length} active batch jobs`);
+          console.log(`🧹 Removed ${removedCount} completed/error files, kept ${activeFiles.length} active uploads`);
         }
         return activeFiles;
       });
@@ -83,84 +81,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
       storeClearUploadQueue();
     }
   }, [_isAuthDialogOpen, storeClearUploadQueue]);
-  
-  const { 
-    currentJob: batchJob, 
-    startPolling, 
-    pollingError: batchError, 
-    isPolling, 
-    retry: retryBatchJob 
-  } = useBatchJobPollingStore({
-    onJobCompleted: useCallback((jobId: string) => {
-      console.log('✅ Batch job completed:', jobId);
-      console.log('📊 Current batch job results:', batchJob?.results ? 'Available' : 'Missing');
-      
-      // Find the upload file with this batch job ID and mark it as completed
-      setUploadFiles((prev) => {
-        const targetFile = prev.find(f => f.batchJobId === jobId);
-        console.log('🎯 Target file for completed job:', targetFile ? `${targetFile.file.name} (status: ${targetFile.status})` : 'Not found');
-        
-        const updated = prev.map((f) => {
-          if (f.batchJobId === jobId && f.status === "uploading") {
-            const completedFile = {
-              ...f,
-              status: "completed" as const,
-              progress: 100,
-              result: batchJob?.results,
-              successMessage: 'Batch transcription completed successfully! Transcript saved to history.',
-            };
-            console.log('✅ Marked file as completed:', f.file.name);
-            return completedFile;
-          }
-          return f;
-        });
-        
-        // Find the completed file and call the completion callback
-        const completedFile = updated.find(f => f.batchJobId === jobId && f.status === "completed");
-        if (completedFile?.result && onTranscriptionComplete) {
-          console.log('📞 Calling onTranscriptionComplete for batch job:', jobId, 'File:', completedFile.file.name);
-          onTranscriptionComplete(completedFile.result);
-        } else {
-          console.warn('⚠️ Batch job completed but no callback triggered:', {
-            hasCompletedFile: !!completedFile,
-            hasResult: !!completedFile?.result,
-            hasCallback: !!onTranscriptionComplete,
-            jobId
-          });
-        }
-        
-        return updated;
-      });
-      
-      // Refresh token balance after completion
-      refreshBalance();
-    }, [onTranscriptionComplete, refreshBalance]),
-    
-    onJobFailed: useCallback((jobId: string, error?: string) => {
-      console.error('❌ Batch job failed:', jobId, 'Error:', error);
-      setUploadFiles((prev) => {
-        const targetFile = prev.find(f => f.batchJobId === jobId);
-        console.log('🎯 Target file for failed job:', targetFile ? `${targetFile.file.name} (status: ${targetFile.status})` : 'Not found');
-        
-        return prev.map((f) =>
-          f.batchJobId === jobId
-            ? { 
-                ...f, 
-                status: "error", 
-                error: error || "Batch transcription failed. Please try again or contact support.",
-                progress: 0 // Reset progress on failure
-              }
-            : f
-        );
-      });
-      
-      // Show user-friendly error message
-      setValidationErrors([`Transcription failed: ${error || "Unknown error occurred during batch processing"}`]);
-    }, [])
-  });
-  
-  // S6.5: Add SignalR for real-time progress updates (unused for now)
-  // const signalRProgress = useSignalRBatchProgress();
+  // S6.13: Fast Transcription Migration complete - legacy systems removed
+
+  // S6.13: Progress tracking simplified for Fast Transcription
+  // const signalRProgress = removed;
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [tokenError, setTokenError] = useState<TokenError | null>(null);
@@ -228,55 +152,38 @@ const FileUpload: React.FC<FileUploadProps> = ({
         });
 
         if (response.success) {
-          if (response.data && 'batchJobId' in response.data && (response.data as any).batchJobId) {
-            // Batch job processing
-            startPolling((response.data as any).batchJobId);
-            setUploadFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadFile.id
-                  ? {
-                      ...f,
-                      status: "uploading",
-                      progress: 95,
-                      batchJobId: (response.data as any).batchJobId,
-                    }
-                  : f
-              )
-            );
-          } else {
-            // Immediate transcription response
-            console.log('⚡ Immediate transcription completed:', uploadFile.file.name);
+          // S6.13: Fast Transcription - immediate transcription response
+          console.log('⚡ Fast transcription completed:', uploadFile.file.name);
+          
+          // Show success message mentioning history for all successful transcriptions
+          const successMessage = 'Transcription completed successfully! Transcript saved to history.';
             
-            // Show success message mentioning history for all successful transcriptions
-            const successMessage = 'Transcription completed successfully! Transcript saved to history.';
-              
-            setUploadFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadFile.id
-                  ? {
-                      ...f,
-                      status: "completed",
-                      progress: 100,
-                      result: response.data,
-                      successMessage,
-                    }
-                  : f
-              )
-            );
-            // Refresh token balance after successful transcription (tokens were consumed)
-            refreshBalance();
-            if (onTranscriptionComplete && response.data) {
-              console.log('📞 Calling onTranscriptionComplete for immediate result:', uploadFile.file.name);
-              onTranscriptionComplete(response.data);
-            } else {
-              console.log('❌ Missing callback or data for:', uploadFile.file.name, { hasCallback: !!onTranscriptionComplete, hasData: !!response.data });
-            }
+          setUploadFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? {
+                    ...f,
+                    status: "completed",
+                    progress: 100,
+                    result: response.data,
+                    successMessage,
+                  }
+                : f
+            )
+          );
+          // Refresh token balance after successful transcription (tokens were consumed)
+          refreshBalance();
+          if (onTranscriptionComplete && response.data) {
+            console.log('📞 Calling onTranscriptionComplete for immediate result:', uploadFile.file.name);
+            onTranscriptionComplete(response.data);
+          } else {
+            console.log('❌ Missing callback or data for:', uploadFile.file.name, { hasCallback: !!onTranscriptionComplete, hasData: !!response.data });
           }
         } else {
           const errorData = response.errors?.[0] || response.message || "Upload failed";
           
-          if (response.message === "Insufficient tokens for batch processing" || 
-              response.errorData?.error === "Insufficient tokens for batch processing") {
+          if (response.message === "Insufficient tokens for transcription processing" || 
+              response.errorData?.error === "Insufficient tokens for transcription processing") {
             const errorData = response.errorData || {};
             setTokenError({
               required: errorData.required || 0,
@@ -307,7 +214,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         );
       }
     },
-    [onTranscriptionComplete, apiService, startPolling]
+    [onTranscriptionComplete, apiService]
   );
 
   const handleClearFile = useCallback((fileId: string) => {
@@ -318,14 +225,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const processFiles = useCallback(async (validFiles: File[]) => {
     console.log('🚀 Processing files - ensuring clean upload queue state');
     
-    // Only clear completed/error files, preserve active batch jobs
+    // Only clear completed/error files, preserve active uploads
     setUploadFiles((prev) => {
-      const activeJobs = prev.filter(f => f.status === "uploading" && f.batchJobId);
+      const activeJobs = prev.filter(f => f.status === "uploading");
       if (activeJobs.length > 0) {
-        console.log(`🔄 Preserving ${activeJobs.length} active batch jobs while starting new upload`);
-        return activeJobs; // Keep only active batch jobs
+        console.log(`🔄 Preserving ${activeJobs.length} active uploads while starting new upload`);
+        return activeJobs; // Keep only active uploads
       }
-      console.log('🧹 No active batch jobs found, clearing all previous files');
+      console.log('🧹 No active uploads found, clearing all previous files');
       return []; // Clear everything if no active jobs
     });
     
@@ -513,11 +420,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             
             <UploadProgress 
               uploadFiles={uploadFiles}
-              batchJob={batchJob as any} // Type assertion for migration compatibility
-              isPolling={isPolling}
-              batchError={batchError}
               onClearFile={handleClearFile}
-              onRetryBatchJob={retryBatchJob}
             />
           </CardContent>
         </Card>

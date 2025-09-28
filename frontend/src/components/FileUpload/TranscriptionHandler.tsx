@@ -240,6 +240,3 @@ export const TranscriptionHandler: React.FC<TranscriptionHandlerProps> = ({
     </Alert>
   );
 };
-
-// Legacy export for backward compatibility during migration
-export const BatchJobHandler = TranscriptionHandler;
