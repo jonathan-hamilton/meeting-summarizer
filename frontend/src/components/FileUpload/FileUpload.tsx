@@ -513,7 +513,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             
             <UploadProgress 
               uploadFiles={uploadFiles}
-              batchJob={batchJob}
+              batchJob={batchJob as any} // Type assertion for migration compatibility
               isPolling={isPolling}
               batchError={batchError}
               onClearFile={handleClearFile}

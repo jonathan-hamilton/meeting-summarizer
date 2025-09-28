@@ -112,6 +112,91 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("BatchTranscriptionJobs");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AudioBlobUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("CompressedTranscriptSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EstimatedDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<bool>("IsTranscriptInBlobStorage")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("MeetingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ProcessingMethod")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("fast");
+
+                    b.Property<int>("ProgressPercentage")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("RefundIssued")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ResultsJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<int>("TokensCharged")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TranscriptBlobUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MeetingId");
+
+                    b.HasIndex("ProcessingMethod");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmittedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("FastTranscriptionJobs");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -500,6 +585,9 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Property<double>("EndTime")
                         .HasColumnType("float");
 
+                    b.Property<Guid?>("FastTranscriptionJobId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("SpeakerId")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
@@ -513,6 +601,8 @@ namespace MeetingSummarizer.Api.Migrations
                         .HasColumnType("nvarchar(1000)");
 
                     b.HasKey("JobId", "SegmentIndex");
+
+                    b.HasIndex("FastTranscriptionJobId");
 
                     b.HasIndex("JobId");
 
@@ -667,6 +757,24 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.Meeting", "Meeting")
+                        .WithMany("FastTranscriptionJobs")
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
+                        .WithMany("FastTranscriptionJobs")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Meeting");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
@@ -776,6 +884,10 @@ namespace MeetingSummarizer.Api.Migrations
 
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.TranscriptSegment", b =>
                 {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", null)
+                        .WithMany("TranscriptSegments")
+                        .HasForeignKey("FastTranscriptionJobId");
+
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.BatchTranscriptionJob", "Job")
                         .WithMany("TranscriptSegments")
                         .HasForeignKey("JobId")
@@ -790,9 +902,16 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Navigation("TranscriptSegments");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", b =>
+                {
+                    b.Navigation("TranscriptSegments");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.Navigation("BatchTranscriptionJobs");
+
+                    b.Navigation("FastTranscriptionJobs");
 
                     b.Navigation("History");
                 });
@@ -805,6 +924,8 @@ namespace MeetingSummarizer.Api.Migrations
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.User", b =>
                 {
                     b.Navigation("BatchTranscriptionJobs");
+
+                    b.Navigation("FastTranscriptionJobs");
 
                     b.Navigation("Meetings");
 

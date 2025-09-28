@@ -68,6 +68,32 @@ public class AzureFastTranscriptionService
 
             var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
             _logger.LogInformation("✅ Fast Transcription completed in {ElapsedMs}ms", stopwatch.ElapsedMilliseconds);
+            
+            // Log response structure for debugging parsing issues
+            _logger.LogInformation("Azure Fast Transcription Response (full): {ResponseJson}", responseJson);
+            
+            // Also parse and log structure details
+            try 
+            {
+                using var tempDoc = JsonDocument.Parse(responseJson);
+                var tempRoot = tempDoc.RootElement;
+                _logger.LogInformation("Response structure properties: {Properties}", 
+                    string.Join(", ", tempRoot.EnumerateObject().Select(p => p.Name)));
+                
+                if (tempRoot.TryGetProperty("phrases", out var tempPhrases) && tempPhrases.ValueKind == JsonValueKind.Array)
+                {
+                    var firstPhrase = tempPhrases.EnumerateArray().FirstOrDefault();
+                    if (firstPhrase.ValueKind != JsonValueKind.Undefined)
+                    {
+                        _logger.LogInformation("First phrase properties: {Properties}", 
+                            string.Join(", ", firstPhrase.EnumerateObject().Select(p => p.Name)));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to parse response for structure analysis");
+            }
 
             return new FastTranscriptionResult
             {
@@ -88,6 +114,310 @@ public class AzureFastTranscriptionService
                 FileName = fileName,
                 FileSizeBytes = audioData.Length
             };
+        }
+    }
+
+    public async Task<TranscriptionResult> TranscribeAudioAsync(
+        Stream audioStream, 
+        string fileName,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Convert stream to byte array
+            using var memoryStream = new MemoryStream();
+            await audioStream.CopyToAsync(memoryStream, cancellationToken);
+            var audioData = memoryStream.ToArray();
+
+            var result = await TranscribeAsync(audioData, fileName, cancellationToken);
+            
+            if (!result.Success)
+            {
+                throw new InvalidOperationException(result.Error ?? "Unknown transcription error");
+            }
+
+            return ParseAzureResults(result.TranscriptionJson!, result.ProcessingTimeMs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ TranscribeAudioAsync error for {FileName}", fileName);
+            throw;
+        }
+    }
+
+    private TranscriptionResult ParseAzureResults(string jsonResponse, long processingTimeMs)
+    {
+        try
+        {
+            _logger.LogInformation("🔍 Parsing Azure Fast Transcription response...");
+            
+            using var document = JsonDocument.Parse(jsonResponse);
+            var root = document.RootElement;
+
+            // Log the structure we received to debug parsing
+            _logger.LogInformation("Azure response structure: {Properties}", 
+                string.Join(", ", root.EnumerateObject().Select(p => p.Name)));
+
+            var transcriptionSegments = new List<SpeakerSegment>();
+            var speakers = new HashSet<string>();
+            var totalDurationSeconds = 0.0;
+            var fullText = new StringBuilder();
+
+            // Try different possible structures for Azure Fast Transcription API
+            // First try phrases array which contains detailed speaker diarization information
+            if (root.TryGetProperty("phrases", out var phrases))
+            {
+                _logger.LogInformation("Found phrases structure with speaker diarization");
+                
+                // Extract total duration if available
+                if (root.TryGetProperty("durationMilliseconds", out var durationMs))
+                {
+                    totalDurationSeconds = durationMs.GetDouble() / 1000.0;
+                }
+                
+                foreach (var phrase in phrases.EnumerateArray())
+                {
+                    var segment = ParsePhraseSegment(phrase, speakers);
+                    if (segment != null)
+                    {
+                        transcriptionSegments.Add(segment);
+                        fullText.Append(segment.Text).Append(" ");
+                    }
+                }
+            }
+            // Fallback to combinedPhrases if phrases not available (less detailed)
+            else if (root.TryGetProperty("combinedPhrases", out var combinedPhrases))
+            {
+                _logger.LogInformation("Found combinedPhrases structure (fallback)");
+                
+                // Extract total duration if available
+                if (root.TryGetProperty("durationMilliseconds", out var durationMs))
+                {
+                    totalDurationSeconds = durationMs.GetDouble() / 1000.0;
+                }
+                
+                foreach (var phrase in combinedPhrases.EnumerateArray())
+                {
+                    var segment = ParseCombinedPhraseSegment(phrase, speakers);
+                    if (segment != null)
+                    {
+                        transcriptionSegments.Add(segment);
+                        fullText.Append(segment.Text).Append(" ");
+                    }
+                }
+            }
+            // Fallback to legacy batch format if it exists
+            else if (root.TryGetProperty("combinedRecognizedPhrases", out var combinedRecognizedPhrases))
+            {
+                _logger.LogInformation("Found combinedRecognizedPhrases structure (legacy)");
+                foreach (var phrase in combinedRecognizedPhrases.EnumerateArray())
+                {
+                    if (phrase.TryGetProperty("recognitionResult", out var recognition))
+                    {
+                        var segment = ParseRecognitionSegment(recognition, speakers);
+                        if (segment != null)
+                        {
+                            transcriptionSegments.Add(segment);
+                            fullText.Append(segment.Text).Append(" ");
+                            totalDurationSeconds = Math.Max(totalDurationSeconds, segment.End);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                _logger.LogWarning("❌ Unknown Azure Fast Transcription response format. Available properties: {Properties}",
+                    string.Join(", ", root.EnumerateObject().Select(p => p.Name)));
+            }
+
+            var result = new TranscriptionResult
+            {
+                Text = fullText.ToString().Trim(),
+                Segments = transcriptionSegments,
+                Duration = totalDurationSeconds
+            };
+
+            _logger.LogInformation("✅ Parsed {SegmentCount} segments, {SpeakerCount} speakers, {Duration}s duration", 
+                result.Segments.Count, speakers.Count, result.Duration);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error parsing Azure results");
+            throw new InvalidOperationException("Failed to parse transcription results", ex);
+        }
+    }
+
+    private SpeakerSegment? ParseRecognitionSegment(JsonElement recognition, HashSet<string> speakers)
+    {
+        try
+        {
+            if (!recognition.TryGetProperty("best", out var bestResults) || 
+                bestResults.GetArrayLength() == 0)
+                return null;
+
+            var best = bestResults[0];
+            if (!best.TryGetProperty("transcript", out var transcriptElement) ||
+                string.IsNullOrWhiteSpace(transcriptElement.GetString()))
+                return null;
+
+            var text = transcriptElement.GetString()!;
+            var speakerId = "Speaker 1";
+            var startSeconds = 0.0;
+            var endSeconds = 0.0;
+
+            // Extract speaker information if available
+            if (best.TryGetProperty("speaker", out var speakerElement))
+            {
+                speakerId = $"Speaker {speakerElement.GetInt32()}";
+            }
+            speakers.Add(speakerId);
+
+            // Extract timing information
+            if (recognition.TryGetProperty("offset", out var offsetElement))
+            {
+                startSeconds = offsetElement.GetInt64() / 10000000.0; // Convert from ticks to seconds
+            }
+
+            if (recognition.TryGetProperty("duration", out var durationElement))
+            {
+                var durationSecs = durationElement.GetInt64() / 10000000.0; // Convert from ticks to seconds
+                endSeconds = startSeconds + durationSecs;
+            }
+
+            return new SpeakerSegment
+            {
+                Text = text,
+                Speaker = speakerId,
+                Start = startSeconds,
+                End = endSeconds,
+                Confidence = best.TryGetProperty("confidence", out var confElement) ? confElement.GetDouble() : null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse recognition segment");
+            return null;
+        }
+    }
+
+    private SpeakerSegment? ParsePhraseSegment(JsonElement phrase, HashSet<string> speakers)
+    {
+        try
+        {
+            // Azure Fast Transcription API returns phrases with direct properties like:
+            // {"speaker": 1, "offsetMilliseconds": 80, "durationMilliseconds": 960, "text": "Thanks for gathering."}
+            
+            if (!phrase.TryGetProperty("text", out var textElement) ||
+                string.IsNullOrWhiteSpace(textElement.GetString()))
+                return null;
+
+            var text = textElement.GetString()!;
+            var speakerId = "Speaker 1"; // Default speaker
+            var startSeconds = 0.0;
+            var endSeconds = 0.0;
+
+            // Extract speaker information
+            if (phrase.TryGetProperty("speaker", out var speakerElement))
+            {
+                speakerId = $"Speaker {speakerElement.GetInt32()}";
+            }
+            
+            speakers.Add(speakerId);
+
+            // Extract timing information
+            if (phrase.TryGetProperty("offsetMilliseconds", out var offsetElement))
+            {
+                startSeconds = offsetElement.GetDouble() / 1000.0;
+            }
+
+            if (phrase.TryGetProperty("durationMilliseconds", out var durationElement))
+            {
+                var durationSecs = durationElement.GetDouble() / 1000.0;
+                endSeconds = startSeconds + durationSecs;
+            }
+
+            var confidence = phrase.TryGetProperty("confidence", out var confElement) ? confElement.GetDouble() : (double?)null;
+
+            return new SpeakerSegment
+            {
+                Text = text,
+                Speaker = speakerId,
+                Start = startSeconds,
+                End = endSeconds,
+                Confidence = confidence
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse phrase segment");
+            return null;
+        }
+    }
+
+    private SpeakerSegment? ParseCombinedPhraseSegment(JsonElement phrase, HashSet<string> speakers)
+    {
+        try
+        {
+            // Azure Fast Transcription API returns phrases with direct properties
+            if (!phrase.TryGetProperty("text", out var textElement) ||
+                string.IsNullOrWhiteSpace(textElement.GetString()))
+                return null;
+
+            var text = textElement.GetString()!;
+            var speakerId = "Speaker 1"; // Default speaker for now
+            var startSeconds = 0.0;
+            var endSeconds = 0.0;
+
+            // Extract speaker information if available
+            if (phrase.TryGetProperty("speaker", out var speakerElement))
+            {
+                speakerId = $"Speaker {speakerElement.GetInt32()}";
+            }
+            else if (phrase.TryGetProperty("speakerId", out var speakerIdElement))
+            {
+                speakerId = $"Speaker {speakerIdElement.GetInt32()}";
+            }
+            
+            speakers.Add(speakerId);
+
+            // Extract timing information if available
+            if (phrase.TryGetProperty("offsetMilliseconds", out var offsetElement))
+            {
+                startSeconds = offsetElement.GetDouble() / 1000.0;
+            }
+            else if (phrase.TryGetProperty("offset", out var offsetTicks))
+            {
+                startSeconds = offsetTicks.GetInt64() / 10000000.0; // Convert from ticks to seconds
+            }
+
+            if (phrase.TryGetProperty("durationMilliseconds", out var durationElement))
+            {
+                var durationSecs = durationElement.GetDouble() / 1000.0;
+                endSeconds = startSeconds + durationSecs;
+            }
+            else if (phrase.TryGetProperty("duration", out var durationTicks))
+            {
+                var durationSecs = durationTicks.GetInt64() / 10000000.0; // Convert from ticks to seconds
+                endSeconds = startSeconds + durationSecs;
+            }
+
+            var confidence = phrase.TryGetProperty("confidence", out var confElement) ? confElement.GetDouble() : (double?)null;
+
+            return new SpeakerSegment
+            {
+                Text = text,
+                Speaker = speakerId,
+                Start = startSeconds,
+                End = endSeconds,
+                Confidence = confidence
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse combined phrase segment");
+            return null;
         }
     }
 }

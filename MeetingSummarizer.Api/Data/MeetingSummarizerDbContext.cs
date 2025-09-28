@@ -48,9 +48,14 @@ public class MeetingSummarizerDbContext : DbContext
     public DbSet<TokenRefund> TokenRefunds { get; set; } = null!;
     
     /// <summary>
-    /// Batch transcription jobs for longer meetings
+    /// Batch transcription jobs for longer meetings (LEGACY - being phased out)
     /// </summary>
     public DbSet<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = null!;
+
+    /// <summary>
+    /// Fast transcription jobs for all meetings (NEW - Azure Fast Transcription API)
+    /// </summary>
+    public DbSet<FastTranscriptionJob> FastTranscriptionJobs { get; set; } = null!;
 
     /// <summary>
     /// Parsed transcript segments for efficient storage and search
@@ -211,6 +216,38 @@ public class MeetingSummarizerDbContext : DbContext
             entity.HasOne(btj => btj.Meeting)
                 .WithMany(m => m.BatchTranscriptionJobs)
                 .HasForeignKey(btj => btj.MeetingId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+        });
+
+        // Configure FastTranscriptionJob entity
+        modelBuilder.Entity<FastTranscriptionJob>(entity =>
+        {
+            entity.HasKey(ftj => ftj.Id);
+            entity.HasIndex(ftj => ftj.UserId); // For user-specific job queries
+            entity.HasIndex(ftj => ftj.MeetingId); // For meeting-specific job queries
+            entity.HasIndex(ftj => ftj.Status); // For status-based filtering
+            entity.HasIndex(ftj => ftj.SubmittedAt); // For chronological ordering
+            entity.HasIndex(ftj => ftj.ProcessingMethod); // For processing method filtering
+            
+            entity.Property(ftj => ftj.FileName).IsRequired().HasMaxLength(255);
+            entity.Property(ftj => ftj.Status).IsRequired().HasMaxLength(50);
+            entity.Property(ftj => ftj.ProcessingMethod).IsRequired().HasMaxLength(20).HasDefaultValue("fast");
+#pragma warning disable CS0618 // Type or member is obsolete
+            entity.Property(ftj => ftj.ResultsJson).HasColumnType("nvarchar(max)");
+#pragma warning restore CS0618 // Type or member is obsolete
+            entity.Property(ftj => ftj.ErrorMessage).HasMaxLength(1000);
+            entity.Property(ftj => ftj.SubmittedAt).HasDefaultValueSql("GETUTCDATE()");
+            
+            // Configure relationship with User
+            entity.HasOne(ftj => ftj.User)
+                .WithMany(u => u.FastTranscriptionJobs)
+                .HasForeignKey(ftj => ftj.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
+            
+            // Configure relationship with Meeting
+            entity.HasOne(ftj => ftj.Meeting)
+                .WithMany(m => m.FastTranscriptionJobs)
+                .HasForeignKey(ftj => ftj.MeetingId)
                 .OnDelete(DeleteBehavior.NoAction); // Prevent cascade conflicts
         });
 

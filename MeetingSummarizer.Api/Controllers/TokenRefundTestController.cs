@@ -7,6 +7,7 @@ namespace MeetingSummarizer.Api.Controllers
 {
     /// <summary>
     /// Test controller for verifying the token refund system (S6.11 Phase 4)
+    /// Updated to support both Fast Transcription and legacy Batch jobs
     /// This can be removed after testing is complete
     /// </summary>
     [ApiController]
@@ -31,7 +32,7 @@ namespace MeetingSummarizer.Api.Controllers
         {
             try
             {
-                _logger.LogInformation("Testing token refund for batch job {BatchJobId}", request.BatchJobId);
+                _logger.LogInformation("Testing token refund for transcription job {JobId}", request.BatchJobId);
 
                 // Test 1: Check if refund already processed
                 var alreadyProcessed = await _tokenService.IsRefundAlreadyProcessedAsync(request.BatchJobId);
@@ -39,7 +40,7 @@ namespace MeetingSummarizer.Api.Controllers
                 {
                     return Ok(new { 
                         Success = true, 
-                        Message = $"Refund for batch job {request.BatchJobId} was already processed",
+                        Message = $"Refund for transcription job {request.BatchJobId} was already processed",
                         AlreadyProcessed = true
                     });
                 }
@@ -70,7 +71,7 @@ namespace MeetingSummarizer.Api.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error testing token refund for batch job {BatchJobId}", request.BatchJobId);
+                _logger.LogError(ex, "Error testing token refund for transcription job {JobId}", request.BatchJobId);
                 return StatusCode(500, new {
                     Success = false,
                     Message = "Internal server error during refund test",
@@ -81,23 +82,23 @@ namespace MeetingSummarizer.Api.Controllers
 
         /// <summary>
         /// Test endpoint to check if a refund was already processed
-        /// GET /api/TokenRefundTest/check-refund/{batchJobId}
+        /// GET /api/TokenRefundTest/check-refund/{jobId}
         /// </summary>
-        [HttpGet("check-refund/{batchJobId}")]
-        public async Task<IActionResult> CheckRefundStatus(Guid batchJobId)
+        [HttpGet("check-refund/{jobId}")]
+        public async Task<IActionResult> CheckRefundStatus(Guid jobId)
         {
             try
             {
-                var alreadyProcessed = await _tokenService.IsRefundAlreadyProcessedAsync(batchJobId);
+                var alreadyProcessed = await _tokenService.IsRefundAlreadyProcessedAsync(jobId);
                 return Ok(new {
-                    BatchJobId = batchJobId,
+                    JobId = jobId,
                     AlreadyProcessed = alreadyProcessed,
                     Message = alreadyProcessed ? "Refund already processed" : "No refund found"
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking refund status for batch job {BatchJobId}", batchJobId);
+                _logger.LogError(ex, "Error checking refund status for transcription job {JobId}", jobId);
                 return StatusCode(500, new {
                     Success = false,
                     Error = ex.Message

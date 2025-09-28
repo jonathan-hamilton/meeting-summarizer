@@ -104,9 +104,14 @@ public class User
     public virtual ICollection<TokenUsage> TokenUsages { get; set; } = new List<TokenUsage>();
     
     /// <summary>
-    /// Navigation property for user's batch transcription jobs
+    /// Navigation property for user's batch transcription jobs (LEGACY - being phased out)
     /// </summary>
     public virtual ICollection<BatchTranscriptionJob> BatchTranscriptionJobs { get; set; } = new List<BatchTranscriptionJob>();
+    
+    /// <summary>
+    /// Navigation property for user's fast transcription jobs (NEW - Azure Fast Transcription API)
+    /// </summary>
+    public virtual ICollection<FastTranscriptionJob> FastTranscriptionJobs { get; set; } = new List<FastTranscriptionJob>();
     
     /// <summary>
     /// Navigation property for user's saved summaries

@@ -205,12 +205,7 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 // Register Summary Persistence Service (S6.10 Summary Persistence)
 builder.Services.AddScoped<ISummaryPersistenceService, SummaryPersistenceService>();
 
-// Register Batch Transcription Services (S6.3.6)
-builder.Services.AddHttpClient<AzureBatchTranscriptionService>();
-builder.Services.AddScoped<AzureBatchTranscriptionService>();
-builder.Services.AddHostedService<BatchJobMonitorService>();
-
-// Register Fast Transcription Service (Performance Optimization)
+// Register Fast Transcription Service (S6.13 Fast Transcription Migration)
 builder.Services.AddHttpClient<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>();
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>();
 
