@@ -17,7 +17,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 
 ## Progress Tracker
 
-**Sprint 6 Progress: 13/13 Stories Complete (100%)**
+**Sprint 6 Progress: 10.1/13 Stories Complete (78%)**
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
