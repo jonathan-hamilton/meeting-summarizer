@@ -10,18 +10,22 @@ import {
 } from '@mui/material';
 import { AudioFile, CheckCircle, Psychology, Clear } from '@mui/icons-material';
 import { WorkflowStepper } from './WorkflowStepper';
-import { BatchJobHandler } from './BatchJobHandler';
+import { TranscriptionHandler } from './TranscriptionHandler';
 // Import removed - formatDuration not used
-import type { FileUploadFile, BatchJobStatus } from './types';
+import type { FileUploadFile } from './types';
+import type { TranscriptionJobStatus } from '../../types/transcriptionJob';
 
 interface UploadProgressProps {
   uploadFiles: FileUploadFile[];
-  batchJob?: BatchJobStatus | null;
+  transcriptionJob?: TranscriptionJobStatus | null; // Updated from batchJob
+  batchJob?: TranscriptionJobStatus | null; // Legacy support during migration
   isPolling?: boolean;
-  batchError?: string | null;
+  transcriptionError?: string | null; // Updated from batchError
+  batchError?: string | null; // Legacy support during migration
   onClearFile?: (fileId: string) => void;
   onRetryFile?: (fileId: string) => void;
-  onRetryBatchJob?: () => void;
+  onRetryTranscriptionJob?: () => void; // Updated from onRetryBatchJob
+  onRetryBatchJob?: () => void; // Legacy support during migration
 }
 
 const getStatusIcon = (status: FileUploadFile["status"]) => {
@@ -51,11 +55,14 @@ const formatTime = (seconds: number): string => {
 
 export const UploadProgress: React.FC<UploadProgressProps> = ({
   uploadFiles,
+  transcriptionJob,
   batchJob,
   isPolling = false,
+  transcriptionError,
   batchError,
   onClearFile,
   onRetryFile: _onRetryFile, // Unused for now
+  onRetryTranscriptionJob,
   onRetryBatchJob
 }) => {
   if (uploadFiles.length === 0) {
@@ -81,16 +88,16 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
             {/* Workflow Progress Stepper */}
             <WorkflowStepper 
               uploadFile={uploadFile} 
-              batchJob={batchJob || undefined} 
+              batchJob={(transcriptionJob || batchJob) as any || undefined} 
             />
 
-            {/* Batch Job Status Information */}
-            {batchJob && (
-              <BatchJobHandler 
-                batchJob={batchJob}
+            {/* Transcription Job Status Information */}
+            {(transcriptionJob || batchJob) && (
+              <TranscriptionHandler 
+                transcriptionJob={transcriptionJob || batchJob!}
                 isPolling={isPolling}
-                batchError={batchError}
-                onRetry={onRetryBatchJob}
+                transcriptionError={transcriptionError || batchError}
+                onRetry={onRetryTranscriptionJob || onRetryBatchJob}
               />
             )}
 

@@ -5,11 +5,11 @@ using System.Security.Claims;
 using System.Text.Json;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Attributes;
-using MeetingSummarizer.Api.Models.BatchTranscription;
 using MeetingSummarizer.Api.Services.Transcription;
 using MeetingSummarizer.Api.Services.Summarization;
 using MeetingSummarizer.Api.Services;
 using MeetingSummarizer.Api.Services.Storage;
+using MeetingSummarizer.Api.Constants;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Services.Interfaces;
@@ -32,7 +32,6 @@ public class SummaryController : ControllerBase
     private readonly ISummarizationService _summarizationService;
     private readonly ISpeakerMappingService _speakerMappingService;
     private readonly MeetingSummarizerDbContext _context;
-    private readonly AzureBatchTranscriptionService _batchService;
     private readonly IUserStorageService _userStorageService;
     private readonly IMeetingService _meetingService;
     private readonly ITokenCalculationService _tokenCalculationService;
@@ -45,7 +44,6 @@ public class SummaryController : ControllerBase
         ISummarizationService summarizationService,
         ISpeakerMappingService speakerMappingService,
         MeetingSummarizerDbContext context,
-        AzureBatchTranscriptionService batchService,
         IUserStorageService userStorageService,
         IMeetingService meetingService,
         ITokenCalculationService tokenCalculationService,
@@ -57,7 +55,6 @@ public class SummaryController : ControllerBase
         _summarizationService = summarizationService;
         _speakerMappingService = speakerMappingService;
         _context = context;
-        _batchService = batchService;
         _userStorageService = userStorageService;
         _meetingService = meetingService;
         _tokenCalculationService = tokenCalculationService;
@@ -102,75 +99,86 @@ public class SummaryController : ControllerBase
             _logger.LogInformation("File validation passed for {FileName} ({FileSize})",
                 request.AudioFile!.FileName, AudioFileValidator.FormatFileSize(request.AudioFile.Length));
 
-            // S6.3.6: Check if file should be processed with batch transcription (5+ minutes)
+            // S6.13: Fast Transcription Migration - Validate file limits using Azure Speech Services constants
             var estimatedDurationMinutes = EstimateAudioDurationMinutes(request.AudioFile.Length, request.AudioFile.FileName);
-            _logger.LogInformation("🎯 MAIN TRANSCRIBE ENDPOINT: Duration estimated as {Duration} minutes for file {FileName}", 
+            _logger.LogInformation("🎯 FAST TRANSCRIPTION: Duration estimated as {Duration} minutes for file {FileName}", 
                 estimatedDurationMinutes, request.AudioFile.FileName);
             
-            if (estimatedDurationMinutes >= 5)
+            // Validate file size limit
+            if (request.AudioFile.Length > FastTranscriptionLimits.MaxFileSizeBytes)
             {
-                // Check if user is authenticated for batch processing
-                var userId = GetCurrentUserId();
+                _logger.LogWarning("File {FileName} ({Size} bytes) exceeds 200MB limit", 
+                    request.AudioFile.FileName, request.AudioFile.Length);
                 
-                if (userId.HasValue)
-                {
-                    _logger.LogInformation("File {FileName} estimated at {Duration} minutes - routing to batch processing (authenticated user)", 
-                        request.AudioFile.FileName, estimatedDurationMinutes);
-                    
-                    return await ProcessWithBatchTranscription(request.AudioFile, estimatedDurationMinutes);
-                }
-                else
-                {
-                    _logger.LogWarning("File {FileName} estimated at {Duration} minutes requires batch processing but user not authenticated - suggesting authentication", 
-                        request.AudioFile.FileName, estimatedDurationMinutes);
-                    
-                    return BadRequest(new 
-                    { 
-                        error = "Long audio files (5+ minutes) require user authentication for batch processing",
-                        estimatedDuration = estimatedDurationMinutes,
-                        suggestion = "Please log in or register to process longer audio files",
-                        maxRealTimeDuration = 5
-                    });
-                }
+                return BadRequest(new 
+                { 
+                    error = FastTranscriptionLimits.FileSizeErrorMessage,
+                    fileSizeMB = Math.Round(request.AudioFile.Length / (1024.0 * 1024.0), 2),
+                    maxSizeMB = 300,
+                    suggestion = "Please use a smaller audio file or compress the existing file"
+                });
             }
-
-            _logger.LogInformation("File {FileName} estimated at {Duration} minutes - using real-time processing", 
-                request.AudioFile.FileName, estimatedDurationMinutes);
-
-            // Token validation for authenticated users (real-time processing)
+            
+            // Validate duration limit
+            if (estimatedDurationMinutes > FastTranscriptionLimits.MaxDurationHours * 60)
+            {
+                _logger.LogWarning("File {FileName} estimated at {Duration} minutes exceeds 2-hour limit", 
+                    request.AudioFile.FileName, estimatedDurationMinutes);
+                
+                return BadRequest(new 
+                { 
+                    error = "Audio duration exceeds 2-hour limit for fast transcription",
+                    estimatedDurationMinutes = estimatedDurationMinutes,
+                    maxDurationMinutes = FastTranscriptionLimits.MaxDurationHours * 60,
+                    suggestion = "Please use a shorter audio file or split the file into segments"
+                });
+            }
+            
+            // Require authentication for all transcription (token tracking)
             var currentUserId = GetCurrentUserId();
-            if (currentUserId.HasValue)
+            if (!currentUserId.HasValue)
             {
-                var user = await _context.Users.FindAsync(currentUserId.Value);
-                if (user == null)
-                {
-                    _logger.LogWarning("Authenticated user {UserId} not found in database", currentUserId.Value);
-                    return NotFound(new { error = "User not found" });
-                }
-
-                // Check if user has sufficient tokens for real-time processing
-                // Use proper duration-based calculation with volume discounts
-                var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
-                var requiredTokens = calculation.FinalTokens;
+                _logger.LogWarning("File {FileName} requires user authentication for transcription", 
+                    request.AudioFile.FileName);
                 
-                if (user.TokenBalance < requiredTokens)
-                {
-                    _logger.LogWarning("User {UserId} ({Email}) has insufficient tokens for real-time processing. Required: {Required}, Available: {Available}",
-                        currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
-                    
-                    return BadRequest(new 
-                    { 
-                        error = "Insufficient tokens to process this audio file",
-                        required = requiredTokens,
-                        available = user.TokenBalance,
-                        estimatedDuration = estimatedDurationMinutes,
-                        processingType = "real-time"
-                    });
-                }
-
-                _logger.LogInformation("User {UserId} ({Email}) has sufficient tokens for real-time processing. Required: {Required}, Available: {Available}",
-                    currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
+                return Unauthorized(new 
+                { 
+                    error = "Authentication required for transcription",
+                    suggestion = "Please log in or register to process audio files"
+                });
             }
+
+            _logger.LogInformation("File {FileName} validated for fast transcription processing", 
+                request.AudioFile.FileName);
+            // Token validation for authenticated user
+            var user = await _context.Users.FindAsync(currentUserId.Value);
+            if (user == null)
+            {
+                _logger.LogWarning("Authenticated user {UserId} not found in database", currentUserId.Value);
+                return NotFound(new { error = "User not found" });
+            }
+
+            // Check if user has sufficient tokens for fast transcription processing
+            var tokenCalculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
+            var requiredTokens = tokenCalculation.FinalTokens;
+            
+            if (user.TokenBalance < requiredTokens)
+            {
+                _logger.LogWarning("User {UserId} ({Email}) has insufficient tokens for fast transcription. Required: {Required}, Available: {Available}",
+                    currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
+                
+                return BadRequest(new 
+                { 
+                    error = "Insufficient tokens to process this audio file",
+                    required = requiredTokens,
+                    available = user.TokenBalance,
+                    estimatedDuration = estimatedDurationMinutes,
+                    processingType = "fast-transcription"
+                });
+            }
+
+            _logger.LogInformation("User {UserId} ({Email}) has sufficient tokens for fast transcription. Required: {Required}, Available: {Available}",
+                currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -179,9 +187,9 @@ public class SummaryController : ControllerBase
                 // S6.5: Create meeting record FIRST for consistent ID usage (aligns with batch processing)
                 meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
 
-                // Use composite transcription service (Azure primary, OpenAI fallback) - S4.1
+                // S6.13: Use Fast Transcription service for all files ≤2hr/200MB
                 using var audioStream = request.AudioFile.OpenReadStream();
-                var transcriptionResult = await _transcriptionService.TranscribeAudioWithMetadataAsync(
+                var transcriptionResult = await _fastTranscriptionService.TranscribeAudioAsync(
                     audioStream,
                     request.AudioFile.FileName
                 );
@@ -203,7 +211,7 @@ public class SummaryController : ControllerBase
                 // Update the meeting record with transcription results
                 await UpdateMeetingWithTranscriptionResults(meetingId, transcriptionResult);
 
-                // Record token usage for authenticated users (real-time processing)
+                // Record token usage for authenticated users (fast transcription processing)
                 if (currentUserId.HasValue)
                 {
                     try
@@ -220,7 +228,7 @@ public class SummaryController : ControllerBase
                                 (decimal)(calculation.BaseTokens - calculation.FinalTokens) : 0m
                         );
                         
-                        _logger.LogInformation("Recorded token usage for user {UserId}: {TokensUsed} tokens for real-time transcription of {FileName} ({Duration} minutes)",
+                        _logger.LogInformation("Recorded token usage for user {UserId}: {TokensUsed} tokens for fast transcription of {FileName} ({Duration} minutes)",
                             currentUserId.Value, tokensUsed, request.AudioFile.FileName, estimatedDurationMinutes);
                     }
                     catch (Exception tokenEx)
@@ -362,10 +370,10 @@ public class SummaryController : ControllerBase
     }
 
     /// <summary>
-    /// Estimate audio file duration without uploading the full file
+    /// Estimate audio file duration and validate against Fast Transcription limits (2hr/200MB - Azure Speech Services limits)
     /// </summary>
-    /// <param name="request">File size and name for duration estimation</param>
-    /// <returns>Estimated duration in minutes</returns>
+    /// <param name="request">File size and name for duration estimation and validation</param>
+    /// <returns>Estimated duration, validation status, and processing recommendations</returns>
     [HttpPost("estimate-duration")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(400)]
@@ -383,17 +391,66 @@ public class SummaryController : ControllerBase
                 return BadRequest(new { error = "File name is required for accurate duration estimation" });
             }
 
+            // File size validation using Azure Speech Services Fast Transcription limits
+            if (request.FileSizeBytes > FastTranscriptionLimits.MaxFileSizeBytes)
+            {
+                return Ok(new 
+                { 
+                    durationMinutes = -1, // Invalid
+                    fileName = request.FileName,
+                    fileSizeBytes = request.FileSizeBytes,
+                    fileSizeMB = Math.Round(request.FileSizeBytes / (1024.0 * 1024), 1),
+                    isValid = false,
+                    errorMessage = $"File size ({request.FileSizeBytes / (1024.0 * 1024):F1}MB) exceeds the {FastTranscriptionLimits.MaxFileSizeFormatted} limit for Fast Transcription",
+                    recommendation = "Please compress your audio file or use a different format"
+                });
+            }
+
             var estimatedDurationMinutes = EstimateAudioDurationMinutes(request.FileSizeBytes, request.FileName);
             
-            _logger.LogInformation("Duration estimated via API: {FileName} ({FileSize} bytes) = {Duration} minutes", 
-                request.FileName, request.FileSizeBytes, estimatedDurationMinutes);
+            // Duration validation (2-hour limit for Fast Transcription)
+            const int maxDurationMinutes = 120; // 2 hours
+            var isValidDuration = estimatedDurationMinutes <= maxDurationMinutes;
+            
+            _logger.LogInformation("Duration estimated via API: {FileName} ({FileSize} bytes) = {Duration} minutes, Valid: {IsValid}", 
+                request.FileName, request.FileSizeBytes, estimatedDurationMinutes, isValidDuration);
 
-            return Ok(new 
+            var result = new 
             { 
                 durationMinutes = estimatedDurationMinutes,
                 fileName = request.FileName,
-                fileSizeBytes = request.FileSizeBytes
-            });
+                fileSizeBytes = request.FileSizeBytes,
+                fileSizeMB = Math.Round(request.FileSizeBytes / (1024.0 * 1024), 1),
+                isValid = isValidDuration,
+                processingMethod = "fast", // All files use Fast Transcription now
+                estimatedProcessingTime = isValidDuration ? "2-5 minutes" : "Not supported",
+                limits = new {
+                    maxDurationMinutes = maxDurationMinutes,
+                    maxFileSizeMB = FastTranscriptionLimits.MaxFileSizeBytes / (1024.0 * 1024)
+                }
+            };
+
+            if (!isValidDuration)
+            {
+                return Ok(new 
+                { 
+                    durationMinutes = estimatedDurationMinutes,
+                    fileName = request.FileName,
+                    fileSizeBytes = request.FileSizeBytes,
+                    fileSizeMB = Math.Round(request.FileSizeBytes / (1024.0 * 1024), 1),
+                    isValid = isValidDuration,
+                    processingMethod = "fast",
+                    estimatedProcessingTime = "Not supported",
+                    limits = new {
+                        maxDurationMinutes = maxDurationMinutes,
+                        maxFileSizeMB = FastTranscriptionLimits.MaxFileSizeBytes / (1024.0 * 1024)
+                    },
+                    errorMessage = $"Estimated duration ({estimatedDurationMinutes} minutes) exceeds the 2-hour limit for Fast Transcription",
+                    recommendation = "Please use shorter audio files (under 2 hours) for optimal processing"
+                });
+            }
+
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -840,10 +897,11 @@ public class SummaryController : ControllerBase
         }
     }
 
-    #region Batch Processing Helper Methods
+    #region Audio Processing Helper Methods
 
     /// <summary>
     /// Estimate audio duration in minutes from file size and extension
+    /// Used for file validation and user feedback
     /// </summary>
     /// <param name="fileSizeBytes">File size in bytes</param>
     /// <param name="fileName">File name with extension</param>
@@ -852,18 +910,17 @@ public class SummaryController : ControllerBase
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
         
-        // More realistic bitrates by format (kbps)
-        // Updated to reflect typical meeting recording quality rather than maximum quality
+        // Realistic bitrates by format for typical meeting recordings (kbps)
         var avgBitrates = new Dictionary<string, int>
         {
             { ".mp3", 128 },
-            { ".wav", 700 },   // More realistic for typical meeting recordings (was 1411)
+            { ".wav", 700 },   // Typical meeting recording quality
             { ".m4a", 128 },
-            { ".flac", 150 },  // Much lower due to lossless compression efficiency - FLAC can compress 25min to ~4MB
+            { ".flac", 150 },  // Lossless compression efficiency
             { ".ogg", 128 },
             { ".wma", 128 },
             { ".aac", 128 },
-            { ".webm", 128 }   // Added webm support
+            { ".webm", 128 }
         };
 
         var bitrate = avgBitrates.GetValueOrDefault(extension, 128); // Default to 128 kbps
@@ -874,12 +931,12 @@ public class SummaryController : ControllerBase
         var durationSeconds = fileSizeBits / bitratePerSecond;
         var durationMinutes = (int)Math.Ceiling(durationSeconds / 60.0);
 
-        // Special handling for FLAC files - they can be VERY efficiently compressed
-        // If a FLAC file is >2MB, assume it's likely longer than our 5-minute threshold
+        // Special handling for FLAC files - they can be very efficiently compressed
+        // Large FLAC files likely exceed our 2-hour processing limit
         if (extension == ".flac" && fileSizeBytes > 2 * 1024 * 1024) // 2MB threshold
         {
-            var adjustedMinutes = Math.Max(durationMinutes, 6); // Force batch processing for larger FLAC files
-            _logger.LogInformation("FLAC file >2MB detected - adjusting duration from {OriginalDuration} to {AdjustedDuration} minutes to ensure batch processing", 
+            var adjustedMinutes = Math.Max(durationMinutes, 120); // Check against 2-hour limit
+            _logger.LogInformation("FLAC file >2MB detected - adjusting duration from {OriginalDuration} to {AdjustedDuration} minutes for validation", 
                 durationMinutes, adjustedMinutes);
             durationMinutes = adjustedMinutes;
         }
@@ -909,142 +966,7 @@ public class SummaryController : ControllerBase
     }
 
     /// <summary>
-    /// Process long audio files using batch transcription service
-    /// </summary>
-    /// <param name="audioFile">The audio file to process</param>
-    /// <param name="estimatedDurationMinutes">Estimated duration in minutes</param>
-    /// <returns>Batch job submission response</returns>
-    private async Task<IActionResult> ProcessWithBatchTranscription(IFormFile audioFile, int estimatedDurationMinutes)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            if (!userId.HasValue)
-            {
-                _logger.LogWarning("Batch transcription requested but user not authenticated");
-                return Unauthorized(new { error = "Authentication required for batch processing" });
-            }
-
-            // Check if user has sufficient tokens using proper duration-based calculation
-            var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
-            var requiredTokens = calculation.FinalTokens;
-            var user = await _context.Users.FindAsync(userId.Value);
-            
-            if (user == null)
-            {
-                return NotFound(new { error = "User not found" });
-            }
-
-            if (user.TokenBalance < requiredTokens)
-            {
-                _logger.LogWarning("User {UserId} has insufficient tokens for batch processing. Required: {Required}, Available: {Available}",
-                    userId, requiredTokens, user.TokenBalance);
-                
-                return BadRequest(new 
-                { 
-                    error = "Insufficient tokens for batch processing",
-                    required = requiredTokens,
-                    available = user.TokenBalance,
-                    estimatedDuration = estimatedDurationMinutes
-                });
-            }
-
-            // Create batch job record first
-            var batchJob = new BatchTranscriptionJob
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId.Value,
-                FileName = audioFile.FileName,
-                EstimatedDurationMinutes = estimatedDurationMinutes,
-                TokensCharged = requiredTokens,
-                Status = "submitted",
-                SubmittedAt = DateTime.UtcNow
-            };
-
-            // Create meeting record upfront so it appears in history immediately
-            var meetingTitle = !string.IsNullOrEmpty(audioFile.FileName) 
-                ? Path.GetFileNameWithoutExtension(audioFile.FileName)
-                : "Batch Transcription";
-
-            var meeting = await _meetingService.CreateMeetingAsync(
-                userId.Value,
-                meetingTitle,
-                $"Batch transcription job submitted for {audioFile.FileName}",
-                audioFile.FileName,
-                audioFile.Length,
-                estimatedDurationMinutes * 60, // Convert to seconds
-                ""); // Blob storage path will be set after upload
-
-            // Link the batch job to the meeting
-            batchJob.MeetingId = meeting.Id;
-
-            _logger.LogInformation("Created meeting {MeetingId} for batch job {JobId}, file: {FileName}", 
-                meeting.Id, batchJob.Id, audioFile.FileName);
-
-            // Upload audio file to Azure Blob Storage for batch processing
-            _logger.LogInformation("Uploading audio file to blob storage for batch job {JobId}", batchJob.Id);
-            StorageUploadResult uploadResult;
-            using (var audioStream = audioFile.OpenReadStream())
-            {
-                uploadResult = await _userStorageService.UploadAudioFileAsync(
-                    userId.Value, 
-                    audioFile.FileName, 
-                    audioStream, 
-                    audioFile.ContentType);
-            }
-
-            // Store the blob URL for Azure Speech Services
-            batchJob.AudioBlobUrl = uploadResult.BlobUrl;
-            
-            // Update meeting with blob storage path and set status to Transcribing
-            meeting.TranscriptionJson = JsonSerializer.Serialize(new { BlobUrl = uploadResult.BlobUrl });
-            meeting.Status = MeetingStatus.Transcribing;
-            
-            _logger.LogInformation("Audio file uploaded to blob storage: {BlobUrl}", uploadResult.BlobUrl);
-
-            // Deduct tokens immediately
-            user.TokenBalance -= requiredTokens;
-
-            _context.BatchTranscriptionJobs.Add(batchJob);
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation("Created batch job {JobId} for user {UserId}, file: {FileName}, charged {Tokens} tokens", 
-                batchJob.Id, userId, audioFile.FileName, requiredTokens);
-
-            // Return batch job response compatible with frontend expecting TranscriptionResponse
-            var response = new 
-            {
-                // Batch-specific fields - CRITICAL: Use camelCase for frontend compatibility
-                jobId = batchJob.Id.ToString(), // Frontend expects lowercase 'jobId'
-                status = "batch_submitted",
-                estimatedTime = $"{estimatedDurationMinutes * 0.3:F0}-{estimatedDurationMinutes * 0.5:F0} minutes",
-                checkStatusUrl = $"/api/BatchJob/{batchJob.Id}/status",
-                submittedAt = batchJob.SubmittedAt,
-                
-                // TranscriptionResponse-compatible fields for frontend compatibility
-                transcriptionId = batchJob.Id.ToString(),
-                fileName = audioFile.FileName,
-                fileSize = audioFile.Length,
-                processingTimeMs = 0,
-                createdAt = batchJob.SubmittedAt,
-                
-                // Batch processing indicators
-                isBatchProcessing = true,
-                estimatedDurationMinutes = estimatedDurationMinutes,
-                tokensCharged = requiredTokens
-            };
-
-            return Accepted(response); // HTTP 202 Accepted for async processing
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error submitting batch transcription job for file: {FileName}", audioFile.FileName);
-            return StatusCode(500, new { error = "Failed to submit batch transcription job" });
-        }
-    }
-
-    /// <summary>
-    /// Creates meeting record upfront for real-time transcription (aligned with batch processing architecture)
+    /// Creates meeting record upfront for fast transcription processing
     /// </summary>
     /// <param name="audioFile">The audio file being transcribed</param>
     /// <param name="estimatedDurationMinutes">Estimated duration in minutes</param>
@@ -1059,7 +981,7 @@ public class SummaryController : ControllerBase
             var userId = GetCurrentUserId();
             if (!userId.HasValue)
             {
-                _logger.LogDebug("Skipping meeting creation for real-time transcription - user not authenticated");
+                _logger.LogDebug("Skipping meeting creation for fast transcription - user not authenticated");
                 return null;
             }
 
@@ -1070,33 +992,33 @@ public class SummaryController : ControllerBase
 
             var originalFileName = audioFile.FileName ?? "Unknown File";
             
-            // For real-time transcriptions, we don't store the audio file in blob storage
-            var blobStoragePath = $"realtime-transcription-{Guid.NewGuid()}";
+            // For fast transcriptions, we don't store the audio file in blob storage
+            var blobStoragePath = $"fast-transcription-{Guid.NewGuid()}";
 
             // Use estimated duration for now - will be updated with actual duration after transcription
             var estimatedDurationSeconds = estimatedDurationMinutes * 60;
 
-            _logger.LogInformation("Creating meeting record upfront for real-time transcription, user {UserId}, file {FileName}, estimated duration {Duration}s", 
+            _logger.LogInformation("Creating meeting record upfront for fast transcription, user {UserId}, file {FileName}, estimated duration {Duration}s", 
                 userId, audioFile.FileName, estimatedDurationSeconds);
 
             // Create the meeting record with estimated duration
             var meeting = await _meetingService.CreateMeetingAsync(
                 userId.Value,
                 meetingTitle,
-                $"Real-time transcription started at {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
+                $"Fast transcription started at {DateTime.UtcNow:yyyy-MM-dd HH:mm}",
                 originalFileName,
                 audioFile.Length,
                 estimatedDurationSeconds,
                 blobStoragePath);
 
-            _logger.LogInformation("Successfully created meeting {MeetingId} upfront for real-time transcription {FileName}", 
+            _logger.LogInformation("Successfully created meeting {MeetingId} upfront for fast transcription {FileName}", 
                 meeting.Id, audioFile.FileName);
                 
             return meeting.Id;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create meeting record upfront for real-time transcription {FileName}", audioFile.FileName);
+            _logger.LogError(ex, "Failed to create meeting record upfront for fast transcription {FileName}", audioFile.FileName);
             // Don't throw - we can still proceed with anonymous transcription
             return null;
         }

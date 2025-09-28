@@ -2,6 +2,7 @@ export { default } from './FileUpload';
 export { FileDropzone } from './FileDropzone';
 export { WorkflowStepper } from './WorkflowStepper';
 export { UploadProgress } from './UploadProgress';
-export { BatchJobHandler } from './BatchJobHandler';
+export { TranscriptionHandler } from './TranscriptionHandler';
+export { BatchJobHandler } from './BatchJobHandler'; // Legacy export
 export * from './types';
 export * from './validation';

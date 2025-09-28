@@ -55,7 +55,7 @@ import EmailVerificationDialog from "./components/EmailVerificationDialog";
 import { sessionManager } from "./services/sessionManager";
 import { AppHeader } from "./components/layout/AppHeader";
 import { GlobalDialogs } from "./components/layout/GlobalDialogs";
-import { useBatchJobStore } from "./stores/batchJobStore";
+import { useTranscriptionJobStore } from "./stores/transcriptionJobStore";
 
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
@@ -122,7 +122,7 @@ const AppContent: React.FC = () => {
   }, [isAuthenticated, appMode, refreshBalance, loadStripeConfig]);
 
   // Initialize batch job store from session storage when app starts
-  const { initializeFromStorage } = useBatchJobStore();
+  const { initializeFromStorage } = useTranscriptionJobStore();
   useEffect(() => {
     initializeFromStorage();
   }, [initializeFromStorage]);
