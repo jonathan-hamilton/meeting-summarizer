@@ -32,6 +32,7 @@ const getStatusIcon = (status: FileUploadFile["status"]) => {
     case "error":
       return <AudioFile color="error" />;
     case "uploading":
+    case "processing":
     case "pending":
       return <AudioFile color="primary" />;
     default:
@@ -80,7 +81,12 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
             </Box>
 
             {/* Workflow Progress Stepper */}
-            <WorkflowStepper />
+            <WorkflowStepper 
+              uploadStatus={uploadFile.status}
+              processingStatus={uploadFile.status === 'processing' ? 'processing' : 
+                              uploadFile.status === 'completed' ? 'completed' : 'pending'} // S6.13: Fast transcription status mapping
+              isComplete={uploadFile.status === 'completed'} // S6.13: Complete when upload/transcription finishes
+            />
 
             {/* Transcription Job Status Information */}
             {transcriptionJob && (

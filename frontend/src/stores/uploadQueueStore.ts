@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export interface FileUploadFile {
   file: File;
   id: string;
-  status: "pending" | "uploading" | "completed" | "error";
+  status: "pending" | "uploading" | "processing" | "completed" | "error";
   progress: number;
   result?: any;
   error?: string;

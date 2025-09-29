@@ -63,7 +63,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       console.log('🧹 FileUpload component cleanup - clearing completed/error files only');
       setUploadFiles((prev) => {
         const activeFiles = prev.filter(f => 
-          f.status === "uploading" // Keep active uploads
+          f.status === "uploading" || f.status === "processing" // Keep active uploads and processing
         );
         const removedCount = prev.length - activeFiles.length;
         if (removedCount > 0) {
@@ -142,22 +142,30 @@ const FileUpload: React.FC<FileUploadProps> = ({
         formData.append("file", uploadFile.file);
 
         const response = await apiService.uploadFile(uploadFile.file, (progress: number) => {
+          const progressPercent = Math.round(progress * 100);
+          console.log(`📊 Upload progress: ${progressPercent}% for ${uploadFile.file.name}`);
+          
           setUploadFiles((prev) =>
             prev.map((f) =>
               f.id === uploadFile.id
-                ? { ...f, progress: Math.round(progress * 100) }
+                ? { 
+                    ...f, 
+                    progress: progressPercent,
+                    // When upload reaches 100%, transition to transcription processing
+                    status: progressPercent >= 99 ? "processing" : "uploading" // Use >= 99 instead of === 100
+                  }
                 : f
             )
           );
+          
+          // Log status change
+          if (progressPercent >= 99) {
+            console.log(`🔄 Status changed to 'processing' for ${uploadFile.file.name}`);
+          }
         });
 
         if (response.success) {
-          // S6.13: Fast Transcription - immediate transcription response
-          console.log('⚡ Fast transcription completed:', uploadFile.file.name);
-          
-          // Show success message mentioning history for all successful transcriptions
-          const successMessage = 'Transcription completed successfully! Transcript saved to history.';
-            
+          // First, mark upload as completed (regardless of transcription status)
           setUploadFiles((prev) =>
             prev.map((f) =>
               f.id === uploadFile.id
@@ -165,19 +173,44 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     ...f,
                     status: "completed",
                     progress: 100,
-                    result: response.data,
-                    successMessage,
+                    transcriptionJobId: response.data?.transcriptionId,
                   }
                 : f
             )
           );
-          // Refresh token balance after successful transcription (tokens were consumed)
-          refreshBalance();
-          if (onTranscriptionComplete && response.data) {
-            console.log('📞 Calling onTranscriptionComplete for immediate result:', uploadFile.file.name);
-            onTranscriptionComplete(response.data);
+
+          // Check if we have immediate transcription result (fast transcription)
+          if (response.data?.transcribedText) {
+            // S6.13: Fast Transcription - immediate transcription response
+            console.log('⚡ Fast transcription completed:', uploadFile.file.name);
+            
+            // Show success message mentioning history for all successful transcriptions
+            const successMessage = 'Transcription completed successfully! Transcript saved to history.';
+              
+            setUploadFiles((prev) =>
+              prev.map((f) =>
+                f.id === uploadFile.id
+                  ? {
+                      ...f,
+                      status: 'completed', // S6.13: Mark as completed for fast transcription
+                      result: response.data,
+                      successMessage,
+                    }
+                  : f
+              )
+            );
+            
+            // Refresh token balance after successful transcription (tokens were consumed)
+            refreshBalance();
+            if (onTranscriptionComplete && response.data) {
+              console.log('📞 Calling onTranscriptionComplete for immediate result:', uploadFile.file.name);
+              onTranscriptionComplete(response.data);
+            } else {
+              console.log('❌ Missing callback or data for:', uploadFile.file.name, { hasCallback: !!onTranscriptionComplete, hasData: !!response.data });
+            }
           } else {
-            console.log('❌ Missing callback or data for:', uploadFile.file.name, { hasCallback: !!onTranscriptionComplete, hasData: !!response.data });
+            // Upload completed but transcription is still processing
+            console.log('📤 Upload completed, transcription in progress:', uploadFile.file.name);
           }
         } else {
           const errorData = response.errors?.[0] || response.message || "Upload failed";
@@ -227,7 +260,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     
     // Only clear completed/error files, preserve active uploads
     setUploadFiles((prev) => {
-      const activeJobs = prev.filter(f => f.status === "uploading");
+      const activeJobs = prev.filter(f => f.status === "uploading" || f.status === "processing");
       if (activeJobs.length > 0) {
         console.log(`🔄 Preserving ${activeJobs.length} active uploads while starting new upload`);
         return activeJobs; // Keep only active uploads
@@ -399,10 +432,22 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     size="small"
                   />
                 )}
-                {uploadFiles.filter((f) => f.status === "uploading").length > 0 && (
+                {uploadFiles.filter((f) => f.status === "uploading" || f.status === "processing").length > 0 && (
                   <Chip
-                    icon={<CircularProgress size={16} />}
-                    label={`${uploadFiles.filter((f) => f.status === "uploading").length} processing`}
+                    icon={
+                      <CircularProgress 
+                        size={16} 
+                        thickness={6}
+                        sx={{
+                          '&.MuiCircularProgress-root': {
+                            animationDuration: '1.4s !important',
+                            animationTimingFunction: 'linear !important',
+                            animationIterationCount: 'infinite !important',
+                          }
+                        }} 
+                      />
+                    }
+                    label={`${uploadFiles.filter((f) => f.status === "uploading" || f.status === "processing").length} processing`}
                     color="warning"
                     size="small"
                   />
