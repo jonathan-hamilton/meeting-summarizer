@@ -2,7 +2,7 @@ export interface FileUploadFile {
   file: File;
   id: string;
   progress: number;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
+  status: 'pending' | 'uploading' | 'processing' | 'completed' | 'error';
   error?: string;
   analysisId?: string;
   transcriptionJobId?: string;

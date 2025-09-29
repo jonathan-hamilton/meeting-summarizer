@@ -2,6 +2,61 @@
 
 ## Recently Resolved Technical Debt
 
+### S6.13 WorkflowStepper Animation Fixes ✅ RESOLVED
+
+**Date Identified**: September 28, 2025 (Post S6.13 Completion)  
+**Date Resolved**: September 28, 2025  
+**Sprint**: S6.13 Fast Transcription Migration (Post-Completion Bug Fix)  
+**Resolution Duration**: Same day
+
+**Problem Resolved**:
+- WorkflowStepper animations completely frozen during fast transcription process
+- Processing chip spinner in upload queue not animating despite active processing status
+- WorkflowStepper showing incorrect completion state - Fast Transcription step never transitioned to completed with green checkmark
+- Material-UI CircularProgress animations disabled by accessibility system (motion-duration: 0ms)
+- Fast transcription workflow missing proper "processing" status transition from "uploading"
+
+**Root Cause**:
+- Accessibility CSS setting `--motion-duration: 0ms` globally disabled all animations including workflow progress indicators
+- FileUpload component status transition from 'uploading' → 'completed' skipped 'processing' state for fast transcription
+- WorkflowStepper completion logic required separate transcriptionJob object which doesn't exist for fast transcription
+- Material-UI keyframes animations being overridden by accessibility motion preferences
+- Missing status update to 'completed' when fast transcription finished in single API response
+
+**Solution Implemented**:
+- ✅ **Animation Override**: Applied `!important` CSS overrides to CircularProgress components to bypass accessibility motion settings
+- ✅ **Status Flow Fix**: Updated FileUpload.tsx to properly transition 'uploading' → 'processing' → 'completed' during fast transcription
+- ✅ **Processing State**: Added 'processing' status to FileUploadFile type system for proper workflow representation  
+- ✅ **Completion Logic**: Simplified WorkflowStepper completion to handle fast transcription (no separate transcriptionJob)
+- ✅ **Visual Feedback**: Restored proper upload step pulsing animation and transcription step spinning animation
+- ✅ **Step Labeling**: Updated "Fast Transcription" to "Transcribing" for cleaner 3-step workflow presentation
+
+**Technical Resolution**:
+```typescript
+// Status transition fix in FileUpload.tsx
+status: progressPercent >= 99 ? "processing" : "uploading"
+
+// Animation override in WorkflowStepper.tsx
+<CircularProgress 
+  sx={{
+    '&.MuiCircularProgress-root': {
+      animationDuration: '1.4s !important',
+      animationTimingFunction: 'linear !important', 
+      animationIterationCount: 'infinite !important',
+    }
+  }}
+/>
+
+// Completion logic simplification in UploadProgress.tsx  
+isComplete={uploadFile.status === 'completed'} // Fast transcription only
+```
+
+**Impact Resolved**:
+- **User Experience**: Clear visual feedback during 45-second fast transcription process
+- **Status Accuracy**: Proper workflow progression: Upload → Transcribing → Complete 
+- **Animation Functionality**: Processing indicators now animate correctly despite accessibility settings
+- **UI Consistency**: 3-step workflow matches fast transcription reality (no separate batch/summary steps)
+
 ### S6.13 Legacy Architecture Cleanup ✅ RESOLVED
 
 **Date Identified**: Sprint 6 Planning  
