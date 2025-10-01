@@ -8,7 +8,6 @@ export interface MeetingListItem {
   fileSizeBytes: number;
   durationSeconds: number;
   status: 'Uploaded' | 'Transcribing' | 'Transcribed' | 'Summarizing' | 'Completed' | 'Failed' | 'Deleted';
-  processingStatus?: string; // For SignalR updates compatibility
   speakerCount: number;
   tokensConsumed: number;
   createdAt: string;
@@ -87,6 +86,5 @@ export interface MeetingHistoryActions {
   setSearchQuery: (query: string) => void;
   setStatusFilter: (status: 'All' | 'Pending' | 'InProgress' | 'Completed' | 'Failed') => void;
   setSorting: (sortBy: string, sortDirection: 'asc' | 'desc') => void;
-  updateMeetingFromSignalR: (update: Partial<MeetingListItem>) => void;
   clearError: () => void;
 }

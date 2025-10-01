@@ -63,6 +63,47 @@ The app is structured for modularity and extensibility using **established desig
 - **Bundle Analysis**: rollup-plugin-visualizer for ongoing performance monitoring
 - **Accessibility**: WCAG AA compliant with comprehensive ARIA attributes and semantic HTML
 
+#### Progress Tracking Architecture
+
+**Simplified Progress System** (Post S6.14 SignalR Removal):
+- **Client-Side Progress**: Simple React state management using useState and useEffect patterns
+- **MUI Components**: CircularProgress and LinearProgress components for visual feedback
+- **File-Size Estimation**: Progress calculation based on file size for realistic user expectations
+- **Completion Polling**: Periodic API calls to check transcription completion status
+- **No Real-Time Dependencies**: Eliminated complex WebSocket/SignalR infrastructure
+
+**Previous Architecture (Removed)**:
+- ~~SignalR Hub (MeetingProgressHub.cs) for real-time progress coordination~~
+- ~~WebSocket connections for live progress updates~~
+- ~~Complex state synchronization between backend progress and frontend display~~
+- ~~Dual progress systems (real-time + polling) creating maintenance overhead~~
+
+**Current Progress Flow**:
+```typescript
+// Simple progress calculation in React components
+const calculateProgress = (status: string, fileSize: number) => {
+  switch (status) {
+    case 'uploading': return Math.min(uploadProgress, 95);
+    case 'processing': return Math.min(30 + (fileSize / 1000000) * 2, 95);
+    case 'completed': return 100;
+    default: return 0;
+  }
+};
+
+// MUI progress display
+<LinearProgress 
+  variant="determinate" 
+  value={calculateProgress(file.status, file.size)} 
+/>
+```
+
+**Benefits of Simplified Architecture**:
+- **Reduced Complexity**: Standard React patterns instead of real-time infrastructure
+- **Better Maintainability**: Single progress strategy using established React lifecycle methods
+- **Improved Performance**: No WebSocket connection overhead or hub memory usage
+- **Mobile Readiness**: Simpler architecture better suited for native mobile implementations
+- **Easier Debugging**: Progress issues contained within standard React component debugging tools
+
 #### Performance Architecture
 
 **Lazy Loading Strategy**: 

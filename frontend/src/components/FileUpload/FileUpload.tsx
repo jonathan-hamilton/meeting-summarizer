@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, useRef } from "react";
 import type { FileRejection } from "react-dropzone";
 import {
   Box,
@@ -45,8 +45,8 @@ interface TokenError {
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
   onPurchaseTokens,
-  maxFileSize: _maxFileSize = 1073741824, // 1GB default (unused for now)
-  acceptedFileTypes: _acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'], // unused for now
+  maxFileSize: _maxFileSize = 209715200, // 200MB default - Azure Fast Transcription limit
+  acceptedFileTypes: _acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm'], // Azure Fast Transcription supported formats (AAC removed)
   isAuthDialogOpen: _isAuthDialogOpen = false, // Available for future use to disable upload when auth dialogs are open
   onClearPreviousData,
   hasPreviousResults = false,
@@ -81,10 +81,33 @@ const FileUpload: React.FC<FileUploadProps> = ({
       storeClearUploadQueue();
     }
   }, [_isAuthDialogOpen, storeClearUploadQueue]);
-  // S6.13: Fast Transcription Migration complete - legacy systems removed
 
-  // S6.13: Progress tracking simplified for Fast Transcription
-  // const signalRProgress = removed;
+  // Track which files have already triggered completion callbacks to prevent infinite loops
+  const processedFileIds = useRef<Set<string>>(new Set());
+
+  // Clean up processed file IDs when files are removed from the queue
+  useEffect(() => {
+    const currentFileIds = new Set(uploadFiles.map(f => f.id));
+    const processedIds = processedFileIds.current;
+    
+    // Remove processed IDs for files that are no longer in the queue
+    for (const id of processedIds) {
+      if (!currentFileIds.has(id)) {
+        processedIds.delete(id);
+      }
+    }
+  }, [uploadFiles]);
+
+  // Watch for files completing and trigger completion callback
+  useEffect(() => {
+    uploadFiles.forEach(file => {
+      if (file.status === 'completed' && file.result && onTranscriptionComplete && !processedFileIds.current.has(file.id)) {
+        console.log('🎯 File completed, triggering completion callback:', file.file.name);
+        processedFileIds.current.add(file.id);
+        onTranscriptionComplete(file.result);
+      }
+    });
+  }, [uploadFiles, onTranscriptionComplete]);
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [tokenError, setTokenError] = useState<TokenError | null>(null);
@@ -142,7 +165,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         formData.append("file", uploadFile.file);
 
         const response = await apiService.uploadFile(uploadFile.file, (progress: number) => {
-          const progressPercent = Math.round(progress * 100);
+          const progressPercent = Math.round(progress); // progress is already a percentage (0-100)
           console.log(`📊 Upload progress: ${progressPercent}% for ${uploadFile.file.name}`);
           
           setUploadFiles((prev) =>
@@ -166,6 +189,28 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
         if (response.success) {
           // First, mark upload as completed (regardless of transcription status)
+        // Debug the response structure to see what transcription ID field is available
+        console.log('🔍 Upload Response Data:', response.data);
+        console.log('🔍 Response Headers:', response.headers);
+        
+        // Get meeting ID from X-Meeting-Id header (for fast transcription) or response data
+        const meetingIdFromHeader = response.headers?.['x-meeting-id'] || response.headers?.['X-Meeting-Id'];
+        const meetingIdFromData = response.data?.transcriptionId || (response.data as any)?.TranscriptionId || (response.data as any)?.meetingId;
+        const transcriptionJobId = meetingIdFromHeader || meetingIdFromData;
+        
+        console.log('🔍 Available transcription ID fields:', {
+          headerMeetingId: meetingIdFromHeader,
+          transcriptionId: response.data?.transcriptionId,
+          TranscriptionId: (response.data as any)?.TranscriptionId,
+          meetingId: (response.data as any)?.meetingId
+        });
+        console.log('🎯 Using transcriptionJobId:', transcriptionJobId);
+        
+        // Check if transcription is already completed in the response
+        const isAlreadyCompleted = response.data?.status === 'Completed' && response.data?.transcribedText;
+        
+        if (isAlreadyCompleted) {
+          console.log('🎯 Transcription already completed in response, marking as completed immediately');
           setUploadFiles((prev) =>
             prev.map((f) =>
               f.id === uploadFile.id
@@ -173,45 +218,42 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     ...f,
                     status: "completed",
                     progress: 100,
-                    transcriptionJobId: response.data?.transcriptionId,
+                    transcriptionJobId: transcriptionJobId,
+                    result: response.data
                   }
                 : f
             )
           );
-
-          // Check if we have immediate transcription result (fast transcription)
+          
+          // Refresh balance since tokens were consumed
+          refreshBalance();
+          console.log('✅ Transcription completed immediately for:', uploadFile.file.name);
+        } else {
+          // For fast transcription, show progress while processing
+          // Start with processing status and update to completion when ready
+          setUploadFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id
+                ? {
+                    ...f,
+                    status: "processing",
+                    progress: 30, // Initial progress
+                    transcriptionJobId: transcriptionJobId,
+                    // Store the immediate result if available, but don't mark as completed yet
+                    ...(response.data?.transcribedText && { result: response.data })
+                  }
+                : f
+            )
+          );
+          
+          // If we have immediate results, still refresh balance since tokens were consumed
           if (response.data?.transcribedText) {
-            // S6.13: Fast Transcription - immediate transcription response
-            console.log('⚡ Fast transcription completed:', uploadFile.file.name);
-            
-            // Show success message mentioning history for all successful transcriptions
-            const successMessage = 'Transcription completed successfully! Transcript saved to history.';
-              
-            setUploadFiles((prev) =>
-              prev.map((f) =>
-                f.id === uploadFile.id
-                  ? {
-                      ...f,
-                      status: 'completed', // S6.13: Mark as completed for fast transcription
-                      result: response.data,
-                      successMessage,
-                    }
-                  : f
-              )
-            );
-            
-            // Refresh token balance after successful transcription (tokens were consumed)
+            console.log('⚡ Fast transcription result available, but waiting for completion');
             refreshBalance();
-            if (onTranscriptionComplete && response.data) {
-              console.log('📞 Calling onTranscriptionComplete for immediate result:', uploadFile.file.name);
-              onTranscriptionComplete(response.data);
-            } else {
-              console.log('❌ Missing callback or data for:', uploadFile.file.name, { hasCallback: !!onTranscriptionComplete, hasData: !!response.data });
-            }
-          } else {
-            // Upload completed but transcription is still processing
-            console.log('📤 Upload completed, transcription in progress:', uploadFile.file.name);
           }
+          
+          console.log('📤 Upload completed, transcription in progress:', uploadFile.file.name);
+        }
         } else {
           const errorData = response.errors?.[0] || response.message || "Upload failed";
           

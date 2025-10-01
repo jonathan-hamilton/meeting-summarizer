@@ -16,7 +16,7 @@ export interface FileUploadFile {
 
 export interface WorkflowStep {
   label: string;
-  status: 'completed' | 'active' | 'pending';
+  status: 'completed' | 'active' | 'pending' | 'error';
   substeps?: string[];
 }
 
@@ -39,9 +39,9 @@ export const ACCEPTED_AUDIO_FORMATS = [
   'audio/flac',
   'audio/x-flac',
   'audio/ogg',
-  'audio/webm',
-  'audio/aac'
+  'audio/webm'
+  // Note: AAC removed - not supported by Azure Fast Transcription
 ] as const;
 
-export const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
+export const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB - Azure Fast Transcription limit
 export const MAX_FILES = 10;

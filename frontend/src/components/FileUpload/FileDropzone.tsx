@@ -13,7 +13,7 @@ interface FileDropzoneProps {
   onFilesDropped: (acceptedFiles: File[], rejections: FileRejection[]) => void;
 }
 
-const acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm', '.aac'];
+const acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm']; // Azure Fast Transcription supported formats
 
 export const FileDropzone: React.FC<FileDropzoneProps> = ({
   onFilesDropped,

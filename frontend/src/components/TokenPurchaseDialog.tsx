@@ -141,6 +141,7 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
   const stripeConfig = useStripeConfig();
   const { accessToken, user } = useAuthStore();
   const { 
+    balance: tokenBalance,
     isPurchaseInProgress,
     startPurchase,
     completePurchase,
@@ -156,12 +157,12 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
     }
   }, [stripeConfig]);
 
-  // Load Stripe config when dialog opens
+  // Load Stripe config only when proceeding to payment step
   useEffect(() => {
-    if (open && !stripeConfig) {
+    if (paymentStep === 'payment' && !stripeConfig) {
       loadStripeConfig();
     }
-  }, [open, stripeConfig, loadStripeConfig]);
+  }, [paymentStep, stripeConfig, loadStripeConfig]);
 
   // Reset state when dialog closes
   useEffect(() => {
@@ -254,6 +255,18 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
           <TokenIcon color="primary" />
           Choose Token Package
         </Box>
+        {/* Token Balance Chip */}
+        {tokenBalance !== undefined && tokenBalance !== null && (
+          <Box sx={{ mt: 1 }}>
+            <Chip
+              icon={<TokenIcon />}
+              label={`Current Balance: ${Math.floor(tokenBalance).toLocaleString()} tokens`}
+              color="primary"
+              variant="outlined"
+              size="small"
+            />
+          </Box>
+        )}
       </DialogTitle>
       
       <DialogContent>

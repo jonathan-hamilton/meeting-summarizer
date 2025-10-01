@@ -3,50 +3,10 @@ import { devtools } from 'zustand/middleware';
 import { apiService } from '../services/apiService';
 import type { 
   MeetingHistoryState, 
-  MeetingHistoryActions,
-  MeetingListItem 
+  MeetingHistoryActions
 } from '../types/meeting';
 
-// Debounce utility for grouped updates
-const createDebouncer = () => {
-  let timeoutId: NodeJS.Timeout | null = null;
-  let pendingUpdates: Map<string, Partial<MeetingListItem>> = new Map();
-  
-  return {
-    addUpdate: (meetingId: string, update: Partial<MeetingListItem>, callback: () => void) => {
-      // Add or merge the update
-      const existing = pendingUpdates.get(meetingId) || {};
-      pendingUpdates.set(meetingId, { ...existing, ...update });
-      
-      // Clear existing timeout
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      
-      // Set new timeout to group updates
-      timeoutId = setTimeout(() => {
-        callback();
-        pendingUpdates.clear();
-        timeoutId = null;
-      }, 100); // 100ms debounce
-    },
-    
-    getPendingUpdates: () => new Map(pendingUpdates),
-    
-    clear: () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      pendingUpdates.clear();
-    }
-  };
-};
-
 type MeetingHistoryStore = MeetingHistoryState & MeetingHistoryActions;
-
-// Create debouncer instance outside the store
-const updateDebouncer = createDebouncer();
 
 export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
   devtools(
@@ -169,33 +129,6 @@ export const useMeetingHistoryStore = create<MeetingHistoryStore>()(
         setTimeout(() => get().loadMeetings(), 0);
       },
 
-      updateMeetingFromSignalR: (update: Partial<MeetingListItem>) => {
-        const meetingId = update.id;
-        
-        if (!meetingId) return;
-        
-        // Use debouncer to group rapid updates and prevent animation interruption
-        updateDebouncer.addUpdate(meetingId, update, () => {
-          const currentState = get();
-          const pendingUpdates = updateDebouncer.getPendingUpdates();
-          
-          // Apply all pending updates at once
-          const updatedMeetings = currentState.meetings.map(meeting => {
-            const pendingUpdate = pendingUpdates.get(meeting.id);
-            if (pendingUpdate) {
-              return { ...meeting, ...pendingUpdate };
-            }
-            return meeting;
-          });
-          
-          // Only update if we actually have changes to apply
-          if (pendingUpdates.size > 0) {
-            set({ meetings: updatedMeetings });
-            console.log(`📡 Applied ${pendingUpdates.size} debounced meeting updates`);
-          }
-        });
-      },
-
       clearError: () => {
         set({ error: null });
       },
@@ -217,6 +150,5 @@ export const useMeetingHistoryActions = () => useMeetingHistoryStore(state => ({
   setSearchQuery: state.setSearchQuery,
   setStatusFilter: state.setStatusFilter,
   setSorting: state.setSorting,
-  updateMeetingFromSignalR: state.updateMeetingFromSignalR,
   clearError: state.clearError,
 }));

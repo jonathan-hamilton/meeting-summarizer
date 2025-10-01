@@ -6,7 +6,8 @@ import {
   Typography,
   Alert,
   IconButton,
-  Tooltip
+  Tooltip,
+  LinearProgress
 } from '@mui/material';
 import { AudioFile, CheckCircle, Psychology, Clear } from '@mui/icons-material';
 import { WorkflowStepper } from './WorkflowStepper';
@@ -66,7 +67,15 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
 
   return (
     <List>
-      {uploadFiles.map((uploadFile) => (
+      {uploadFiles.map((uploadFile) => {
+        // Simple progress calculation
+        const progressPercentage = uploadFile.status === 'completed' 
+          ? 100 // Only show 100% when truly completed
+          : uploadFile.status === 'processing'
+          ? 50 // Show 50% when processing (transcribing)
+          : uploadFile.progress; // Use upload progress for uploading state
+
+        return (
         <ListItem key={uploadFile.id} divider>
           <Box sx={{ display: "flex", alignItems: "flex-start", mr: 2 }}>
             {getStatusIcon(uploadFile.status)}
@@ -80,13 +89,69 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
               </Typography>
             </Box>
 
-            {/* Workflow Progress Stepper */}
+            {/* Workflow Progress Stepper with real-time progress */}
             <WorkflowStepper 
               uploadStatus={uploadFile.status}
               processingStatus={uploadFile.status === 'processing' ? 'processing' : 
-                              uploadFile.status === 'completed' ? 'completed' : 'pending'} // S6.13: Fast transcription status mapping
+                              uploadFile.status === 'completed' ? 'completed' : 
+                              uploadFile.status === 'error' ? 'error' : 'pending'} // Handle error status
               isComplete={uploadFile.status === 'completed'} // S6.13: Complete when upload/transcription finishes
+              progressPercentage={progressPercentage}
             />
+
+            {/* Enhanced Progress Display */}
+            {uploadFile.status === 'processing' && (
+              <Box sx={{ mt: 1, mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="caption" sx={{ flexGrow: 1 }}>
+                    {progressPercentage > 0 
+                      ? `Transcribing... ${Math.round(progressPercentage)}% complete`
+                      : 'Transcribing... Please wait'
+                    }
+                  </Typography>
+                  {progressPercentage > 0 && (
+                    <Typography variant="caption" color="primary.main" sx={{ fontSize: '0.6rem' }}>
+                      ● Processing
+                    </Typography>
+                  )}
+                </Box>
+                <LinearProgress 
+                  variant={progressPercentage > 0 ? "determinate" : "indeterminate"}
+                  value={progressPercentage}
+                  sx={{ 
+                    height: 4, 
+                    borderRadius: 2,
+                    backgroundColor: 'action.hover',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Upload Progress Display */}
+            {uploadFile.status === 'uploading' && uploadFile.progress > 0 && (
+              <Box sx={{ mt: 1, mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                  <Typography variant="caption" sx={{ flexGrow: 1 }}>
+                    Uploading... {Math.round(uploadFile.progress)}% complete
+                  </Typography>
+                </Box>
+                <LinearProgress 
+                  variant="determinate"
+                  value={uploadFile.progress}
+                  sx={{ 
+                    height: 4, 
+                    borderRadius: 2,
+                    backgroundColor: 'action.hover',
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 2,
+                    }
+                  }}
+                />
+              </Box>
+            )}
 
             {/* Transcription Job Status Information */}
             {transcriptionJob && (
@@ -144,7 +209,8 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({
             )}
           </Box>
         </ListItem>
-      ))}
+        );
+      })}
     </List>
   );
 };

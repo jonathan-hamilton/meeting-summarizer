@@ -81,6 +81,7 @@ public class SummaryController : ControllerBase
     public async Task<IActionResult> TranscribeAudio([FromForm] TranscribeRequest request)
     {
         Guid? meetingId = null;
+        Guid? currentUserId = null;
         
         try
         {
@@ -135,7 +136,7 @@ public class SummaryController : ControllerBase
             }
             
             // Require authentication for all transcription (token tracking)
-            var currentUserId = GetCurrentUserId();
+            currentUserId = GetCurrentUserId();
             if (!currentUserId.HasValue)
             {
                 _logger.LogWarning("File {FileName} requires user authentication for transcription", 
@@ -189,6 +190,7 @@ public class SummaryController : ControllerBase
 
                 // S6.13: Use Fast Transcription service for all files ≤2hr/200MB
                 using var audioStream = request.AudioFile.OpenReadStream();
+                
                 var transcriptionResult = await _fastTranscriptionService.TranscribeAudioAsync(
                     audioStream,
                     request.AudioFile.FileName

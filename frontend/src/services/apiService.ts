@@ -116,6 +116,7 @@ class ApiService {
       return {
         data: response.data,
         success: true,
+        headers: response.headers, // Include headers in the response
       };
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: any; status?: number }; message?: string; code?: string };
@@ -208,7 +209,7 @@ class ApiService {
   }
 
   // File upload and transcription endpoints
-  async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<ApiResponse<TranscriptionResponse>> {
+  async uploadFile(file: File, onProgress?: (progress: number, meetingId?: string) => void): Promise<ApiResponse<TranscriptionResponse>> {
     console.log(`📁 UPLOAD START: ${file.name} (${file.size} bytes)`);
     
     const startTime = Date.now();
@@ -244,6 +245,16 @@ class ApiService {
       
       const duration = Date.now() - startTime;
       console.log(`✅ UPLOAD SUCCESS: ${file.name} (${duration}ms)`);
+      
+      // Extract meeting ID from response headers if available
+      const meetingId = result.headers?.['x-meeting-id'] || result.headers?.['X-Meeting-Id'];
+      if (meetingId) {
+        console.log(`🎯 MEETING ID from headers: ${meetingId}`);
+        // Add meeting ID to response data for easy access
+        if (result.data) {
+          (result.data as any).meetingId = meetingId;
+        }
+      }
       
       return result;
     } catch (error) {

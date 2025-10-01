@@ -17,7 +17,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 
 ## Progress Tracker
 
-**Sprint 6 Progress: 10.1/13 Stories Complete (78%)**
+**Sprint 6 Progress: 11.1/14 Stories Complete (79%)**
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
@@ -34,6 +34,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.11    | Complete Token System Implementation               | COMPLETE ✅   | S6.3                 |
 | S6.12    | AI Chat Assistant for User Guidance               | UPDATED 📋    | S6.7                 |
 | S6.13    | Fast Transcription Migration - Complete Refactor  | COMPLETE ✅   | S6.9                 |
+| S6.14    | SignalR Infrastructure Removal & Progress Simplification | COMPLETE ✅   | S6.13                |
 
 ## Story Files
 
@@ -49,7 +50,10 @@ Each story has been split into its own focused file for better organization and 
 - **[S6.7: Footer Content & Legal Information](s6.7-footer-legal.md)** ✅ *COMPLETE*
 - **[S6.9: Production Deployment & DevOps Optimization](s6.9-devops-deployment.md)** ⚙️ *IN PROGRESS (60% Complete - Build System & Fast Transcription API Complete)*
 - **[S6.10: Summary Persistence & User History Integration](s6.10-summary-persistence.md)** ✅ *COMPLETE*
-- **[S6.11: Complete Token System Implementation](s6.11-complete-token-system-implementation.md)** � *90% COMPLETE*
+- **[S6.11: Complete Token System Implementation](s6.11-complete-token-system-implementation.md)** ✅ *COMPLETE*
+- **[S6.12: AI Chat Assistant for User Guidance](s6.12-ai-chat-assistant.md)** 📋 *UPDATED*
+- **[S6.13: Fast Transcription Migration - Complete Refactor](s6.13-fast-transcription-migration.md)** ✅ *COMPLETE*
+- **[S6.14: SignalR Infrastructure Removal & Progress Simplification](s6.14-signalr-removal.md)** ✅ *COMPLETE*
 
 ### Integration Documentation
 - **[Integration Notes & Cross-Story Dependencies](integration-notes.md)** - Comprehensive guide to how all stories integrate together, including shared components, database schema relationships, and deployment coordination.
