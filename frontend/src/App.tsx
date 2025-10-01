@@ -206,7 +206,7 @@ const AppContent: React.FC = () => {
     };
   }, [transcriptionResults.length]); // Add dependency to track changes
 
-  const handleTranscriptionComplete = (result: TranscriptionResponse) => {
+  const handleTranscriptionComplete = useCallback((result: TranscriptionResponse) => {
     console.log('🎯 handleTranscriptionComplete called with:', result.transcriptionId, result.fileName);
     setTranscriptionResults((prev) => {
       console.log('🎯 Previous results:', prev.map(r => ({ id: r.transcriptionId, fileName: r.fileName })));
@@ -222,7 +222,7 @@ const AppContent: React.FC = () => {
       console.log('🎯 Updated results:', updated.map(r => ({ id: r.transcriptionId, fileName: r.fileName })));
       return updated;
     });
-  };
+  }, []);
 
   // Clear previous data when starting new session
   const handleClearPreviousData = useCallback(() => {
@@ -231,7 +231,7 @@ const AppContent: React.FC = () => {
   }, []);
 
   // Wrapper for transcription completion handling
-  const handleTranscriptionCompleteWrapper = (result: TranscriptionResponse) => {
+  const handleTranscriptionCompleteWrapper = useCallback((result: TranscriptionResponse) => {
     handleTranscriptionComplete(result);
     // Also add to sessionStore for consistent session data tracking
     addTranscript(result);
@@ -239,7 +239,7 @@ const AppContent: React.FC = () => {
     refreshBalance();
     // Announce completion to screen readers
     announceTranscriptionComplete();
-  };
+  }, [handleTranscriptionComplete, addTranscript, refreshBalance, announceTranscriptionComplete]);
 
   // Health status checking removed to reduce console errors
 

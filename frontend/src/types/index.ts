@@ -5,6 +5,7 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   errors?: string[];
   errorData?: any; // Full error response data for structured errors
+  headers?: any; // Response headers for accessing metadata
 }
 
 // Health Check Types

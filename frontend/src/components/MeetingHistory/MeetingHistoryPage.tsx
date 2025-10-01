@@ -27,6 +27,7 @@ import {
   Link,
 } from '@mui/material';
 import { useAuthStore } from '../../stores/authStore';
+import { useUploadQueueStore } from '../../stores/uploadQueueStore';
 import {
   Delete as DeleteIcon,
   Search as SearchIcon,
@@ -34,16 +35,33 @@ import {
   Clear as ClearIcon,
 } from '@mui/icons-material';
 import { useMeetingHistoryStore } from '../../stores/meetingHistoryStore';
-import { useMeetingHistorySignalR } from '../../hooks/useMeetingHistorySignalR';
 import type { MeetingListItem } from '../../types/meeting';
 
-// Smooth progress component to prevent jarring updates during progress updates
+// Smooth progress component that uses centralized upload queue state when available
 const SmoothProgressIndicator: React.FC<{ 
   meeting: MeetingListItem; 
   targetProgress?: number; 
 }> = ({ meeting, targetProgress }) => {
-  const [smoothProgress, setSmoothProgress] = useState(meeting.progressPercentage || 0);
-  const target = targetProgress ?? meeting.progressPercentage ?? 0;
+  const { uploadFiles } = useUploadQueueStore();
+  
+  // Check if this meeting is currently being processed in the upload queue
+  const activeUpload = uploadFiles.find(f => f.transcriptionJobId === meeting.id);
+  
+  // Debug logging for ID matching
+  if (uploadFiles.length > 0) {
+    console.log(`📊 History: Checking meeting ${meeting.id} against ${uploadFiles.length} upload files`);
+    uploadFiles.forEach(f => {
+      console.log(`📊 History: Upload file transcriptionJobId=${f.transcriptionJobId}, meeting.id=${meeting.id}, match=${f.transcriptionJobId === meeting.id}`);
+    });
+    if (activeUpload) {
+      console.log(`✅ History: Found active upload for meeting ${meeting.id}, progress=${activeUpload.progress}`);
+    }
+  }
+  
+  // Use real-time progress from upload queue if available, otherwise use database progress
+  const realTimeProgress = activeUpload?.progress ?? meeting.progressPercentage ?? 0;
+  const [smoothProgress, setSmoothProgress] = useState(realTimeProgress);
+  const target = targetProgress ?? realTimeProgress;
   
   useEffect(() => {
     if (Math.abs(target - smoothProgress) <= 1) {
@@ -70,7 +88,7 @@ const SmoothProgressIndicator: React.FC<{
         variant="determinate"
         value={smoothProgress}
       />
-      <Typography variant="caption">
+      <Typography variant="caption" color="text.secondary">
         {Math.round(smoothProgress)}%
       </Typography>
     </Box>
@@ -106,9 +124,6 @@ const MeetingHistoryPage: React.FC = () => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<MeetingListItem | null>(null);
-
-  // Enable SignalR live updates
-  useMeetingHistorySignalR();
 
   // Load data on component mount
   useEffect(() => {

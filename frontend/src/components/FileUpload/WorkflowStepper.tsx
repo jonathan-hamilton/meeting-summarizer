@@ -11,7 +11,8 @@ import {
   CloudUpload, 
   Psychology, 
   CheckCircle,
-  RadioButtonUnchecked 
+  RadioButtonUnchecked,
+  Error as ErrorIcon
 } from '@mui/icons-material';
 import type { WorkflowStep } from './types';
 
@@ -42,9 +43,10 @@ interface WorkflowStepperProps {
   uploadStatus?: 'pending' | 'uploading' | 'processing' | 'completed' | 'error';
   processingStatus?: 'pending' | 'processing' | 'completed' | 'error';
   isComplete?: boolean;
+  progressPercentage?: number; // Add progress percentage support
 }
 
-const getStepIcon = (index: number, step: WorkflowStep) => {
+const getStepIcon = (index: number, step: WorkflowStep, progressPercentage?: number) => {
   const iconProps = {
     fontSize: 'small' as const,
     color: (step.status === 'completed' ? 'success' : 
@@ -55,25 +57,59 @@ const getStepIcon = (index: number, step: WorkflowStep) => {
   const isProcessing = index === 1 && isActive; // Fast Transcription step (spinning)
   const isUploading = index === 0 && isActive; // Upload step (pulsing)
 
-  console.log(`🔍 getStepIcon - index: ${index}, step.status: ${step.status}, isActive: ${isActive}, isProcessing: ${isProcessing}, isUploading: ${isUploading}`);
+  console.log(`🔍 getStepIcon - index: ${index}, step.status: ${step.status}, isActive: ${isActive}, isProcessing: ${isProcessing}, isUploading: ${isUploading}, progressPercentage: ${progressPercentage}`);
 
-  // For processing step, show CircularProgress instead of static icon
+  // For processing step, show spinner with percentage if available
   if (isProcessing) {
-    console.log(`🎯 Rendering CircularProgress for Fast Transcription step`);
-    console.log(`🎯 Current motion duration:`, getComputedStyle(document.documentElement).getPropertyValue('--motion-duration'));
+    console.log(`🎯 Rendering CircularProgress for Fast Transcription step - progress: ${progressPercentage}%`);
+    
+    // Show determinate progress if we have a valid percentage, otherwise indeterminate
+    const hasValidProgress = progressPercentage && progressPercentage > 0;
+    
     return (
-      <CircularProgress 
-        size={20} 
-        color="primary" 
-        thickness={4}
-        sx={{
-          '&.MuiCircularProgress-root': {
-            animationDuration: '1.4s !important',
-            animationTimingFunction: 'linear !important',
-            animationIterationCount: 'infinite !important',
-          }
-        }}
-      />
+      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
+        <CircularProgress 
+          variant={hasValidProgress ? "determinate" : "indeterminate"}
+          value={hasValidProgress ? progressPercentage : undefined}
+          size={24} 
+          color="primary" 
+          thickness={4}
+          sx={{
+            '&.MuiCircularProgress-root': hasValidProgress ? {} : {
+              animationDuration: '1.4s !important',
+              animationTimingFunction: 'linear !important',
+              animationIterationCount: 'infinite !important',
+            }
+          }}
+        />
+        {/* Show percentage text inside spinner for higher percentages */}
+        {hasValidProgress && progressPercentage >= 20 && (
+          <Box
+            sx={{
+              top: 0,
+              left: 0,
+              bottom: 0,
+              right: 0,
+              position: 'absolute',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography 
+              variant="caption" 
+              component="div" 
+              sx={{ 
+                fontSize: '0.6rem', 
+                fontWeight: 'bold',
+                color: 'primary.main'
+              }}
+            >
+              {Math.round(progressPercentage)}
+            </Typography>
+          </Box>
+        )}
+      </Box>
     );
   }
 
@@ -103,10 +139,12 @@ const getStepIcon = (index: number, step: WorkflowStep) => {
   let IconComponent;
   switch (index) {
     case 0: // Upload
-      IconComponent = step.status === 'completed' ? CheckCircle : CloudUpload;
+      IconComponent = step.status === 'error' ? ErrorIcon :
+                     step.status === 'completed' ? CheckCircle : CloudUpload;
       break;
     case 1: // Processing  
-      IconComponent = step.status === 'completed' ? CheckCircle : Psychology;
+      IconComponent = step.status === 'error' ? ErrorIcon :
+                     step.status === 'completed' ? CheckCircle : Psychology;
       break;
     case 2: // Complete
       IconComponent = step.status === 'completed' ? CheckCircle : RadioButtonUnchecked;
@@ -121,10 +159,18 @@ const getStepIcon = (index: number, step: WorkflowStep) => {
 export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   uploadStatus = 'pending',
   processingStatus = 'pending', 
-  isComplete = false
+  isComplete = false,
+  progressPercentage
 }) => {
   // Debug logging
-  console.log(`🎯 WorkflowStepper - uploadStatus: ${uploadStatus}, processingStatus: ${processingStatus}, isComplete: ${isComplete}`);
+  console.log(`🎯 WorkflowStepper RENDER - uploadStatus: ${uploadStatus}, processingStatus: ${processingStatus}, isComplete: ${isComplete}, progressPercentage: ${progressPercentage}`);
+  
+  // Log whenever progressPercentage changes
+  React.useEffect(() => {
+    if (progressPercentage !== undefined) {
+      console.log(`📊 WorkflowStepper: Progress percentage changed to ${progressPercentage}%`);
+    }
+  }, [progressPercentage]);
 
   // Inject CSS animations if not already present
   React.useEffect(() => {
@@ -141,14 +187,14 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
   const steps: WorkflowStep[] = [
     {
       label: 'Upload',
-      status: uploadStatus === 'error' ? 'pending' : 
+      status: uploadStatus === 'error' ? 'error' : 
               uploadStatus === 'completed' ? 'completed' : 
               uploadStatus === 'uploading' ? 'active' :
               uploadStatus === 'processing' ? 'completed' : 'pending'  // Upload is done when processing starts
     },
     {
       label: 'Transcribing',
-      status: processingStatus === 'error' ? 'pending' :
+      status: processingStatus === 'error' ? 'error' :
               processingStatus === 'completed' ? 'completed' :
               processingStatus === 'processing' ? 'active' :
               uploadStatus === 'processing' ? 'active' : // Transcribing active when upload is processing  
@@ -188,17 +234,35 @@ export const WorkflowStepper: React.FC<WorkflowStepperProps> = ({
         {steps.map((step, index) => (
           <Step key={step.label} completed={step.status === 'completed'}>
             <StepLabel 
-              StepIconComponent={() => getStepIcon(index, step)}
+              StepIconComponent={() => getStepIcon(index, step, progressPercentage)}
               sx={{
                 '& .MuiStepLabel-label': {
-                  color: step.status === 'completed' ? 'success.main' : 
+                  color: step.status === 'error' ? 'error.main' :
+                         step.status === 'completed' ? 'success.main' : 
                          step.status === 'active' ? 'primary.main' : 'text.disabled'
                 }
               }}
             >
-              <Typography variant="caption" component="span">
-                {step.label}
-              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Typography variant="caption" component="span">
+                  {step.label}
+                </Typography>
+                {/* Show progress percentage below "Transcribing" text when active and available */}
+                {index === 1 && step.status === 'active' && progressPercentage && progressPercentage > 0 && (
+                  <Typography 
+                    variant="caption" 
+                    component="div" 
+                    sx={{ 
+                      fontSize: '0.6rem', 
+                      color: 'primary.main',
+                      fontWeight: 'bold',
+                      marginTop: '2px'
+                    }}
+                  >
+                    {Math.round(progressPercentage)}% complete
+                  </Typography>
+                )}
+              </Box>
             </StepLabel>
           </Step>
         ))}

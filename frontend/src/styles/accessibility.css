@@ -858,7 +858,7 @@ html.high-contrast-mode .MuiAccordionSummary-root .MuiTypography-body2 {
 }
 
 /* Force visibility for specific app elements */
-.high-contrast-mode .css-* {
+.high-contrast-mode [class*="css-"] {
   color: var(--hc-text-color) !important;
   opacity: 1 !important;
 }

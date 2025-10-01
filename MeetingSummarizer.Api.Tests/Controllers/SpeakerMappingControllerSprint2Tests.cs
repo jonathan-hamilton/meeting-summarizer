@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using FluentAssertions;
 using MeetingSummarizer.Api.Controllers;
+using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Services.Interfaces;
 using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Tests.TestData;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -16,19 +19,37 @@ namespace MeetingSummarizer.Api.Tests.Controllers
     {
         private Mock<ISpeakerMappingService> _mockSpeakerMappingService = null!;
         private Mock<ISessionSpeakerMappingService> _mockSessionSpeakerMappingService = null!;
+        private Mock<IMeetingService> _mockMeetingService = null!;
+        private MeetingSummarizerDbContext _context = null!;
         private Mock<ILogger<SpeakerMappingController>> _mockLogger = null!;
         private SpeakerMappingController _controller = null!;
 
         [TestInitialize]
         public void Setup()
         {
+            // Create in-memory database
+            var options = new DbContextOptionsBuilder<MeetingSummarizerDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .Options;
+                
+            _context = new MeetingSummarizerDbContext(options);
+            
             _mockSpeakerMappingService = new Mock<ISpeakerMappingService>();
             _mockSessionSpeakerMappingService = new Mock<ISessionSpeakerMappingService>();
+            _mockMeetingService = new Mock<IMeetingService>();
             _mockLogger = new Mock<ILogger<SpeakerMappingController>>();
             _controller = new SpeakerMappingController(
                 _mockSpeakerMappingService.Object,
                 _mockSessionSpeakerMappingService.Object,
+                _mockMeetingService.Object,
+                _context,
                 _mockLogger.Object);
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            _context?.Dispose();
         }
 
         #region SaveSpeakerMappings Tests - S2.2

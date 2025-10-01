@@ -2,6 +2,69 @@
 
 ## Recently Resolved Technical Debt
 
+### S6.14 SignalR Infrastructure Removal ✅ RESOLVED
+
+**Date Identified**: September 30, 2025  
+**Date Resolved**: September 30, 2025  
+**Sprint**: S6.14 SignalR Infrastructure Removal & Progress Simplification  
+**Resolution Duration**: Single session
+
+**Problem Resolved**:
+- Complex SignalR real-time progress infrastructure creating unnecessary architectural complexity
+- Dual progress systems (SignalR + polling) causing maintenance overhead and potential inconsistencies
+- Infinite React render loops in FileUpload component due to non-memoized callback functions
+- Heavy dependency on @microsoft/signalr package and WebSocket infrastructure
+- Complex hub management, connection state handling, and real-time event coordination
+- Over 1300+ lines of complex real-time infrastructure code
+
+**Root Cause**:
+- Over-engineered progress tracking system using real-time WebSocket connections for simple upload progress
+- SignalR infrastructure designed for complex multi-user scenarios, but used for simple single-user progress updates
+- Non-memoized React callback functions causing infinite useEffect re-executions
+- Complex dependency chain between SignalR services, hooks, and React components
+
+**Solution Implemented**:
+- ✅ **Backend Cleanup**: Completely removed MeetingProgressHub.cs, cleaned SummaryController.cs of SignalR dependencies
+- ✅ **Service Registration Removal**: Eliminated all SignalR service registrations and hub endpoint mappings from Program.cs
+- ✅ **Frontend Service Removal**: Deleted 4 SignalR service/hook files (meetingProgressSignalR.ts, useUploadProgress.ts, etc.)
+- ✅ **Dependency Cleanup**: Removed @microsoft/signalr package from package.json
+- ✅ **Infinite Loop Fix**: Added proper useCallback memoization to handleTranscriptionCompleteWrapper and related functions
+- ✅ **Type System Cleanup**: Removed SignalR-specific type definitions and interfaces
+- ✅ **Component Simplification**: Replaced real-time updates with simple React state management and MUI components
+
+**Technical Resolution**:
+```typescript
+// Fixed infinite loop with proper memoization in App.tsx
+const handleTranscriptionCompleteWrapper = useCallback((result: TranscriptionResponse) => {
+  handleTranscriptionComplete(result);
+  addTranscript(result);
+  refreshBalance();
+  announceTranscriptionComplete();
+}, [handleTranscriptionComplete, addTranscript, refreshBalance, announceTranscriptionComplete]);
+
+// Prevented duplicate completion callbacks in FileUpload.tsx
+const processedFileIds = useRef<Set<string>>(new Set());
+useEffect(() => {
+  uploadFiles.forEach(file => {
+    if (file.status === 'completed' && file.result && onTranscriptionComplete && !processedFileIds.current.has(file.id)) {
+      processedFileIds.current.add(file.id);
+      onTranscriptionComplete(file.result);
+    }
+  });
+}, [uploadFiles, onTranscriptionComplete]);
+```
+
+**Architecture Simplification**:
+- **From**: Complex SignalR hub → WebSocket connections → Real-time progress events → React state updates
+- **To**: Simple file upload → React state management → MUI progress components → Polling for completion
+- **Benefits**: Reduced complexity, easier maintenance, fewer failure points, simplified debugging
+
+**Code Quality Impact**:
+- **Lines Removed**: ~1300+ lines of complex real-time infrastructure
+- **Dependencies Reduced**: 1 fewer external package (@microsoft/signalr)
+- **Build Performance**: Eliminated WebSocket connection overhead
+- **Maintainability**: Standard React patterns instead of dual real-time/polling systems
+
 ### S6.13 WorkflowStepper Animation Fixes ✅ RESOLVED
 
 **Date Identified**: September 28, 2025 (Post S6.13 Completion)  
