@@ -25,6 +25,7 @@ import {
   Alert,
   Grid,
   Link,
+  Tooltip,
 } from '@mui/material';
 import { useAuthStore } from '../../stores/authStore';
 import { useUploadQueueStore } from '../../stores/uploadQueueStore';
@@ -46,17 +47,6 @@ const SmoothProgressIndicator: React.FC<{
   
   // Check if this meeting is currently being processed in the upload queue
   const activeUpload = uploadFiles.find(f => f.transcriptionJobId === meeting.id);
-  
-  // Debug logging for ID matching
-  if (uploadFiles.length > 0) {
-    console.log(`📊 History: Checking meeting ${meeting.id} against ${uploadFiles.length} upload files`);
-    uploadFiles.forEach(f => {
-      console.log(`📊 History: Upload file transcriptionJobId=${f.transcriptionJobId}, meeting.id=${meeting.id}, match=${f.transcriptionJobId === meeting.id}`);
-    });
-    if (activeUpload) {
-      console.log(`✅ History: Found active upload for meeting ${meeting.id}, progress=${activeUpload.progress}`);
-    }
-  }
   
   // Use real-time progress from upload queue if available, otherwise use database progress
   const realTimeProgress = activeUpload?.progress ?? meeting.progressPercentage ?? 0;
@@ -99,6 +89,9 @@ import { apiService } from '../../services/apiService';
 const MeetingHistoryPage: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
+  
+  // Track upload queue changes for real-time status updates - MUST be at top level
+  const uploadFiles = useUploadQueueStore(state => state.uploadFiles);
   
   // Show nothing if user is not authenticated - let the main app handle auth UI
   if (!isAuthLoading && !isAuthenticated) {
@@ -181,14 +174,43 @@ const MeetingHistoryPage: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Completed': return 'success';
-      case 'Failed': return 'error';
+      case 'Completed': 
+      case 'completed': return 'success';
+      case 'Failed': 
+      case 'error': return 'error';
       case 'Transcribing': 
-      case 'Summarizing': return 'info';
+      case 'Summarizing': 
+      case 'processing': return 'info';
       case 'Uploaded': 
-      case 'Transcribed': return 'warning';
+      case 'Transcribed': 
+      case 'uploading': 
+      case 'pending': return 'warning';
       default: return 'default';
     }
+  };
+
+  // Helper function to get real-time status from upload queue or fallback to database status
+  const getRealTimeStatus = (meeting: MeetingListItem): string => {
+    const activeUpload = uploadFiles.find(f => f.transcriptionJobId === meeting.id);
+    
+    if (activeUpload) {
+      // Map upload queue status to display status
+      switch (activeUpload.status) {
+        case 'pending': return 'Uploaded';
+        case 'uploading': return 'Uploading';
+        case 'processing': 
+          // Use stage for more specific status if available
+          if (activeUpload.currentStage === 'transcription') return 'Transcribing';
+          if (activeUpload.currentStage === 'summarization') return 'Summarizing';
+          return 'Processing';
+        case 'completed': return 'Completed';
+        case 'error': return 'Failed';
+        default: return activeUpload.status;
+      }
+    }
+    
+    // Fallback to database status
+    return meeting.status;
   };
 
   const formatDate = (dateString: string) => {
@@ -334,41 +356,49 @@ const MeetingHistoryPage: React.FC = () => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        label={meeting.status}
-                        color={getStatusColor(meeting.status) as any}
-                        size="small"
-                      />
-                      {(meeting.status === 'Transcribing' || meeting.status === 'Summarizing') && (
-                        <SmoothProgressIndicator meeting={meeting} />
-                      )}
+                      {(() => {
+                        const realTimeStatus = getRealTimeStatus(meeting);
+                        return (
+                          <>
+                            <Chip
+                              label={realTimeStatus}
+                              color={getStatusColor(realTimeStatus) as any}
+                              variant={realTimeStatus === 'Completed' ? 'filled' : 'outlined'}
+                            />
+                            {(realTimeStatus === 'Transcribing' || realTimeStatus === 'Summarizing' || realTimeStatus === 'Processing' || realTimeStatus === 'Uploading') && (
+                              <SmoothProgressIndicator 
+                                meeting={meeting} 
+                                targetProgress={meeting.progressPercentage}
+                              />
+                            )}
+                          </>
+                        );
+                      })()}
                     </TableCell>
-                    <TableCell>{meeting.formattedDuration || '—'}</TableCell>
+                    <TableCell>{meeting.formattedDuration}</TableCell>
                     <TableCell>{meeting.speakerCount}</TableCell>
                     <TableCell>{meeting.formattedFileSize}</TableCell>
-                    <TableCell>
-                      <div>{formatDate(meeting.createdAt)}</div>
-                      <small style={{color: '#666', fontSize: '10px'}}>Raw: {meeting.createdAt}</small>
-                    </TableCell>
+                    <TableCell>{formatDate(meeting.createdAt)}</TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', gap: 1 }}>
-                        {meeting.status === 'Completed' && (
-                          <IconButton 
-                            size="small" 
-                            color="primary"
+                        <Tooltip title="Download transcript">
+                          <IconButton
+                            size="small"
                             onClick={() => handleDownloadClick(meeting)}
-                            title="Download meeting results"
+                            disabled={meeting.status !== 'Completed'}
                           >
                             <DownloadIcon />
                           </IconButton>
-                        )}
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={() => handleDeleteClick(meeting)}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete meeting">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteClick(meeting)}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
                     </TableCell>
                   </TableRow>
