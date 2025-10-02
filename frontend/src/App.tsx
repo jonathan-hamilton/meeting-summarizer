@@ -32,6 +32,9 @@ import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
 import { useSessionStore } from "./stores/sessionStore";
 
+// Progress system imports
+import { NotificationQueueManager } from "./components/Progress/ProgressNotification";
+
 import { useAuthStore } from "./stores/authStore";
 import { useTokenStore } from "./stores/tokenStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
@@ -490,6 +493,7 @@ const AppContent: React.FC = () => {
           </Dialog>
 
           <main role="main" aria-label="Main content" id="main-content">
+            
             <Box sx={{ 
               py: 4, 
               width: "100%",
@@ -726,7 +730,9 @@ const App: React.FC = () => {
   
   return (
     <ThemeProvider>
-      {isInitializing ? <AuthLoadingComponent /> : <AppContent />}
+      <NotificationQueueManager>
+        {isInitializing ? <AuthLoadingComponent /> : <AppContent />}
+      </NotificationQueueManager>
     </ThemeProvider>
   );
 };

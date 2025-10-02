@@ -20,10 +20,35 @@ import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
 
 import { FileDropzone } from "./FileDropzone";
-import { UploadProgress } from "./UploadProgress";
 import { validateFiles } from "./validation";
 import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
+
+// Progress system imports
+import { FileUploadProgress } from "../Progress";
+import type { ProcessingStage, ProgressStatus } from "../../types/progress";
+import { estimateFileProcessingTime } from "../../services/progressEstimator";
+
+// Helper functions to map upload queue status to progress system
+const mapUploadStatusToProgressStage = (status: string): ProcessingStage => {
+  switch (status) {
+    case 'uploading': return 'upload';
+    case 'processing': return 'processing';
+    case 'completed': return 'complete';
+    default: return 'upload';
+  }
+};
+
+const mapUploadStatusToProgressStatus = (status: string): ProgressStatus => {
+  switch (status) {
+    case 'pending': return 'pending';
+    case 'uploading': return 'active';
+    case 'processing': return 'active';
+    case 'completed': return 'completed';
+    case 'error': return 'failed';
+    default: return 'pending';
+  }
+};
 
 interface FileUploadProps {
   onTranscriptionComplete?: (result: TranscriptionResponse) => void;
@@ -53,7 +78,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const { mode } = useAppMode();
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
-  const { uploadFiles, setUploadFiles, clearUploadQueue: storeClearUploadQueue } = useUploadQueueStore();
+  const { 
+    uploadFiles, 
+    setUploadFiles, 
+    clearUploadQueue: storeClearUploadQueue,
+    startFileProgress,
+    updateFileStage,
+    completeFileProgress,
+  } = useUploadQueueStore();
   
   // Cleanup effect: Clear upload queue when component unmounts or when navigating away
   // This prevents old/stuck files from interfering with new uploads
@@ -153,6 +185,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const uploadFileToServer = useCallback(
     async (uploadFile: FileUploadFile) => {
       try {
+        // Start progress tracking with estimation
+        startFileProgress(uploadFile.id, uploadFile.file);
+        
         setUploadFiles((prev) =>
           prev.map((f) =>
             f.id === uploadFile.id
@@ -164,30 +199,62 @@ const FileUpload: React.FC<FileUploadProps> = ({
         const formData = new FormData();
         formData.append("file", uploadFile.file);
 
-        const response = await apiService.uploadFile(uploadFile.file, (progress: number) => {
-          const progressPercent = Math.round(progress); // progress is already a percentage (0-100)
-          console.log(`📊 Upload progress: ${progressPercent}% for ${uploadFile.file.name}`);
+        // Start synthetic progress simulation for gradual progress
+        const startTime = Date.now();
+        const estimation = estimateFileProcessingTime(uploadFile.file);
+        const expectedDuration = estimation.totalTime; // Use actual estimation instead of hardcoded value
+        
+        let progressInterval: NodeJS.Timeout | null = null;
+        progressInterval = setInterval(() => {
+          const elapsed = Date.now() - startTime;
+          const progressPercent = Math.min(95, (elapsed / expectedDuration) * 100);
+          
+          // Map progress to realistic processing stages
+          let stage: ProcessingStage;
+          let displayProgress = Math.round(progressPercent);
+          
+          if (progressPercent < 15) {
+            stage = 'upload';
+          } else if (progressPercent < 30) {
+            stage = 'processing';
+          } else if (progressPercent < 85) {
+            stage = 'transcription';
+          } else {
+            stage = 'summarization';
+          }
+          
+          updateFileStage(uploadFile.id, stage, displayProgress);
           
           setUploadFiles((prev) =>
             prev.map((f) =>
               f.id === uploadFile.id
                 ? { 
                     ...f, 
-                    progress: progressPercent,
-                    // When upload reaches 100%, transition to transcription processing
-                    status: progressPercent >= 99 ? "processing" : "uploading" // Use >= 99 instead of === 100
+                    progress: displayProgress,
+                    status: progressPercent < 95 ? "processing" : "processing"
                   }
                 : f
             )
           );
           
-          // Log status change
-          if (progressPercent >= 99) {
-            console.log(`🔄 Status changed to 'processing' for ${uploadFile.file.name}`);
+          console.log(`🎬 Synthetic progress: ${displayProgress}% (${stage}) - ${elapsed}ms elapsed`);
+          
+          // Stop at 95% and let completion handle the final 5%
+          if (progressPercent >= 95) {
+            if (progressInterval) clearInterval(progressInterval);
           }
+        }, 1000); // Update every second
+        
+        const response = await apiService.uploadFile(uploadFile.file, (progress: number) => {
+          const progressPercent = Math.round(progress); // progress is already a percentage (0-100)
+          console.log(`📊 Upload progress: ${progressPercent}% for ${uploadFile.file.name}`);
+          // Don't update UI here - let the synthetic progress handle it
         });
 
         if (response.success) {
+          // Clear the progress interval since upload completed
+          if (progressInterval) clearInterval(progressInterval);
+          
           // First, mark upload as completed (regardless of transcription status)
         // Debug the response structure to see what transcription ID field is available
         console.log('🔍 Upload Response Data:', response.data);
@@ -209,8 +276,19 @@ const FileUpload: React.FC<FileUploadProps> = ({
         // Check if transcription is already completed in the response
         const isAlreadyCompleted = response.data?.status === 'Completed' && response.data?.transcribedText;
         
+        console.log('🔍 Transcription status check:', {
+          status: response.data?.status,
+          hasTranscribedText: !!response.data?.transcribedText,
+          isAlreadyCompleted: isAlreadyCompleted,
+          fullResponseData: response.data
+        });
+        
         if (isAlreadyCompleted) {
-          console.log('🎯 Transcription already completed in response, marking as completed immediately');
+          console.log('🎯 Fast transcription completed during upload - showing immediate completion');
+          
+          // Complete the progress tracking
+          completeFileProgress(uploadFile.id, true, response.data);
+          
           setUploadFiles((prev) =>
             prev.map((f) =>
               f.id === uploadFile.id
@@ -227,7 +305,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           
           // Refresh balance since tokens were consumed
           refreshBalance();
-          console.log('✅ Transcription completed immediately for:', uploadFile.file.name);
+          console.log('✅ Fast transcription completed for:', uploadFile.file.name);
         } else {
           // For fast transcription, show progress while processing
           // Start with processing status and update to completion when ready
@@ -245,6 +323,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 : f
             )
           );
+          
+          // Note: For fast transcription, the synthetic progress simulation 
+          // in the upload section handles the gradual progress display
           
           // If we have immediate results, still refresh balance since tokens were consumed
           if (response.data?.transcribedText) {
@@ -505,10 +586,32 @@ const FileUpload: React.FC<FileUploadProps> = ({
               </Box>
             </Box>
             
-            <UploadProgress 
-              uploadFiles={uploadFiles}
-              onClearFile={handleClearFile}
-            />
+            {/* Enhanced Progress System */}
+            {uploadFiles.length > 0 && (
+              <Box mt={2}>
+                {uploadFiles.map((uploadFile) => (
+                  <FileUploadProgress
+                    key={uploadFile.id}
+                    progressData={{
+                      fileId: uploadFile.id,
+                      fileName: uploadFile.file.name,
+                      fileSize: uploadFile.file.size,
+                      currentStage: uploadFile.currentStage || mapUploadStatusToProgressStage(uploadFile.status),
+                      percentage: uploadFile.progress,
+                      status: mapUploadStatusToProgressStatus(uploadFile.status),
+                      error: uploadFile.error,
+                      startTime: uploadFile.startTime || new Date(),
+                      endTime: uploadFile.endTime,
+                      timeRemaining: uploadFile.timeRemaining,
+                      estimatedCompletion: uploadFile.estimatedCompletion,
+                    }}
+                    onCancel={handleClearFile}
+                    onRetry={(fileId) => console.log('Retry not implemented yet for', fileId)}
+                    compact={false}
+                  />
+                ))}
+              </Box>
+            )}
           </CardContent>
         </Card>
       )}
