@@ -58,6 +58,8 @@ import { sessionManager } from "./services/sessionManager";
 import { AppHeader } from "./components/layout/AppHeader";
 import { GlobalDialogs } from "./components/layout/GlobalDialogs";
 import { useTranscriptionJobStore } from "./stores/transcriptionJobStore";
+// Automatic logging system - temporarily disabled
+// import { usePageLogging } from "./utils/fileLogger";
 
 import type { TranscriptionResponse } from "./types";
 import "./App.css";
@@ -80,6 +82,9 @@ const AppContent: React.FC = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Automatic logging based on current page - temporarily disabled
+  // usePageLogging(location.pathname === '/history' ? 'history' : 'app');
   
   // Accessibility store
   const {

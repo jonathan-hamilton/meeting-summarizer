@@ -202,7 +202,11 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<ISummaryPersistenceService, SummaryPersistenceService>();
 
 // Register Fast Transcription Service (S6.13 Fast Transcription Migration)
-builder.Services.AddHttpClient<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>();
+builder.Services.AddHttpClient<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>(client =>
+{
+    // Set timeout to 10 minutes for large audio files (Azure Fast Transcription can take 3-5 minutes for 25+ minute files)
+    client.Timeout = TimeSpan.FromMinutes(10);
+});
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>();
 
 // Configure Kestrel server for large file uploads
