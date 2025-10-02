@@ -1,4 +1,6 @@
-# Sprint 6: User Management & Infrastructure + Azure Production Hosting
+# Sprint 6: User Management & Infrastructure + Azure Pr- **[S6.13: Fast Transcription Migration - Complete Refactor](s6.13-fast-transcription.md)** ✅ *COMPLETE*
+- **[S6.14: SignalR Infrastructure Removal & Progress Simplification](s6.14-signalr-removal.md)** ✅ *COMPLETE*
+- **[S6.15: React/MUI Progress System Implementation](s6.15-mui-progress-implementation.md)** ✅ *COMPLETE*uction Hosting
 
 ## Overview
 
@@ -17,7 +19,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 
 ## Progress Tracker
 
-**Sprint 6 Progress: 11.1/14 Stories Complete (79%)**
+**Sprint 6 Progress: 12.1/15 Stories Complete (81%)**
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
@@ -35,6 +37,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.12    | AI Chat Assistant for User Guidance               | UPDATED 📋    | S6.7                 |
 | S6.13    | Fast Transcription Migration - Complete Refactor  | COMPLETE ✅   | S6.9                 |
 | S6.14    | SignalR Infrastructure Removal & Progress Simplification | COMPLETE ✅   | S6.13                |
+| S6.15    | React/MUI Progress System Implementation           | COMPLETE ✅   | S6.14                |
 
 ## Story Files
 

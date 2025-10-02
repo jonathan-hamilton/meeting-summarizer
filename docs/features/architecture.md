@@ -65,12 +65,32 @@ The app is structured for modularity and extensibility using **established desig
 
 #### Progress Tracking Architecture
 
-**Simplified Progress System** (Post S6.14 SignalR Removal):
-- **Client-Side Progress**: Simple React state management using useState and useEffect patterns
-- **MUI Components**: CircularProgress and LinearProgress components for visual feedback
-- **File-Size Estimation**: Progress calculation based on file size for realistic user expectations
-- **Completion Polling**: Periodic API calls to check transcription completion status
-- **No Real-Time Dependencies**: Eliminated complex WebSocket/SignalR infrastructure
+**S6.15 React/MUI Progress System** (Complete ✅):
+- **Zustand Store Integration**: Enhanced `uploadQueueStore` with dedicated progress tracking methods
+- **MUI Components**: Professional LinearProgress and CircularProgress for consistent Material Design
+- **Realistic Time Estimation**: File-size-based algorithms with 700 kbps bitrate assumptions for accurate audio duration
+- **Stage-Based Progress**: Visual indicators for Upload → Processing → Transcribing → Summarizing transitions
+- **Synthetic Progress**: Time-based simulation for fast-completing operations to maintain user engagement
+
+**Architecture Components**:
+```typescript
+// Enhanced Zustand store with progress methods
+interface UploadQueueStore {
+  startFileProgress: (fileId: string, file: File) => void;
+  updateFileStage: (fileId: string, stage: ProcessingStage) => void;
+  completeFileProgress: (fileId: string) => void;
+  getGlobalProgress: () => GlobalProgress;
+}
+
+// Progress estimation service with realistic calculations
+const estimateFileProcessingTime = (file: File): number => {
+  const audioMinutes = estimateAudioDuration(file.size);
+  const uploadTime = (file.size / (1024 * 1024)) * 500; // 0.5s per MB
+  const transcriptionTime = audioMinutes * 1000; // 1s per minute
+  const summaryTime = 3000 + (audioMinutes * 500); // 3s + 0.5s per minute
+  return uploadTime + transcriptionTime + summaryTime;
+};
+```
 
 **Previous Architecture (Removed)**:
 - ~~SignalR Hub (MeetingProgressHub.cs) for real-time progress coordination~~
@@ -80,24 +100,35 @@ The app is structured for modularity and extensibility using **established desig
 
 **Current Progress Flow**:
 ```typescript
-// Simple progress calculation in React components
-const calculateProgress = (status: string, fileSize: number) => {
-  switch (status) {
-    case 'uploading': return Math.min(uploadProgress, 95);
-    case 'processing': return Math.min(30 + (fileSize / 1000000) * 2, 95);
-    case 'completed': return 100;
-    default: return 0;
-  }
-};
+// Synthetic progress system using actual estimation
+const progressInterval = setInterval(() => {
+  const elapsed = Date.now() - startTime;
+  const estimatedTotal = estimateFileProcessingTime(file);
+  const currentProgress = Math.min((elapsed / estimatedTotal) * 100, 95);
+  
+  // Update progress with stage-based transitions
+  updateFileProgress(fileId, {
+    progress: currentProgress,
+    stage: getStageForProgress(currentProgress),
+    timeRemaining: Math.max(0, estimatedTotal - elapsed)
+  });
+}, 500);
 
-// MUI progress display
+// MUI progress display with stage indicators
 <LinearProgress 
   variant="determinate" 
-  value={calculateProgress(file.status, file.size)} 
+  value={fileProgress.progress}
+  color={getStageColor(fileProgress.stage)}
 />
 ```
 
-**Benefits of Simplified Architecture**:
+**Benefits of S6.15 Architecture**:
+- **Professional UI**: Material-UI components provide enterprise-grade visual feedback
+- **Accurate Estimation**: File-size-based timing with realistic audio bitrate assumptions
+- **Smooth User Experience**: Gradual progress updates prevent jarring instant completion
+- **Centralized Configuration**: Single source of truth for all timing calculations in `DEFAULT_ESTIMATION_SETTINGS`
+- **Mobile Ready**: Foundation for Sprint 7 native mobile progress indicators
+- **Performance Optimized**: Efficient Zustand integration with minimal re-renders
 - **Reduced Complexity**: Standard React patterns instead of real-time infrastructure
 - **Better Maintainability**: Single progress strategy using established React lifecycle methods
 - **Improved Performance**: No WebSocket connection overhead or hub memory usage
