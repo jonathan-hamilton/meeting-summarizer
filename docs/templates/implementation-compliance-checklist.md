@@ -121,6 +121,17 @@ npm run build
 cd frontend && npm run build
 ```
 
+## 🚨 PRODUCTION READINESS CHECKLIST
+
+### Email System Verification ✅
+- [ ] **EMAIL FORMATTING**: Transcript emails preserve line breaks and formatting when received
+- [ ] **CONTENT-TYPE CHECK**: Email service uses appropriate Content-Type (text/html with `<br>` or text/plain with `\r\n`)
+- [ ] **CROSS-CLIENT TESTING**: Email formatting verified across multiple email clients (Gmail, Outlook, etc.)
+- [ ] **TRANSCRIPT EMAIL FLOW**: Full transcript email workflow tested end-to-end
+- [ ] **SUMMARY EMAIL FLOW**: Full summary email workflow tested end-to-end
+
+**⚠️ CRITICAL**: Email formatting issue identified - emails lose line breaks in transit. MUST BE FIXED before production deployment.
+
 ---
 
 **USE THIS CHECKLIST BEFORE EVERY IMPLEMENTATION**  

@@ -12,6 +12,7 @@ using MeetingSummarizer.Api.Services.TokenManagement;
 using MeetingSummarizer.Api.Services.Payment;
 using MeetingSummarizer.Api.Services;
 using MeetingSummarizer.Api.Services.Interfaces;
+using MeetingSummarizer.Api.Services.Chat;
 using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
 using MeetingSummarizer.Api.Data;
@@ -54,10 +55,14 @@ builder.Services.AddSwaggerGen(c =>
     c.OperationFilter<SwaggerFileOperationFilter>();
 });
 
+// Add memory cache for chat services
+builder.Services.AddMemoryCache();
+
 // Configure environment-specific settings
 builder.Services.Configure<EnvironmentOptions>(builder.Configuration.GetSection(EnvironmentOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
+builder.Services.Configure<ChatAssistantOptions>(builder.Configuration.GetSection("ChatAssistant"));
 
 // Configure CORS based on environment
 var corsOptions = new CorsOptions();
@@ -137,6 +142,30 @@ builder.Services.AddSummarizationService(builder.Configuration);
 
 // Register email service (S3.4 Increment 4)
 builder.Services.AddEmailServices(builder.Configuration);
+
+// Register chat assistant services (S6.12)
+builder.Services.AddScoped<IChatAnalyticsService, ChatAnalyticsService>();
+
+// Configure HttpClient for OpenAI Chat API and register ChatAssistantService
+builder.Services.AddHttpClient<IChatAssistantService, ChatAssistantService>((serviceProvider, client) =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var openAIApiKey = configuration.GetValue<string>("OpenAI:ApiKey");
+    
+    Console.WriteLine($"🔍 Chat HttpClient configuration - API key found: {!string.IsNullOrEmpty(openAIApiKey)}");
+    if (!string.IsNullOrEmpty(openAIApiKey))
+    {
+        Console.WriteLine($"🔍 API key value: {openAIApiKey.Substring(0, Math.Min(10, openAIApiKey.Length))}...");
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", openAIApiKey);
+        Console.WriteLine($"✅ OpenAI API key configured for chat service via Authorization property");
+    }
+    else
+    {
+        Console.WriteLine("❌ OpenAI API key NOT found for chat service");
+    }
+    client.DefaultRequestHeaders.Add("User-Agent", "MeetingSummarizer-Chat/1.0");
+    client.Timeout = TimeSpan.FromSeconds(30); // Shorter timeout for chat responses
+});
 
 // Register configuration validation service (S4.3)
 builder.Services.AddScoped<IConfigurationValidationService, ConfigurationValidationService>();
