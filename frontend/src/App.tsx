@@ -41,6 +41,9 @@ import { useAuthInitialization } from "./hooks/useAuthInitialization";
 import { useSpeakerMappingLifecycle } from "./hooks/useSpeakerMappingLifecycle";
 import { useAccessibilityStore } from "./stores/accessibilityStore";
 
+// Chat Assistant Components
+import { ChatContainer } from "./components/Chat";
+
 // Lazy load dialog components to reduce initial bundle size
 // Health dialog component removed
 const SessionTimeoutWarningDialog = React.lazy(() => import("./components/SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
@@ -704,6 +707,9 @@ const AppContent: React.FC = () => {
           </Box>
         </Box>
       </Box>
+
+      {/* Chat Assistant - Always available */}
+      <ChatContainer />
 
     </>
   );

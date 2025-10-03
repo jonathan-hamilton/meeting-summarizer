@@ -93,12 +93,7 @@ const MeetingHistoryPage: React.FC = () => {
   // Track upload queue changes for real-time status updates - MUST be at top level
   const uploadFiles = useUploadQueueStore(state => state.uploadFiles);
   
-  // Show nothing if user is not authenticated - let the main app handle auth UI
-  if (!isAuthLoading && !isAuthenticated) {
-    return null;
-  }
-  
-  // Use individual selectors for better performance and reliability
+  // Use individual selectors for better performance and reliability - MUST be at top level
   const meetings = useMeetingHistoryStore(state => state.meetings);
   const currentPage = useMeetingHistoryStore(state => state.currentPage);
   const totalPages = useMeetingHistoryStore(state => state.totalPages);
@@ -108,12 +103,18 @@ const MeetingHistoryPage: React.FC = () => {
   const isLoading = useMeetingHistoryStore(state => state.isLoading);
   const error = useMeetingHistoryStore(state => state.error);
   
+  // All action selectors must also be at top level before any conditional returns
   const loadMeetings = useMeetingHistoryStore(state => state.loadMeetings);
   const deleteMeeting = useMeetingHistoryStore(state => state.deleteMeeting);
   const setPage = useMeetingHistoryStore(state => state.setPage);
   const setSearchQuery = useMeetingHistoryStore(state => state.setSearchQuery);
   const setSorting = useMeetingHistoryStore(state => state.setSorting);
   const clearError = useMeetingHistoryStore(state => state.clearError);
+  
+  // Show nothing if user is not authenticated - let the main app handle auth UI
+  if (!isAuthLoading && !isAuthenticated) {
+    return null;
+  }
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [meetingToDelete, setMeetingToDelete] = useState<MeetingListItem | null>(null);
