@@ -13,7 +13,7 @@ public class ChatAssistantOptions
     /// <summary>
     /// Maximum number of messages allowed per user session
     /// </summary>
-    public int MaxMessagesPerSession { get; set; } = 10;
+    public int MaxMessagesPerSession { get; set; } = 30;
 
     /// <summary>
     /// Maximum tokens per AI response to control costs

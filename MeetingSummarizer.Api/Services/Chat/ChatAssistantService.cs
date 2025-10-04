@@ -120,6 +120,9 @@ public class ChatAssistantService : IChatAssistantService
                 
             _logger.LogInformation("Extracted AI message: {AiMessage}", aiMessage);
 
+            // Generate suggested actions based on message content and context (Phase 2 feature)
+            var suggestedActions = GenerateSuggestedActions(aiMessage, request.Context);
+
             // Track analytics if enabled
             if (_options.EnableAnalytics)
             {
@@ -140,7 +143,8 @@ public class ChatAssistantService : IChatAssistantService
             {
                 Message = aiMessage,
                 SessionLimitReached = false,
-                MessagesRemaining = await GetRemainingMessagesAsync(sessionId)
+                MessagesRemaining = await GetRemainingMessagesAsync(sessionId),
+                SuggestedActions = suggestedActions // Phase 2: Include actionable responses
             };
         }
         catch (Exception ex)
@@ -179,7 +183,7 @@ public class ChatAssistantService : IChatAssistantService
         return Task.CompletedTask;
     }
 
-    private async Task<int> GetSessionMessageCountAsync(string sessionId)
+    private Task<int> GetSessionMessageCountAsync(string sessionId)
     {
         var key = string.Format(SESSION_MESSAGE_COUNT_KEY, sessionId);
         var activityKey = string.Format(SESSION_LAST_ACTIVITY_KEY, sessionId);
@@ -192,11 +196,12 @@ public class ChatAssistantService : IChatAssistantService
                 // Session expired, reset count
                 _cache.Remove(key);
                 _cache.Remove(activityKey);
-                return 0;
+                return Task.FromResult(0);
             }
         }
 
-        return _cache.GetOrCreate(key, _ => 0);
+        var count = _cache.GetOrCreate(key, _ => 0);
+        return Task.FromResult(count);
     }
 
     private async Task IncrementMessageCountAsync(string sessionId)
@@ -274,6 +279,138 @@ public class ChatAssistantService : IChatAssistantService
         // GPT-3.5-turbo pricing: $0.0015 per 1K input tokens, $0.002 per 1K output tokens
         // For simplicity, estimate average cost of $0.00175 per 1K tokens
         return tokens * 0.00175m / 1000;
+    }
+
+    /// <summary>
+    /// Generate suggested actions based on AI response and context (Phase 2 feature)
+    /// </summary>
+    private List<ChatAction>? GenerateSuggestedActions(string aiMessage, ChatContext? context)
+    {
+        var actions = new List<ChatAction>();
+        var message = aiMessage.ToLowerInvariant();
+        
+        // Analyze message content and context to suggest relevant actions
+        
+        // Navigation suggestions
+        if (message.Contains("upload") || message.Contains("file"))
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "navigate",
+                Target = "upload",
+                Label = "Go to upload page"
+            });
+        }
+        
+        if (message.Contains("transcript") && context?.HasTranscript == true)
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "scroll",
+                Target = "transcript-section",
+                Label = "Show transcript"
+            });
+        }
+        
+        if (message.Contains("summary") && context?.HasSummary == true)
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "scroll",
+                Target = "summary-section",
+                Label = "Show summary"
+            });
+        }
+        else if (message.Contains("summary") && context?.HasTranscript == true && !context.HasSummary)
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "trigger",
+                Target = "generate-summary",
+                Label = "Generate summary"
+            });
+        }
+        
+        if (message.Contains("speaker") && context?.SpeakersDetected > 1 && !context.SpeakersMapped)
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "dialog",
+                Target = "speaker-mapping",
+                Label = "Map speakers"
+            });
+        }
+        
+        if (message.Contains("email"))
+        {
+            if (context?.HasSummary == true)
+            {
+                actions.Add(new ChatAction
+                {
+                    Type = "dialog",
+                    Target = "email-summary",
+                    Label = "Email summary"
+                });
+            }
+            
+            if (context?.HasTranscript == true)
+            {
+                actions.Add(new ChatAction
+                {
+                    Type = "dialog",
+                    Target = "email-transcript",
+                    Label = "Email transcript"
+                });
+            }
+        }
+        
+        if (message.Contains("history") || message.Contains("meeting"))
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "navigate",
+                Target = "history",
+                Label = "View history"
+            });
+        }
+        
+        // Error recovery suggestions
+        if (!string.IsNullOrEmpty(context?.RecentError))
+        {
+            if (context.RecentError.Contains("token"))
+            {
+                actions.Add(new ChatAction
+                {
+                    Type = "dialog",
+                    Target = "token-purchase",
+                    Label = "Buy tokens"
+                });
+            }
+            
+            if (context.RecentError.Contains("upload") || context.RecentError.Contains("file"))
+            {
+                actions.Add(new ChatAction
+                {
+                    Type = "trigger",
+                    Target = "upload-file",
+                    Label = "Try upload again"
+                });
+            }
+        }
+        
+        // Context-based suggestions
+        if (context?.HasUploadedFile == true && !context.HasTranscript)
+        {
+            actions.Add(new ChatAction
+            {
+                Type = "scroll",
+                Target = "upload-section",
+                Label = "Check upload status"
+            });
+        }
+        
+        // Limit to max 3 actions to avoid overwhelming the UI
+        return actions.Take(3).ToList();
     }
 
     // OpenAI API response models

@@ -7,7 +7,6 @@ import {
 } from '@mui/material';
 import {
   Chat as ChatIcon,
-  Close as CloseIcon,
 } from '@mui/icons-material';
 import { useChatStore } from '../../stores/chatStore';
 
@@ -19,7 +18,7 @@ interface ChatWidgetProps {
  * Floating chat widget button that toggles the chat panel
  */
 export const ChatWidget: React.FC<ChatWidgetProps> = ({ className }) => {
-  const { isOpen, toggleChat, messagesRemaining, sessionLimitReached } = useChatStore();
+  const { isOpen, toggleChat, sessionLimitReached } = useChatStore();
 
   const getTooltipText = () => {
     if (sessionLimitReached) {
@@ -28,7 +27,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ className }) => {
     if (isOpen) {
       return 'Close chat assistant';
     }
-    return `Chat assistant (${messagesRemaining} messages remaining)`;
+    return 'Chat assistant'; // Hide message count from tooltip
   };
 
   const getWidgetColor = () => {
@@ -37,7 +36,7 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ className }) => {
   };
 
   return (
-    <Zoom in={true}>
+    <Zoom in={!isOpen}>
       <Tooltip title={getTooltipText()} placement="left">
         <Badge
           badgeContent={sessionLimitReached ? '!' : undefined}
@@ -67,10 +66,10 @@ export const ChatWidget: React.FC<ChatWidgetProps> = ({ className }) => {
               },
               transition: 'all 0.3s ease-in-out',
             }}
-            aria-label={isOpen ? 'Close chat assistant' : 'Open chat assistant'}
-            disabled={false} // Always allow toggle to show limit message
+            aria-label="Open chat assistant" // Always "open" since it only shows when closed
+            disabled={false}
           >
-            {isOpen ? <CloseIcon /> : <ChatIcon />}
+            <ChatIcon />
           </Fab>
         </Badge>
       </Tooltip>

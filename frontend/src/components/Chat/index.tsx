@@ -29,4 +29,5 @@ export * from './ChatWidget';
 export * from './ChatPanel';
 export * from './ChatMessage';
 export * from './ChatInput';
+export * from './ChatActions';
 export * from './ChatDiscovery';

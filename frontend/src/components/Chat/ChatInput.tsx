@@ -20,7 +20,7 @@ interface ChatInputProps {
  */
 export const ChatInput: React.FC<ChatInputProps> = ({ disabled = false }) => {
   const [message, setMessage] = useState('');
-  const { sendMessage, isLoading, sessionLimitReached, messagesRemaining } = useChatStore();
+  const { sendMessage, isLoading, sessionLimitReached } = useChatStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,10 +58,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ disabled = false }) => {
     if (sessionLimitReached) {
       return 'Refresh the page to start a new conversation';
     }
-    if (messagesRemaining <= 2) {
-      return `${messagesRemaining} messages remaining`;
-    }
-    return 'Press Enter to send, Shift+Enter for new line';
+    return 'Press Enter to send, Shift+Enter for new line'; // Hide message count
   };
 
   return (
@@ -108,9 +105,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ disabled = false }) => {
             fontSize: '0.75rem',
             color: sessionLimitReached 
               ? (theme) => theme.palette.error.main 
-              : messagesRemaining <= 2 
-                ? (theme) => theme.palette.warning.main
-                : (theme) => theme.palette.text.secondary,
+              : (theme) => theme.palette.text.secondary, // Remove warning color for message count
           },
         }}
       />
