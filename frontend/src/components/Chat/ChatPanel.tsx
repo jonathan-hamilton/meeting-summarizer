@@ -16,6 +16,7 @@ import {
   SmartToy as BotIcon,
 } from '@mui/icons-material';
 import { useChatStore } from '../../stores/chatStore';
+import { useChatAnalyticsStore } from '../../stores/chatAnalyticsStore';
 import { ChatMessageComponent } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 
@@ -33,10 +34,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ open, onClose }) => {
     isLoading, 
     error, 
     sessionLimitReached,
-    messagesRemaining,
     clearMessages,
     setError,
+    sessionId,
   } = useChatStore();
+  
+  const { startSession, endSession } = useChatAnalyticsStore();
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +48,23 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ open, onClose }) => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Track session analytics
+  useEffect(() => {
+    if (open && sessionId) {
+      startSession(sessionId);
+    }
+    
+    return () => {
+      if (sessionId) {
+        endSession(undefined, true); // Assume issue resolved when chat is closed
+      }
+    };
+  }, [open, sessionId, startSession, endSession]);
+
   const handleRefresh = () => {
+    if (sessionId) {
+      endSession(undefined, false); // Session ended without resolution
+    }
     clearMessages();
     setError(null);
   };
@@ -118,21 +137,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ open, onClose }) => {
         </Box>
       </Box>
 
-      {/* Status Bar */}
-      <Box
-        sx={{
-          px: 2,
-          py: 1,
-          backgroundColor: (theme) => theme.palette.grey[50],
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-        }}
-      >
-        <Typography variant="caption" color="text.secondary">
-          {sessionLimitReached 
-            ? 'Session limit reached' 
-            : `${messagesRemaining} messages remaining`}
-        </Typography>
-      </Box>
+      {/* Status Bar - Hide message count, only show when limit reached */}
+      {sessionLimitReached && (
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            backgroundColor: (theme) => theme.palette.grey[50],
+            borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+          }}
+        >
+          <Typography variant="caption" color="text.secondary">
+            Session limit reached
+          </Typography>
+        </Box>
+      )}
 
       {/* Messages Area */}
       <Box

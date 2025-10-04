@@ -8,6 +8,13 @@ export interface ChatMessage {
   content: string;
   isUser: boolean;
   timestamp: Date;
+  actions?: ChatAction[]; // Add support for actionable responses
+}
+
+export interface ChatAction {
+  type: 'navigate' | 'scroll' | 'dialog' | 'trigger';
+  target: string;
+  label: string;
 }
 
 export interface ChatContext {
@@ -26,6 +33,7 @@ export interface ChatResponse {
   message: string;
   messagesRemaining: number;
   sessionLimitReached: boolean;
+  suggestedActions?: ChatAction[]; // Add support for actionable responses
   isSuccessful?: boolean;
   responseTime?: number;
   estimatedCost?: number;
@@ -82,7 +90,7 @@ export const useChatStore = create<ChatState>()(
       hasShownDiscovery: localStorage.getItem('chat_discovery_shown') === 'true',
       messages: [],
       sessionId: generateSessionId(),
-      messagesRemaining: 10,
+      messagesRemaining: 30,
       sessionLimitReached: false,
       error: null,
 
@@ -141,6 +149,7 @@ export const useChatStore = create<ChatState>()(
             content: chatData.message || 'I apologize, but I could not generate a response.',
             isUser: false,
             timestamp: new Date(),
+            actions: chatData.suggestedActions, // Include actionable responses
           };
 
           set((state) => ({
@@ -174,7 +183,7 @@ export const useChatStore = create<ChatState>()(
       clearMessages: () => set({ 
         messages: [], 
         sessionId: generateSessionId(),
-        messagesRemaining: 10,
+        messagesRemaining: 30,
         sessionLimitReached: false,
         error: null,
       }),

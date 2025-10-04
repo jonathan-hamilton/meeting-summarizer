@@ -11,6 +11,8 @@ import {
   SmartToy as BotIcon,
 } from '@mui/icons-material';
 import type { ChatMessage } from '../../stores/chatStore';
+import { ChatActions } from './ChatActions';
+import { ChatActionService } from '../../services/chatActionService';
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -78,6 +80,14 @@ export const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) =>
         >
           {message.content}
         </Typography>
+
+        {/* Show actionable buttons for AI messages only */}
+        {!isUser && message.actions && message.actions.length > 0 && (
+          <ChatActions 
+            actions={message.actions}
+            onActionClick={(action) => ChatActionService.executeAction(action)}
+          />
+        )}
         
         <Box sx={{ mt: 0.5, display: 'flex', justifyContent: 'flex-end' }}>
           <Chip
