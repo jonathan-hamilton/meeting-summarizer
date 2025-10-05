@@ -377,6 +377,7 @@ public class SummaryController : ControllerBase
     /// <param name="request">File size and name for duration estimation and validation</param>
     /// <returns>Estimated duration, validation status, and processing recommendations</returns>
     [HttpPost("estimate-duration")]
+    [Authorize]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(400)]
     public IActionResult EstimateDuration([FromBody] EstimateDurationRequest request)
@@ -587,6 +588,7 @@ public class SummaryController : ControllerBase
     /// <param name="transcriptionId">The ID of the transcription</param>
     /// <returns>Transcription status and result</returns>
     [HttpGet("transcribe/{transcriptionId}")]
+    [Authorize]
     [ProducesResponseType(typeof(TranscriptionResponse), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> GetTranscription(string transcriptionId)
@@ -618,6 +620,7 @@ public class SummaryController : ControllerBase
     /// <param name="request">The transcription request containing the audio file</param>
     /// <returns>Validation result only</returns>
     [HttpPost("validate")]
+    [Authorize]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(object), 200)]
     [ProducesResponseType(400)]
@@ -659,6 +662,7 @@ public class SummaryController : ControllerBase
     /// <param name="request">The summary generation request</param>
     /// <returns>Generated summary</returns>
     [HttpPost("generate")]
+    [Authorize]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(SummaryResult), 200)]
     [ProducesResponseType(400)]
@@ -725,6 +729,7 @@ public class SummaryController : ControllerBase
     /// <param name="request">The summary generation request</param>
     /// <returns>Generated summary with role awareness if speaker mappings exist</returns>
     [HttpPost("{transcriptionId}/summarize")]
+    [Authorize]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(SummaryResult), 200)]
     [ProducesResponseType(400)]
@@ -823,6 +828,7 @@ public class SummaryController : ControllerBase
     /// </summary>
     /// <returns>Service status information</returns>
     [HttpGet("status")]
+    [Authorize]
     [ProducesResponseType(typeof(object), 200)]
     public IActionResult GetSummarizationStatus()
     {
@@ -851,6 +857,7 @@ public class SummaryController : ControllerBase
     /// <param name="request">The meeting summary request</param>
     /// <returns>Meeting summary with role-grouped action items</returns>
     [HttpPost("meeting-summary")]
+    [Authorize]
     [Consumes("application/json")]
     [ProducesResponseType(typeof(MeetingSummary), 200)]
     [ProducesResponseType(400)]
@@ -1114,7 +1121,7 @@ public class SummaryController : ControllerBase
     /// <param name="audioFile">Audio file to transcribe</param>
     /// <returns>Fast transcription result with performance metrics</returns>
     [HttpPost("fast-transcription-test")]
-    //[Authorize] // Temporarily disabled for testing
+    [Authorize] // Re-enabled authorization for security
     [RequestSizeLimit(500_000_000)] // 500MB limit
     [RequestFormLimits(MultipartBodyLengthLimit = 500_000_000)]
     [ProducesResponseType(200)]

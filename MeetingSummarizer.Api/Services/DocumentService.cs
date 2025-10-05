@@ -447,8 +447,41 @@ public class DocumentService : IDocumentService
                                 }
                             }
 
-                            // Action Items section
-                            if (meetingSummary?.ActionItemsByRole?.Any() == true || meetingSummary?.UnassignedActionItems?.Any() == true)
+                            // Action Items section - Prioritize database action items over JSON action items
+                            // Database action items are the most up-to-date (includes manually added items)
+                            if (savedSummary.ActionItems?.Any() == true)
+                            {
+                                column.Item().PaddingTop(20).Text("Action Items")
+                                    .FontSize(16)
+                                    .SemiBold()
+                                    .FontColor(Colors.Blue.Darken2);
+
+                                // Group action items by assignee
+                                var groupedItems = savedSummary.ActionItems
+                                    .GroupBy(a => string.IsNullOrEmpty(a.AssignedTo) ? "Unassigned" : a.AssignedTo)
+                                    .OrderBy(g => g.Key == "Unassigned" ? 1 : 0) // Put assigned items first, unassigned last
+                                    .ThenBy(g => g.Key);
+
+                                foreach (var group in groupedItems)
+                                {
+                                    column.Item().PaddingTop(10).Text($"{group.Key}:")
+                                        .FontSize(13)
+                                        .SemiBold()
+                                        .FontColor(Colors.Blue.Darken3);
+
+                                    foreach (var actionItem in group.OrderBy(a => a.SortOrder))
+                                    {
+                                        column.Item().Row(row =>
+                                        {
+                                            row.ConstantItem(20).Text("•").FontSize(12);
+                                            row.RelativeItem().Text(actionItem.Description).LineHeight(1.3f);
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            // Fallback: If no database action items, use action items from original JSON
+                            else if (meetingSummary?.ActionItemsByRole?.Any() == true || meetingSummary?.UnassignedActionItems?.Any() == true)
                             {
                                 column.Item().PaddingTop(20).Text("Action Items")
                                     .FontSize(16)
@@ -497,33 +530,6 @@ public class DocumentService : IDocumentService
                                                 .LineHeight(1.3f);
                                         });
                                     }
-                                }
-                            }
-                            
-                            // Fallback: If no action items from JSON, use saved action items from database
-                            else if (savedSummary.ActionItems?.Any() == true)
-                            {
-                                column.Item().PaddingTop(20).Text("Action Items")
-                                    .FontSize(16)
-                                    .SemiBold()
-                                    .FontColor(Colors.Blue.Darken2);
-
-                                foreach (var actionItem in savedSummary.ActionItems.OrderBy(a => a.SortOrder))
-                                {
-                                    column.Item().Row(row =>
-                                    {
-                                        row.ConstantItem(20).Text("•").FontSize(12);
-                                        row.RelativeItem().Text(text =>
-                                        {
-                                            text.Span(actionItem.Description).LineHeight(1.3f);
-                                            if (!string.IsNullOrEmpty(actionItem.AssignedTo))
-                                            {
-                                                text.Span($" ({actionItem.AssignedTo})")
-                                                    .FontSize(10)
-                                                    .FontColor(Colors.Grey.Darken2);
-                                            }
-                                        });
-                                    });
                                 }
                             }
                         });
