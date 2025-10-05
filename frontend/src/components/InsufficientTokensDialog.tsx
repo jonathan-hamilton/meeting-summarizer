@@ -101,9 +101,6 @@ const InsufficientTokensDialog: React.FC<InsufficientTokensDialogProps> = ({
                 label={`~${estimatedDuration} minutes`}
                 variant="outlined"
               />
-              <Typography variant="body2" color="text.secondary">
-                Large files require processing with token consumption
-              </Typography>
             </Stack>
           </Box>
 

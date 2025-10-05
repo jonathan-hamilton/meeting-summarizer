@@ -297,8 +297,9 @@ public class OpenAISummarizationService : ISummarizationService
         var promptBuilder = new StringBuilder();
 
         // Base system prompt
-        promptBuilder.AppendLine("You are an expert meeting assistant that creates professional, concise summaries of meeting transcripts.");
+        promptBuilder.AppendLine("You are an expert meeting assistant that creates professional, well-formatted summaries of meeting transcripts.");
         promptBuilder.AppendLine("Focus on clarity, accuracy, and actionable insights.");
+        promptBuilder.AppendLine("Use clear formatting with section headers, bullet points, and structured content for readability.");
         promptBuilder.AppendLine();
 
         // Style-specific instructions
@@ -307,6 +308,7 @@ public class OpenAISummarizationService : ISummarizationService
             case SummaryStyle.Brief:
                 promptBuilder.AppendLine("Create a brief, high-level summary focusing on the main topics and key outcomes.");
                 promptBuilder.AppendLine("Keep it concise - 2-3 paragraphs maximum.");
+                promptBuilder.AppendLine("Use clear paragraph breaks and structure your content logically.");
                 break;
 
             case SummaryStyle.Detailed:
@@ -315,6 +317,7 @@ public class OpenAISummarizationService : ISummarizationService
                 promptBuilder.AppendLine("- Key decisions made");
                 promptBuilder.AppendLine("- Action items identified");
                 promptBuilder.AppendLine("- Important discussion points");
+                promptBuilder.AppendLine("Format with clear section headers and bullet points for easy reading.");
                 break;
 
             case SummaryStyle.ActionItems:
@@ -322,6 +325,7 @@ public class OpenAISummarizationService : ISummarizationService
                 promptBuilder.AppendLine("- List specific tasks assigned or discussed");
                 promptBuilder.AppendLine("- Include who is responsible (if mentioned)");
                 promptBuilder.AppendLine("- Note any deadlines or timeline mentioned");
+                promptBuilder.AppendLine("Use bullet points and clear formatting to organize action items.");
                 break;
 
             case SummaryStyle.KeyDecisions:
@@ -329,6 +333,7 @@ public class OpenAISummarizationService : ISummarizationService
                 promptBuilder.AppendLine("- What decisions were made during the meeting");
                 promptBuilder.AppendLine("- What was decided and why");
                 promptBuilder.AppendLine("- Any alternatives considered");
+                promptBuilder.AppendLine("Structure decisions clearly with bullet points or numbered lists.");
                 break;
 
             case SummaryStyle.ExecutiveSummary:
@@ -336,6 +341,7 @@ public class OpenAISummarizationService : ISummarizationService
                 promptBuilder.AppendLine("- High-level outcomes and strategic implications");
                 promptBuilder.AppendLine("- Key decisions affecting business operations");
                 promptBuilder.AppendLine("- Critical action items requiring attention");
+                promptBuilder.AppendLine("Use executive-style formatting with clear sections and bullet points.");
                 break;
         }
 
@@ -347,6 +353,13 @@ public class OpenAISummarizationService : ISummarizationService
             promptBuilder.AppendLine("Emphasize information most relevant to this role.");
         }
 
+        promptBuilder.AppendLine();
+        promptBuilder.AppendLine("FORMATTING REQUIREMENTS:");
+        promptBuilder.AppendLine("- Use clear section headers followed by colons (e.g., 'Key Business Objectives:', 'Technical Goals:')");
+        promptBuilder.AppendLine("- Break long content into multiple paragraphs for readability");
+        promptBuilder.AppendLine("- Use bullet points for lists (start lines with '- ')");
+        promptBuilder.AppendLine("- Separate different topics with clear paragraph breaks");
+        promptBuilder.AppendLine("- Avoid wall-of-text formatting");
         promptBuilder.AppendLine();
         promptBuilder.AppendLine("Meeting transcript to summarize:");
         promptBuilder.AppendLine(transcript);

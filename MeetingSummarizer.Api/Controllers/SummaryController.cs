@@ -691,8 +691,9 @@ public class SummaryController : ControllerBase
             }
             else
             {
-                _logger.LogInformation("Generating standard summary without speaker mappings");
-                result = await _summarizationService.GenerateSummaryAsync(request.Transcript, options);
+                _logger.LogInformation("Generating standard summary without speaker mappings - anonymizing speaker names");
+                var anonymizedTranscript = AnonymizeSpeakerNames(request.Transcript);
+                result = await _summarizationService.GenerateSummaryAsync(anonymizedTranscript, options);
             }
 
             _logger.LogInformation("Summary generation completed. Style: {Style}, Output length: {Length} characters, Time: {TimeMs}ms",
@@ -1178,6 +1179,58 @@ public class SummaryController : ControllerBase
             _logger.LogError(ex, "Error during fast transcription test for file: {FileName}", audioFile?.FileName);
             return StatusCode(500, new { error = "An error occurred during transcription.", details = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Anonymize speaker names in transcript by replacing actual names with generic Speaker X labels
+    /// </summary>
+    private string AnonymizeSpeakerNames(string transcript)
+    {
+        if (string.IsNullOrWhiteSpace(transcript))
+            return transcript;
+
+        // Find all unique speaker patterns (both "Speaker X:" and "Name:" formats)
+        var speakerPattern = @"^([A-Za-z][A-Za-z0-9\s]*):";
+        var matches = System.Text.RegularExpressions.Regex.Matches(transcript, speakerPattern, 
+            System.Text.RegularExpressions.RegexOptions.Multiline);
+        
+        var uniqueSpeakers = new Dictionary<string, string>();
+        int speakerCounter = 1;
+        
+        // Build mapping of actual names to generic speaker labels
+        foreach (System.Text.RegularExpressions.Match match in matches)
+        {
+            var speakerName = match.Groups[1].Value.Trim();
+            
+            // Skip if already a generic speaker label
+            if (System.Text.RegularExpressions.Regex.IsMatch(speakerName, @"^Speaker\s+\d+$", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                continue;
+                
+            // Skip very short names that might be abbreviations or false positives
+            if (speakerName.Length < 2)
+                continue;
+                
+            if (!uniqueSpeakers.ContainsKey(speakerName))
+            {
+                uniqueSpeakers[speakerName] = $"Speaker {speakerCounter}";
+                speakerCounter++;
+            }
+        }
+        
+        // Replace all speaker names with generic labels
+        var anonymizedTranscript = transcript;
+        foreach (var mapping in uniqueSpeakers)
+        {
+            var pattern = $@"\b{System.Text.RegularExpressions.Regex.Escape(mapping.Key)}:";
+            anonymizedTranscript = System.Text.RegularExpressions.Regex.Replace(anonymizedTranscript, pattern, 
+                $"{mapping.Value}:", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+        
+        _logger.LogInformation("Anonymized {SpeakerCount} unique speakers: {Mappings}", 
+            uniqueSpeakers.Count, string.Join(", ", uniqueSpeakers.Select(m => $"{m.Key} -> {m.Value}")));
+        
+        return anonymizedTranscript;
     }
 
     #endregion

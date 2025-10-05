@@ -209,4 +209,90 @@ public class ExportController : ControllerBase
             return StatusCode(500, new { message = "An error occurred while getting export information." });
         }
     }
+
+    /// <summary>
+    /// Generate and download a PDF summary for the specified saved summary
+    /// </summary>
+    /// <param name="summaryId">The saved summary identifier</param>
+    /// <returns>PDF file download</returns>
+    [HttpGet("summary/{summaryId}/pdf")]
+    public async Task<IActionResult> DownloadSummaryPdf(string summaryId)
+    {
+        try
+        {
+            // Get the current user ID from JWT token
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized("Invalid user authentication");
+            }
+
+            _logger.LogInformation("Summary PDF download requested for summaryId: {SummaryId} by user: {UserId}", summaryId, userId);
+
+            // Find the saved summary by ID and verify ownership
+            SavedSummary? savedSummary = null;
+            
+            if (Guid.TryParse(summaryId, out var summaryGuid))
+            {
+                savedSummary = await _context.SavedSummaries
+                    .Include(s => s.Meeting)
+                    .Where(s => s.Id == summaryGuid && s.UserId == userId)
+                    .FirstOrDefaultAsync();
+            }
+            else
+            {
+                _logger.LogWarning("SummaryId {SummaryId} is not a valid GUID", summaryId);
+            }
+
+            if (savedSummary == null)
+            {
+                return NotFound($"Summary not found or access denied for summary ID: {summaryId}");
+            }
+
+            // Parse speaker mappings from the associated meeting (if available)
+            var speakerMappings = new List<Models.SpeakerMapping>();
+            if (savedSummary.Meeting != null && !string.IsNullOrEmpty(savedSummary.Meeting.SpeakerMappingsJson))
+            {
+                try
+                {
+                    var mappingData = System.Text.Json.JsonSerializer.Deserialize<Models.SpeakerMappingResponse>(savedSummary.Meeting.SpeakerMappingsJson);
+                    speakerMappings = mappingData?.Mappings?.ToList() ?? new List<Models.SpeakerMapping>();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse speaker mappings for summary {SummaryId}", savedSummary.Id);
+                }
+            }
+
+            _logger.LogInformation("Generating summary PDF for summary {SummaryId} with {MappingCount} speaker mappings", 
+                summaryId, speakerMappings.Count);
+
+            // Generate the PDF
+            var pdfBytes = await _documentService.GenerateSummaryPdfAsync(summaryId, speakerMappings);
+
+            // Create filename with timestamp
+            var fileName = $"meeting-summary-{DateTime.UtcNow:yyyy-MM-dd-HH-mm}.pdf";
+
+            _logger.LogInformation("Successfully generated summary PDF {FileName} ({Size} bytes) for user {UserId}", 
+                fileName, pdfBytes.Length, userId);
+
+            // Return the PDF file
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid summary ID requested: {SummaryId}", summaryId);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "No summary data found for summary ID: {SummaryId}", summaryId);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error generating summary PDF for summary {SummaryId}", summaryId);
+            return StatusCode(500, new { message = "An error occurred while generating the PDF. Please try again later." });
+        }
+    }
 }

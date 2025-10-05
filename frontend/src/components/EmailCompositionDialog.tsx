@@ -21,6 +21,7 @@ import {
 } from '@mui/icons-material';
 import { useEmailStore } from '../stores/emailStore';
 import { EmailService } from '../services/emailService';
+import { formatTranscriptText } from '../utils/summaryFormatting';
 import FocusTrap from 'focus-trap-react';
 
 interface EmailCompositionDialogProps {
@@ -91,17 +92,41 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
       if (includeTranscript && transcriptData) {
         finalContent += '\n\n--- Full Meeting Transcript ---\n\n';
         if (transcriptData.transcribedText) {
-          finalContent += transcriptData.transcribedText;
+          // Format the transcript text for better readability
+          const formattedTranscript = formatTranscriptText(transcriptData.transcribedText);
+          finalContent += formattedTranscript;
         }
       }
 
+      // Only send summary if NOT in transcript-only mode
+      const meetingSummaryToSend = transcriptOnly ? undefined : (summary || undefined);
+      
+      // Prepare transcript data if including transcript
+      const transcriptDataToSend = includeTranscript && transcriptData ? {
+        transcriptionId: transcriptData.transcriptionId,
+        fileName: transcriptData.fileName,
+        speakerSegments: transcriptData.speakerSegments || [],
+        transcribedText: transcriptData.transcribedText || ''
+      } : undefined;
+      
       const result = await emailService.sendEmail({
         recipients: storeRecipients,
         subject: storeSubject,
         content: finalContent,
-        meetingSummary: summary || undefined,
+        meetingSummary: meetingSummaryToSend,
         speakerMappings: speakerMappings,
+        transcriptData: transcriptDataToSend,
+        includeTranscript: includeTranscript,
       });
+      
+      console.log('🔍 EmailCompositionDialog - Email send debug:');
+      console.log('  - transcriptOnly:', transcriptOnly);
+      console.log('  - summary:', summary);
+      console.log('  - summary type:', typeof summary);
+      console.log('  - summary undefined?:', summary === undefined);
+      console.log('  - summary null?:', summary === null);
+      console.log('  - meetingSummaryToSend:', meetingSummaryToSend);
+      console.log('  - meetingSummary sent to service:', meetingSummaryToSend);
 
       if (result.success) {
         setSendSuccess(`Email sent successfully to ${result.recipientsCount} recipient(s)!`);

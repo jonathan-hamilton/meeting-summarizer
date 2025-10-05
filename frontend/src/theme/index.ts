@@ -197,6 +197,24 @@ const lightThemeOptions: ThemeOptions = {
         }),
       },
     },
+    // Better Alert styling for error messages
+    MuiAlert: {
+      styleOverrides: {
+        root: ({ theme, ownerState }) => ({
+          ...(ownerState.severity === 'error' && {
+            backgroundColor: theme.palette.mode === 'light' ? '#ffebee' : '#5f2120',
+            border: `1px solid ${theme.palette.mode === 'light' ? '#f44336' : '#d32f2f'}`,
+            '& .MuiAlert-message': {
+              color: theme.palette.mode === 'light' ? '#000000' : '#ffffff',
+              fontWeight: 500,
+            },
+            '& .MuiAlert-icon': {
+              color: theme.palette.mode === 'light' ? '#d32f2f' : '#f44336',
+            },
+          }),
+        }),
+      },
+    },
   },
 };
 

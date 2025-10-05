@@ -22,15 +22,17 @@ import type { MeetingSummary } from '../types';
 interface SummaryHeaderProps {
   summary: MeetingSummary;
   totalActionItems: number;
+  speakerCount: number; // Add actual speaker count prop
   onShareClick: () => void;
-  onCopyClick: () => void;
+  onPdfDownload: () => void;
 }
 
 const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   summary,
   totalActionItems,
+  speakerCount,
   onShareClick,
-  onCopyClick,
+  onPdfDownload,
 }) => {
   return (
     <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
@@ -39,14 +41,14 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         <Typography variant="h6">Summary Generated</Typography>
         <Box sx={{ flexGrow: 1 }} />
         
-        {/* Action Buttons - Copy first, then Email */}
+        {/* Action Buttons - PDF first, then Email */}
         <Tooltip title="Download summary as PDF">
           <span>
             <IconButton
-              onClick={onCopyClick}
+              onClick={onPdfDownload}
               size="small"
               aria-label="Download summary as PDF"
-              aria-describedby="copy-summary-tooltip"
+              aria-describedby="pdf-download-tooltip"
             >
               <PictureAsPdf fontSize="small" />
             </IconButton>
@@ -89,7 +91,7 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         />
         <Chip
           icon={<Person />}
-          label={`${summary.actionItemsByRole.length} speakers`}
+          label={`${speakerCount} speakers`}
           variant="outlined"
           size="small"
         />

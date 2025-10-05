@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import SummaryHeader from "./SummaryHeader";
 import ActionItemsSection from "./ActionItemsSection";
+import FormattedSummaryText from "./FormattedSummaryText";
 
 import {
   Psychology,
@@ -23,6 +24,7 @@ import { useSummaryStore } from "../stores/summaryStore";
 import { useEmailStore } from "../stores/emailStore";
 import { useAppMode } from "../contexts/AppModeContext";
 import { useAuthStore } from "../stores/authStore";
+import { createApiService } from "../services/apiServiceFactory";
 
 // EmailCompositionDialog now handled by TranscriptDisplay
 
@@ -79,7 +81,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     autoSaveEnabled,
     // Summary persistence actions
     loadUserSummaries,
-    selectSavedSummary
+    selectSavedSummary,
+    selectedSavedSummary
   } = useSummaryStore();
   
   // Get authentication state for user ID
@@ -363,12 +366,34 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     }
   };
 
+  const handlePdfDownload = async () => {
+    try {
+      if (!selectedSavedSummary?.id) {
+        showSnackbar("Cannot download PDF: Summary not saved", "error");
+        return;
+      }
+
+      console.log('📄 Starting summary PDF download for summary ID:', selectedSavedSummary.id);
+      const apiService = createApiService(mode);
+      await (apiService as any).downloadSummaryPdf(selectedSavedSummary.id);
+      showSnackbar("PDF download started!", "success");
+    } catch (error: any) {
+      console.error('PDF download failed:', error);
+      showSnackbar(error.message || "Failed to download PDF", "error");
+    }
+  };
+
   const handleSnackbarClose = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
   const handleEmailShare = () => {
     console.log('📧 Summary EMAIL button clicked - opening email dialog with summary context');
+    console.log('🔍 Debug - summary:', summary);
+    console.log('🔍 Debug - summary type:', typeof summary);
+    console.log('🔍 Debug - summary null?:', summary === null);
+    console.log('🔍 Debug - summary undefined?:', summary === undefined);
+    console.log('🔍 Debug - actionItems:', actionItems);
     
     // Construct transcript data for email functionality
     const transcriptData = fileName && transcriptText ? {
@@ -379,6 +404,14 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     } : null;
     
     // Open email dialog with summary context
+    console.log('🔍 DEBUG: Opening email dialog with summary:', {
+      hasSummary: !!summary,
+      summaryId: summary?.summaryId,
+      overviewLength: summary?.meetingOverview?.length || 0,
+      actionItemsCount: actionItems.length,
+      speakerMappingsCount: effectiveSpeakerMappings.length
+    });
+    
     openEmailDialog({
       summary: summary,
       actionItems: actionItems,
@@ -463,8 +496,9 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
             <SummaryHeader
               summary={summary}
               totalActionItems={getTotalActionItems()}
+              speakerCount={effectiveSpeakerMappings.length || detectedSpeakers.length}
               onShareClick={handleEmailShare}
-              onCopyClick={() => handleCopyToClipboard(summary.meetingOverview, "Summary")}
+              onPdfDownload={handlePdfDownload}
             />
 
 
@@ -474,9 +508,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               <Typography variant="h6" gutterBottom>
                 {mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}
               </Typography>
-              <Typography variant="body1" sx={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                {summary.meetingOverview}
-              </Typography>
+              <FormattedSummaryText text={summary.meetingOverview} />
             </Box>
 
             <Divider sx={{ my: 3 }} />

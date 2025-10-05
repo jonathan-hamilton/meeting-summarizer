@@ -338,7 +338,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
         } else {
           const errorData = response.errors?.[0] || response.message || "Upload failed";
           
-          if (response.message === "Insufficient tokens for transcription processing" || 
+          if (response.message === "Insufficient tokens to process this audio file" || 
+              response.message === "Insufficient tokens for transcription processing" || 
               response.errorData?.error === "Insufficient tokens for transcription processing") {
             const errorData = response.errorData || {};
             setTokenError({
