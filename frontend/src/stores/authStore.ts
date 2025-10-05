@@ -400,6 +400,25 @@ export const useAuthStore = create<AuthStore>()(
 
       clearVerificationError: () => {
         set({ verificationError: null });
+      },
+
+      // S6.2.2: Password change functionality
+      changePassword: async (currentPassword: string, newPassword: string) => {
+        const { accessToken } = get();
+        if (!accessToken) {
+          throw new Error('User not authenticated');
+        }
+
+        try {
+          console.log('🔑 Attempting password change...');
+          await authService.changePassword(currentPassword, newPassword, accessToken);
+          console.log('✅ Password change successful');
+          // Password change successful - no need to update tokens or user state
+        } catch (error) {
+          console.error('❌ Password change failed:', error);
+          // Re-throw the error to be handled by the UI component
+          throw error;
+        }
       }
     }),
     {

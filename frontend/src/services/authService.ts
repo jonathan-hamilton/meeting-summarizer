@@ -107,6 +107,29 @@ class AuthService {
       return true;
     }
   }
+
+  async changePassword(currentPassword: string, newPassword: string, accessToken: string): Promise<void> {
+    try {
+      console.log('🌐 Making password change request to:', `${API_BASE_URL}/auth/change-password`);
+      const response = await axios.post(`${API_BASE_URL}/auth/change-password`, {
+        currentPassword,
+        newPassword,
+        confirmNewPassword: newPassword
+      }, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      console.log('🌐 Password change response:', response.status, response.data);
+    } catch (error) {
+      console.error('🌐 Password change error:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        console.error('🌐 Error response:', error.response.status, error.response.data);
+        throw new Error(error.response.data?.error || 'Failed to change password');
+      }
+      throw new Error('Network error during password change');
+    }
+  }
 }
 
 export default AuthService;
