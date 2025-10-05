@@ -32,6 +32,11 @@ public interface IUserManagementService
     Task<User> UpdateUserAsync(Guid userId, UpdateUserRequest request);
     
     /// <summary>
+    /// Update user password with new hash and salt
+    /// </summary>
+    Task UpdatePasswordAsync(Guid userId, string passwordHash, string salt);
+    
+    /// <summary>
     /// Add tokens to user account
     /// </summary>
     Task<User> AddTokensAsync(Guid userId, decimal tokenAmount);
@@ -170,6 +175,22 @@ public class UserManagementService : IUserManagementService
         _logger.LogInformation("Updated user information: {UserId}", userId);
         
         return user;
+    }
+
+    public async Task UpdatePasswordAsync(Guid userId, string passwordHash, string salt)
+    {
+        var user = await GetUserByIdAsync(userId);
+        if (user == null)
+        {
+            throw new ArgumentException($"User {userId} not found");
+        }
+
+        user.PasswordHash = passwordHash;
+        user.Salt = salt;
+        user.LastActivityAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Updated password for user: {UserId}", userId);
     }
 
     public async Task<User> AddTokensAsync(Guid userId, decimal tokenAmount)

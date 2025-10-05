@@ -324,6 +324,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   const handleDeleteActionItem = (actionItemId: string) => {
     deleteActionItem(actionItemId);
     showSnackbar("Action item deleted successfully!", "success");
+    // Trigger immediate auto-save after deletion
+    if (autoSaveEnabled) {
+      triggerAutoSave();
+    }
   };
 
   const handleSaveActionItem = (actionItemData: Omit<ActionItem, 'id'>) => {
@@ -335,6 +339,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
       // Create new action item
       addActionItem(actionItemData);
       showSnackbar("Action item created successfully!", "success");
+    }
+    // Trigger immediate auto-save after add/update
+    if (autoSaveEnabled) {
+      triggerAutoSave();
     }
   };
 
@@ -357,12 +365,21 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     return Array.from(speakers).sort();
   }, [effectiveSpeakerMappings, detectedSpeakers]);
   
-  const handleCopyToClipboard = async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      showSnackbar(`${type} copied to clipboard!`, "success");
-    } catch (err) {
-      showSnackbar("Failed to copy to clipboard", "error");
+  // Wrapper for reordering that triggers auto-save
+  const handleReorderActionItems = (newOrder: ActionItem[]) => {
+    reorderActionItems(newOrder);
+    // Trigger immediate auto-save after reordering
+    if (autoSaveEnabled) {
+      triggerAutoSave();
+    }
+  };
+
+  // Wrapper for updating that triggers auto-save
+  const handleUpdateActionItem = (id: string, updates: Partial<ActionItem>) => {
+    updateActionItem(id, updates);
+    // Trigger immediate auto-save after updating
+    if (autoSaveEnabled) {
+      triggerAutoSave();
     }
   };
 
@@ -520,8 +537,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               onCreateActionItem={handleCreateActionItem}
               onEditActionItem={handleEditActionItem}
               onDeleteActionItem={handleDeleteActionItem}
-              onReorderActionItems={reorderActionItems}
-              onUpdateActionItem={updateActionItem}
+              onReorderActionItems={handleReorderActionItems}
+              onUpdateActionItem={handleUpdateActionItem}
               onSnackbar={showSnackbar}
             />
 

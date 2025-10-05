@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.UserManagement;
@@ -257,6 +259,82 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving user profile");
             return Task.FromResult<ActionResult<UserResponse>>(StatusCode(500, new { message = "An error occurred while retrieving profile" }));
+        }
+    }
+
+    /// <summary>
+    /// Validate password meets security requirements
+    /// </summary>
+    private static bool IsValidPassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        {
+            return false;
+        }
+
+        bool hasUpper = false, hasLower = false, hasDigit = false;
+        foreach (char c in password)
+        {
+            if (char.IsUpper(c)) hasUpper = true;
+            else if (char.IsLower(c)) hasLower = true;
+            else if (char.IsDigit(c)) hasDigit = true;
+        }
+
+        return hasUpper && hasLower && hasDigit;
+    }
+
+    /// <summary>
+    /// Change user password (requires authentication)
+    /// </summary>
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            // Get user ID from JWT claims
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                _logger.LogWarning("Change password attempt with invalid user ID claim");
+                return Unauthorized(new { message = "Invalid authentication" });
+            }
+
+            // Get current user
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("Change password attempt for non-existent user: {UserId}", userId);
+                return Unauthorized(new { message = "User not found" });
+            }
+
+            // Verify current password
+            if (string.IsNullOrWhiteSpace(user.PasswordHash) || 
+                !_jwtService.VerifyPassword(request.CurrentPassword, user.PasswordHash, user.Salt))
+            {
+                _logger.LogWarning("Password change failed - incorrect current password for user: {UserId}", userId);
+                return BadRequest(new { message = "Current password is incorrect" });
+            }
+
+            // Validate new password meets requirements (8+ chars, mixed case, numbers)
+            if (!IsValidPassword(request.NewPassword))
+            {
+                return BadRequest(new { message = "New password does not meet security requirements: minimum 8 characters with mixed case letters and numbers" });
+            }
+
+            // Hash new password
+            var (passwordHash, salt) = _jwtService.HashPassword(request.NewPassword);
+
+            // Update user password
+            await _userService.UpdatePasswordAsync(userId, passwordHash, salt);
+
+            _logger.LogInformation("Password changed successfully for user: {UserId}", userId);
+            return Ok(new { message = "Password changed successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during password change");
+            return StatusCode(500, new { message = "An error occurred while changing password" });
         }
     }
 

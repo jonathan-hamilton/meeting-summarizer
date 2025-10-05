@@ -72,4 +72,6 @@ export interface AuthActions {
   resendVerificationEmail: () => Promise<{ success: boolean; error?: string }>;
   checkVerificationStatus: () => Promise<void>;
   clearVerificationError: () => void;
+  // Password change action (S6.2.2)
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
