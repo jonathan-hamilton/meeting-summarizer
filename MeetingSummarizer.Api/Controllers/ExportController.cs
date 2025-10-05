@@ -38,14 +38,16 @@ public class ExportController : ControllerBase
     {
         try
         {
-            // Get the current user ID from JWT token
+            // Get the current user ID from JWT token (optional for demo mode)
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            Guid? userId = null;
+            
+            if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var parsedUserId))
             {
-                return Unauthorized("Invalid user authentication");
+                userId = parsedUserId;
             }
 
-            _logger.LogInformation("PDF download requested for transcriptionId: {TranscriptionId} by user: {UserId}", transcriptionId, userId);
+            _logger.LogInformation("PDF download requested for transcriptionId: {TranscriptionId} by user: {UserId}", transcriptionId, userId?.ToString() ?? "anonymous");
 
             // Find the meeting by transcription ID (could be fast transcription job ID or meeting ID)
             Meeting? meeting = null;
@@ -54,26 +56,57 @@ public class ExportController : ControllerBase
             {
                 _logger.LogDebug("Parsed transcriptionId as GUID: {Guid}", transcriptionGuid);
                 
-                // First try to find by fast transcription job ID
-                var fastJob = await _context.FastTranscriptionJobs
-                    .Where(f => f.Id == transcriptionGuid && f.UserId == userId)
-                    .FirstOrDefaultAsync();
-
-                if (fastJob != null && fastJob.MeetingId.HasValue)
+                if (userId.HasValue)
                 {
-                    _logger.LogDebug("Found fast job {FastJobId} linked to meeting {MeetingId}", fastJob.Id, fastJob.MeetingId);
-                    // Found fast job, get the associated meeting
-                    meeting = await _context.Meetings
-                        .Where(m => m.Id == fastJob.MeetingId.Value && m.UserId == userId)
+                    // Authenticated user - check ownership
+                    // First try to find by fast transcription job ID
+                    var fastJob = await _context.FastTranscriptionJobs
+                        .Where(f => f.Id == transcriptionGuid && f.UserId == userId.Value)
                         .FirstOrDefaultAsync();
+
+                    if (fastJob != null && fastJob.MeetingId.HasValue)
+                    {
+                        _logger.LogDebug("Found fast job {FastJobId} linked to meeting {MeetingId}", fastJob.Id, fastJob.MeetingId);
+                        // Found fast job, get the associated meeting
+                        meeting = await _context.Meetings
+                            .Where(m => m.Id == fastJob.MeetingId.Value && m.UserId == userId.Value)
+                            .FirstOrDefaultAsync();
+                    }
+                    else
+                    {
+                        _logger.LogDebug("No fast transcription job found, trying to find meeting by ID directly");
+                        // Try to find meeting by ID directly
+                        meeting = await _context.Meetings
+                            .Where(m => m.Id == transcriptionGuid && m.UserId == userId.Value)
+                            .FirstOrDefaultAsync();
+                    }
                 }
                 else
                 {
-                    _logger.LogDebug("No fast transcription job found, trying to find meeting by ID directly");
-                    // Try to find meeting by ID directly
-                    meeting = await _context.Meetings
-                        .Where(m => m.Id == transcriptionGuid && m.UserId == userId)
+                    // Anonymous user - find any meeting with this ID (demo mode)
+                    _logger.LogDebug("Anonymous access - looking for meeting by ID without user restriction");
+                    
+                    // First try to find by fast transcription job ID
+                    var fastJob = await _context.FastTranscriptionJobs
+                        .Where(f => f.Id == transcriptionGuid)
                         .FirstOrDefaultAsync();
+
+                    if (fastJob != null && fastJob.MeetingId.HasValue)
+                    {
+                        _logger.LogDebug("Found fast job {FastJobId} linked to meeting {MeetingId}", fastJob.Id, fastJob.MeetingId);
+                        // Found fast job, get the associated meeting
+                        meeting = await _context.Meetings
+                            .Where(m => m.Id == fastJob.MeetingId.Value)
+                            .FirstOrDefaultAsync();
+                    }
+                    else
+                    {
+                        _logger.LogDebug("No fast transcription job found, trying to find meeting by ID directly");
+                        // Try to find meeting by ID directly
+                        meeting = await _context.Meetings
+                            .Where(m => m.Id == transcriptionGuid)
+                            .FirstOrDefaultAsync();
+                    }
                 }
             }
             else
@@ -111,7 +144,7 @@ public class ExportController : ControllerBase
             var fileName = $"meeting-transcript-{DateTime.UtcNow:yyyy-MM-dd-HH-mm}.pdf";
 
             _logger.LogInformation("Successfully generated PDF {FileName} ({Size} bytes) for user {UserId}", 
-                fileName, pdfBytes.Length, userId);
+                fileName, pdfBytes.Length, userId?.ToString() ?? "anonymous");
 
             // Return the PDF file
             return File(pdfBytes, "application/pdf", fileName);

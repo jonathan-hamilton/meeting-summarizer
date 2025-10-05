@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Models;
 
@@ -10,6 +11,7 @@ namespace MeetingSummarizer.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] // Require authentication for all file processing operations
 public class FileProcessingController : ControllerBase
 {
     private readonly ILogger<FileProcessingController> _logger;
