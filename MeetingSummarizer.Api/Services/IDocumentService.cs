@@ -11,4 +11,12 @@ public interface IDocumentService
     /// <param name="speakerMappings">List of speaker mappings for enhanced formatting</param>
     /// <returns>PDF document as byte array</returns>
     Task<byte[]> GenerateTranscriptPdfAsync(string transcriptionId, List<Models.SpeakerMapping> speakerMappings);
+
+    /// <summary>
+    /// Generates a PDF document containing the meeting summary with speaker mappings
+    /// </summary>
+    /// <param name="summaryId">The summary identifier</param>
+    /// <param name="speakerMappings">List of speaker mappings for enhanced formatting</param>
+    /// <returns>PDF document as byte array</returns>
+    Task<byte[]> GenerateSummaryPdfAsync(string summaryId, List<Models.SpeakerMapping> speakerMappings);
 }

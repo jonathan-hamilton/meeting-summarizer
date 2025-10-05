@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { MeetingSummary, SpeakerMapping, ActionItem } from '../types';
 import { useAccessibilityStore } from './accessibilityStore';
+import { formatSummaryForEmail, formatActionItemsForEmail } from '../utils/summaryFormatting';
 
 interface TranscriptData {
   transcriptionId: string;
@@ -257,35 +258,11 @@ function generateSummaryEmailContent(
     .map(speaker => `• ${speaker.name}${speaker.role ? ` - ${speaker.role}` : ''}`)
     .join('\n');
 
-  // Group action items by speaker
-  const groupedActionItems: { [speakerId: string]: { speakerName: string; items: ActionItem[] } } = {};
+  // Format the summary using the same logic as the UI
+  const formattedSummary = formatSummaryForEmail(summary.meetingOverview || 'No overview available.');
   
-  actionItems.forEach(item => {
-    const speakerId = item.assignedTo || 'Unassigned';
-    
-    if (!groupedActionItems[speakerId]) {
-      const speakerMapping = speakerMappings.find(m => m.speakerId === speakerId);
-      const speakerName = speakerMapping?.name || (speakerId === 'Unassigned' ? 'Unassigned' : speakerId);
-      
-      groupedActionItems[speakerId] = {
-        speakerName,
-        items: []
-      };
-    }
-    
-    groupedActionItems[speakerId].items.push(item);
-  });
-
-  let actionItemsText = '';
-  if (Object.keys(groupedActionItems).length > 0) {
-    actionItemsText = '\n## Action Items\n';
-    Object.entries(groupedActionItems).forEach(([, group]) => {
-      actionItemsText += `\n### ${group.speakerName}\n`;
-      group.items.forEach(item => {
-        actionItemsText += `• ${item.description}\n`;
-      });
-    });
-  }
+  // Format action items using the utility function
+  const actionItemsText = formatActionItemsForEmail(actionItems, speakerMappings);
 
   const meetingDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
@@ -299,11 +276,14 @@ function generateSummaryEmailContent(
 I hope this message finds you well. Please find the comprehensive meeting summary from our session on ${meetingDate} below.
 
 ## 📋 Meeting Overview
-${summary.meetingOverview || 'No overview available.'}
+
+${formattedSummary}
 
 ## 👥 Meeting Participants
 ${participantsList || 'No participants mapped.'}
-${actionItemsText}
+
+## 📋 Action Items
+${actionItemsText || 'No action items identified.'}
 
 ## 📝 Next Steps
 Please review the action items above and reach out if you have any questions or need clarification on your responsibilities.

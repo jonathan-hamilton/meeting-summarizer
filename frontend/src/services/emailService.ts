@@ -1,5 +1,12 @@
 import apiService from './apiService';
-import type { MeetingSummary, SpeakerMapping } from '../types';
+import type { MeetingSummary, SpeakerMapping, SpeakerSegment } from '../types';
+
+export interface TranscriptEmailData {
+  transcriptionId: string;
+  fileName: string;
+  speakerSegments: SpeakerSegment[];
+  transcribedText: string;
+}
 
 export interface SendEmailRequest {
   recipients: string[];
@@ -8,6 +15,8 @@ export interface SendEmailRequest {
   plainTextContent?: string;
   meetingSummary?: MeetingSummary;
   speakerMappings?: SpeakerMapping[];
+  transcriptData?: TranscriptEmailData;
+  includeTranscript?: boolean;
 }
 
 export interface SendEmailResponse {

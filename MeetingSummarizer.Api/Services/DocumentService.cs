@@ -5,6 +5,7 @@ using QuestPDF.Infrastructure;
 using MeetingSummarizer.Api.Data;
 using MeetingSummarizer.Api.Data.Entities;
 using MeetingSummarizer.Api.Models;
+using System.Text.Json;
 
 namespace MeetingSummarizer.Api.Services;
 
@@ -262,6 +263,287 @@ public class DocumentService : IDocumentService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating PDF for transcription {TranscriptionId}", transcriptionId);
+            throw;
+        }
+    }
+
+    public async Task<byte[]> GenerateSummaryPdfAsync(string summaryId, List<Models.SpeakerMapping> speakerMappings)
+    {
+        try
+        {
+            // Find the saved summary by ID
+            SavedSummary? savedSummary = null;
+            
+            if (Guid.TryParse(summaryId, out var summaryGuid))
+            {
+                savedSummary = await _context.SavedSummaries
+                    .Include(s => s.Meeting)
+                    .Include(s => s.ActionItems)
+                    .Where(s => s.Id == summaryGuid)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (savedSummary == null)
+            {
+                throw new ArgumentException($"Meeting summary not found for ID: {summaryId}");
+            }
+
+            // Parse the summary data from JSON
+            Models.MeetingSummary? meetingSummary = null;
+            string summaryContent = string.Empty;
+            
+            _logger.LogInformation("Processing summary {SummaryId} with SummaryData length: {Length}", 
+                savedSummary.Id, savedSummary.SummaryData?.Length ?? 0);
+
+            if (!string.IsNullOrEmpty(savedSummary.SummaryData))
+            {
+                try
+                {
+                    // Configure JSON options to handle camelCase from frontend
+                    var jsonOptions = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    };
+                    
+                    meetingSummary = System.Text.Json.JsonSerializer.Deserialize<Models.MeetingSummary>(savedSummary.SummaryData, jsonOptions);
+                    summaryContent = meetingSummary?.MeetingOverview ?? string.Empty;
+                    
+                    _logger.LogInformation("Deserialized summary for {SummaryId}: MeetingOverview length: {Length}, HasActionItems: {HasActionItems}", 
+                        savedSummary.Id, summaryContent.Length, meetingSummary?.ActionItemsByRole?.Any() == true);
+                        
+                    // Log the first 500 characters of the raw JSON to understand the structure
+                    var jsonPreview = savedSummary.SummaryData.Length > 500 ? savedSummary.SummaryData[..500] + "..." : savedSummary.SummaryData;
+                    _logger.LogInformation("Raw JSON preview for {SummaryId}: {JsonPreview}", savedSummary.Id, jsonPreview);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse summary data for summary {SummaryId}, content preview: {ContentPreview}", 
+                        savedSummary.Id, savedSummary.SummaryData.Length > 200 ? savedSummary.SummaryData[..200] + "..." : savedSummary.SummaryData);
+                }
+            }
+
+            // If we don't have summary content from the JSON, try to construct it from the saved summary fields
+            if (string.IsNullOrEmpty(summaryContent))
+            {
+                summaryContent = savedSummary.Description ?? "Meeting Summary";
+                _logger.LogInformation("Using saved summary description as content for summary {SummaryId}", savedSummary.Id);
+            }
+
+            if (string.IsNullOrEmpty(summaryContent))
+            {
+                throw new InvalidOperationException("No summary content found for this meeting");
+            }
+
+            // Generate PDF document
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Margin(2, Unit.Centimetre);
+                    page.PageColor(Colors.White);
+                    page.DefaultTextStyle(x => x.FontSize(11).FontFamily(Fonts.Arial));
+
+                    // Header
+                    page.Header()
+                        .Height(80)
+                        .Background(Colors.Grey.Lighten3)
+                        .Padding(20)
+                        .Row(row =>
+                        {
+                            row.RelativeItem().Column(column =>
+                            {
+                                column.Item().Text("Meeting Summary")
+                                    .FontSize(24)
+                                    .Bold()
+                                    .FontColor(Colors.Blue.Darken2);
+                                
+                                column.Item().Text($"Generated on {DateTime.UtcNow:MMMM dd, yyyy 'at' HH:mm} UTC")
+                                    .FontSize(10)
+                                    .FontColor(Colors.Grey.Darken2);
+                            });
+                            
+                            row.ConstantItem(120).AlignRight().Column(column =>
+                            {
+                                var createdDate = savedSummary.Meeting?.CreatedAt ?? savedSummary.CreatedAt;
+                                column.Item().Text($"Created: {createdDate:MMM dd, yyyy}")
+                                    .FontSize(9)
+                                    .FontColor(Colors.Grey.Darken1);
+                                
+                                if (speakerMappings.Any())
+                                {
+                                    column.Item().Text($"Participants: {speakerMappings.Count}")
+                                        .FontSize(9)
+                                        .FontColor(Colors.Grey.Darken1);
+                                }
+                            });
+                        });
+
+                    // Content
+                    page.Content()
+                        .PaddingVertical(20)
+                        .Column(column =>
+                        {
+                            // Participants section (if mappings exist)
+                            if (speakerMappings.Any())
+                            {
+                                column.Item().PaddingBottom(10).Text("Meeting Participants")
+                                    .FontSize(16)
+                                    .SemiBold()
+                                    .FontColor(Colors.Blue.Darken2);
+
+                                foreach (var mapping in speakerMappings.OrderBy(m => m.SpeakerId))
+                                {
+                                    column.Item().Row(row =>
+                                    {
+                                        row.ConstantItem(20).Text("•").FontSize(12);
+                                        row.RelativeItem().Text(text =>
+                                        {
+                                            text.Span($"{mapping.Name}");
+                                            if (!string.IsNullOrEmpty(mapping.Role))
+                                            {
+                                                text.Span($" - {mapping.Role}").FontColor(Colors.Grey.Darken2);
+                                            }
+                                            if (!string.IsNullOrEmpty(mapping.Email))
+                                            {
+                                                text.Span($" ({mapping.Email})").FontColor(Colors.Grey.Darken1).FontSize(9);
+                                            }
+                                        });
+                                    });
+                                }
+
+                                column.Item().PaddingTop(20).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+                                column.Item().PaddingBottom(15);
+                            }
+
+                            // Summary section
+                            column.Item().Text("Meeting Summary")
+                                .FontSize(16)
+                                .SemiBold()
+                                .FontColor(Colors.Blue.Darken2);
+
+                            // Process summary content - split by double newlines for better formatting
+                            var paragraphs = summaryContent.Split(new[] { "\n\n", "\r\n\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+                            
+                            foreach (var paragraph in paragraphs)
+                            {
+                                var cleanParagraph = paragraph.Trim();
+                                if (!string.IsNullOrEmpty(cleanParagraph))
+                                {
+                                    // Check if this looks like a section header (ends with :)
+                                    if (cleanParagraph.EndsWith(":") && cleanParagraph.Length < 100)
+                                    {
+                                        column.Item().PaddingTop(15).PaddingBottom(5).Text(cleanParagraph)
+                                            .FontSize(14)
+                                            .SemiBold()
+                                            .FontColor(Colors.Blue.Darken3);
+                                    }
+                                    else
+                                    {
+                                        column.Item().PaddingBottom(8).Text(cleanParagraph)
+                                            .LineHeight(1.4f);
+                                    }
+                                }
+                            }
+
+                            // Action Items section
+                            if (meetingSummary?.ActionItemsByRole?.Any() == true || meetingSummary?.UnassignedActionItems?.Any() == true)
+                            {
+                                column.Item().PaddingTop(20).Text("Action Items")
+                                    .FontSize(16)
+                                    .SemiBold()
+                                    .FontColor(Colors.Blue.Darken2);
+
+                                // Action items by role
+                                if (meetingSummary.ActionItemsByRole != null)
+                                {
+                                    foreach (var roleGroup in meetingSummary.ActionItemsByRole)
+                                    {
+                                        if (roleGroup.ActionItems?.Any() == true)
+                                        {
+                                            column.Item().PaddingTop(10).Text($"{roleGroup.SpeakerName}:")
+                                                .FontSize(13)
+                                                .SemiBold()
+                                                .FontColor(Colors.Blue.Darken3);
+
+                                            foreach (var item in roleGroup.ActionItems)
+                                            {
+                                                column.Item().Row(row =>
+                                                {
+                                                    row.ConstantItem(20).Text("•").FontSize(12);
+                                                    row.RelativeItem().Text(item.Description)
+                                                        .LineHeight(1.3f);
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Unassigned action items
+                                if (meetingSummary?.UnassignedActionItems?.Any() == true)
+                                {
+                                    column.Item().PaddingTop(10).Text("Unassigned Items:")
+                                        .FontSize(13)
+                                        .SemiBold()
+                                        .FontColor(Colors.Blue.Darken3);
+
+                                    foreach (var item in meetingSummary.UnassignedActionItems)
+                                    {
+                                        column.Item().Row(row =>
+                                        {
+                                            row.ConstantItem(20).Text("•").FontSize(12);
+                                            row.RelativeItem().Text(item.Description)
+                                                .LineHeight(1.3f);
+                                        });
+                                    }
+                                }
+                            }
+                            
+                            // Fallback: If no action items from JSON, use saved action items from database
+                            else if (savedSummary.ActionItems?.Any() == true)
+                            {
+                                column.Item().PaddingTop(20).Text("Action Items")
+                                    .FontSize(16)
+                                    .SemiBold()
+                                    .FontColor(Colors.Blue.Darken2);
+
+                                foreach (var actionItem in savedSummary.ActionItems.OrderBy(a => a.SortOrder))
+                                {
+                                    column.Item().Row(row =>
+                                    {
+                                        row.ConstantItem(20).Text("•").FontSize(12);
+                                        row.RelativeItem().Text(text =>
+                                        {
+                                            text.Span(actionItem.Description).LineHeight(1.3f);
+                                            if (!string.IsNullOrEmpty(actionItem.AssignedTo))
+                                            {
+                                                text.Span($" ({actionItem.AssignedTo})")
+                                                    .FontSize(10)
+                                                    .FontColor(Colors.Grey.Darken2);
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                        });
+
+                    // Footer
+                    page.Footer()
+                        .Height(30)
+                        .AlignCenter()
+                        .Text("Generated by Meeting Summarizer")
+                        .FontSize(8)
+                        .FontColor(Colors.Grey.Darken1);
+                });
+            });
+
+            // Generate and return PDF bytes
+            return document.GeneratePdf();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating summary PDF for summary {SummaryId}", summaryId);
             throw;
         }
     }

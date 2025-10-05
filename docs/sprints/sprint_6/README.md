@@ -19,7 +19,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 
 ## Progress Tracker
 
-**Sprint 6 Progress: 11/15 Stories Complete (73%)**
+**Sprint 6 Progress: 12/16 Stories Complete (75%)**
 
 | Story ID | Title                                              | Status        | Dependencies         |
 |----------|----------------------------------------------------|---------------|----------------------|
@@ -38,9 +38,7 @@ Sprint 6 focuses on implementing user authentication, payment processing, persis
 | S6.13    | Fast Transcription Migration - Complete Refactor  | COMPLETE ✅   | S6.9                 |
 | S6.14    | SignalR Infrastructure Removal & Progress Simplification | COMPLETE ✅   | S6.13                |
 | S6.15    | React/MUI Progress System Implementation           | COMPLETE ✅   | S6.14                |
-| S6.13    | Fast Transcription Migration - Complete Refactor  | COMPLETE ✅   | S6.9                 |
-| S6.14    | SignalR Infrastructure Removal & Progress Simplification | COMPLETE ✅   | S6.13                |
-| S6.15    | React/MUI Progress System Implementation           | COMPLETE ✅   | S6.14                |
+| S6.16    | PDF Export & Email System Enhancement             | COMPLETE ✅   | S6.10, S6.15         |
 
 ## Story Files
 
@@ -60,6 +58,8 @@ Each story has been split into its own focused file for better organization and 
 - **[S6.12: AI Chat Assistant for User Guidance](s6.12-ai-chat-assistant.md)** 📋 *UPDATED*
 - **[S6.13: Fast Transcription Migration - Complete Refactor](s6.13-fast-transcription-migration.md)** ✅ *COMPLETE*
 - **[S6.14: SignalR Infrastructure Removal & Progress Simplification](s6.14-signalr-removal.md)** ✅ *COMPLETE*
+- **[S6.15: React/MUI Progress System Implementation](s6.15-mui-progress-implementation.md)** ✅ *COMPLETE*
+- **[S6.16: PDF Export & Email System Enhancement](s6.16-pdf-email-enhancement.md)** ✅ *COMPLETE*
 
 ### Integration Documentation
 - **[Integration Notes & Cross-Story Dependencies](integration-notes.md)** - Comprehensive guide to how all stories integrate together, including shared components, database schema relationships, and deployment coordination.
