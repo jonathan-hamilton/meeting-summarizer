@@ -185,3 +185,23 @@ public class UserStatsResponse
     public DateTime LastActivityAt { get; set; }
     public DateTime AccountCreatedAt { get; set; }
 }
+
+/// <summary>
+/// Response model for user dialog preferences
+/// </summary>
+public class DialogPreferencesResponse
+{
+    public bool HasAcknowledgedLegalDisclaimer { get; set; }
+    public DateTime? LegalDisclaimerAcknowledgedAt { get; set; }
+    public bool HasSeenAiChatDiscovery { get; set; }
+    public DateTime? AiChatDiscoveryShownAt { get; set; }
+}
+
+/// <summary>
+/// Request model for updating user dialog preferences
+/// </summary>
+public class UpdateDialogPreferencesRequest
+{
+    public bool? HasAcknowledgedLegalDisclaimer { get; set; }
+    public bool? HasSeenAiChatDiscovery { get; set; }
+}

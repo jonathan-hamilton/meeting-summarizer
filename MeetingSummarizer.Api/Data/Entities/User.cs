@@ -79,6 +79,26 @@ public class User
     public DateTime? ConsentDate { get; set; }
     
     /// <summary>
+    /// Whether user has acknowledged the legal disclaimer dialog
+    /// </summary>
+    public bool HasAcknowledgedLegalDisclaimer { get; set; } = false;
+    
+    /// <summary>
+    /// When user acknowledged the legal disclaimer
+    /// </summary>
+    public DateTime? LegalDisclaimerAcknowledgedAt { get; set; }
+    
+    /// <summary>
+    /// Whether user has seen the AI Chat discovery dialog
+    /// </summary>
+    public bool HasSeenAiChatDiscovery { get; set; } = false;
+    
+    /// <summary>
+    /// When user was shown the AI Chat discovery dialog
+    /// </summary>
+    public DateTime? AiChatDiscoveryShownAt { get; set; }
+    
+    /// <summary>
     /// Account creation timestamp
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
