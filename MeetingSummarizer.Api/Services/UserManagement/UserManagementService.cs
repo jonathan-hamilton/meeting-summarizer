@@ -75,6 +75,11 @@ public interface IUserManagementService
     /// Update user's last activity timestamp
     /// </summary>
     Task UpdateUserActivityAsync(Guid userId);
+    
+    /// <summary>
+    /// Update user's dialog acknowledgement preferences
+    /// </summary>
+    Task<bool> UpdateDialogPreferencesAsync(Guid userId, UpdateDialogPreferencesRequest request);
 }
 
 /// <summary>
@@ -342,5 +347,37 @@ public class UserManagementService : IUserManagementService
             user.LastActivityAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
+    }
+
+    public async Task<bool> UpdateDialogPreferencesAsync(Guid userId, UpdateDialogPreferencesRequest request)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+        {
+            return false;
+        }
+
+        var now = DateTime.UtcNow;
+        
+        if (request.HasAcknowledgedLegalDisclaimer.HasValue)
+        {
+            user.HasAcknowledgedLegalDisclaimer = request.HasAcknowledgedLegalDisclaimer.Value;
+            if (request.HasAcknowledgedLegalDisclaimer.Value)
+            {
+                user.LegalDisclaimerAcknowledgedAt = now;
+            }
+        }
+
+        if (request.HasSeenAiChatDiscovery.HasValue)
+        {
+            user.HasSeenAiChatDiscovery = request.HasSeenAiChatDiscovery.Value;
+            if (request.HasSeenAiChatDiscovery.Value)
+            {
+                user.AiChatDiscoveryShownAt = now;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

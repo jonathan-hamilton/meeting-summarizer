@@ -457,5 +457,64 @@ public class UserManagementController : ControllerBase
         };
     }
 
+    #region Dialog Preferences
+
+    /// <summary>
+    /// Get user's dialog acknowledgement preferences
+    /// </summary>
+    [HttpGet("{userId:guid}/dialog-preferences")]
+    public async Task<ActionResult<DialogPreferencesResponse>> GetDialogPreferences(Guid userId)
+    {
+        try
+        {
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            var response = new DialogPreferencesResponse
+            {
+                HasAcknowledgedLegalDisclaimer = user.HasAcknowledgedLegalDisclaimer,
+                LegalDisclaimerAcknowledgedAt = user.LegalDisclaimerAcknowledgedAt,
+                HasSeenAiChatDiscovery = user.HasSeenAiChatDiscovery,
+                AiChatDiscoveryShownAt = user.AiChatDiscoveryShownAt
+            };
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving dialog preferences for user {UserId}", userId);
+            return StatusCode(500, new { message = "An error occurred while retrieving dialog preferences" });
+        }
+    }
+
+    /// <summary>
+    /// Update user's dialog acknowledgement preferences
+    /// </summary>
+    [HttpPut("{userId:guid}/dialog-preferences")]
+    public async Task<ActionResult> UpdateDialogPreferences(Guid userId, [FromBody] UpdateDialogPreferencesRequest request)
+    {
+        try
+        {
+            var success = await _userService.UpdateDialogPreferencesAsync(userId, request);
+            if (!success)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            _logger.LogInformation("Updated dialog preferences for user {UserId}", userId);
+            return Ok(new { message = "Dialog preferences updated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating dialog preferences for user {UserId}", userId);
+            return StatusCode(500, new { message = "An error occurred while updating dialog preferences" });
+        }
+    }
+
+    #endregion
+
     #endregion
 }

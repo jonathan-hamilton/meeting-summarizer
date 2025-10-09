@@ -524,6 +524,9 @@ namespace MeetingSummarizer.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime?>("AiChatDiscoveryShownAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ConsentDate")
                         .HasColumnType("datetime2");
 
@@ -552,7 +555,13 @@ namespace MeetingSummarizer.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<bool>("HasAcknowledgedLegalDisclaimer")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("HasConsentedToDataProcessing")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("HasSeenAiChatDiscovery")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsPaidUser")
@@ -567,6 +576,9 @@ namespace MeetingSummarizer.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LegalDisclaimerAcknowledgedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("PasswordHash")
                         .HasMaxLength(255)
