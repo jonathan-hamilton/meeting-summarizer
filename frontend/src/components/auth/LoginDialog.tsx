@@ -16,6 +16,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useFormErrorAnnouncement, useFormSuccessAnnouncement } from '../../hooks/useFormAccessibility';
 
 interface LoginDialogProps {
   open: boolean;
@@ -37,6 +38,13 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // Accessibility: Announce form errors to screen readers
+  useFormErrorAnnouncement(formErrors, 'Login form');
+  
+  // Accessibility: Announce successful login
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  useFormSuccessAnnouncement(loginSuccess, 'Login successful! Redirecting to dashboard.');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -80,6 +88,9 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
+      // Accessibility: Announce successful login
+      setLoginSuccess(true);
+      
       // Reset form
       setFormData({ email: '', password: '' });
       setFormErrors({});
@@ -143,13 +154,20 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
       <form onSubmit={handleSubmit}>
         <DialogContent>
           {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert 
+              severity="error" 
+              sx={{ mb: 2 }}
+              role="alert"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               {error}
             </Alert>
           )}
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
+              id="login-email"
               name="email"
               label="Email Address"
               type="email"
@@ -162,9 +180,12 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
               disabled={isLoading}
               autoComplete="email"
               aria-label="Email address for login"
+              aria-describedby={formErrors.email ? "login-email-error" : undefined}
+              aria-invalid={!!formErrors.email}
             />
 
             <TextField
+              id="login-password"
               name="password"
               label="Password"
               type={showPassword ? 'text' : 'password'}
@@ -176,6 +197,9 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
               required
               disabled={isLoading}
               autoComplete="current-password"
+              aria-label="Password for login"
+              aria-describedby={formErrors.password ? "login-password-error" : undefined}
+              aria-invalid={!!formErrors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
@@ -183,6 +207,8 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
                       disabled={isLoading}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      tabIndex={0}
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>

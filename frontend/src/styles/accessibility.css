@@ -1247,13 +1247,53 @@ html.high-contrast-mode .MuiAccordionSummary-root .MuiTypography-body2 {
 ======================================== */
 
 /* Respect system high contrast preference */
+/* ========================================
+   HIGH CONTRAST MODE DETECTION & STYLES
+======================================== */
+
+/* Windows High Contrast Mode Detection */
+@media (-ms-high-contrast: active) {
+  /* Windows high contrast mode is active - apply high contrast styles */
+  body {
+    forced-color-adjust: none !important;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+  }
+  
+  /* Apply high contrast styles to all components */
+  .high-contrast-mode {
+    display: block !important;
+  }
+}
+
+/* Modern browsers high contrast detection */
 @media (prefers-contrast: high) {
   :root {
     --focus-outline-width: 4px;
     --focus-outline-offset: 3px;
   }
   
-  /* Apply high contrast automatically if not manually set - controlled by JavaScript */
+  /* Apply high contrast automatically if not manually set */
+  body {
+    forced-color-adjust: none !important;
+    background-color: Canvas !important;
+    color: CanvasText !important;
+  }
+  
+  .high-contrast-mode {
+    display: block !important;
+  }
+}
+
+/* JavaScript-controlled high contrast mode */
+body.high-contrast-enabled {
+  forced-color-adjust: none !important;
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+}
+
+body.high-contrast-enabled .high-contrast-mode {
+  display: block !important;
 }
 
 /* Respect system dark mode preference for focus colors */
@@ -2229,6 +2269,109 @@ html.high-contrast-mode .MuiInputBase-input::-webkit-input-placeholder {
   -webkit-text-fill-color: var(--hc-text-color) !important;
 }
 
+/* ========================================
+   COMPREHENSIVE HIGH CONTRAST STYLES
+   S6.6 Increment 5: Complete WCAG 2.1 AA Coverage
+======================================== */
+
+/* High contrast mode body-level application */
+body.high-contrast-enabled,
+html.high-contrast-mode body {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  forced-color-adjust: none !important;
+}
+
+/* All text elements in high contrast */
+body.high-contrast-enabled *,
+html.high-contrast-mode * {
+  color: var(--hc-text-color) !important;
+  background-color: transparent !important;
+}
+
+/* Interactive elements need explicit backgrounds */
+body.high-contrast-enabled button,
+body.high-contrast-enabled .MuiButton-root,
+body.high-contrast-enabled .MuiIconButton-root,
+html.high-contrast-mode button,
+html.high-contrast-mode .MuiButton-root,
+html.high-contrast-mode .MuiIconButton-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* Input fields and form elements */
+body.high-contrast-enabled input,
+body.high-contrast-enabled textarea,
+body.high-contrast-enabled select,
+body.high-contrast-enabled .MuiInputBase-root,
+html.high-contrast-mode input,
+html.high-contrast-mode textarea,
+html.high-contrast-mode select,
+html.high-contrast-mode .MuiInputBase-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* Cards and containers */
+body.high-contrast-enabled .MuiCard-root,
+body.high-contrast-enabled .MuiPaper-root,
+html.high-contrast-mode .MuiCard-root,
+html.high-contrast-mode .MuiPaper-root {
+  background-color: var(--hc-background-color) !important;
+  color: var(--hc-text-color) !important;
+  border: 2px solid var(--hc-text-color) !important;
+}
+
+/* Progress indicators */
+body.high-contrast-enabled .MuiLinearProgress-root,
+body.high-contrast-enabled .MuiCircularProgress-root,
+html.high-contrast-mode .MuiLinearProgress-root,
+html.high-contrast-mode .MuiCircularProgress-root {
+  background-color: var(--hc-background-color) !important;
+  border: 1px solid var(--hc-text-color) !important;
+}
+
+body.high-contrast-enabled .MuiLinearProgress-bar,
+html.high-contrast-mode .MuiLinearProgress-bar {
+  background-color: var(--hc-text-color) !important;
+}
+
+/* Links */
+body.high-contrast-enabled a,
+body.high-contrast-enabled .MuiLink-root,
+html.high-contrast-mode a,
+html.high-contrast-mode .MuiLink-root {
+  color: var(--hc-text-color) !important;
+  text-decoration: underline !important;
+}
+
+/* Focus indicators in high contrast */
+body.high-contrast-enabled *:focus,
+html.high-contrast-mode *:focus {
+  outline: 3px solid var(--hc-text-color) !important;
+  outline-offset: 2px !important;
+}
+
+/* Debug indicator to verify high contrast is working */
+body.high-contrast-enabled::before {
+  content: "HIGH CONTRAST MODE ACTIVE";
+  position: fixed;
+  top: 0;
+  right: 0;
+  background: var(--hc-text-color);
+  color: var(--hc-background-color);
+  padding: 4px 8px;
+  font-size: 12px;
+  z-index: 9999;
+  pointer-events: none;
+}
+  opacity: 1 !important;
+  -webkit-text-fill-color: var(--hc-text-color) !important;
+}
+
 /* MOZILLA SPECIFIC FOR MATERIAL-UI */
 html.high-contrast-mode .MuiTextField-root input::-moz-placeholder,
 html.high-contrast-mode .MuiOutlinedInput-input::-moz-placeholder,
@@ -2265,3 +2408,7 @@ html.high-contrast-mode .MuiInputBase-input {
   color: var(--hc-text-color) !important;
   -webkit-text-fill-color: var(--hc-text-color) !important;
 }
+
+/* ========================================
+   END OF ACCESSIBILITY CSS
+======================================== */

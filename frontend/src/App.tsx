@@ -27,6 +27,7 @@ import {
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { useTheme } from "./theme/useTheme";
 import "./styles/accessibility.css";
+import { initializeHighContrastDetection } from "./utils/highContrastDetection";
 import { useAppMode } from "./contexts/AppModeContext";
 import { useModeSync } from "./hooks/useModeSync";
 import { useSessionManagement } from "./hooks/useSessionManagement";
@@ -40,6 +41,7 @@ import { useTokenStore } from "./stores/tokenStore";
 import { useAuthInitialization } from "./hooks/useAuthInitialization";
 import { useSpeakerMappingLifecycle } from "./hooks/useSpeakerMappingLifecycle";
 import { useAccessibilityStore } from "./stores/accessibilityStore";
+import { useDialogPreferences } from "./hooks/useDialogPreferences";
 
 // Chat Assistant Components
 import { ChatContainer } from "./components/Chat";
@@ -81,6 +83,12 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Initialize high contrast detection for accessibility compliance
+  useEffect(() => {
+    initializeHighContrastDetection();
+  }, []);
+
   const { addTranscript } = useSessionStore();
 
   const navigate = useNavigate();
@@ -93,12 +101,10 @@ const AppContent: React.FC = () => {
   const {
     announcement,
     helpDialogOpen,
-    privacyPolicyOpen,
     highContrast,
     reduceMotion,
     enhancedFocusIndicators,
     setHelpDialogOpen,
-    setPrivacyPolicyOpen,
     announceTranscriptionComplete,
     announceModeChange,
     announceThemeChange
@@ -107,6 +113,12 @@ const AppContent: React.FC = () => {
   // Authentication integration  
   const { isAuthenticated, isLoading: isAuthLoading } = useAuthStore();
   const { refreshBalance, loadStripeConfig } = useTokenStore();
+  const { 
+    hasAcknowledgedLegalDisclaimer, 
+    hasSeenAiChatDiscovery, 
+    updatePreferences,
+    isLoading: isDialogPrefsLoading 
+  } = useDialogPreferences();
   
   // Initialize token store when user is authenticated
   useEffect(() => {
@@ -116,6 +128,22 @@ const AppContent: React.FC = () => {
       loadStripeConfig();
     }
   }, [isAuthenticated, appMode, refreshBalance, loadStripeConfig]);
+
+  // Handle first-time sign-in dialogs
+  useEffect(() => {
+    if (isAuthenticated && !isAuthLoading && !isDialogPrefsLoading) {
+      // Check if this is a first-time sign-in
+      if (!hasAcknowledgedLegalDisclaimer) {
+        // Show legal acceptance dialog first
+        setForceShowLegalAcceptance(true);
+      } else if (!hasSeenAiChatDiscovery) {
+        // Show chat discovery after legal acceptance (or if legal was already seen)
+        setTimeout(() => {
+          setShowChatDiscovery(true);
+        }, 500); // Small delay for better UX
+      }
+    }
+  }, [isAuthenticated, isAuthLoading, isDialogPrefsLoading, hasAcknowledgedLegalDisclaimer, hasSeenAiChatDiscovery]);
 
   // Initialize transcription job store from session storage when app starts
   const { initializeFromStorage } = useTranscriptionJobStore();
@@ -130,6 +158,7 @@ const AppContent: React.FC = () => {
   
   // State for forcing Legal Acceptance dialog (for testing in dev mode)
   const [forceShowLegalAcceptance, setForceShowLegalAcceptance] = useState(false);
+  const [showChatDiscovery, setShowChatDiscovery] = useState(false);
   
   // State for legal document dialogs
   const [termsDialogOpen, setTermsDialogOpen] = useState(false);
@@ -179,15 +208,13 @@ const AppContent: React.FC = () => {
       if (event.key === 'Escape') {
         if (helpDialogOpen) {
           setHelpDialogOpen(false);
-        } else if (privacyPolicyOpen) {
-          setPrivacyPolicyOpen(false);
         }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleThemeToggle, navigate, isAuthenticated, appMode, helpDialogOpen, privacyPolicyOpen, setHelpDialogOpen, setPrivacyPolicyOpen]);
+  }, [handleThemeToggle, navigate, isAuthenticated, appMode, helpDialogOpen, setHelpDialogOpen]);
 
   
   // State for development mode sign-in dialog
@@ -425,10 +452,6 @@ const AppContent: React.FC = () => {
               helpDialogOpen={helpDialogOpen}
               onHelpDialogClose={() => setHelpDialogOpen(false)}
               
-              // Privacy policy dialog
-              privacyDialogForceShow={privacyPolicyOpen}
-              onPrivacyDialogAccepted={() => setPrivacyPolicyOpen(false)}
-              
               // Accessibility panel
               accessibilityPanelOpen={accessibilityPanelOpen}
               onAccessibilityPanelClose={() => setAccessibilityPanelOpen(false)}
@@ -459,7 +482,22 @@ const AppContent: React.FC = () => {
               
               // Legal acceptance
               forceShowLegalAcceptance={forceShowLegalAcceptance}
-              onLegalAcceptanceAccepted={() => setForceShowLegalAcceptance(false)}
+              onLegalAcceptanceAccepted={async () => {
+                try {
+                  await updatePreferences({ hasAcknowledgedLegalDisclaimer: true });
+                  setForceShowLegalAcceptance(false);
+                  // If chat discovery hasn't been shown yet, show it after legal acceptance
+                  if (!hasSeenAiChatDiscovery) {
+                    setTimeout(() => {
+                      setShowChatDiscovery(true);
+                    }, 500); // Small delay for better UX transition
+                  }
+                } catch (error) {
+                  console.error('Failed to update legal disclaimer preference:', error);
+                  // Still proceed with hiding the dialog even if API call fails
+                  setForceShowLegalAcceptance(false);
+                }
+              }}
             />
           </Suspense>
 
@@ -709,7 +747,20 @@ const AppContent: React.FC = () => {
       </Box>
 
       {/* Chat Assistant - Always available */}
-      <ChatContainer />
+      <ChatContainer 
+        isAuthenticated={isAuthenticated}
+        chatDiscoveryOpen={showChatDiscovery}
+        onChatDiscoveryShown={async () => {
+          try {
+            await updatePreferences({ hasSeenAiChatDiscovery: true });
+            setShowChatDiscovery(false);
+          } catch (error) {
+            console.error('Failed to update chat discovery preference:', error);
+            // Still hide the dialog even if API call fails
+            setShowChatDiscovery(false);
+          }
+        }}
+      />
 
     </>
   );

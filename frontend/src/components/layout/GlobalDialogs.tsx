@@ -2,7 +2,6 @@ import React, { Suspense } from 'react';
 
 // Lazy load dialog components to reduce initial bundle size
 const SessionTimeoutWarningDialog = React.lazy(() => import("../SessionTimeoutWarningDialog").then(m => ({ default: m.SessionTimeoutWarningDialog })));
-const PrivacyPolicyDialog = React.lazy(() => import("../PrivacyPolicyDialog").then(m => ({ default: m.PrivacyPolicyDialog })));
 const HelpDialog = React.lazy(() => import("../HelpDialog").then(m => ({ default: m.HelpDialog })));
 const UserProfileDialog = React.lazy(() => import("../UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
 const AuthManager = React.lazy(() => import("../auth").then(m => ({ default: m.AuthManager })));
@@ -21,10 +20,6 @@ interface GlobalDialogsProps {
   // Help dialog
   helpDialogOpen: boolean;
   onHelpDialogClose: () => void;
-
-  // Privacy policy dialog
-  privacyDialogForceShow: boolean;
-  onPrivacyDialogAccepted: () => void;
 
   // Accessibility panel
   accessibilityPanelOpen: boolean;
@@ -56,8 +51,6 @@ interface GlobalDialogsProps {
 export const GlobalDialogs: React.FC<GlobalDialogsProps> = ({
   helpDialogOpen,
   onHelpDialogClose,
-  privacyDialogForceShow,
-  onPrivacyDialogAccepted,
   accessibilityPanelOpen,
   onAccessibilityPanelClose,
   loginOpen,
@@ -89,14 +82,6 @@ export const GlobalDialogs: React.FC<GlobalDialogsProps> = ({
         <HelpDialog
           open={helpDialogOpen}
           onClose={onHelpDialogClose}
-        />
-      </Suspense>
-
-      {/* Privacy Policy Dialog */}
-      <Suspense fallback={null}>
-        <PrivacyPolicyDialog
-          forceShow={privacyDialogForceShow}
-          onAccepted={onPrivacyDialogAccepted}
         />
       </Suspense>
 

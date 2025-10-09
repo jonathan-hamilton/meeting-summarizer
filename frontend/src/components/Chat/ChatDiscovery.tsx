@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -15,36 +15,37 @@ import {
 } from '@mui/icons-material';
 import { useChatStore } from '../../stores/chatStore';
 
+interface ChatDiscoveryProps {
+  open?: boolean;
+  onDiscoveryShown?: () => void | Promise<void>;
+}
+
 /**
  * First-time user discovery dialog for chat assistant
  */
-export const ChatDiscovery: React.FC = () => {
-  const { hasShownDiscovery, setDiscoveryShown, openChat } = useChatStore();
+export const ChatDiscovery: React.FC<ChatDiscoveryProps> = ({ open = false, onDiscoveryShown }) => {
+  const { setDiscoveryShown } = useChatStore();
 
-  // Show discovery dialog on first visit
-  useEffect(() => {
-    // Small delay to let the page load completely
-    const timer = setTimeout(() => {
-      if (!hasShownDiscovery) {
-        // The dialog will show automatically due to !hasShownDiscovery
+  // Dialog visibility is controlled by the open prop from parent
+  // No automatic showing on component mount
+
+  const handleGotIt = async () => {
+    try {
+      // Call the optional callback first (API update)
+      if (onDiscoveryShown) {
+        await onDiscoveryShown();
       }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [hasShownDiscovery]);
-
-  const handleGotIt = () => {
-    setDiscoveryShown();
-  };
-
-  const handleTryItNow = () => {
-    setDiscoveryShown();
-    openChat();
+    } catch (error) {
+      console.error('Failed to update chat discovery preference:', error);
+    } finally {
+      // Always update the local store state for consistency
+      setDiscoveryShown();
+    }
   };
 
   return (
     <Dialog
-      open={!hasShownDiscovery}
+      open={open}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -106,13 +107,6 @@ export const ChatDiscovery: React.FC = () => {
           variant="outlined"
         >
           Got it
-        </Button>
-        <Button 
-          onClick={handleTryItNow}
-          variant="contained"
-          startIcon={<ChatIcon />}
-        >
-          Try it now
         </Button>
       </DialogActions>
     </Dialog>

@@ -113,13 +113,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   {/* History Button */}
                   {location.pathname === '/history' ? (
                     <Tooltip title="Home">
-                      <IconButton color="inherit" onClick={() => navigate('/app')}>
+                      <IconButton 
+                        color="inherit" 
+                        onClick={() => navigate('/app')}
+                        aria-label="Go to home page"
+                      >
                         <HomeIcon />
                       </IconButton>
                     </Tooltip>
                   ) : (
                     <Tooltip title="Meeting History">
-                      <IconButton color="inherit" onClick={() => navigate('/history')}>
+                      <IconButton 
+                        color="inherit" 
+                        onClick={() => navigate('/history')}
+                        aria-label="View meeting history"
+                      >
                         <HistoryIcon />
                       </IconButton>
                     </Tooltip>

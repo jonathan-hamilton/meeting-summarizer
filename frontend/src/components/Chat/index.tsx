@@ -4,22 +4,34 @@ import { ChatWidget } from './ChatWidget';
 import { ChatPanel } from './ChatPanel';
 import { ChatDiscovery } from './ChatDiscovery';
 
+interface ChatContainerProps {
+  isAuthenticated?: boolean;
+  chatDiscoveryOpen?: boolean;
+  onChatDiscoveryShown?: () => void | Promise<void>;
+}
+
 /**
  * Main chat container that orchestrates all chat components
  */
-export const ChatContainer: React.FC = () => {
+export const ChatContainer: React.FC<ChatContainerProps> = ({ 
+  isAuthenticated = false, 
+  chatDiscoveryOpen = false, 
+  onChatDiscoveryShown 
+}) => {
   const { isOpen, closeChat } = useChatStore();
 
   return (
     <>
-      {/* Discovery dialog for first-time users */}
-      <ChatDiscovery />
+      {/* Discovery dialog for first-time users - only when authenticated */}
+      {isAuthenticated && (
+        <ChatDiscovery open={chatDiscoveryOpen} onDiscoveryShown={onChatDiscoveryShown} />
+      )}
       
-      {/* Floating chat widget button */}
-      <ChatWidget />
+      {/* Floating chat widget button - only when authenticated */}
+      {isAuthenticated && <ChatWidget />}
       
-      {/* Chat panel drawer */}
-      <ChatPanel open={isOpen} onClose={closeChat} />
+      {/* Chat panel drawer - only when authenticated */}
+      {isAuthenticated && <ChatPanel open={isOpen} onClose={closeChat} />}
     </>
   );
 };

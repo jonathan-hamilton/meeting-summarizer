@@ -1,4 +1,5 @@
 import type { UserProfile, UpdateUserRequest, UserStats } from '../stores/userProfileStore';
+import type { DialogPreferences, UpdateDialogPreferencesRequest } from '../types';
 import realApiService from './apiService';
 
 class UserProfileService {
@@ -104,6 +105,31 @@ class UserProfileService {
       createdAt: apiData.createdAt || apiData.accountCreatedAt,
       lastActivityAt: apiData.lastActivityAt,
     };
+  }
+
+  /**
+   * Get user's dialog acknowledgement preferences
+   */
+  async getDialogPreferences(userId: string): Promise<DialogPreferences> {
+    try {
+      const response = await this.apiService.get(`/api/usermanagement/${userId}/dialog-preferences`);
+      return response.data as DialogPreferences;
+    } catch (error) {
+      console.error('Failed to fetch dialog preferences:', error);
+      throw new Error('Failed to load dialog preferences');
+    }
+  }
+
+  /**
+   * Update user's dialog acknowledgement preferences
+   */
+  async updateDialogPreferences(userId: string, preferences: UpdateDialogPreferencesRequest): Promise<void> {
+    try {
+      await this.apiService.put(`/api/usermanagement/${userId}/dialog-preferences`, preferences);
+    } catch (error) {
+      console.error('Failed to update dialog preferences:', error);
+      throw new Error('Failed to update dialog preferences');
+    }
   }
 }
 

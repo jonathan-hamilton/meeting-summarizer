@@ -208,6 +208,7 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
           <Box>
             {/* Recipient Input Field */}
             <TextField
+              id="email-recipient-input"
               label="Add recipient email"
               value={recipientInput}
               onChange={(e) => setRecipientInput(e.target.value)}
@@ -215,14 +216,28 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
               placeholder="Enter email address..."
               fullWidth
               variant="outlined"
+              aria-label="Add email recipient"
+              aria-describedby="recipient-help-text"
               InputProps={{
                 endAdornment: recipientInput.trim() && (
-                  <IconButton onClick={handleAddRecipientFromInput} size="small">
+                  <IconButton 
+                    onClick={handleAddRecipientFromInput} 
+                    size="small"
+                    aria-label="Add this email recipient"
+                    tabIndex={0}
+                  >
                     <Add />
                   </IconButton>
                 )
               }}
             />
+            <Typography 
+              id="recipient-help-text" 
+              variant="caption" 
+              sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}
+            >
+              Press Enter or click + to add recipient
+            </Typography>
             
             {/* Suggested Recipients from Speaker Mappings */}
             <Box sx={{ mt: 2 }}>
@@ -278,15 +293,27 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
           
           {/* Subject */}
           <TextField
+            id="email-subject"
             label="Subject"
             value={storeSubject}
             onChange={(e) => setStoreSubject(e.target.value)}
             fullWidth
             variant="outlined"
+            aria-label="Email subject line"
+            required
+            aria-describedby="subject-help-text"
           />
+          <Typography 
+            id="subject-help-text" 
+            variant="caption" 
+            sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}
+          >
+            Required: Enter a descriptive subject for your email
+          </Typography>
           
           {/* Content */}
           <TextField
+            id="email-content"
             label="Email Content"
             value={storeContent}
             onChange={(e) => setStoreContent(e.target.value)}
@@ -294,7 +321,17 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
             rows={8}
             fullWidth
             variant="outlined"
+            aria-label="Email message content"
+            aria-describedby="content-help-text"
+            placeholder="Enter your email message here..."
           />
+          <Typography 
+            id="content-help-text" 
+            variant="caption" 
+            sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}
+          >
+            Optional: Add your own message. Transcript content will be appended if selected below.
+          </Typography>
           
           {/* Append Transcript Option - Show only for summary emails with transcript data */}
           {!transcriptOnly && transcriptData && (

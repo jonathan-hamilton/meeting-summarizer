@@ -7,7 +7,6 @@ interface AccessibilityState {
   
   // Dialog states - centralized for keyboard shortcuts
   helpDialogOpen: boolean;
-  privacyPolicyOpen: boolean;
   
   // Modal focus management
   activeModalId: string | null;
@@ -31,7 +30,6 @@ interface AccessibilityState {
   setAnnouncement: (message: string, timeout?: number) => void;
   clearAnnouncement: () => void;
   setHelpDialogOpen: (open: boolean) => void;
-  setPrivacyPolicyOpen: (open: boolean) => void;
   
   // Modal management actions
   openModal: (modalId: string, focusElement?: HTMLElement) => void;
@@ -71,7 +69,6 @@ export const useAccessibilityStore = create<AccessibilityState>()(
       // Initial state
       announcement: '',
       helpDialogOpen: false,
-      privacyPolicyOpen: false,
       activeModalId: null,
       focusElementBeforeModal: null,
       modalStack: [],
@@ -111,8 +108,6 @@ export const useAccessibilityStore = create<AccessibilityState>()(
       clearAnnouncement: () => set({ announcement: '' }),
       
       setHelpDialogOpen: (open: boolean) => set({ helpDialogOpen: open }),
-      
-      setPrivacyPolicyOpen: (open: boolean) => set({ privacyPolicyOpen: open }),
       
       // Modal management
       openModal: (modalId: string, focusElement?: HTMLElement) => {

@@ -352,3 +352,16 @@ export interface UpdateSavedActionItemRequest {
   sortOrder?: number;
   isCompleted?: boolean;
 }
+
+// Dialog Preferences Types
+export interface DialogPreferences {
+  hasAcknowledgedLegalDisclaimer: boolean;
+  legalDisclaimerAcknowledgedAt?: string;
+  hasSeenAiChatDiscovery: boolean;
+  aiChatDiscoveryShownAt?: string;
+}
+
+export interface UpdateDialogPreferencesRequest {
+  hasAcknowledgedLegalDisclaimer?: boolean;
+  hasSeenAiChatDiscovery?: boolean;
+}

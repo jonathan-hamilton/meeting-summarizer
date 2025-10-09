@@ -529,6 +529,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
               key={index}
               severity="error"
               sx={{ mb: 1 }}
+              role="alert"
+              aria-live="polite"
+              aria-atomic="true"
               onClose={() => {
                 setValidationErrors((prev) => prev.filter((_, i) => i !== index));
               }}
