@@ -59,6 +59,7 @@ interface ChatState {
   closeChat: () => void;
   toggleChat: () => void;
   setDiscoveryShown: () => void;
+  showDiscovery: () => void; // Add method to trigger discovery dialog
   sendMessage: (message: string, context?: ChatContext) => Promise<void>;
   clearMessages: () => void;
   setError: (error: string | null) => void;
@@ -87,7 +88,7 @@ export const useChatStore = create<ChatState>()(
       // Initial State
       isOpen: false,
       isLoading: false,
-      hasShownDiscovery: localStorage.getItem('chat_discovery_shown') === 'true',
+      hasShownDiscovery: false, // Will be managed by useDialogPreferences hook
       messages: [],
       sessionId: generateSessionId(),
       messagesRemaining: 30,
@@ -102,8 +103,11 @@ export const useChatStore = create<ChatState>()(
       toggleChat: () => set((state) => ({ isOpen: !state.isOpen })),
       
       setDiscoveryShown: () => {
-        localStorage.setItem('chat_discovery_shown', 'true');
         set({ hasShownDiscovery: true });
+      },
+      
+      showDiscovery: () => {
+        set({ hasShownDiscovery: false });
       },
       
       sendMessage: async (message: string, context?: ChatContext) => {

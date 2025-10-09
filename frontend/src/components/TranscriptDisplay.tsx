@@ -534,6 +534,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
         {speakerSegments && speakerSegments.length > 0 ? (
           <Box
             id="transcript-display"
+            component="section"
+            role="region"
+            aria-labelledby="transcript-heading"
+            aria-describedby="transcript-description"
           >
             <Stack
               direction="row"
@@ -541,8 +545,20 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               spacing={1}
               sx={{ mb: 2 }}
             >
-              <Typography variant="h6" component="h4">
+              <Typography 
+                id="transcript-heading"
+                variant="h6" 
+                component="h4"
+              >
                 Transcript
+              </Typography>
+              <Typography 
+                id="transcript-description"
+                variant="body2"
+                color="text.secondary"
+                sx={{ sr: { position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clipPath: 'inset(50%)', border: '0' } }}
+              >
+                Interactive meeting transcript with speaker segments. Use arrow keys to navigate between segments.
               </Typography>
               <Box sx={{ flexGrow: 1 }} />
               <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
@@ -587,7 +603,13 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             </Stack>
 
             {/* Speaker segments */}
-            <Box sx={{ maxHeight: "400px", overflowY: "auto", position: "relative" }}>
+            <Box 
+              sx={{ maxHeight: "400px", overflowY: "auto", position: "relative" }}
+              role="log"
+              aria-label="Speaker segments"
+              aria-live="polite"
+              tabIndex={0}
+            >
               
               {speakerSegments.map((segment, index) => (
                 <Box 
@@ -675,6 +697,10 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
             <Typography
               variant="body1"
+              component="section"
+              role="region"
+              aria-label="Meeting transcript content"
+              tabIndex={0}
               sx={{
                 lineHeight: 1.6,
                 userSelect: "text",
