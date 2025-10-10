@@ -1,0 +1,145 @@
+# GitHub Environment Configuration for Production
+# This file documents the required GitHub environment setup for production deployments
+
+environment_name: production
+
+# Environment Protection Rules
+protection_rules:
+  required_reviewers: 2  # Require 2 approvals from designated team
+  wait_timer: 0         # No wait time (approval is the gate)
+  prevent_self_review: true
+  allowed_branches:
+    - "main"  # Only allow deployment from main branch
+  business_hours_restriction: true  # Deploy only during business hours
+
+# Reviewer Teams
+required_reviewer_teams:
+  - "production-deployment-team"
+  - "senior-engineers"
+
+# Environment Variables (non-sensitive)
+variables:
+  AZURE_SUBSCRIPTION_ID: "your-azure-subscription-id"
+  AZURE_TENANT_ID: "your-azure-tenant-id"
+  AZURE_LOCATION: "East US"
+  TERRAFORM_STORAGE_ACCOUNT: "your-terraform-storage-account"
+  TERRAFORM_CONTAINER: "terraform-state"
+  TERRAFORM_RESOURCE_GROUP: "rg-terraform-state"
+
+# Environment Secrets (sensitive)
+secrets:
+  # Azure Authentication
+  AZURE_CLIENT_ID: "production-service-principal-client-id"
+  
+  # Database Configuration
+  SQL_ADMIN_LOGIN: "sqladmin"
+  SQL_ADMIN_PASSWORD: "secure-production-password-complex-123!"
+  
+  # External API Keys
+  OPENAI_API_KEY: "production-openai-api-key"
+  SENDGRID_API_KEY: "production-sendgrid-api-key"
+  
+  # Stripe Configuration (Live Mode)
+  STRIPE_SECRET_KEY: "sk_live_production_key"
+  STRIPE_PUBLISHABLE_KEY: "pk_live_production_key"
+  STRIPE_WEBHOOK_SECRET: "whsec_production_webhook_secret"
+
+# Azure Resources Created
+azure_resources:
+  resource_group: "rg-meetingsummary-prod"
+  app_service_plan: "plan-meetingsummary-prod"
+  app_service: "app-meetingsummary-prod"
+  app_service_staging_slot: "app-meetingsummary-prod/staging"
+  sql_server: "sql-meetingsummary-prod"
+  sql_database: "db-meetingsummary-prod"
+  storage_account: "sameetingsummaryprod"
+  key_vault: "kv-meetingsummary-prod"
+  cognitive_services: "cs-meetingsummary-prod"
+  application_insights: "ai-meetingsummary-prod"
+  log_analytics: "la-meetingsummary-prod"
+
+# Production Environment Characteristics
+characteristics:
+  security_level: "enterprise"
+  performance_tier: "premium"
+  cost_optimization: "balanced"
+  auto_scaling: "enabled"
+  backup_retention: "30 days"
+  monitoring_level: "production"
+  
+# Network Configuration
+network:
+  public_access: "restricted"
+  ip_restrictions:
+    - "0.0.0.0/0"  # Configure with actual production IP ranges
+  private_endpoints: "enabled"
+  vnet_integration: "enabled"
+  
+# Security Configuration
+security:
+  tls_version: "1.2+"
+  certificate_management: "azure_managed"
+  key_rotation: "enabled"
+  access_logging: "enabled"
+  vulnerability_scanning: "enabled"
+
+# Deployment Settings
+deployment:
+  automatic_deployment: false  # Manual approval required
+  blue_green_deployment: true
+  rollback_enabled: true
+  health_check_timeout: "10 minutes"
+  post_deployment_monitoring: "comprehensive"
+  canary_deployment: false  # Can be enabled for gradual rollouts
+
+# Monitoring & Alerting
+monitoring:
+  application_insights: "enabled"
+  log_analytics: "enabled"
+  custom_metrics: "enabled"
+  alerting_rules:
+    - "high_error_rate"
+    - "slow_response_time"
+    - "dependency_failure"
+    - "resource_exhaustion"
+  
+# Backup & Disaster Recovery
+backup:
+  database_backup: "automated_daily"
+  storage_backup: "geo_redundant"
+  configuration_backup: "enabled"
+  point_in_time_recovery: "enabled"
+
+# Compliance & Auditing
+compliance:
+  audit_logging: "enabled"
+  data_retention_policy: "365_days"
+  encryption_at_rest: "enabled"
+  encryption_in_transit: "enabled"
+  compliance_standards:
+    - "SOC2"
+    - "GDPR"
+
+# Notification Settings
+notifications:
+  teams_webhook: "production-teams-webhook-url"
+  email_recipients:
+    - "production-team@company.com"
+    - "devops-team@company.com"
+    - "on-call@company.com"
+  slack_webhook: "production-slack-webhook-url"
+  pagerduty_integration: "enabled"
+
+# Performance Baselines
+performance_targets:
+  response_time_p95: "1000ms"
+  error_rate_threshold: "1%"
+  availability_target: "99.9%"
+  throughput_baseline: "1000_req_per_minute"
+
+# Cost Management
+cost_management:
+  budget_alerts: "enabled"
+  resource_tagging: "mandatory"
+  cost_optimization_reviews: "monthly"
+  auto_shutdown: "disabled"  # Production resources stay online

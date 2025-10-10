@@ -25,6 +25,16 @@ output "app_service_url" {
   value       = module.app_service.app_service_url
 }
 
+output "staging_slot_name" {
+  description = "Name of the staging slot (for blue-green deployment)"
+  value       = module.app_service.staging_slot_name
+}
+
+output "staging_slot_url" {
+  description = "URL of the staging slot"
+  value       = module.app_service.staging_slot_url
+}
+
 output "storage_account_name" {
   description = "Name of the Storage Account"
   value       = module.storage.storage_account_name

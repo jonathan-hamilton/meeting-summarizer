@@ -1,0 +1,93 @@
+# GitHub Environment Configuration for Production Approval Gate
+# This environment is used specifically for the manual approval gate before production deployment
+
+environment_name: production-approval
+
+# Environment Protection Rules
+protection_rules:
+  required_reviewers: 1  # Single approval for gate (actual prod deployment requires 2)
+  wait_timer: 0         # No wait time
+  prevent_self_review: true
+  allowed_branches:
+    - "main"
+  business_hours_restriction: true  # Only allow approvals during business hours
+
+# Reviewer Teams (Release Management)
+required_reviewer_teams:
+  - "release-management-team"
+  - "production-deployment-team"
+
+# No secrets or variables needed for approval gate
+variables: {}
+secrets: {}
+
+# Approval Gate Purpose
+purpose: |
+  This environment serves as a manual approval gate before production deployments.
+  It allows the release management team to:
+  
+  1. Review deployment readiness
+  2. Verify all pre-deployment checks are complete
+  3. Confirm business approval for release
+  4. Ensure proper timing for production deployment
+  5. Validate rollback procedures are in place
+
+# Pre-Deployment Checklist
+pre_deployment_checklist:
+  - "All tests passed in development environment"
+  - "Code review completed and approved"
+  - "Database migration scripts reviewed"
+  - "Rollback plan documented and understood"
+  - "Monitoring systems active and teams available"
+  - "Business stakeholders notified of deployment"
+  - "No known critical issues in development"
+  - "Performance testing completed"
+  - "Security scan passed"
+  - "Documentation updated"
+
+# Approval Criteria
+approval_criteria:
+  technical_requirements:
+    - "Build and test pipeline completed successfully"
+    - "Security scans passed"
+    - "Performance tests within acceptable range"
+    - "Database migrations validated"
+    
+  business_requirements:
+    - "Feature freeze period respected"
+    - "Customer communication completed if needed"
+    - "Support team notified and prepared"
+    - "Maintenance window scheduled if required"
+    
+  operational_requirements:
+    - "On-call team available for support"
+    - "Monitoring dashboards prepared"
+    - "Rollback procedures tested"
+    - "Incident response plan ready"
+
+# Emergency Override
+emergency_override:
+  enabled: true
+  bypass_business_hours: true
+  required_justification: true
+  escalation_contacts:
+    - "cto@company.com"
+    - "head-of-engineering@company.com"
+
+# Notification Settings
+notifications:
+  approval_request:
+    - "release-team@company.com"
+    - "production-team@company.com"
+  approval_granted:
+    - "all-engineering@company.com"
+    - "stakeholders@company.com"
+  approval_rejected:
+    - "requester"
+    - "release-team@company.com"
+
+# Metrics & Reporting
+metrics:
+  track_approval_time: true
+  track_rejection_reasons: true
+  monthly_deployment_reports: true

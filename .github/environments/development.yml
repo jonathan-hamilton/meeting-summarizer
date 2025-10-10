@@ -1,0 +1,78 @@
+# GitHub Environment Configuration for Development
+# This file documents the required GitHub environment setup for development deployments
+
+environment_name: development
+
+# Environment Protection Rules
+protection_rules:
+  required_reviewers: 0  # No approval required for development
+  wait_timer: 0         # No wait time
+  prevent_self_review: false
+  allowed_branches: 
+    - "*"  # Allow deployment from any branch
+
+# Environment Variables (non-sensitive)
+variables:
+  AZURE_SUBSCRIPTION_ID: "your-azure-subscription-id"
+  AZURE_TENANT_ID: "your-azure-tenant-id"
+  AZURE_LOCATION: "East US"
+  TERRAFORM_STORAGE_ACCOUNT: "your-terraform-storage-account"
+  TERRAFORM_CONTAINER: "terraform-state"
+  TERRAFORM_RESOURCE_GROUP: "rg-terraform-state"
+
+# Environment Secrets (sensitive)
+secrets:
+  # Azure Authentication
+  AZURE_CLIENT_ID: "development-service-principal-client-id"
+  
+  # Database Configuration
+  SQL_ADMIN_LOGIN: "sqladmin"
+  SQL_ADMIN_PASSWORD: "secure-development-password"
+  
+  # External API Keys
+  OPENAI_API_KEY: "development-openai-api-key"
+  SENDGRID_API_KEY: "development-sendgrid-api-key"
+  
+  # Stripe Configuration (Test Mode)
+  STRIPE_SECRET_KEY: "sk_test_development_key"
+  STRIPE_PUBLISHABLE_KEY: "pk_test_development_key"
+  STRIPE_WEBHOOK_SECRET: "whsec_development_webhook_secret"
+
+# Azure Resources Created
+azure_resources:
+  resource_group: "rg-meetingsummary-dev"
+  app_service_plan: "plan-meetingsummary-dev"
+  app_service: "app-meetingsummary-dev"
+  sql_server: "sql-meetingsummary-dev"
+  sql_database: "db-meetingsummary-dev"
+  storage_account: "sameetingsummarydev"
+  key_vault: "kv-meetingsummary-dev"
+  cognitive_services: "cs-meetingsummary-dev"
+
+# Development Environment Characteristics
+characteristics:
+  security_level: "relaxed"
+  performance_tier: "basic"
+  cost_optimization: "enabled"
+  auto_scaling: "disabled"
+  backup_retention: "7 days"
+  monitoring_level: "debug"
+  
+# Network Configuration
+network:
+  public_access: "enabled"
+  ip_restrictions: []  # Open access for development team
+  private_endpoints: "disabled"
+  
+# Deployment Settings
+deployment:
+  automatic_deployment: true
+  rollback_enabled: true
+  health_check_timeout: "5 minutes"
+  post_deployment_monitoring: "basic"
+
+# Notification Settings
+notifications:
+  teams_webhook: ""  # Optional: Team notifications
+  email_recipients: []  # Optional: Email notifications
+  slack_webhook: ""  # Optional: Slack notifications
