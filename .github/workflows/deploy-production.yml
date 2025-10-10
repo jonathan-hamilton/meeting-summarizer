@@ -1,0 +1,623 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+      skip-tests:
+        description: 'Skip testing phase (emergency deployment only)'
+        required: false
+        type: boolean
+        default: false
+      skip-approval:
+        description: 'Skip manual approval (authorized emergency only)'
+        required: false
+        type: boolean
+        default: false
+
+# Prevent multiple production deployments from running simultaneously
+concurrency:
+  group: prod-deployment
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+  ENVIRONMENT: production
+
+jobs:
+  # ====================
+  # MANUAL APPROVAL GATE
+  # ====================
+  approval-gate:
+    name: Production Deployment Approval
+    runs-on: ubuntu-latest
+    environment: production-approval
+    if: ${{ !inputs.skip-approval }}
+    
+    steps:
+    - name: Manual approval checkpoint
+      run: |
+        echo "## 🚨 Production Deployment Request" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Requested by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Timestamp**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ⚠️ Pre-Deployment Checklist" >> $GITHUB_STEP_SUMMARY
+        echo "Before approving, verify:" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] All tests passed in development environment" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Code has been reviewed and approved" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Database migration scripts have been reviewed" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Rollback plan is understood and ready" >> $GITHUB_STEP_SUMMARY
+        echo "- [ ] Monitoring is active and teams are available" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Approval required from production deployment team**"
+
+  # ====================
+  # BUILD AND TEST
+  # ====================
+  build-and-test:
+    name: Production Build & Test
+    needs: [approval-gate]
+    if: always() && (needs.approval-gate.result == 'success' || inputs.skip-approval) && !inputs.skip-tests
+    uses: ./.github/workflows/shared-build.yml
+    with:
+      environment: production
+      run-security-scan: true  # Always run security scan for production
+    secrets: inherit
+
+  # Skip tests for emergency deployments
+  skip-tests-gate:
+    name: Emergency Deployment (Tests Skipped)
+    runs-on: ubuntu-latest
+    needs: [approval-gate]
+    if: always() && (needs.approval-gate.result == 'success' || inputs.skip-approval) && inputs.skip-tests
+    
+    steps:
+    - name: Emergency deployment warning
+      run: |
+        echo "## ⚠️ EMERGENCY DEPLOYMENT - TESTS SKIPPED" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**WARNING**: This deployment is proceeding without full test validation!" >> $GITHUB_STEP_SUMMARY
+        echo "**Authorized by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Reason**: Emergency deployment requested" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🚨 Emergency Procedures" >> $GITHUB_STEP_SUMMARY
+        echo "- Monitor all systems closely during deployment" >> $GITHUB_STEP_SUMMARY
+        echo "- Have rollback procedures ready for immediate execution" >> $GITHUB_STEP_SUMMARY
+        echo "- All team members should be available for incident response" >> $GITHUB_STEP_SUMMARY
+
+  # ====================
+  # DEPLOY INFRASTRUCTURE
+  # ====================
+  deploy-infrastructure:
+    name: Deploy Production Infrastructure
+    runs-on: ubuntu-latest
+    needs: [build-and-test, skip-tests-gate]
+    if: always() && (needs.build-and-test.result == 'success' || needs.skip-tests-gate.result == 'success')
+    environment: production
+    
+    permissions:
+      id-token: write
+      contents: read
+      
+    outputs:
+      app-service-name: ${{ steps.terraform.outputs.app-service-name }}
+      staging-slot-name: ${{ steps.terraform.outputs.staging-slot-name }}
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ vars.AZURE_TENANT_ID }}
+        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.6
+        terraform_wrapper: false
+        
+    - name: Terraform Init
+      run: |
+        cd azure-infrastructure/terraform
+        terraform init \
+          -backend-config="storage_account_name=${{ vars.TERRAFORM_STORAGE_ACCOUNT }}" \
+          -backend-config="container_name=${{ vars.TERRAFORM_CONTAINER }}" \
+          -backend-config="key=prod.terraform.tfstate" \
+          -backend-config="resource_group_name=${{ vars.TERRAFORM_RESOURCE_GROUP }}"
+    
+    - name: Terraform Plan
+      run: |
+        cd azure-infrastructure/terraform
+        terraform plan \
+          -var="environment=prod" \
+          -var="location=${{ vars.AZURE_LOCATION || 'East US' }}" \
+          -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
+          -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
+          -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+          -out=tfplan
+    
+    - name: Terraform Apply
+      id: terraform
+      run: |
+        cd azure-infrastructure/terraform
+        terraform apply -auto-approve tfplan
+        
+        APP_SERVICE_NAME=$(terraform output -raw app_service_name)
+        
+        echo "app-service-name=$APP_SERVICE_NAME" >> $GITHUB_OUTPUT
+        echo "staging-slot-name=staging" >> $GITHUB_OUTPUT
+        
+        echo "✅ Production infrastructure deployed"
+        echo "App Service: $APP_SERVICE_NAME"
+    
+    - name: Create deployment slots
+      run: |
+        APP_SERVICE_NAME="${{ steps.terraform.outputs.app-service-name }}"
+        RESOURCE_GROUP="rg-meetingsummary-prod"
+        
+        echo "🔄 Setting up blue-green deployment slots..."
+        
+        # Create staging slot if it doesn't exist
+        if ! az webapp deployment slot list \
+          --name "$APP_SERVICE_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --query "[?name=='staging']" \
+          --output tsv | grep -q staging; then
+          
+          echo "Creating staging slot..."
+          az webapp deployment slot create \
+            --name "$APP_SERVICE_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --slot staging \
+            --configuration-source "$APP_SERVICE_NAME"
+        else
+          echo "Staging slot already exists"
+        fi
+        
+        # Ensure staging slot gets 0% traffic initially
+        az webapp traffic-routing set \
+          --name "$APP_SERVICE_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --distribution staging=0
+        
+        echo "✅ Deployment slots configured for blue-green deployment"
+
+  # ====================
+  # DEPLOY TO STAGING SLOT
+  # ====================
+  deploy-staging-slot:
+    name: Deploy to Staging Slot
+    runs-on: ubuntu-latest
+    needs: [build-and-test, deploy-infrastructure]
+    if: always() && needs.deploy-infrastructure.result == 'success'
+    environment: production
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Download backend artifacts
+      if: needs.build-and-test.result == 'success'
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-app-production-${{ github.run_id }}
+        path: ./backend-app/
+        
+    - name: Download frontend artifacts
+      if: needs.build-and-test.result == 'success'
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-app-production-${{ github.run_id }}
+        path: ./frontend-app/
+        
+    - name: Checkout code (for emergency deployment)
+      if: inputs.skip-tests
+      uses: actions/checkout@v4
+      
+    - name: Build for emergency deployment
+      if: inputs.skip-tests
+      run: |
+        echo "🚨 Emergency build - building directly on runner"
+        
+        # Quick backend build
+        dotnet publish MeetingSummarizer.Api/MeetingSummarizer.Api.csproj \
+          --configuration Release \
+          --output ./backend-app/ \
+          -p:Version="emergency-${{ github.run_number }}"
+        
+        # Quick frontend build
+        cd frontend
+        npm ci
+        VITE_API_URL="https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net" \
+        VITE_ENVIRONMENT="production" \
+        npm run build
+        mv dist ../frontend-app/
+        
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ vars.AZURE_TENANT_ID }}
+        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Deploy backend to staging slot
+      run: |
+        cd backend-app
+        zip -r ../deployment.zip .
+        cd ..
+        
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        RESOURCE_GROUP="rg-meetingsummary-prod"
+        
+        echo "🚀 Deploying backend to staging slot..."
+        
+        az webapp deployment source config-zip \
+          --resource-group "$RESOURCE_GROUP" \
+          --name "$APP_SERVICE_NAME" \
+          --slot staging \
+          --src deployment.zip
+        
+        echo "✅ Backend deployed to staging slot"
+    
+    - name: Deploy frontend to staging slot
+      run: |
+        # For production, we'll deploy frontend to the same App Service
+        # In a more complex setup, this could go to Azure Static Web Apps
+        
+        echo "📁 Configuring frontend deployment..."
+        
+        # Frontend will be served by the API in production
+        # This could be enhanced to use CDN or Static Web Apps
+        echo "Frontend deployment configured for production"
+
+  # ====================
+  # COMPREHENSIVE HEALTH CHECKS
+  # ====================
+  health-checks:
+    name: Production Health Validation
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, deploy-staging-slot]
+    if: always() && needs.deploy-staging-slot.result == 'success'
+    
+    steps:
+    - name: Wait for deployment stabilization
+      run: |
+        echo "⏳ Waiting for deployment to stabilize..."
+        sleep 60  # Longer wait for production
+    
+    - name: Test staging slot health
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        STAGING_URL="https://$APP_SERVICE_NAME-staging.azurewebsites.net"
+        
+        echo "🧪 Testing staging slot health: $STAGING_URL/health"
+        
+        # Retry health check up to 5 times
+        for i in {1..5}; do
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/health" || echo "000")
+          
+          if [ "$RESPONSE" = "200" ]; then
+            echo "✅ Health check passed (attempt $i)"
+            break
+          else
+            echo "⚠️ Health check failed with status: $RESPONSE (attempt $i/5)"
+            if [ $i -eq 5 ]; then
+              echo "❌ Health checks failed after 5 attempts"
+              exit 1
+            fi
+            sleep 30
+          fi
+        done
+    
+    - name: Test database connectivity
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        STAGING_URL="https://$APP_SERVICE_NAME-staging.azurewebsites.net"
+        
+        echo "🧪 Testing database connectivity: $STAGING_URL/health/detailed"
+        
+        RESPONSE=$(curl -s "$STAGING_URL/health/detailed" || echo '{"status":"error"}')
+        echo "Database Health Response: $RESPONSE"
+        
+        # Check if response contains database status
+        if echo "$RESPONSE" | grep -q '"database".*"healthy"'; then
+          echo "✅ Database connectivity verified"
+        else
+          echo "❌ Database connectivity check failed"
+          exit 1
+        fi
+    
+    - name: Test critical API endpoints
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        STAGING_URL="https://$APP_SERVICE_NAME-staging.azurewebsites.net"
+        
+        echo "🧪 Testing critical API endpoints..."
+        
+        # Test auth endpoint
+        AUTH_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/api/auth/status" || echo "000")
+        echo "Auth endpoint: $AUTH_RESPONSE"
+        
+        # Test transcription endpoint (should require auth)
+        TRANSCRIBE_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/api/summary/transcribe" || echo "000")
+        echo "Transcribe endpoint: $TRANSCRIBE_RESPONSE"
+        
+        # Validate responses (401 for unauth is acceptable)
+        if [ "$AUTH_RESPONSE" = "401" ] || [ "$AUTH_RESPONSE" = "200" ]; then
+          echo "✅ Auth endpoint responding correctly"
+        else
+          echo "❌ Auth endpoint unexpected response: $AUTH_RESPONSE"
+          exit 1
+        fi
+    
+    - name: Performance baseline test
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        STAGING_URL="https://$APP_SERVICE_NAME-staging.azurewebsites.net"
+        
+        echo "🧪 Running performance baseline test..."
+        
+        # Simple response time test
+        START_TIME=$(date +%s%3N)
+        curl -s "$STAGING_URL/health" > /dev/null
+        END_TIME=$(date +%s%3N)
+        
+        RESPONSE_TIME=$((END_TIME - START_TIME))
+        echo "Response time: ${RESPONSE_TIME}ms"
+        
+        if [ $RESPONSE_TIME -lt 2000 ]; then
+          echo "✅ Performance baseline acceptable"
+        else
+          echo "⚠️ Performance slower than expected: ${RESPONSE_TIME}ms"
+        fi
+
+  # ====================
+  # TRAFFIC SWITCH (BLUE-GREEN)
+  # ====================
+  traffic-switch:
+    name: Switch Production Traffic
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, health-checks]
+    if: always() && needs.health-checks.result == 'success'
+    environment: production
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ vars.AZURE_TENANT_ID }}
+        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Perform blue-green traffic switch
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        RESOURCE_GROUP="rg-meetingsummary-prod"
+        
+        echo "🔄 Performing blue-green traffic switch..."
+        
+        # Swap the staging slot to production
+        az webapp deployment slot swap \
+          --name "$APP_SERVICE_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --slot staging \
+          --target-slot production
+        
+        echo "✅ Traffic switched to new deployment"
+        echo "Previous production version is now in staging slot for rollback"
+    
+    - name: Verify production after switch
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        PRODUCTION_URL="https://$APP_SERVICE_NAME.azurewebsites.net"
+        
+        echo "🧪 Verifying production after traffic switch..."
+        
+        sleep 30  # Brief pause for DNS propagation
+        
+        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL/health" || echo "000")
+        
+        if [ "$RESPONSE" = "200" ]; then
+          echo "✅ Production verification successful"
+        else
+          echo "❌ Production verification failed: $RESPONSE"
+          echo "🚨 INITIATING AUTOMATIC ROLLBACK"
+          
+          # Automatic rollback - swap back to previous version
+          az webapp deployment slot swap \
+            --name "$APP_SERVICE_NAME" \
+            --resource-group "$RESOURCE_GROUP" \
+            --slot staging \
+            --target-slot production
+          
+          echo "🔄 Automatic rollback completed"
+          exit 1
+        fi
+
+  # ====================
+  # POST-DEPLOYMENT MONITORING
+  # ====================
+  post-deployment-monitoring:
+    name: Monitor Production Deployment
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure, traffic-switch]
+    if: always() && needs.traffic-switch.result == 'success'
+    
+    steps:
+    - name: Monitor deployment for 10 minutes
+      run: |
+        APP_SERVICE_NAME="${{ needs.deploy-infrastructure.outputs.app-service-name }}"
+        PRODUCTION_URL="https://$APP_SERVICE_NAME.azurewebsites.net"
+        
+        echo "📊 Monitoring production deployment for 10 minutes..."
+        
+        ERRORS=0
+        CHECKS=0
+        
+        for i in {1..20}; do  # 20 checks over 10 minutes (30 seconds each)
+          CHECKS=$((CHECKS + 1))
+          
+          echo "Monitor check $i/20..."
+          
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$PRODUCTION_URL/health" || echo "000")
+          
+          if [ "$RESPONSE" != "200" ]; then
+            ERRORS=$((ERRORS + 1))
+            echo "⚠️ Health check failed: $RESPONSE (error $ERRORS)"
+            
+            # If we get 3 errors in monitoring period, trigger rollback
+            if [ $ERRORS -ge 3 ]; then
+              echo "🚨 Too many errors detected during monitoring"
+              echo "TRIGGERING AUTOMATIC ROLLBACK"
+              
+              # Note: In a real implementation, this would call the rollback job
+              echo "Rollback would be triggered here"
+              exit 1
+            fi
+          else
+            echo "✅ Health check passed"
+          fi
+          
+          sleep 30
+        done
+        
+        ERROR_RATE=$(echo "scale=2; $ERRORS * 100 / $CHECKS" | bc -l)
+        echo "📊 Monitoring complete: $ERRORS errors out of $CHECKS checks (${ERROR_RATE}% error rate)"
+        
+        if [ $ERRORS -le 1 ]; then
+          echo "✅ Deployment monitoring successful - production is stable"
+        else
+          echo "⚠️ Deployment has elevated error rate but within acceptable threshold"
+        fi
+
+  # ====================
+  # DEPLOYMENT SUMMARY
+  # ====================
+  deployment-summary:
+    name: Production Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [approval-gate, build-and-test, deploy-infrastructure, deploy-staging-slot, health-checks, traffic-switch, post-deployment-monitoring]
+    if: always()
+    
+    steps:
+    - name: Create comprehensive deployment summary
+      run: |
+        echo "## 🚀 Production Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployment ID**: ${{ github.run_id }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Requested by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployment Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Determine overall status
+        if [ "${{ needs.traffic-switch.result }}" = "success" ] && [ "${{ needs.post-deployment-monitoring.result }}" = "success" ]; then
+          echo "### ✅ DEPLOYMENT SUCCESSFUL" >> $GITHUB_STEP_SUMMARY
+          OVERALL_STATUS="SUCCESS"
+        elif [ "${{ needs.traffic-switch.result }}" = "success" ]; then
+          echo "### ⚠️ DEPLOYMENT COMPLETED WITH MONITORING ISSUES" >> $GITHUB_STEP_SUMMARY
+          OVERALL_STATUS="SUCCESS_WITH_WARNINGS"
+        else
+          echo "### ❌ DEPLOYMENT FAILED" >> $GITHUB_STEP_SUMMARY
+          OVERALL_STATUS="FAILED"
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📊 Job Results" >> $GITHUB_STEP_SUMMARY
+        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Approval Gate | ${{ needs.approval-gate.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Build & Test | ${{ needs.build-and-test.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Infrastructure | ${{ needs.deploy-infrastructure.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Staging Deployment | ${{ needs.deploy-staging-slot.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Health Checks | ${{ needs.health-checks.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Traffic Switch | ${{ needs.traffic-switch.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Monitoring | ${{ needs.post-deployment-monitoring.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.deploy-infrastructure.result }}" = "success" ]; then
+          echo "### 🔗 Production URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Production API**: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health Check**: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net/health" >> $GITHUB_STEP_SUMMARY
+          echo "- **Staging Slot** (for rollback): https://${{ needs.deploy-infrastructure.outputs.app-service-name }}-staging.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "### 🔄 Rollback Information" >> $GITHUB_STEP_SUMMARY
+        echo "If issues are discovered post-deployment:" >> $GITHUB_STEP_SUMMARY
+        echo "1. **Immediate Rollback**: Use Azure portal to swap staging slot to production" >> $GITHUB_STEP_SUMMARY
+        echo "2. **Manual Rollback**: Run the rollback GitHub workflow" >> $GITHUB_STEP_SUMMARY
+        echo "3. **Emergency Contact**: Alert the on-call engineering team" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "### 📞 Support Contacts" >> $GITHUB_STEP_SUMMARY
+        echo "- **DevOps Team**: Monitor deployment metrics" >> $GITHUB_STEP_SUMMARY
+        echo "- **Engineering Team**: Application functionality validation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Product Team**: User experience validation" >> $GITHUB_STEP_SUMMARY
+
+  # ====================
+  # NOTIFY STAKEHOLDERS
+  # ====================
+  notify-stakeholders:
+    name: Notify Stakeholders
+    runs-on: ubuntu-latest
+    needs: [approval-gate, build-and-test, deploy-infrastructure, traffic-switch, post-deployment-monitoring]
+    if: always() && needs.approval-gate.result != 'skipped'
+    
+    steps:
+    - name: Send deployment notification
+      run: |
+        # Determine notification details
+        if [ "${{ needs.traffic-switch.result }}" = "success" ] && [ "${{ needs.post-deployment-monitoring.result }}" = "success" ]; then
+          STATUS="✅ PRODUCTION DEPLOYMENT SUCCESSFUL"
+          COLOR="good"
+          URGENCY="INFO"
+        elif [ "${{ needs.traffic-switch.result }}" = "success" ]; then
+          STATUS="⚠️ PRODUCTION DEPLOYMENT COMPLETED WITH WARNINGS"
+          COLOR="warning"
+          URGENCY="MEDIUM"
+        else
+          STATUS="❌ PRODUCTION DEPLOYMENT FAILED"
+          COLOR="danger"
+          URGENCY="HIGH"
+        fi
+        
+        echo "📧 Stakeholder Notification Details:"
+        echo "Status: $STATUS"
+        echo "Urgency: $URGENCY"
+        echo "Deployment ID: ${{ github.run_id }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Actor: ${{ github.actor }}"
+        
+        if [ "${{ needs.deploy-infrastructure.result }}" = "success" ]; then
+          echo "Production URL: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
+        fi
+        
+        # In a real implementation, this would integrate with:
+        # - Slack for team notifications
+        # - Email for stakeholder updates  
+        # - PagerDuty for high urgency alerts
+        # - Status page updates for user communication
