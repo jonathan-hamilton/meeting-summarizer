@@ -12,7 +12,7 @@ variable "environment" {
 variable "location" {
   description = "Location for all resources"
   type        = string
-  default     = "East US"
+  default     = "West US 2"
 }
 
 variable "app_name" {
