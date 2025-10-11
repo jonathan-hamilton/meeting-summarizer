@@ -107,6 +107,61 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("FastTranscriptionJobs");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.InvitationCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UsedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("UsedByUserId");
+
+                    b.HasIndex("IsActive", "ExpiresAt");
+
+                    b.ToTable("InvitationCodes");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -672,6 +727,16 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Navigation("Meeting");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.InvitationCode", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "UsedByUser")
+                        .WithMany()
+                        .HasForeignKey("UsedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("UsedByUser");
                 });
 
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.Meeting", b =>

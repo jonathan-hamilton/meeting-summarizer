@@ -481,6 +481,9 @@ public class UserManagementController : ControllerBase
                 AiChatDiscoveryShownAt = user.AiChatDiscoveryShownAt
             };
 
+            _logger.LogInformation("Retrieved dialog preferences for user {UserId}: HasAcknowledgedLegalDisclaimer={HasAcknowledged}, LegalDisclaimerAcknowledgedAt={AcknowledgedAt}", 
+                userId, response.HasAcknowledgedLegalDisclaimer, response.LegalDisclaimerAcknowledgedAt);
+
             return Ok(response);
         }
         catch (Exception ex)

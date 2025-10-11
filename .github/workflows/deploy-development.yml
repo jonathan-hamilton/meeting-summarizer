@@ -1,9 +1,10 @@
 name: Deploy to Development
 
 on:
-  push:
-    branches: 
-      - '**'  # Deploy any branch to development
+  # Disabled automatic deployment on push - manual deployment only
+  # push:
+  #   branches: 
+  #     - '**'  # Deploy any branch to development
   workflow_dispatch:
     inputs:
       force-deploy:

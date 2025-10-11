@@ -96,8 +96,14 @@ public class SendGridEmailService : IEmailService
                 // Use provided content for non-summary emails (fallback)
                 _logger.LogInformation("Using provided content (plain text/markdown) for email (no MeetingSummary)");
                 
+                // Check if content is already formatted HTML (starts with <!DOCTYPE html>)
+                if (request.Content.TrimStart().StartsWith("<!DOCTYPE html>", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogInformation("Content is already formatted HTML, using as-is");
+                    htmlContent = request.Content;
+                }
                 // Check if content contains transcript text and format it properly
-                if (request.Content.Contains("--- Full Meeting Transcript ---") || 
+                else if (request.Content.Contains("--- Full Meeting Transcript ---") || 
                     request.Content.Length > 500) // Likely transcript content
                 {
                     _logger.LogInformation("Content appears to be transcript data, applying HTML formatting");
