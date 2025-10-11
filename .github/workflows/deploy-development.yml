@@ -11,19 +11,6 @@ on:
         description: 'Force deployment even if tests fail'
         required: false
         type: boolean
-        default: falseo Development
-
-on:
-  # Re-enabled automatic deployment - Azure OIDC authentication configured
-  push:
-    branches: 
-      - main  # Deploy main branch to development
-  workflow_dispatch:
-    inputs:
-      force-deploy:
-        description: 'Force deployment even if tests fail'
-        required: false
-        type: boolean
         default: false
 
 # Prevent multiple development deployments from running simultaneously
