@@ -23,10 +23,10 @@ provider "azurerm" {
 # Local values for resource naming
 locals {
   resource_suffix        = "${var.app_name}-${var.environment}"
-  storage_account_name   = "ms${var.environment}${formatdate("MMDD", timestamp())}"  # Keep it short for storage account
+  storage_account_name   = "ms${var.environment}${formatdate("MMDDhhmm", timestamp())}"  # Keep it short for storage account
   environment_title_case = var.environment == "dev" ? "Dev" : var.environment == "staging" ? "Staging" : "Prod"
   # Use timestamp suffix to avoid conflicts with existing resources
-  unique_suffix         = "${var.app_name}-${var.environment}-${formatdate("MMDD", timestamp())}"  # Shorter timestamp
+  unique_suffix         = "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"  # More unique timestamp
   # Very short suffix for resources with strict naming requirements
   short_suffix          = "ms${substr(var.environment, 0, 1)}${formatdate("MMDD", timestamp())}"  # e.g., msd1011
 }
