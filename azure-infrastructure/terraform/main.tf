@@ -28,7 +28,7 @@ locals {
   # Use timestamp suffix to avoid conflicts with existing resources
   unique_suffix         = "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"  # More unique timestamp
   # Very short suffix for resources with strict naming requirements
-  short_suffix          = "ms${substr(var.environment, 0, 1)}${formatdate("MMDD", timestamp())}"  # e.g., msd1011
+  short_suffix          = "ms${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"  # e.g., msd10112241
 }
 
 # Data source for current client configuration
