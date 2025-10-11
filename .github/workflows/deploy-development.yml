@@ -1,7 +1,7 @@
 name: Deploy to Development
 
 on:
-  # Re-enabled automatic deployment on push - domain and SSL are now working
+  # Re-enabled automatic deployment - Azure OIDC authentication configured
   push:
     branches: 
       - main  # Deploy main branch to development
