@@ -84,7 +84,7 @@ jobs:
         cd azure-infrastructure/terraform
         terraform plan \
           -var="environment=dev" \
-          -var="location=${{ vars.AZURE_LOCATION || 'East US' }}" \
+          -var="location=${{ vars.AZURE_LOCATION || 'West US 2' }}" \
           -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
           -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
           -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \

@@ -40,7 +40,7 @@ variable "enable_custom_domain" {
 # Local values
 locals {
   is_production = var.environment == "prod"
-  sku_size = local.is_production ? "P1v3" : (var.environment == "dev" ? "F1" : "S1")  # Use F1 (Free) for dev to avoid quota issues
+  sku_size = local.is_production ? "P1v3" : (var.environment == "dev" ? "B1" : "S1")  # Use B1 (Basic) for dev due to F1 quota limitations
   enable_blue_green = local.is_production
   
   # Custom domain configuration
