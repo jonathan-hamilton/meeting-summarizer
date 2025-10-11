@@ -16,6 +16,14 @@
 
 This prompt handles the complete workflow for updating sprint documentation and committing completed work to git.
 
+## Prerequisites
+
+**Technology Stack Detection:**
+Use `detect-project-stack` to identify:
+- [PROJECT_NAME] for documentation references
+- [FRONTEND_DIR] and [BACKEND_DIR] for directory structure
+- [BACKEND_FRAMEWORK] for technology-specific documentation
+
 ## Workflow Steps
 
 ### Step 1: Git Status Check
@@ -96,15 +104,13 @@ This prompt handles the complete workflow for updating sprint documentation and 
 #### Feature-Specific Documentation Updates (Check If Story-Related):
 
 7. **Feature Requirements**
-   - Review and update relevant files in `docs/features/` that relate to the completed story:
-     - `speaker-*-requirements.md` for speaker management stories
-     - `state-management-redesign.md` for state architecture changes
-     - `transcription-alternatives.md` for audio processing stories
+   - Review and update relevant files in `docs/features/` that relate to the completed story
+   - Look for feature-specific requirement files related to the implemented functionality
+   - Update component-specific documentation for the detected [FRONTEND_FRAMEWORK] and [BACKEND_FRAMEWORK]
    
 8. **Detailed Requirements**
-   - Check relevant files in `docs/requirements/` for updates:
-     - `speaker-management.md`, `audio-processing-and-file-handling.md`, etc.
-   - Update specific requirement status and implementation notes
+   - Check relevant files in `docs/requirements/` for updates to component-specific requirements
+   - Update specific requirement status and implementation notes for [PROJECT_NAME] components
 
 #### Strategic Documentation Updates (Update If Vision/Planning Affected):
 

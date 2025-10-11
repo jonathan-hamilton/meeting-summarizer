@@ -866,6 +866,7 @@ meeting-summarizer/
 
 For detailed development information:
 
+- **[Documentation Ecosystem Overview](.prompts/documentation-ecosystem-overview.md)**: Complete workflow and prompt system guide
 - **[Sprint Documentation](docs/sprints/)**: Detailed development progress and technical decisions
 - **[Technical Improvements](docs/technical-improvements.md)**: Architecture enhancements and optimizations  
 - **[Setup Guides](docs/)**: Comprehensive configuration and deployment guides

@@ -4,8 +4,8 @@
 
 First, identify the target codebase:
 
-- **Frontend** (React/TypeScript): `frontend/` directory with Vitest/Jest
-- **API** (.NET C#): `MeetingSummarizer.Api/` directory with MSTest/xUnit
+- **Frontend** ([FRONTEND_FRAMEWORK]): `[FRONTEND_DIR]/` directory with [FRONTEND_TEST_FRAMEWORK]
+- **API** ([BACKEND_FRAMEWORK]): `[BACKEND_DIR]/` directory with [BACKEND_TEST_FRAMEWORK]
 - **Both**: Generate tests for both codebases (requires separate execution)
 
 ## 1. Test Scope Selection
@@ -115,12 +115,12 @@ describe('serviceFunction', () => {
 
 #### Controller Test (MSTest)
 
-```csharp:MeetingSummarizer.Api.Tests/Controllers/ControllerTests.cs
+```csharp:[PROJECT_NAME].Api.Tests/Controllers/ControllerTests.cs
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using MeetingSummarizer.Api.Controllers;
-using MeetingSummarizer.Api.Services;
+using [PROJECT_NAME].Api.Controllers;
+using [PROJECT_NAME].Api.Services;
 
 [TestClass]
 public class ControllerTests
@@ -152,9 +152,9 @@ public class ControllerTests
 
 #### Service Test (MSTest)
 
-```csharp:MeetingSummarizer.Api.Tests/Services/ServiceTests.cs
+```csharp:[PROJECT_NAME].Api.Tests/Services/ServiceTests.cs
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MeetingSummarizer.Api.Services;
+using [PROJECT_NAME].Api.Services;
 
 [TestClass]
 public class ServiceTests
@@ -308,15 +308,15 @@ Execute separately based on development context:
 
 ```bash
 # Focus on frontend tests only
-cd frontend/
-npm run test:generate  # or manual execution targeting React components
+cd [FRONTEND_DIR]/
+[PACKAGE_MANAGER] run test:generate  # or manual execution targeting components
 ```
 
 **API Development Session:**
 
 ```bash
 # Focus on API tests only  
-cd MeetingSummarizer.Api/
+cd [BACKEND_DIR]/
 dotnet test --generate  # or manual execution targeting controllers/services
 ```
 
@@ -325,19 +325,19 @@ dotnet test --generate  # or manual execution targeting controllers/services
 Generate tests for both codebases in sequence:
 
 1. **Phase 1**: Generate frontend tests
-   - Analyze `frontend/src/` directory
-   - Create tests in `frontend/src/__tests__/`
-   - Validate with `npm run test`
+   - Analyze `[FRONTEND_DIR]/src/` directory
+   - Create tests in `[FRONTEND_DIR]/src/__tests__/`
+   - Validate with `[PACKAGE_MANAGER] run test`
 
 2. **Phase 2**: Generate API tests
-   - Analyze `MeetingSummarizer.Api/` directory  
+   - Analyze `[BACKEND_DIR]/` directory  
    - Create tests in test project
    - Validate with `dotnet test`
 
 ### Rationale for Separation
 
-- **Different Tech Stacks**: React/TypeScript vs C#/.NET
-- **Different Testing Libraries**: Vitest/Testing Library vs MSTest/xUnit
+- **Different Tech Stacks**: [FRONTEND_FRAMEWORK] vs [BACKEND_FRAMEWORK]
+- **Different Testing Libraries**: [FRONTEND_TEST_FRAMEWORK] vs [BACKEND_TEST_FRAMEWORK]
 - **Different Mock Patterns**: Frontend mocks vs .NET dependency injection
 - **Different Execution Contexts**: npm scripts vs dotnet CLI
 - **Focused Development**: Developers typically work on one codebase at a time
