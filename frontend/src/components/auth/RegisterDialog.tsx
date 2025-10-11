@@ -16,7 +16,6 @@ import {
 import { Visibility, VisibilityOff, Email, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { environmentService } from '../../services/environmentService';
 
 interface RegisterDialogProps {
   open: boolean;
