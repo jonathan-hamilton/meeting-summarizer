@@ -16,8 +16,9 @@
 #generate-api-tests
 ```
 
-- Automatically detects Sprint 2 (highest numbered) and generates tests for current sprint features
-- Includes context from Sprint 1 for integration testing
+- Automatically detects current sprint (highest numbered) and generates tests for current sprint features
+- Uses `detect-project-stack` to identify [BACKEND_FRAMEWORK] and [BACKEND_TEST_FRAMEWORK]
+- Includes context from previous sprints for integration testing
 
 **Specific Sprint Mode:**
 
@@ -36,18 +37,27 @@
 #review-all-api-tests
 ```
 
-- Analyzes all sprints (1, 2, and future)
-- Provides complete test coverage report
+- Analyzes all sprints and generates comprehensive test coverage report
+- Uses detected [BACKEND_FRAMEWORK] and [BACKEND_TEST_FRAMEWORK] 
 - Generates missing tests across all sprint features
 - Creates integration tests spanning multiple sprints
 
+## Technology Stack Integration
+
+**Prerequisites:**
+Run `detect-project-stack` to auto-detect:
+- [BACKEND_FRAMEWORK] (.NET, Node.js, Python, Java)
+- [BACKEND_TEST_FRAMEWORK] (MSTest, xUnit, Jest, pytest, etc.)
+- [BACKEND_DIR] (API directory location)
+- [PROJECT_NAME] (for test naming and namespaces)
+
 ## Project Context
 
-Target codebase: **API** (.NET C#)
+Target codebase: **Backend API** ([BACKEND_FRAMEWORK])
 
-- Directory: `MeetingSummarizer.Api/`
-- Framework: ASP.NET Core Web API
-- Testing: MSTest with Moq for mocking
+- Directory: [BACKEND_DIR]
+- Framework: [BACKEND_FRAMEWORK] 
+- Testing: [BACKEND_TEST_FRAMEWORK] with appropriate mocking framework
 - Language: C# with dependency injection
 
 ## 1. Requirements Analysis
@@ -144,9 +154,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MeetingSummarizer.Api.Controllers;
-using MeetingSummarizer.Api.Services;
-using MeetingSummarizer.Api.Models;
+using [PROJECT_NAME].Api.Controllers;
+using [PROJECT_NAME].Api.Services;
+using [PROJECT_NAME].Api.Models;
 ```
 
 ### Mock Setup Patterns
@@ -169,14 +179,14 @@ public void Setup()
 
 ### Controller Test
 
-```csharp:MeetingSummarizer.Api.Tests/Controllers/ControllerNameTests.cs
+```csharp:[PROJECT_NAME].Api.Tests/Controllers/ControllerNameTests.cs
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MeetingSummarizer.Api.Controllers;
-using MeetingSummarizer.Api.Services;
-using MeetingSummarizer.Api.Models;
+using [PROJECT_NAME].Api.Controllers;
+using [PROJECT_NAME].Api.Services;
+using [PROJECT_NAME].Api.Models;
 
 [TestClass]
 public class ControllerNameTests
@@ -266,12 +276,12 @@ public class ControllerNameTests
 
 ### Service Test
 
-```csharp:MeetingSummarizer.Api.Tests/Services/ServiceNameTests.cs
+```csharp:[PROJECT_NAME].Api.Tests/Services/ServiceNameTests.cs
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.Extensions.Logging;
 using Moq;
-using MeetingSummarizer.Api.Services;
-using MeetingSummarizer.Api.Models;
+using [PROJECT_NAME].Api.Services;
+using [PROJECT_NAME].Api.Models;
 
 [TestClass]
 public class ServiceNameTests
@@ -333,10 +343,10 @@ public class ServiceNameTests
 
 ### Model Validation Test
 
-```csharp:MeetingSummarizer.Api.Tests/Models/ModelNameTests.cs
+```csharp:[PROJECT_NAME].Api.Tests/Models/ModelNameTests.cs
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.ComponentModel.DataAnnotations;
-using MeetingSummarizer.Api.Models;
+using [PROJECT_NAME].Api.Models;
 
 [TestClass]
 public class ModelNameTests
@@ -464,7 +474,7 @@ public class ModelNameTests
 ### Step 3: Validation
 
 ```bash
-cd MeetingSummarizer.Api/
+cd [BACKEND_DIR]/
 dotnet test --verbosity normal
 dotnet test --collect:"XPlat Code Coverage"
 ```

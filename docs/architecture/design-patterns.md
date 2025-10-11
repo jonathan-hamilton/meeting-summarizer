@@ -370,6 +370,7 @@ This design patterns document is referenced by:
 - `docs/architecture/zustand-store-directive.md` - State management enforcement
 - `docs/features/architecture.md` - System architecture overview
 - `docs/technical-improvements/architecture-decisions.md` - Historical decisions
+- `.prompts/documentation-ecosystem-overview.md` - Complete documentation workflow
 - `.prompts/update-commit.md` - Documentation update process
 
 **Pattern Implementation Examples:**
