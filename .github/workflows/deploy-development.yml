@@ -77,11 +77,7 @@ jobs:
     - name: Terraform Init
       run: |
         cd azure-infrastructure/terraform
-        terraform init \
-          -backend-config="storage_account_name=${{ vars.TERRAFORM_STORAGE_ACCOUNT }}" \
-          -backend-config="container_name=${{ vars.TERRAFORM_CONTAINER }}" \
-          -backend-config="key=dev.terraform.tfstate" \
-          -backend-config="resource_group_name=${{ vars.TERRAFORM_RESOURCE_GROUP }}"
+        terraform init
     
     - name: Terraform Plan
       run: |
@@ -103,16 +99,11 @@ jobs:
         
         # Extract outputs for later use
         APP_SERVICE_NAME=$(terraform output -raw app_service_name)
-        STATIC_WEB_APP_NAME=$(terraform output -raw static_web_app_name || echo "")
         
         echo "app-service-name=$APP_SERVICE_NAME" >> $GITHUB_OUTPUT
-        echo "static-web-app-name=$STATIC_WEB_APP_NAME" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
         echo "App Service: $APP_SERVICE_NAME"
-        if [ -n "$STATIC_WEB_APP_NAME" ]; then
-          echo "Static Web App: $STATIC_WEB_APP_NAME"
-        fi
 
   # ====================
   # DEPLOY BACKEND API
