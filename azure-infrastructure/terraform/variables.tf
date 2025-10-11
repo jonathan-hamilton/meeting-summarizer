@@ -46,3 +46,21 @@ variable "sendgrid_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "custom_domain_name" {
+  description = "Custom domain name for the application (e.g., meeting-summary.io)"
+  type        = string
+  default     = ""
+}
+
+variable "create_dns_zone" {
+  description = "Whether to create and manage Azure DNS Zone for the custom domain"
+  type        = bool
+  default     = false
+}
+
+variable "enable_custom_domain" {
+  description = "Whether to configure custom domain binding on App Service"
+  type        = bool
+  default     = false
+}

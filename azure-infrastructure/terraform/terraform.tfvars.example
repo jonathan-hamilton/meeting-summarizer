@@ -17,3 +17,8 @@ sql_admin_password = "YourSecurePassword123!"
 # API Keys (optional)
 openai_api_key = "your-openai-api-key-here"
 sendgrid_api_key = "your-sendgrid-api-key-here"
+
+# Custom Domain Configuration (optional)
+custom_domain_name = "meeting-summary.io"
+create_dns_zone = true
+enable_custom_domain = true

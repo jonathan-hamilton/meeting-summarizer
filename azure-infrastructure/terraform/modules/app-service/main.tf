@@ -25,11 +25,40 @@ variable "key_vault_id" {
   type        = string
 }
 
+variable "custom_domain_name" {
+  description = "Custom domain name (e.g., meeting-summary.io)"
+  type        = string
+  default     = ""
+}
+
+variable "enable_custom_domain" {
+  description = "Whether to enable custom domain binding"
+  type        = bool
+  default     = false
+}
+
 # Local values
 locals {
   is_production = var.environment == "prod"
   sku_size = local.is_production ? "P1v3" : (var.environment == "dev" ? "B1" : "S1")
   enable_blue_green = local.is_production
+  
+  # Custom domain configuration
+  has_custom_domain = var.enable_custom_domain && var.custom_domain_name != ""
+  www_domain = local.has_custom_domain ? (var.environment == "prod" ? "www.${var.custom_domain_name}" : "${var.environment}.${var.custom_domain_name}") : ""
+  api_domain = local.has_custom_domain ? (var.environment == "prod" ? "api.${var.custom_domain_name}" : "api.${var.environment}.${var.custom_domain_name}") : ""
+  
+  # CORS allowed origins including custom domains
+  cors_origins = concat(
+    [
+      "https://${var.app_service_name}.azurewebsites.net"
+    ],
+    local.has_custom_domain ? [
+      "https://${local.www_domain}",
+      "https://${local.api_domain}"
+    ] : [],
+    local.is_production && local.has_custom_domain ? ["https://${var.custom_domain_name}"] : []
+  )
 }
 
 # App Service Plan
@@ -64,10 +93,7 @@ resource "azurerm_linux_web_app" "main" {
     dynamic "cors" {
       for_each = local.is_production ? [1] : []
       content {
-        allowed_origins = [
-          "https://${var.app_service_name}.azurewebsites.net",
-          "https://meetingsummary.io"  # Production domain
-        ]
+        allowed_origins = local.cors_origins
         support_credentials = true
       }
     }
@@ -134,4 +160,70 @@ resource "azurerm_linux_web_app_slot" "staging" {
     Application = "MeetingSummary"
     Purpose = "BlueGreenDeployment"
   }
+}
+
+# Custom Domain Binding for WWW subdomain
+resource "azurerm_app_service_custom_hostname_binding" "www" {
+  count               = local.has_custom_domain ? 1 : 0
+  hostname            = local.www_domain
+  app_service_name    = azurerm_linux_web_app.main.name
+  resource_group_name = var.resource_group_name
+
+  # Depends on DNS configuration being in place
+  lifecycle {
+    ignore_changes = [ssl_state, thumbprint]
+  }
+}
+
+# Custom Domain Binding for API subdomain
+resource "azurerm_app_service_custom_hostname_binding" "api" {
+  count               = local.has_custom_domain ? 1 : 0
+  hostname            = local.api_domain
+  app_service_name    = azurerm_linux_web_app.main.name
+  resource_group_name = var.resource_group_name
+
+  # Depends on DNS configuration being in place
+  lifecycle {
+    ignore_changes = [ssl_state, thumbprint]
+  }
+}
+
+# Managed Certificate for WWW domain
+resource "azurerm_app_service_managed_certificate" "www" {
+  count                      = local.has_custom_domain ? 1 : 0
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.www[0].id
+
+  tags = {
+    Environment = var.environment
+    Application = "MeetingSummary"
+    DomainType  = "WWW"
+  }
+}
+
+# Managed Certificate for API domain
+resource "azurerm_app_service_managed_certificate" "api" {
+  count                      = local.has_custom_domain ? 1 : 0
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.api[0].id
+
+  tags = {
+    Environment = var.environment
+    Application = "MeetingSummary"
+    DomainType  = "API"
+  }
+}
+
+# Certificate Binding for WWW domain
+resource "azurerm_app_service_certificate_binding" "www" {
+  count           = local.has_custom_domain ? 1 : 0
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.www[0].id
+  certificate_id      = azurerm_app_service_managed_certificate.www[0].id
+  ssl_state          = "SniEnabled"
+}
+
+# Certificate Binding for API domain
+resource "azurerm_app_service_certificate_binding" "api" {
+  count           = local.has_custom_domain ? 1 : 0
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.api[0].id
+  certificate_id      = azurerm_app_service_managed_certificate.api[0].id
+  ssl_state          = "SniEnabled"
 }

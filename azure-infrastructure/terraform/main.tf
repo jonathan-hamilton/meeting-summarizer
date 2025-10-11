@@ -25,14 +25,16 @@ locals {
   resource_suffix        = "${var.app_name}-${var.environment}"
   storage_account_name   = "${var.app_name}${var.environment}"
   environment_title_case = var.environment == "dev" ? "Dev" : var.environment == "staging" ? "Staging" : "Prod"
+  # Use timestamp suffix to avoid conflicts with existing resources
+  unique_suffix         = "${var.app_name}-${var.environment}-tf"
 }
 
 # Data source for current client configuration
 data "azurerm_client_config" "current" {}
 
-# Resource Group - Create instead of assuming it exists
+# Resource Group - Create with unique naming to avoid conflicts
 resource "azurerm_resource_group" "main" {
-  name     = "rg-${local.resource_suffix}"
+  name     = "rg-${local.unique_suffix}"
   location = var.location
 
   tags = {
@@ -84,6 +86,22 @@ module "app_service" {
   environment        = var.environment
   resource_group_name = azurerm_resource_group.main.name
   key_vault_id       = module.key_vault.key_vault_id
+  
+  # Custom domain configuration
+  custom_domain_name    = var.custom_domain_name
+  enable_custom_domain  = var.enable_custom_domain
+}
+
+# DNS Zone Module (optional)
+module "dns_zone" {
+  count  = var.create_dns_zone && var.custom_domain_name != "" ? 1 : 0
+  source = "./modules/dns-zone"
+
+  domain_name           = var.custom_domain_name
+  resource_group_name   = azurerm_resource_group.main.name
+  environment          = var.environment
+  app_service_hostname = module.app_service.app_service_name
+  staging_hostname     = module.app_service.staging_slot_name != null ? "${module.app_service.app_service_name}-staging.azurewebsites.net" : ""
 }
 
 # Cognitive Services Module
