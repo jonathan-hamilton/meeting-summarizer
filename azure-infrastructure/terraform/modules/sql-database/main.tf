@@ -41,7 +41,7 @@ variable "administrator_login_password" {
 locals {
   is_production = var.environment == "prod"
   sku_name = local.is_production ? "S1" : "Basic"
-  max_size_gb = local.is_production ? 250 : 32
+  max_size_gb = local.is_production ? 250 : 2  # Basic tier maximum is 2GB
 }
 
 # SQL Server

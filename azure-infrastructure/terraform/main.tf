@@ -23,10 +23,12 @@ provider "azurerm" {
 # Local values for resource naming
 locals {
   resource_suffix        = "${var.app_name}-${var.environment}"
-  storage_account_name   = "${var.app_name}${var.environment}"
+  storage_account_name   = "ms${var.environment}${formatdate("MMDD", timestamp())}"  # Keep it short for storage account
   environment_title_case = var.environment == "dev" ? "Dev" : var.environment == "staging" ? "Staging" : "Prod"
   # Use timestamp suffix to avoid conflicts with existing resources
-  unique_suffix         = "${var.app_name}-${var.environment}-tf"
+  unique_suffix         = "${var.app_name}-${var.environment}-${formatdate("MMDD", timestamp())}"  # Shorter timestamp
+  # Very short suffix for resources with strict naming requirements
+  short_suffix          = "ms${substr(var.environment, 0, 1)}${formatdate("MMDD", timestamp())}"  # e.g., msd1011
 }
 
 # Data source for current client configuration
@@ -48,7 +50,7 @@ resource "azurerm_resource_group" "main" {
 module "key_vault" {
   source = "./modules/key-vault"
 
-  key_vault_name = "${local.resource_suffix}-kv"
+  key_vault_name = "${local.short_suffix}-kv"
   location       = var.location
   environment    = var.environment
   resource_group_name = azurerm_resource_group.main.name
@@ -68,8 +70,8 @@ module "storage" {
 module "sql_database" {
   source = "./modules/sql-database"
 
-  sql_server_name     = "${local.resource_suffix}-sql"
-  database_name       = "${local.resource_suffix}-db"
+  sql_server_name     = "${local.unique_suffix}-sql"
+  database_name       = "${local.unique_suffix}-db"
   location           = var.location
   environment        = var.environment
   resource_group_name = azurerm_resource_group.main.name
@@ -81,7 +83,7 @@ module "sql_database" {
 module "app_service" {
   source = "./modules/app-service"
 
-  app_service_name    = "${local.resource_suffix}-api"
+  app_service_name    = "${local.unique_suffix}-api"
   location           = var.location
   environment        = var.environment
   resource_group_name = azurerm_resource_group.main.name
@@ -108,7 +110,7 @@ module "dns_zone" {
 module "cognitive_services" {
   source = "./modules/cognitive-services"
 
-  speech_service_name = "${local.resource_suffix}-speech"
+  speech_service_name = "${local.unique_suffix}-speech"
   location           = var.location
   environment        = var.environment
   resource_group_name = azurerm_resource_group.main.name
