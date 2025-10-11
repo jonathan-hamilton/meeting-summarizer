@@ -147,10 +147,10 @@ jobs:
         cd frontend
         # Set environment-specific build configuration
         if [ "${{ inputs.environment }}" = "production" ]; then
-          export VITE_API_URL="https://app-meetingsummary-prod.azurewebsites.net"
+          export VITE_API_URL="https://meetingsummary-prod-api.azurewebsites.net"
           export VITE_ENVIRONMENT="production"
         else
-          export VITE_API_URL="https://app-meetingsummary-dev.azurewebsites.net"
+          export VITE_API_URL="https://meetingsummary-dev-api.azurewebsites.net"
           export VITE_ENVIRONMENT="development"
         fi
         
