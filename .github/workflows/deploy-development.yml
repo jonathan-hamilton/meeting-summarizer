@@ -1,6 +1,19 @@
 name: Deploy to Development
 
 on:
+  # Re-enabled automatic deployment - Azure credentials now configured
+  push:
+    branches: 
+      - main  # Deploy main branch to development
+  workflow_dispatch:
+    inputs:
+      force-deploy:
+        description: 'Force deployment even if tests fail'
+        required: false
+        type: boolean
+        default: falseo Development
+
+on:
   # Re-enabled automatic deployment - Azure OIDC authentication configured
   push:
     branches: 

@@ -79,9 +79,7 @@ resource "azurerm_linux_web_app" "main" {
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
     "DOCKER_ENABLE_CI" = "true"
     
-    # Health check endpoint
-    "WEBSITE_HEALTHCHECK_MAXPINGFAILURES" = "3"
-    "WEBSITE_HEALTHCHECK_MAXUNHEALTHYWORKERPERCENT" = "50"
+    # Custom application settings (removed reserved WEBSITE_HEALTHCHECK_* settings)
   }
 
   identity {
@@ -124,9 +122,7 @@ resource "azurerm_linux_web_app_slot" "staging" {
     "DOCKER_ENABLE_CI" = "true"
     "SLOT_NAME" = "staging"
     
-    # Health check endpoint
-    "WEBSITE_HEALTHCHECK_MAXPINGFAILURES" = "3"
-    "WEBSITE_HEALTHCHECK_MAXUNHEALTHYWORKERPERCENT" = "50"
+    # Custom application settings (removed reserved WEBSITE_HEALTHCHECK_* settings)
   }
 
   identity {
