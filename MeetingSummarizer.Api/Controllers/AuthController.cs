@@ -5,6 +5,7 @@ using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.UserManagement;
 using MeetingSummarizer.Api.Services.EmailVerification;
+using MeetingSummarizer.Api.Services.Invitation;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -20,17 +21,26 @@ public class AuthController : ControllerBase
     private readonly IJwtAuthenticationService _jwtService;
     private readonly IUserManagementService _userService;
     private readonly IEmailVerificationService _verificationService;
+    private readonly IInvitationService _invitationService;
+    private readonly IWebHostEnvironment _environment;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         IJwtAuthenticationService jwtService,
         IUserManagementService userService,
         IEmailVerificationService verificationService,
+        IInvitationService invitationService,
+        IWebHostEnvironment environment,
+        IConfiguration configuration,
         ILogger<AuthController> logger)
     {
         _jwtService = jwtService;
         _userService = userService;
         _verificationService = verificationService;
+        _invitationService = invitationService;
+        _environment = environment;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -48,6 +58,41 @@ public class AuthController : ControllerBase
                 return BadRequest(new { message = "Password is required for user registration" });
             }
 
+            // Validate invitation code based on configuration
+            var requireInvitation = _configuration.GetValue<bool>("Environment:FeatureFlags:RequireInvitationForRegistration", false);
+            
+            if (requireInvitation)
+            {
+                if (string.IsNullOrWhiteSpace(request.InvitationCode))
+                {
+                    _logger.LogWarning("Registration attempted without invitation code when required: {Email}", request.Email);
+                    return BadRequest(new { message = "Invitation code is required for registration" });
+                }
+
+                var invitationCode = await _invitationService.ValidateInvitationCodeAsync(request.InvitationCode, request.Email);
+                if (invitationCode == null)
+                {
+                    _logger.LogWarning("Invalid invitation code used during registration: {Code} for {Email}", request.InvitationCode, request.Email);
+                    return BadRequest(new { message = "Invalid or expired invitation code" });
+                }
+
+                _logger.LogInformation("Valid invitation code {Code} used for registration: {Email}", request.InvitationCode, request.Email);
+            }
+            else
+            {
+                // When invitation is not required, still validate if provided
+                if (!string.IsNullOrWhiteSpace(request.InvitationCode))
+                {
+                    var invitationCode = await _invitationService.ValidateInvitationCodeAsync(request.InvitationCode, request.Email);
+                    if (invitationCode == null)
+                    {
+                        _logger.LogWarning("Invalid invitation code provided in production registration: {Code} for {Email}", request.InvitationCode, request.Email);
+                        return BadRequest(new { message = "Invalid or expired invitation code" });
+                    }
+                    _logger.LogInformation("Valid invitation code {Code} used for production registration: {Email}", request.InvitationCode, request.Email);
+                }
+            }
+
             // Create user request from registration data
             var createUserRequest = new CreateUserRequest
             {
@@ -62,6 +107,20 @@ public class AuthController : ControllerBase
             };
 
             var user = await _userService.CreateUserAsync(createUserRequest);
+
+            // Mark invitation code as used if provided
+            if (!string.IsNullOrWhiteSpace(request.InvitationCode))
+            {
+                var codeMarked = await _invitationService.MarkInvitationCodeAsUsedAsync(request.InvitationCode, user.Id);
+                if (codeMarked)
+                {
+                    _logger.LogInformation("Invitation code {Code} marked as used by user {UserId}", request.InvitationCode, user.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to mark invitation code {Code} as used by user {UserId}", request.InvitationCode, user.Id);
+                }
+            }
 
             // Generate JWT tokens
             var accessToken = _jwtService.GenerateAccessToken(user);
@@ -349,4 +408,49 @@ public class AuthController : ControllerBase
         _logger.LogInformation("User logout requested");
         return Ok(new { message = "Logged out successfully" });
     }
+
+    /// <summary>
+    /// Development testing endpoint - Create test invitation code
+    /// WARNING: This endpoint should be removed before production
+    /// </summary>
+    [HttpPost("test/create-invitation")]
+    public async Task<ActionResult<object>> CreateTestInvitation([FromBody] CreateTestInvitationRequest request)
+    {
+        // Only allow in development environment
+        if (!_environment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            _logger.LogInformation("Creating test invitation for email: {Email}", request.Email);
+            
+            var invitation = await _invitationService.GenerateInvitationCodeAsync(
+                request.Email, 
+                999, // Use test user ID for development testing
+                expirationDays: 7
+            );
+
+            return Ok(new { 
+                invitationCode = invitation.Code, 
+                email = invitation.Email,
+                expiresAt = invitation.ExpiresAt,
+                message = "Test invitation created successfully" 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create test invitation for email: {Email}", request.Email);
+            return StatusCode(500, new { message = "Failed to create test invitation" });
+        }
+    }
+}
+
+/// <summary>
+/// Request model for creating test invitations (development only)
+/// </summary>
+public class CreateTestInvitationRequest
+{
+    public string Email { get; set; } = string.Empty;
 }

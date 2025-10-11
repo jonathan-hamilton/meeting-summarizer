@@ -354,8 +354,12 @@ public class UserManagementService : IUserManagementService
         var user = await _context.Users.FindAsync(userId);
         if (user == null)
         {
+            _logger.LogWarning("User not found when updating dialog preferences: {UserId}", userId);
             return false;
         }
+
+        _logger.LogInformation("Updating dialog preferences for user {UserId}. Current HasAcknowledgedLegalDisclaimer: {Current}, Request: {Request}", 
+            userId, user.HasAcknowledgedLegalDisclaimer, request.HasAcknowledgedLegalDisclaimer);
 
         var now = DateTime.UtcNow;
         
@@ -366,6 +370,8 @@ public class UserManagementService : IUserManagementService
             {
                 user.LegalDisclaimerAcknowledgedAt = now;
             }
+            _logger.LogInformation("Updated HasAcknowledgedLegalDisclaimer to {Value} for user {UserId}", 
+                request.HasAcknowledgedLegalDisclaimer.Value, userId);
         }
 
         if (request.HasSeenAiChatDiscovery.HasValue)
@@ -375,9 +381,15 @@ public class UserManagementService : IUserManagementService
             {
                 user.AiChatDiscoveryShownAt = now;
             }
+            _logger.LogInformation("Updated HasSeenAiChatDiscovery to {Value} for user {UserId}", 
+                request.HasSeenAiChatDiscovery.Value, userId);
         }
 
         await _context.SaveChangesAsync();
+        
+        _logger.LogInformation("Successfully saved dialog preferences for user {UserId}. Final HasAcknowledgedLegalDisclaimer: {Final}", 
+            userId, user.HasAcknowledgedLegalDisclaimer);
+        
         return true;
     }
 }

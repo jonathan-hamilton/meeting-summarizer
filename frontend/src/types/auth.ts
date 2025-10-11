@@ -34,6 +34,7 @@ export interface RegisterRequest {
   lastName: string;
   password: string;
   hasConsentedToDataProcessing: boolean;
+  invitationCode?: string; // S7.2: Optional invitation code for development environment
 }
 
 export interface JwtPayload {
@@ -59,11 +60,14 @@ export interface AuthState {
   // Email verification state (S6.8)
   verificationPending: boolean;
   verificationError: string | null;
+  // Environment state (S7.2)
+  requiresInvitationForRegistration: boolean;
+  environmentLoading: boolean;
 }
 
 export interface AuthActions {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  register: (firstName: string, lastName: string, email: string, password: string, hasConsentedToDataProcessing: boolean) => Promise<{ success: boolean; error?: string }>;
+  register: (firstName: string, lastName: string, email: string, password: string, hasConsentedToDataProcessing: boolean, invitationCode?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshAccessToken: () => Promise<boolean>;
   checkAuthStatus: () => Promise<void>;
@@ -74,4 +78,6 @@ export interface AuthActions {
   clearVerificationError: () => void;
   // Password change action (S6.2.2)
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  // Environment actions (S7.2)
+  checkEnvironmentRequirements: () => Promise<void>;
 }

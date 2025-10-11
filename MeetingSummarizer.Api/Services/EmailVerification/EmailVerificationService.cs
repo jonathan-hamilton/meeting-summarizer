@@ -356,63 +356,62 @@ namespace MeetingSummarizer.Api.Services.EmailVerification
             sb.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
             sb.AppendLine("    <title>Verify Your Email Address</title>");
             sb.AppendLine("    <style>");
-            sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333 !important; margin: 0; padding: 0; background-color: #f4f4f4; }");
+            sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; background-color: #f4f4f4; }");
             sb.AppendLine("        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }");
-            sb.AppendLine("        .header { background-color: #2c3e50; color: white !important; padding: 30px; text-align: center; }");
-            sb.AppendLine("        .header h1 { margin: 0; font-size: 28px; font-weight: 300; color: white !important; }");
-            sb.AppendLine("        .content { padding: 30px; color: #333333 !important; }");
-            sb.AppendLine("        .welcome { font-size: 18px; margin-bottom: 20px; color: #2c3e50 !important; font-weight: bold; }");
-            sb.AppendLine("        .message { margin-bottom: 30px; line-height: 1.8; color: #333333 !important; }");
-            sb.AppendLine("        .message ul { color: #333333 !important; }");
-            sb.AppendLine("        .message li { color: #333333 !important; margin: 8px 0; }");
-            sb.AppendLine("        .cta-button { background-color: #3498db; color: white !important; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; margin: 20px 0; }");
+            sb.AppendLine("        .header { background-color: #2c3e50; color: white; padding: 30px; text-align: center; }");
+            sb.AppendLine("        .header h1 { margin: 0; font-size: 28px; font-weight: 300; color: white; }");
+            sb.AppendLine("        .content { padding: 30px; color: #333333; }");
+            sb.AppendLine("        .welcome { font-size: 18px; margin-bottom: 20px; color: #2c3e50; font-weight: bold; }");
+            sb.AppendLine("        .message { margin-bottom: 30px; line-height: 1.8; color: #333333; }");
+            sb.AppendLine("        .message ul { color: #333333; }");
+            sb.AppendLine("        .message li { color: #333333; margin: 8px 0; }");
+            sb.AppendLine("        .cta-button { background-color: #3498db; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; margin: 20px 0; }");
             sb.AppendLine("        .cta-button:hover { background-color: #2980b9; }");
-            sb.AppendLine("        .alt-link { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 14px; word-break: break-all; color: #333333 !important; }");
-            sb.AppendLine("        .security-notice { background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; color: #333333 !important; }");
-            sb.AppendLine("        .footer { background-color: #ecf0f1; padding: 20px; text-align: center; color: #7f8c8d !important; font-size: 14px; }");
-            sb.AppendLine("        * { color: #333333; }"); // Fallback to ensure all text is dark
+            sb.AppendLine("        .alt-link { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; font-size: 14px; word-break: break-all; color: #333333; }");
+            sb.AppendLine("        .security-notice { background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; color: #333333; }");
+            sb.AppendLine("        .footer { background-color: #ecf0f1; padding: 20px; text-align: center; color: #7f8c8d; font-size: 14px; }");
             sb.AppendLine("    </style>");
             sb.AppendLine("</head>");
             sb.AppendLine("<body>");
             sb.AppendLine("    <div class=\"container\">");
             
-            // Header
+            // Header - Make sure this is Email Verification, not Meeting Transcript
             sb.AppendLine("        <div class=\"header\">");
-            sb.AppendLine("            <h1>📧 Verify Your Email</h1>");
+            sb.AppendLine("            <h1>📧 Email Verification</h1>");
             sb.AppendLine("        </div>");
             
             // Content
             sb.AppendLine("        <div class=\"content\">");
-            sb.AppendLine($"            <div class=\"welcome\" style=\"color: #2c3e50 !important;\">Welcome to Meeting-Summary.io, {firstName}!</div>");
+            sb.AppendLine($"            <div class=\"welcome\">Welcome to Meeting-Summary.io, {firstName}!</div>");
             
-            sb.AppendLine("            <div class=\"message\" style=\"color: #333333 !important;\">");
-            sb.AppendLine("                <span style=\"color: #333333 !important;\">Thank you for creating your account. To ensure the security of your account and enable all features, please verify your email address by clicking the button below:</span>");
+            sb.AppendLine("            <div class=\"message\">");
+            sb.AppendLine("                Thank you for creating your account. To ensure the security of your account and enable all features, please verify your email address by clicking the button below:");
             sb.AppendLine("            </div>");
             
             // CTA Button
             sb.AppendLine("            <div style=\"text-align: center;\">");
-            sb.AppendLine($"                <a href=\"{verificationUrl}\" class=\"cta-button\" style=\"color: white !important; text-decoration: none;\">✅ Verify Email Address</a>");
+            sb.AppendLine($"                <a href=\"{verificationUrl}\" class=\"cta-button\">✅ Verify Email Address</a>");
             sb.AppendLine("            </div>");
             
-            sb.AppendLine("            <div class=\"message\" style=\"color: #333333 !important;\">");
-            sb.AppendLine("                <span style=\"color: #333333 !important;\">Once verified, you'll be able to:</span>");
-            sb.AppendLine("                <ul style=\"color: #333333 !important;\">");
-            sb.AppendLine("                    <li style=\"color: #333333 !important;\">Upload and process meeting recordings</li>");
-            sb.AppendLine("                    <li style=\"color: #333333 !important;\">Purchase tokens for transcription services</li>");
-            sb.AppendLine("                    <li style=\"color: #333333 !important;\">Save and manage your meeting summaries</li>");
-            sb.AppendLine("                    <li style=\"color: #333333 !important;\">Access your complete meeting history</li>");
+            sb.AppendLine("            <div class=\"message\">");
+            sb.AppendLine("                Once verified, you'll be able to:");
+            sb.AppendLine("                <ul>");
+            sb.AppendLine("                    <li>Upload and process meeting recordings</li>");
+            sb.AppendLine("                    <li>Purchase tokens for transcription services</li>");
+            sb.AppendLine("                    <li>Save and manage your meeting summaries</li>");
+            sb.AppendLine("                    <li>Access your complete meeting history</li>");
             sb.AppendLine("                </ul>");
             sb.AppendLine("            </div>");
             
             // Alternative link
-            sb.AppendLine("            <div class=\"alt-link\" style=\"color: #333333 !important;\">");
-            sb.AppendLine("                <strong style=\"color: #333333 !important;\">Can't click the button?</strong> <span style=\"color: #333333 !important;\">Copy and paste this link into your browser:</span><br>");
-            sb.AppendLine($"                <span style=\"color: #0066cc !important;\">{verificationUrl}</span>");
+            sb.AppendLine("            <div class=\"alt-link\">");
+            sb.AppendLine("                <strong>Can't click the button?</strong> Copy and paste this link into your browser:<br>");
+            sb.AppendLine($"                <span style=\"color: #0066cc;\">{verificationUrl}</span>");
             sb.AppendLine("            </div>");
             
             // Security notice
-            sb.AppendLine("            <div class=\"security-notice\" style=\"color: #333333 !important;\">");
-            sb.AppendLine("                <strong style=\"color: #333333 !important;\">🔒 Security Notice:</strong> <span style=\"color: #333333 !important;\">This verification link will expire in 24 hours for your security. If you didn't create an account with Meeting-Summary.io, please ignore this email.</span>");
+            sb.AppendLine("            <div class=\"security-notice\">");
+            sb.AppendLine("                <strong>🔒 Security Notice:</strong> This verification link will expire in 24 hours for your security. If you didn't create an account with Meeting-Summary.io, please ignore this email.");
             sb.AppendLine("            </div>");
             
             sb.AppendLine("        </div>");

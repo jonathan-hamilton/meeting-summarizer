@@ -4,6 +4,7 @@ import { jwtDecode } from 'jwt-decode';
 import type { AuthState, AuthActions, User, JwtPayload } from '../types/auth';
 import AuthService from '../services/authService';
 import EmailVerificationService from '../services/emailVerificationService';
+import { environmentService } from '../services/environmentService';
 
 type AuthStore = AuthState & AuthActions;
 
@@ -22,6 +23,9 @@ export const useAuthStore = create<AuthStore>()(
       // Email verification state (S6.8)
       verificationPending: false,
       verificationError: null,
+      // Environment state (S7.2)
+      requiresInvitationForRegistration: false,
+      environmentLoading: false,
 
       // Actions
       login: async (email: string, password: string) => {
@@ -112,7 +116,7 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      register: async (firstName: string, lastName: string, email: string, password: string, hasConsentedToDataProcessing: boolean) => {
+      register: async (firstName: string, lastName: string, email: string, password: string, hasConsentedToDataProcessing: boolean, invitationCode?: string) => {
         set({ isLoading: true, error: null });
         
         try {
@@ -121,7 +125,8 @@ export const useAuthStore = create<AuthStore>()(
             lastName, 
             email, 
             password,
-            hasConsentedToDataProcessing
+            hasConsentedToDataProcessing,
+            invitationCode
           });
           
           // Decode user info from access token
@@ -171,6 +176,16 @@ export const useAuthStore = create<AuthStore>()(
       logout: async () => {
         // Clear tokens from localStorage
         authService.clearTokens();
+        
+        // Clear all user data stores
+        const { useTranscriptionJobStore } = await import('./transcriptionJobStore');
+        const { useSessionStore } = await import('./sessionStore');
+        
+        // Clear transcription job data
+        useTranscriptionJobStore.getState().clearJob();
+        
+        // Clear session data (transcripts, summaries, etc.)
+        useSessionStore.getState().clearSession();
         
         set({
           user: null,
@@ -418,6 +433,27 @@ export const useAuthStore = create<AuthStore>()(
           console.error('❌ Password change failed:', error);
           // Re-throw the error to be handled by the UI component
           throw error;
+        }
+      },
+
+      // S7.2: Check environment requirements for invitation codes
+      checkEnvironmentRequirements: async () => {
+        set({ environmentLoading: true });
+        
+        try {
+          console.log('🔍 Checking environment requirements...');
+          const requiresInvitation = await environmentService.requiresInvitationForRegistration();
+          console.log('🔍 Environment check result:', requiresInvitation);
+          set({ 
+            requiresInvitationForRegistration: requiresInvitation,
+            environmentLoading: false 
+          });
+        } catch (error) {
+          console.warn('Failed to check environment requirements:', error);
+          set({ 
+            requiresInvitationForRegistration: false,
+            environmentLoading: false 
+          });
         }
       }
     }),

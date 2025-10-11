@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -11,14 +11,12 @@ import {
   CircularProgress,
   Alert,
   IconButton,
-  InputAdornment,
-  FormControlLabel,
-  Checkbox,
-  Link
+  InputAdornment
 } from '@mui/material';
 import { Visibility, VisibilityOff, Email, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { environmentService } from '../../services/environmentService';
 
 interface RegisterDialogProps {
   open: boolean;
@@ -31,7 +29,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   onClose, 
   onSwitchToLogin 
 }) => {
-  const { register, isLoading, error, clearError, resendVerificationEmail } = useAuthStore();
+  const { register, isLoading, error, clearError, resendVerificationEmail, checkEnvironmentRequirements, requiresInvitationForRegistration } = useAuthStore();
   const navigate = useNavigate();
   
   // Keep dialog open if there's an error to show, even if parent tries to close it
@@ -43,7 +41,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
     email: '',
     password: '',
     confirmPassword: '',
-    hasConsentedToDataProcessing: false
+    invitationCode: '' // S7.2: Invitation code for dev environment
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -51,6 +49,22 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  // Check environment requirements and parse URL for invitation codes when dialog opens
+  useEffect(() => {
+    if (open) {
+      // Check if invitation codes are required in this environment
+      checkEnvironmentRequirements();
+      
+      // Parse URL for invitation code
+      const urlParams = new URLSearchParams(window.location.search);
+      const invitationFromUrl = urlParams.get('invitation') || urlParams.get('code');
+      
+      if (invitationFromUrl) {
+        setFormData(prev => ({ ...prev, invitationCode: invitationFromUrl }));
+      }
+    }
+  }, [open, checkEnvironmentRequirements]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -100,8 +114,13 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       errors.confirmPassword = 'Passwords do not match';
     }
     
-    if (!formData.hasConsentedToDataProcessing) {
-      errors.hasConsentedToDataProcessing = 'You must agree to the data processing terms';
+    // Validate invitation code if required
+    if (requiresInvitationForRegistration) {
+      if (!formData.invitationCode.trim()) {
+        errors.invitationCode = 'Invitation code is required for registration';
+      } else if (formData.invitationCode.trim().length < 10) {
+        errors.invitationCode = 'Please enter a valid invitation code';
+      }
     }
     
     setFormErrors(errors);
@@ -120,7 +139,8 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       formData.lastName,
       formData.email,
       formData.password,
-      formData.hasConsentedToDataProcessing
+      true, // Always consent since we removed the checkbox
+      formData.invitationCode || undefined
     );
     
     if (result.success) {
@@ -139,7 +159,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       email: '',
       password: '',
       confirmPassword: '',
-      hasConsentedToDataProcessing: false
+      invitationCode: ''
     });
     setFormErrors({});
     setRegistrationSuccess(false);
@@ -157,7 +177,7 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
       email: '',
       password: '',
       confirmPassword: '',
-      hasConsentedToDataProcessing: false
+      invitationCode: ''
     });
     setFormErrors({});
     setRegistrationSuccess(false);
@@ -391,29 +411,22 @@ export const RegisterDialog: React.FC<RegisterDialogProps> = ({
               }}
             />
 
-            <FormControlLabel
-              control={
-                <Checkbox
-                  name="hasConsentedToDataProcessing"
-                  checked={formData.hasConsentedToDataProcessing}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                />
-              }
-              label={
-                <Typography variant="body2">
-                  I agree to the processing of my personal data in accordance with the{' '}
-                  <Link href="#" onClick={(e) => e.preventDefault()}>
-                    Privacy Policy
-                  </Link>
-                </Typography>
-              }
-              sx={{ alignItems: 'flex-start', mt: 1 }}
-            />
-            {formErrors.hasConsentedToDataProcessing && (
-              <Typography variant="caption" color="error" sx={{ ml: 4, mt: -1 }}>
-                {formErrors.hasConsentedToDataProcessing}
-              </Typography>
+            {/* S7.2: Invitation code field for development environment */}
+            {(requiresInvitationForRegistration || formErrors.invitationCode) && (
+              <TextField
+                name="invitationCode"
+                label="Invitation Code"
+                type="text"
+                value={formData.invitationCode}
+                onChange={handleInputChange}
+                error={!!formErrors.invitationCode}
+                helperText={formErrors.invitationCode || 'Enter the invitation code you received'}
+                fullWidth
+                required={requiresInvitationForRegistration}
+                disabled={isLoading}
+                autoComplete="off"
+                placeholder="ABC123XYZ"
+              />
             )}
           </Box>
         </DialogContent>
