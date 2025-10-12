@@ -10,7 +10,7 @@ resource "azurerm_container_app_environment" "main" {
 
 # Container Registry for storing application images
 resource "azurerm_container_registry" "main" {
-  name                = "${var.environment}${var.location_short}registry"
+  name                = "${var.environment}${var.location_short}acr${var.random_suffix}"
   resource_group_name = var.resource_group_name
   location           = var.location
   sku               = var.registry_sku
@@ -25,6 +25,8 @@ resource "azurerm_container_registry" "main" {
 }
 
 # Container App for the API
+# Note: Initial deployment uses a placeholder image to avoid chicken-and-egg problem
+# The CI/CD pipeline will update this with the actual application image after deployment
 resource "azurerm_container_app" "api" {
   name                         = "${var.environment}-${var.location_short}-api"
   container_app_environment_id = azurerm_container_app_environment.main.id
@@ -34,7 +36,8 @@ resource "azurerm_container_app" "api" {
   template {
     container {
       name   = "meeting-summarizer-api"
-      image  = "${azurerm_container_registry.main.login_server}/meeting-summarizer-api:latest"
+      # Use placeholder image during initial deployment - will be updated by CI/CD
+      image  = "mcr.microsoft.com/dotnet/samples:aspnetapp"
       cpu    = var.cpu_limit
       memory = var.memory_limit
 

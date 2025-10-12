@@ -105,6 +105,7 @@ module "container_apps" {
   environment         = var.environment
   location           = var.location
   location_short     = var.location_short
+  random_suffix      = local.short_suffix
   resource_group_name = azurerm_resource_group.main.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   
