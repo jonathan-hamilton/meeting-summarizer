@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
 
-const API_BASE_URL = 'http://localhost:5029/api';
+// Use relative URL in production (container), localhost in development
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:5029/api' : '/api';
 
 class AuthService {
   private static instance: AuthService;
