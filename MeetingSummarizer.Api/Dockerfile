@@ -11,8 +11,10 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Install Node.js 20.x for frontend build
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
+RUN apt-get update && apt-get install -y curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && node --version && npm --version
 
 # Copy project files and restore dependencies
 COPY ["MeetingSummarizer.Api/MeetingSummarizer.Api.csproj", "MeetingSummarizer.Api/"]
@@ -22,22 +24,34 @@ RUN dotnet restore "MeetingSummarizer.Api/MeetingSummarizer.Api.csproj"
 # Copy all source code
 COPY . .
 
-# Build frontend first
+# Build frontend first - with explicit error handling
 WORKDIR "/src/frontend"
-RUN npm ci && npm run build
+RUN echo "Building frontend..." \
+    && ls -la \
+    && cat package.json \
+    && npm ci \
+    && npm run build \
+    && ls -la dist/
 
 # Build backend
 WORKDIR "/src/MeetingSummarizer.Api"
 RUN dotnet build "MeetingSummarizer.Api.csproj" -c Release -o /app/build
 
-# Copy frontend build output to wwwroot
-RUN mkdir -p /app/build/wwwroot && cp -r /src/frontend/dist/* /app/build/wwwroot/
+# Copy frontend build output to wwwroot with verification
+RUN echo "Copying frontend to wwwroot..." \
+    && mkdir -p /app/build/wwwroot \
+    && cp -r /src/frontend/dist/* /app/build/wwwroot/ \
+    && ls -la /app/build/wwwroot/
 
 FROM build AS publish
 RUN dotnet publish "MeetingSummarizer.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-# Copy frontend build output to publish directory
-RUN mkdir -p /app/publish/wwwroot && cp -r /src/frontend/dist/* /app/publish/wwwroot/
+# Copy frontend build output to publish directory with verification
+RUN echo "Copying frontend to publish wwwroot..." \
+    && mkdir -p /app/publish/wwwroot \
+    && cp -r /src/frontend/dist/* /app/publish/wwwroot/ \
+    && ls -la /app/publish/wwwroot/ \
+    && echo "Frontend files copied successfully"
 
 FROM base AS final
 WORKDIR /app
