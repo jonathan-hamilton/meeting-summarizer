@@ -122,12 +122,17 @@ jobs:
         # Build and push container image from repository root
         az acr build --registry $REGISTRY_NAME --image meeting-summary-api:latest --file MeetingSummarizer.Api/Dockerfile .
         
-        # Wait for container app to be ready and update with new image
-        echo "🔄 Deploying new revision to Container App..."
-        az containerapp revision copy \
+        # Wait a moment for the container app to be fully ready after Terraform deployment
+        echo "⏳ Waiting for Container App to be ready..."
+        sleep 30
+        
+        # Update container app with new image using a more reliable approach
+        echo "🔄 Updating Container App with new image..."
+        az containerapp update \
           --name "$CONTAINER_APP_NAME" \
           --resource-group "${{ needs.deploy-infrastructure.outputs.resource-group-name }}" \
-          --image "${REGISTRY_SERVER}/meeting-summary-api:latest"
+          --image "${REGISTRY_SERVER}/meeting-summary-api:latest" \
+          --output table
 
   deployment-summary:
     name: Deployment Summary
