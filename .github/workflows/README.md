@@ -2,7 +2,12 @@
 
 This repository uses **separated deployment workflows** for better reliability and maintainability.
 
-## 📋 Workflow Structure
+## � Recent Updates
+- Fixed DNS zone creation by adding custom domain variables
+- Updated container to include React frontend + .NET API
+- Added static file serving for integrated SPA deployment
+
+## �📋 Workflow Structure
 
 ### Development Environment
 
