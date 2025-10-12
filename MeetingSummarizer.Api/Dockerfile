@@ -1,12 +1,12 @@
-# Multi-stage Dockerfile for .NET 8.0 API
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+# Multi-stage Dockerfile for .NET 9.0 API
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy project files and restore dependencies
