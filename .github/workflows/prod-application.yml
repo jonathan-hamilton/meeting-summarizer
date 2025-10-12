@@ -15,6 +15,10 @@ on:
         required: false
         default: false
         type: boolean
+  workflow_run:
+    workflows: ["Deploy Production Infrastructure"]
+    types:
+      - completed
 
 concurrency:
   group: prod-application
@@ -28,12 +32,43 @@ env:
   ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 
 jobs:
+  check-infrastructure:
+    name: Check Production Infrastructure Status
+    runs-on: ubuntu-latest
+    outputs:
+      infrastructure-completed: ${{ steps.check.outputs.infrastructure-completed }}
+      should-proceed: ${{ steps.check.outputs.should-proceed }}
+    
+    steps:
+    - name: Check Infrastructure Workflow Status
+      id: check
+      run: |
+        # Check if this was triggered by infrastructure completion
+        if [ "${{ github.event_name }}" = "workflow_run" ]; then
+          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "infrastructure-completed=true" >> $GITHUB_OUTPUT
+            echo "should-proceed=true" >> $GITHUB_OUTPUT
+            echo "✅ Production infrastructure workflow completed successfully, proceeding with application deployment"
+          else
+            echo "infrastructure-completed=false" >> $GITHUB_OUTPUT  
+            echo "should-proceed=false" >> $GITHUB_OUTPUT
+            echo "❌ Production infrastructure workflow failed, skipping application deployment"
+            exit 1
+          fi
+        else
+          # Triggered manually - always proceed
+          echo "infrastructure-completed=unknown" >> $GITHUB_OUTPUT
+          echo "should-proceed=true" >> $GITHUB_OUTPUT
+          echo "🚀 Manually triggered, proceeding with production application deployment"
+        fi
+
   # MANUAL APPROVAL GATE
   approval-gate:
     name: Production Application Approval
     runs-on: ubuntu-latest
+    needs: check-infrastructure
+    if: ${{ !inputs.skip_approval && needs.check-infrastructure.outputs.should-proceed == 'true' }}
     environment: production-approval
-    if: ${{ !inputs.skip_approval }}
     
     steps:
     - name: Manual approval checkpoint
@@ -44,8 +79,8 @@ jobs:
   get-infrastructure-info:
     name: Get Production Infrastructure Information
     runs-on: ubuntu-latest
-    needs: [approval-gate]
-    if: always() && (needs.approval-gate.result == 'success' || inputs.skip_approval)
+    needs: [check-infrastructure, approval-gate]
+    if: always() && (needs.approval-gate.result == 'success' || inputs.skip_approval) && needs.check-infrastructure.outputs.should-proceed == 'true'
     environment: production
     
     permissions:
