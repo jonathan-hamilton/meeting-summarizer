@@ -92,6 +92,23 @@ jobs:
         name: backend-app-${{ inputs.environment }}-${{ github.run_id }}
         path: ./publish/
         retention-days: 30
+        
+    - name: Build and upload Docker image
+      run: |
+        # Build Docker image with version tag
+        docker build -t meeting-summarizer-api:${{ steps.version.outputs.version }} \
+          -t meeting-summarizer-api:latest \
+          -f MeetingSummarizer.Api/Dockerfile .
+        
+        # Save Docker image as tar file for upload
+        docker save meeting-summarizer-api:${{ steps.version.outputs.version }} > backend-docker-image.tar
+        
+    - name: Upload Docker image artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-docker-image-${{ inputs.environment }}-${{ github.run_id }}
+        path: backend-docker-image.tar
+        retention-days: 30
 
   # =======================
   # BUILD & TEST FRONTEND

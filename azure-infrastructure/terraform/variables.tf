@@ -1,11 +1,11 @@
 # Terraform variable definitions for Meeting Summary infrastructure
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment name (dev, prod)"
   type        = string
   validation {
-    condition = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, staging, prod."
+    condition = contains(["dev", "prod"], var.environment)
+    error_message = "Environment must be one of: dev, prod."
   }
 }
 
@@ -60,7 +60,50 @@ variable "create_dns_zone" {
 }
 
 variable "enable_custom_domain" {
-  description = "Whether to configure custom domain binding on App Service"
+  description = "Whether to configure custom domain binding on Container App"
   type        = bool
   default     = false
+}
+
+# Container Apps specific variables
+variable "location_short" {
+  description = "Short form of Azure region (e.g., eus for East US)"
+  type        = string
+  default     = "wus"
+}
+
+variable "container_cpu_limit" {
+  description = "CPU limit for the container (in cores)"
+  type        = number
+  default     = 0.5
+}
+
+variable "container_memory_limit" {
+  description = "Memory limit for the container (in Gi)"
+  type        = string
+  default     = "1.0Gi"
+}
+
+variable "container_min_replicas" {
+  description = "Minimum number of container replicas"
+  type        = number
+  default     = 1
+}
+
+variable "container_max_replicas" {
+  description = "Maximum number of container replicas"
+  type        = number
+  default     = 10
+}
+
+variable "aspnet_environment" {
+  description = "ASP.NET Core environment name"
+  type        = string
+  default     = "Production"
+}
+
+variable "github_actions_object_id" {
+  description = "Object ID of the GitHub Actions service principal for ACR access"
+  type        = string
+  default     = null
 }
