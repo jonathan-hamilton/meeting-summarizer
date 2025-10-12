@@ -1,0 +1,121 @@
+name: Deploy Development Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force infrastructure deployment'
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches: [main]
+    paths:
+      - 'azure-infrastructure/**'
+      - '.github/workflows/dev-infrastructure.yml'
+
+concurrency:
+  group: dev-infrastructure
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  TF_VAR_environment: "dev"
+  TF_VAR_location: "westus"
+
+jobs:
+  deploy-infrastructure:
+    name: Deploy Development Infrastructure
+    runs-on: ubuntu-latest
+    environment: development
+    
+    permissions:
+      id-token: write
+      contents: read
+      
+    outputs:
+      resource-group-name: ${{ steps.terraform.outputs.resource-group-name }}
+      container-app-fqdn: ${{ steps.terraform.outputs.container-app-fqdn }}
+      container-registry-name: ${{ steps.terraform.outputs.container-registry-name }}
+      container-app-name: ${{ steps.terraform.outputs.container-app-name }}
+      key-vault-name: ${{ steps.terraform.outputs.key-vault-name }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.6
+        terraform_wrapper: false
+        
+    - name: Terraform Init
+      run: |
+        cd azure-infrastructure/terraform
+        terraform init -backend-config="key=dev/terraform.tfstate"
+    
+    - name: Terraform Plan
+      run: |
+        cd azure-infrastructure/terraform
+        terraform plan \
+          -var="environment=dev" \
+          -var="location=westus" \
+          -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
+          -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
+          -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+          -out=tfplan
+    
+    - name: Terraform Apply
+      id: terraform
+      run: |
+        cd azure-infrastructure/terraform
+        terraform apply -auto-approve tfplan
+        
+        # Set outputs for application deployment
+        echo "resource-group-name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+        echo "container-app-fqdn=$(terraform output -raw container_app_fqdn)" >> $GITHUB_OUTPUT  
+        echo "container-registry-name=$(terraform output -raw container_registry_name)" >> $GITHUB_OUTPUT
+        echo "container-app-name=$(terraform output -raw container_app_name)" >> $GITHUB_OUTPUT
+        echo "key-vault-name=$(terraform output -raw key_vault_name)" >> $GITHUB_OUTPUT
+
+  infrastructure-summary:
+    name: Infrastructure Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-infrastructure]
+    if: always()
+    
+    steps:
+    - name: Create Summary
+      run: |
+        echo "## 🏗️ Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment**: Development" >> $GITHUB_STEP_SUMMARY
+        echo "**Resource Group**: ${{ needs.deploy-infrastructure.outputs.resource-group-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Container Registry**: ${{ needs.deploy-infrastructure.outputs.container-registry-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Container App**: ${{ needs.deploy-infrastructure.outputs.container-app-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Key Vault**: ${{ needs.deploy-infrastructure.outputs.key-vault-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.deploy-infrastructure.result }}" = "success" ]; then
+          echo "✅ **Status**: Infrastructure Ready" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 **Next Step**: Deploy application code to update the container app" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Status**: Infrastructure Deployment Failed" >> $GITHUB_STEP_SUMMARY
+        fi
