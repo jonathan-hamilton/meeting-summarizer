@@ -40,7 +40,7 @@ variable "enable_custom_domain" {
 # Local values
 locals {
   is_production = var.environment == "prod"
-  sku_size = local.is_production ? "P1v3" : (var.environment == "dev" ? "F1" : "S1")  # Use F1 (Free) for dev - better quota availability
+  sku_size = local.is_production ? "P1v3" : "S1"  # Use S1 (Standard) for dev - uses Standard VM quota pool
   enable_blue_green = local.is_production
   
   # Custom domain configuration
@@ -87,7 +87,7 @@ resource "azurerm_windows_web_app" "main" {
     application_stack {
       dotnet_version = "v8.0"
     }
-    always_on = local.is_production && local.sku_size != "F1"  # Free tier doesn't support always_on
+    always_on = true  # S1 Standard tier supports always_on
     
     # Production-specific configurations
     dynamic "cors" {

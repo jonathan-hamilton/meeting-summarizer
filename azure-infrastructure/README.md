@@ -1,5 +1,21 @@
 # Azure Infrastructure for Meeting Summary App
 
+## 🚨 IMPORTANT NOTICE: CI/CD ONLY DEPLOYMENT
+
+**All Terraform infrastructure changes MUST go through the GitHub Actions CI/CD pipeline.**
+
+Manual execution of `terraform plan`, `terraform apply`, or any other terraform commands is **strictly prohibited** outside of the CI/CD system.
+
+### ✅ Correct Process:
+- **Development**: Push to any branch → Auto-deploy via GitHub Actions
+- **Production**: Run "Deploy to Production" workflow → Manual approval → Deploy
+
+### 📚 Documentation:
+- [Deployment Operations Guide](../docs/sprints/sprint_7/s7.1-deployment-operations-guide.md)
+- [CI/CD Protection Details](terraform/MANUAL_EXECUTION_BLOCKED.md)
+
+---
+
 This directory contains Infrastructure as Code (IaC) templates for deploying the Meeting Summary application to Azure across multiple environments.
 
 ## Directory Structure
