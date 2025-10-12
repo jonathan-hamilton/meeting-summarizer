@@ -10,7 +10,7 @@ resource "azurerm_container_app_environment" "main" {
 
 # Container Registry for storing application images
 resource "azurerm_container_registry" "main" {
-  name                = "${var.environment}${var.location_short}acr${var.random_suffix}"
+  name                = "${var.environment}${var.location_short}acr${replace(var.random_suffix, "-", "")}"
   resource_group_name = var.resource_group_name
   location           = var.location
   sku               = var.registry_sku
