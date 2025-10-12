@@ -122,8 +122,9 @@ jobs:
         # Build and push container image from repository root
         az acr build --registry $REGISTRY_NAME --image meeting-summary-api:latest --file MeetingSummarizer.Api/Dockerfile .
         
-        # Update container app with dynamic name
-        az containerapp update \
+        # Wait for container app to be ready and update with new image
+        echo "🔄 Deploying new revision to Container App..."
+        az containerapp revision copy \
           --name "$CONTAINER_APP_NAME" \
           --resource-group "${{ needs.deploy-infrastructure.outputs.resource-group-name }}" \
           --image "${REGISTRY_SERVER}/meeting-summary-api:latest"
