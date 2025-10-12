@@ -12,7 +12,7 @@ This directory contains Terraform configurations for deploying the Meeting Summa
 
 1. **Create a resource group** (if it doesn't exist):
    ```bash
-   az group create --name rg-meetingsummary-dev --location "East US"
+   az group create --name rg-meetingsummary-dev --location "Central US"
    ```
 
 2. **Copy the example variables file**:

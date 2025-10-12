@@ -84,7 +84,7 @@ jobs:
         cd azure-infrastructure/terraform
         terraform plan \
           -var="environment=dev" \
-          -var="location=${{ vars.AZURE_LOCATION || 'West US 2' }}" \
+          -var="location=${{ vars.AZURE_LOCATION || 'Central US' }}" \
           -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
           -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
           -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
@@ -376,7 +376,7 @@ jobs:
         if [ "${{ needs.deploy-backend.result }}" != "success" ] || [ "${{ needs.deploy-frontend.result }}" != "success" ]; then
           echo "### 🔧 Troubleshooting" >> $GITHUB_STEP_SUMMARY
           echo "If deployment failed, check:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Azure resource availability in East US region" >> $GITHUB_STEP_SUMMARY
+          echo "1. Azure resource availability in Central US region" >> $GITHUB_STEP_SUMMARY
           echo "2. Service principal permissions for resource group" >> $GITHUB_STEP_SUMMARY
           echo "3. Application settings and connection strings" >> $GITHUB_STEP_SUMMARY
           echo "4. Database migration scripts and permissions" >> $GITHUB_STEP_SUMMARY
