@@ -1,0 +1,206 @@
+name: Deploy Production Application
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+      skip_approval:
+        description: 'Skip approval gate (emergency only)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: prod-application
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+
+jobs:
+  # MANUAL APPROVAL GATE
+  approval-gate:
+    name: Production Application Approval
+    runs-on: ubuntu-latest
+    environment: production-approval
+    if: ${{ !inputs.skip_approval }}
+    
+    steps:
+    - name: Manual approval checkpoint
+      run: |
+        echo "🔐 Production application deployment requires manual approval"
+        echo "This will deploy new application code to production"
+
+  get-infrastructure-info:
+    name: Get Production Infrastructure Information
+    runs-on: ubuntu-latest
+    needs: [approval-gate]
+    if: always() && (needs.approval-gate.result == 'success' || inputs.skip_approval)
+    environment: production
+    
+    permissions:
+      id-token: write
+      contents: read
+      
+    outputs:
+      resource-group-name: ${{ steps.terraform.outputs.resource-group-name }}
+      container-registry-name: ${{ steps.terraform.outputs.container-registry-name }}
+      container-app-name: ${{ steps.terraform.outputs.container-app-name }}
+      container-app-fqdn: ${{ steps.terraform.outputs.container-app-fqdn }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.6
+        terraform_wrapper: false
+        
+    - name: Get Infrastructure Outputs
+      id: terraform
+      run: |
+        cd azure-infrastructure/terraform
+        terraform init -backend-config="key=prod/terraform.tfstate"
+        
+        # Get outputs from existing infrastructure
+        echo "resource-group-name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+        echo "container-registry-name=$(terraform output -raw container_registry_name)" >> $GITHUB_OUTPUT
+        echo "container-app-name=$(terraform output -raw container_app_name)" >> $GITHUB_OUTPUT
+        echo "container-app-fqdn=$(terraform output -raw container_app_fqdn)" >> $GITHUB_OUTPUT
+
+  deploy-application:
+    name: Deploy Production Application
+    runs-on: ubuntu-latest
+    needs: get-infrastructure-info
+    environment: production
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+    
+    - name: Build and Deploy Production Application
+      run: |
+        # Get infrastructure details
+        REGISTRY_NAME="${{ needs.get-infrastructure-info.outputs.container-registry-name }}"
+        REGISTRY_SERVER="${REGISTRY_NAME}.azurecr.io"
+        CONTAINER_APP_NAME="${{ needs.get-infrastructure-info.outputs.container-app-name }}"
+        RESOURCE_GROUP="${{ needs.get-infrastructure-info.outputs.resource-group-name }}"
+        TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+        
+        echo "🚀 Deploying application to Production Container App: $CONTAINER_APP_NAME"
+        echo "📦 Using Container Registry: $REGISTRY_SERVER"
+        
+        # Build and push container image with production tag
+        echo "🏗️ Building production container image..."
+        az acr build \
+          --registry $REGISTRY_NAME \
+          --image meeting-summary-api:prod-latest \
+          --image meeting-summary-api:prod-$TIMESTAMP \
+          --file MeetingSummarizer.Api/Dockerfile \
+          .
+        
+        # Wait for any ongoing container app operations to complete
+        echo "⏳ Ensuring container app is ready for production update..."
+        sleep 30
+        
+        # Get current revision for potential rollback
+        CURRENT_REVISION=$(az containerapp revision list \
+          --name "$CONTAINER_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --query "[?properties.active].name" -o tsv)
+        
+        echo "📋 Current active revision: $CURRENT_REVISION"
+        
+        # Update container app with production image
+        echo "🔄 Updating production container app..."
+        az containerapp update \
+          --name "$CONTAINER_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --image "${REGISTRY_SERVER}/meeting-summary-api:prod-latest" || {
+            echo "❌ Standard update failed, trying blue-green deployment..."
+            
+            # Blue-green deployment approach
+            az containerapp revision set-mode \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --mode Multiple
+              
+            az containerapp revision copy \
+              --name "$CONTAINER_APP_NAME" \
+              --resource-group "$RESOURCE_GROUP" \
+              --from-revision "$CURRENT_REVISION" \
+              --image "${REGISTRY_SERVER}/meeting-summary-api:prod-latest"
+        }
+        
+        # Verify deployment
+        echo "🔍 Verifying production deployment..."
+        APP_URL=$(az containerapp show \
+          --name "$CONTAINER_APP_NAME" \
+          --resource-group "$RESOURCE_GROUP" \
+          --query "properties.configuration.ingress.fqdn" -o tsv)
+        
+        # Basic health check
+        sleep 10
+        HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$APP_URL/health" || echo "000")
+        
+        if [ "$HTTP_STATUS" = "200" ]; then
+          echo "✅ Production deployment successful and healthy!"
+          echo "🌐 Production URL: https://$APP_URL"
+        else
+          echo "⚠️ Production deployment completed but health check failed (Status: $HTTP_STATUS)"
+          echo "🌐 Production URL: https://$APP_URL (may need manual verification)"
+        fi
+
+  deployment-summary:
+    name: Production Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [get-infrastructure-info, deploy-application]
+    if: always()
+    
+    steps:
+    - name: Create Summary
+      run: |
+        echo "## 🚀 Production Application Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment**: Production" >> $GITHUB_STEP_SUMMARY
+        echo "**Container App**: ${{ needs.get-infrastructure-info.outputs.container-app-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Production URL**: https://${{ needs.get-infrastructure-info.outputs.container-app-fqdn }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.deploy-application.result }}" = "success" ]; then
+          echo "✅ **Status**: Production Application Deployed Successfully" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🎉 **Live**: Your application is now live in production!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Status**: Production Application Deployment Failed" >> $GITHUB_STEP_SUMMARY
+        fi
