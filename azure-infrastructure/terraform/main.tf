@@ -1,5 +1,6 @@
 # Main Terraform configuration for Meeting Summary application infrastructure
 # This configuration orchestrates all the required Azure resources for the application
+# Clean deployment after resource group deletion complete
 
 # 🚫 WARNING: DO NOT RUN TERRAFORM MANUALLY
 # This configuration MUST be executed through GitHub Actions CI/CD pipeline only
