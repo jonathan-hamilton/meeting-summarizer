@@ -54,8 +54,9 @@ jobs:
       contents: read
       
     outputs:
-      app-service-name: ${{ steps.terraform.outputs.app-service-name }}
-      static-web-app-name: ${{ steps.terraform.outputs.static-web-app-name }}
+      container-app-name: ${{ steps.terraform.outputs.container-app-name }}
+      container-registry-name: ${{ steps.terraform.outputs.container-registry-name }}
+      container-registry-server: ${{ steps.terraform.outputs.container-registry-server }}
     
     steps:
     - name: Checkout code
@@ -98,18 +99,23 @@ jobs:
         terraform apply -auto-approve tfplan
         
         # Extract outputs for later use
-        APP_SERVICE_NAME=$(terraform output -raw app_service_name)
+        CONTAINER_APP_NAME=$(terraform output -raw container_app_name)
+        CONTAINER_REGISTRY_NAME=$(terraform output -raw container_registry_name)
+        CONTAINER_REGISTRY_SERVER=$(terraform output -raw container_registry_login_server)
         
-        echo "app-service-name=$APP_SERVICE_NAME" >> $GITHUB_OUTPUT
+        echo "container-app-name=$CONTAINER_APP_NAME" >> $GITHUB_OUTPUT
+        echo "container-registry-name=$CONTAINER_REGISTRY_NAME" >> $GITHUB_OUTPUT
+        echo "container-registry-server=$CONTAINER_REGISTRY_SERVER" >> $GITHUB_OUTPUT
         
         echo "✅ Infrastructure deployed successfully"
-        echo "App Service: $APP_SERVICE_NAME"
+        echo "Container App: $CONTAINER_APP_NAME"
+        echo "Container Registry: $CONTAINER_REGISTRY_SERVER"
 
   # ====================
   # DEPLOY BACKEND API
   # ====================
   deploy-backend:
-    name: Deploy Backend API
+    name: Deploy Backend Container
     runs-on: ubuntu-latest
     needs: [build-and-test, deploy-infrastructure]
     environment: development
@@ -119,11 +125,11 @@ jobs:
       contents: read
     
     steps:
-    - name: Download backend artifacts
+    - name: Download Docker image
       uses: actions/download-artifact@v4
       with:
-        name: backend-app-development-${{ github.run_id }}
-        path: ./backend-app/
+        name: backend-docker-image-development-${{ github.run_id }}
+        path: ./
         
     - name: Azure CLI login via OIDC
       uses: azure/login@v2
@@ -132,41 +138,47 @@ jobs:
         tenant-id: ${{ vars.AZURE_TENANT_ID }}
         subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     
-    - name: Deploy to Azure App Service
+    - name: Load and push Docker image to ACR
       run: |
-        # Create deployment package
-        cd backend-app
-        zip -r ../deployment.zip .
-        cd ..
+        # Load Docker image from tar file
+        docker load < backend-docker-image.tar
         
-        # Deploy to App Service
-        az webapp deployment source config-zip \
-          --resource-group rg-meetingsummary-dev \
-          --name ${{ needs.deploy-infrastructure.outputs.app-service-name }} \
-          --src deployment.zip
+        # Get ACR credentials and login
+        ACR_SERVER="${{ needs.deploy-infrastructure.outputs.container-registry-server }}"
+        echo "Logging into ACR: $ACR_SERVER"
+        az acr login --name ${{ needs.deploy-infrastructure.outputs.container-registry-name }}
         
-        echo "✅ Backend API deployed successfully"
-        echo "URL: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
+        # Tag and push image
+        VERSION="${{ needs.build-and-test.outputs.backend-version }}"
+        docker tag meeting-summarizer-api:$VERSION $ACR_SERVER/meeting-summarizer-api:$VERSION
+        docker tag meeting-summarizer-api:latest $ACR_SERVER/meeting-summarizer-api:latest
+        
+        docker push $ACR_SERVER/meeting-summarizer-api:$VERSION
+        docker push $ACR_SERVER/meeting-summarizer-api:latest
+        
+        echo "✅ Docker image pushed to ACR successfully"
     
-    - name: Run database migrations
+    - name: Update Container App
       run: |
-        # Get the App Service URL for connection string validation
-        APP_URL="https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
+        # Update Container App with new image
+        ACR_SERVER="${{ needs.deploy-infrastructure.outputs.container-registry-server }}"
+        VERSION="${{ needs.build-and-test.outputs.backend-version }}"
         
-        echo "🔄 Running database migrations..."
+        echo "🔄 Updating Container App with new image..."
+        az containerapp update \
+          --name ${{ needs.deploy-infrastructure.outputs.container-app-name }} \
+          --resource-group $(az containerapp show --name ${{ needs.deploy-infrastructure.outputs.container-app-name }} --query "resourceGroup" -o tsv) \
+          --image $ACR_SERVER/meeting-summarizer-api:$VERSION
         
-        # Use Azure CLI to run migration command on the App Service
-        az webapp ssh --resource-group rg-meetingsummary-dev \
-          --name ${{ needs.deploy-infrastructure.outputs.app-service-name }} \
-          --timeout 120 << 'EOF'
+        echo "✅ Container App updated successfully"
         
-        # Navigate to app directory and run migrations
-        cd /home/site/wwwroot
-        dotnet MeetingSummarizer.Api.dll --migrate-database
-        exit
-        EOF
+        # Get the Container App URL
+        CONTAINER_APP_URL=$(az containerapp show \
+          --name ${{ needs.deploy-infrastructure.outputs.container-app-name }} \
+          --resource-group $(az containerapp show --name ${{ needs.deploy-infrastructure.outputs.container-app-name }} --query "resourceGroup" -o tsv) \
+          --query "properties.configuration.ingress.fqdn" -o tsv)
         
-        echo "✅ Database migrations completed"
+        echo "URL: https://$CONTAINER_APP_URL"
 
   # ====================
   # DEPLOY FRONTEND

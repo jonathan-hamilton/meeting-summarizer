@@ -83,19 +83,57 @@ module "sql_database" {
   administrator_login_password = var.sql_admin_password
 }
 
-# App Service Module
-module "app_service" {
-  source = "./modules/app-service"
-
-  app_service_name    = "${local.unique_suffix}-api"
-  location           = var.location
-  environment        = var.environment
+# Log Analytics Workspace for Container Apps
+resource "azurerm_log_analytics_workspace" "main" {
+  name                = "${local.unique_suffix}-logs"
+  location            = var.location
   resource_group_name = azurerm_resource_group.main.name
-  key_vault_id       = module.key_vault.key_vault_id
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+
+  tags = {
+    Environment = var.environment
+    Application = var.app_name
+    CreatedBy   = "Terraform"
+  }
+}
+
+# Container Apps Module
+module "container_apps" {
+  source = "./modules/container-apps"
+
+  environment         = var.environment
+  location           = var.location
+  location_short     = var.location_short
+  resource_group_name = azurerm_resource_group.main.name
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
   
-  # Custom domain configuration
-  custom_domain_name    = var.custom_domain_name
-  enable_custom_domain  = var.enable_custom_domain
+  # Container configuration
+  cpu_limit     = var.container_cpu_limit
+  memory_limit  = var.container_memory_limit
+  min_replicas  = var.container_min_replicas
+  max_replicas  = var.container_max_replicas
+  aspnet_environment = var.aspnet_environment
+  
+  # Secrets from other modules
+  sql_connection_string = module.sql_database.connection_string
+  openai_api_key       = var.openai_api_key
+  azure_speech_key     = module.cognitive_services.speech_key
+  
+  # GitHub Actions integration
+  github_actions_object_id = var.github_actions_object_id
+
+  tags = {
+    Environment = var.environment
+    Application = var.app_name
+    CreatedBy   = "Terraform"
+  }
+
+  depends_on = [
+    azurerm_log_analytics_workspace.main,
+    module.sql_database,
+    module.cognitive_services
+  ]
 }
 
 # DNS Zone Module (optional)
@@ -106,8 +144,8 @@ module "dns_zone" {
   domain_name           = var.custom_domain_name
   resource_group_name   = azurerm_resource_group.main.name
   environment          = var.environment
-  app_service_hostname = module.app_service.app_service_name
-  staging_hostname     = module.app_service.staging_slot_name != null ? "${module.app_service.app_service_name}-staging.azurewebsites.net" : ""
+  app_service_hostname = module.container_apps.container_app_fqdn
+  staging_hostname     = ""  # Container Apps don't have staging slots like App Service
 }
 
 # Cognitive Services Module
