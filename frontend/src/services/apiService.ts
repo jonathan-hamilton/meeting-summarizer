@@ -40,10 +40,8 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // TODO: Fix environment variable loading issue
-    // See docs/technical-debt.md for details
-    // Using hardcoded URL until VITE_API_BASE_URL loading is resolved
-    this.baseURL = 'http://localhost:5029';
+    // Use relative URL in production (container), localhost in development
+    this.baseURL = import.meta.env.DEV ? 'http://localhost:5029' : '';
     
     this.client = axios.create({
       baseURL: this.baseURL,
