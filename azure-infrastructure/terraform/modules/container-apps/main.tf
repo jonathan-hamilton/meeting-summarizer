@@ -1,6 +1,6 @@
 # Container Apps Infrastructure Module
 resource "azurerm_container_app_environment" "main" {
-  name                       = "${var.environment}-${var.location_short}-containerenv"
+  name                       = "${var.environment}-${var.location_short}-containerenv-${var.random_suffix}"
   location                  = var.location
   resource_group_name       = var.resource_group_name
   log_analytics_workspace_id = var.log_analytics_workspace_id
@@ -28,7 +28,7 @@ resource "azurerm_container_registry" "main" {
 # Note: Initial deployment uses a placeholder image to avoid chicken-and-egg problem
 # The CI/CD pipeline will update this with the actual application image after deployment
 resource "azurerm_container_app" "api" {
-  name                         = "${var.environment}-${var.location_short}-api"
+  name                         = "${var.environment}-${var.location_short}-api-${var.random_suffix}"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name         = var.resource_group_name
   revision_mode               = "Single"
