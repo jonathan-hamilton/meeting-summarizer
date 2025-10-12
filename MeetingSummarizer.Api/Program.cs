@@ -341,6 +341,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+// Enable static files for serving React frontend
+app.UseStaticFiles();
+
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
 
@@ -356,6 +359,9 @@ app.UseJwtAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// SPA fallback routing - serve index.html for client-side routing
+app.MapFallbackToFile("index.html");
 
 app.Run();
 
