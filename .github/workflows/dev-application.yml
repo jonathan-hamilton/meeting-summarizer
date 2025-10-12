@@ -7,6 +7,12 @@ on:
       - 'MeetingSummarizer.Api/**'
       - 'frontend/**'
       - '.github/workflows/dev-application.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MeetingSummarizer.Api/**'
+      - 'frontend/**'
+      - '.github/workflows/dev-application.yml'
   workflow_dispatch:
     inputs:
       force_deploy:
