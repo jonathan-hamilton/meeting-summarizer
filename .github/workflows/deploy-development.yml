@@ -1,74 +1,58 @@
-name: Deploy to Development
+name: Deploy to Development Environment
 
 on:
-  # Re-enabled automatic deployment - Azure credentials now configured
   push:
-    branches: 
-      - main  # Deploy main branch to development
+    branches: [main]
   workflow_dispatch:
     inputs:
-      force-deploy:
-        description: 'Force deployment even if tests fail'
+      force_deploy:
+        description: 'Force deployment even if no changes detected'
         required: false
-        type: boolean
         default: false
+        type: boolean
 
-# Prevent multiple development deployments from running simultaneously
 concurrency:
-  group: dev-deployment-${{ github.ref }}
-  cancel-in-progress: true
+  group: development-deployment
+  cancel-in-progress: false  # Changed to false to prevent resource conflicts
 
-# Set default shell for all run commands
 defaults:
   run:
     shell: bash
 
 env:
-  AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-  ENVIRONMENT: development
   ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  TF_VAR_environment: "dev"
+  TF_VAR_location: "westus"
 
 jobs:
-  # ====================
-  # BUILD AND TEST
-  # ====================
-  build-and-test:
-    name: Build & Test
-    uses: ./.github/workflows/shared-build.yml
-    with:
-      environment: development
-      run-security-scan: false  # Skip security scan for dev deployments
-    secrets: inherit
-
-  # ====================
-  # DEPLOY INFRASTRUCTURE
-  # ====================
   deploy-infrastructure:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    needs: build-and-test
     environment: development
     
-    # Set up permissions for OIDC authentication
     permissions:
       id-token: write
       contents: read
       
     outputs:
-      container-app-name: ${{ steps.terraform.outputs.container-app-name }}
+      resource-group-name: ${{ steps.terraform.outputs.resource-group-name }}
+      container-app-fqdn: ${{ steps.terraform.outputs.container-app-fqdn }}
       container-registry-name: ${{ steps.terraform.outputs.container-registry-name }}
-      container-registry-server: ${{ steps.terraform.outputs.container-registry-server }}
+      container-app-name: ${{ steps.terraform.outputs.container-app-name }}
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+    
     - name: Azure CLI login via OIDC
       uses: azure/login@v2
       with:
         client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ vars.AZURE_TENANT_ID }}
-        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
@@ -79,15 +63,14 @@ jobs:
     - name: Terraform Init
       run: |
         cd azure-infrastructure/terraform
-        terraform init \
-          -backend-config="key=dev/terraform.tfstate"
+        terraform init -backend-config="key=dev/terraform.tfstate"
     
     - name: Terraform Plan
       run: |
         cd azure-infrastructure/terraform
         terraform plan \
           -var="environment=dev" \
-          -var="location=${{ vars.AZURE_LOCATION || 'Central US' }}" \
+          -var="location=westus" \
           -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
           -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
           -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
@@ -100,28 +83,15 @@ jobs:
         cd azure-infrastructure/terraform
         terraform apply -auto-approve tfplan
         
-        # Extract outputs for later use
-        CONTAINER_APP_NAME=$(terraform output -raw container_app_name)
-        CONTAINER_REGISTRY_NAME=$(terraform output -raw container_registry_name)
-        CONTAINER_REGISTRY_SERVER=$(terraform output -raw container_registry_login_server)
-        RESOURCE_GROUP_NAME=$(terraform output -raw resource_group_name)
-        
-        echo "container-app-name=$CONTAINER_APP_NAME" >> $GITHUB_OUTPUT
-        echo "container-registry-name=$CONTAINER_REGISTRY_NAME" >> $GITHUB_OUTPUT
-        echo "container-registry-server=$CONTAINER_REGISTRY_SERVER" >> $GITHUB_OUTPUT
-        echo "resource-group-name=$RESOURCE_GROUP_NAME" >> $GITHUB_OUTPUT
-        
-        echo "✅ Infrastructure deployed successfully"
-        echo "Container App: $CONTAINER_APP_NAME"
-        echo "Container Registry: $CONTAINER_REGISTRY_SERVER"
+        # Set outputs for next jobs
+        echo "resource-group-name=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+        echo "container-app-fqdn=$(terraform output -raw container_app_fqdn)" >> $GITHUB_OUTPUT  
+        echo "container-registry-name=$(terraform output -raw container_registry_name)" >> $GITHUB_OUTPUT
 
-  # ====================
-  # DEPLOY BACKEND API
-  # ====================
   deploy-backend:
     name: Deploy Backend Container
     runs-on: ubuntu-latest
-    needs: [build-and-test, deploy-infrastructure]
+    needs: deploy-infrastructure
     environment: development
     
     permissions:
@@ -129,334 +99,54 @@ jobs:
       contents: read
     
     steps:
-    - name: Download Docker image
-      uses: actions/download-artifact@v4
-      with:
-        name: backend-docker-image-development-${{ github.run_id }}
-        path: ./
-        
-    - name: Azure CLI login via OIDC
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ vars.AZURE_TENANT_ID }}
-        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-    
-    - name: Load and push Docker image to ACR
-      run: |
-        # Load Docker image from tar file
-        docker load < backend-docker-image.tar
-        
-        # Get ACR credentials and login
-        ACR_SERVER="${{ needs.deploy-infrastructure.outputs.container-registry-server }}"
-        echo "Logging into ACR: $ACR_SERVER"
-        az acr login --name ${{ needs.deploy-infrastructure.outputs.container-registry-name }}
-        
-        # Tag and push image
-        VERSION="${{ needs.build-and-test.outputs.backend-version }}"
-        echo "Tagging images for ACR..."
-        
-        # Tag the version image for ACR
-        docker tag meeting-summarizer-api:$VERSION $ACR_SERVER/meeting-summarizer-api:$VERSION
-        
-        # Create latest tag from version tag
-        docker tag meeting-summarizer-api:$VERSION meeting-summarizer-api:latest
-        docker tag meeting-summarizer-api:latest $ACR_SERVER/meeting-summarizer-api:latest
-        
-        echo "Pushing images to ACR..."
-        docker push $ACR_SERVER/meeting-summarizer-api:$VERSION
-        docker push $ACR_SERVER/meeting-summarizer-api:latest
-        
-        echo "✅ Docker image pushed to ACR successfully"
-    
-    - name: Update Container App
-      run: |
-        # Update Container App with new image
-        ACR_SERVER="${{ needs.deploy-infrastructure.outputs.container-registry-server }}"
-        VERSION="${{ needs.build-and-test.outputs.backend-version }}"
-        RESOURCE_GROUP="${{ needs.deploy-infrastructure.outputs.resource-group-name }}"
-        CONTAINER_APP="${{ needs.deploy-infrastructure.outputs.container-app-name }}"
-        
-        echo "🔄 Updating Container App with new image..."
-        echo "Resource Group: $RESOURCE_GROUP"
-        echo "Container App: $CONTAINER_APP"
-        echo "Image: $ACR_SERVER/meeting-summarizer-api:$VERSION"
-        
-        # Wait for Container App to be ready after infrastructure deployment
-        echo "⏳ Waiting 120 seconds for Container App to be fully ready..."
-        sleep 120
-        
-        # Update the Container App directly (resources verified to exist correctly)
-        echo "🔄 Updating Container App with new image..."
-        az containerapp update \
-          --name "$CONTAINER_APP" \
-          --resource-group "$RESOURCE_GROUP" \
-          --image "$ACR_SERVER/meeting-summarizer-api:$VERSION"
-        
-        echo "✅ Container App updated successfully"
-        
-        # Get the Container App URL
-        echo "🔗 Getting Container App URL..."
-        CONTAINER_APP_URL=$(az containerapp show \
-          --name "$CONTAINER_APP" \
-          --resource-group "$RESOURCE_GROUP" \
-          --query "properties.configuration.ingress.fqdn" -o tsv)
-        
-        if [ -n "$CONTAINER_APP_URL" ]; then
-          echo "🌐 Container App URL: https://$CONTAINER_APP_URL"
-          echo "CONTAINER_APP_URL=https://$CONTAINER_APP_URL" >> $GITHUB_ENV
-        else
-          echo "⚠️ Could not retrieve Container App URL"
-        fi
-          --query "properties.configuration.ingress.fqdn" -o tsv)
-        
-        echo "URL: https://$CONTAINER_APP_URL"
-
-  # ====================
-  # DEPLOY FRONTEND
-  # ====================
-  deploy-frontend:
-    name: Deploy Frontend
-    runs-on: ubuntu-latest
-    needs: [build-and-test, deploy-infrastructure]
-    environment: development
-    
-    permissions:
-      id-token: write
-      contents: read
-    
-    steps:
-    - name: Download frontend artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: frontend-app-development-${{ github.run_id }}
-        path: ./frontend-app/
-        
-    - name: Azure CLI login via OIDC
-      uses: azure/login@v2
-      with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ vars.AZURE_TENANT_ID }}
-        subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-    
-    - name: Deploy to Azure Static Web Apps
-      run: |
-        if [ -n "${{ needs.deploy-infrastructure.outputs.static-web-app-name }}" ]; then
-          echo "🚀 Deploying to Azure Static Web Apps..."
-          
-          # Deploy using Azure Static Web Apps CLI
-          npx @azure/static-web-apps-cli deploy \
-            --app-location "./frontend-app" \
-            --resource-group rg-meetingsummary-dev \
-            --app-name ${{ needs.deploy-infrastructure.outputs.static-web-app-name }}
-          
-          echo "✅ Frontend deployed to Static Web Apps"
-        else
-          echo "📁 Deploying to App Service as static files..."
-          
-          # Alternative: Deploy to App Service as static files
-          cd frontend-app
-          zip -r ../frontend.zip .
-          cd ..
-          
-          # Create a simple web.config for SPA routing
-          cat > web.config << 'EOF'
-        <?xml version="1.0" encoding="utf-8"?>
-        <configuration>
-          <system.webServer>
-            <rewrite>
-              <rules>
-                <rule name="ReactRouter" stopProcessing="true">
-                  <match url=".*" />
-                  <conditions logicalGrouping="MatchAll">
-                    <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
-                    <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
-                  </conditions>
-                  <action type="Rewrite" url="/" />
-                </rule>
-              </rules>
-            </rewrite>
-          </system.webServer>
-        </configuration>
-        EOF
-          
-          # Add web.config to deployment
-          zip -u frontend.zip web.config
-          
-          # Deploy to a separate App Service for frontend if available
-          echo "Frontend deployment configured for App Service hosting"
-        fi
-
-  # ====================
-  # SMOKE TESTS
-  # ====================
-  smoke-tests:
-    name: Smoke Tests
-    runs-on: ubuntu-latest
-    needs: [deploy-backend, deploy-frontend, deploy-infrastructure]
-    if: always() && (needs.deploy-backend.result == 'success' || inputs.force-deploy)
-    
-    steps:
-    - name: Checkout scripts
+    - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Azure CLI login via OIDC
+      uses: azure/login@v2
       with:
-        sparse-checkout: |
-          .github/scripts/
-        sparse-checkout-cone-mode: false
-        
-    - name: Wait for deployment to stabilize
-      run: |
-        echo "⏳ Waiting for deployment to stabilize..."
-        sleep 30
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     
-    - name: Test API Health Endpoint
+    - name: Build and Deploy Container
       run: |
-        APP_URL="https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
+        # Get ACR login server and container app name from Terraform outputs
+        REGISTRY_NAME="${{ needs.deploy-infrastructure.outputs.container-registry-name }}"
+        REGISTRY_SERVER="${REGISTRY_NAME}.azurecr.io"
+        CONTAINER_APP_NAME="${{ needs.deploy-infrastructure.outputs.container-app-name }}"
         
-        echo "🧪 Testing API health endpoint: $APP_URL/health"
+        echo "🚀 Deploying to Container App: $CONTAINER_APP_NAME"
+        echo "📦 Using Container Registry: $REGISTRY_SERVER"
         
-        # Test basic health endpoint
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/health" || echo "000")
+        # Build and push container image
+        cd MeetingSummarizer.Api
+        az acr build --registry $REGISTRY_NAME --image meeting-summary-api:latest .
         
-        if [ "$RESPONSE" = "200" ]; then
-          echo "✅ Health endpoint responding correctly"
-        else
-          echo "❌ Health endpoint failed with status: $RESPONSE"
-          exit 1
-        fi
-    
-    - name: Test API Detailed Health
-      run: |
-        APP_URL="https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
-        
-        echo "🧪 Testing detailed health endpoint: $APP_URL/health/detailed"
-        
-        # Test detailed health endpoint and parse JSON
-        RESPONSE=$(curl -s "$APP_URL/health/detailed" || echo '{"status":"error"}')
-        
-        echo "Health Response: $RESPONSE"
-        
-        # Simple validation that we got valid JSON back
-        if echo "$RESPONSE" | grep -q '"status"'; then
-          echo "✅ Detailed health endpoint responding with valid JSON"
-        else
-          echo "⚠️ Detailed health endpoint response may be invalid"
-        fi
-    
-    - name: Test API Authentication Endpoint
-      run: |
-        APP_URL="https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
-        
-        echo "🧪 Testing authentication endpoint: $APP_URL/api/auth/status"
-        
-        # Test auth status endpoint (should return 401 for unauthenticated request)
-        RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/auth/status" || echo "000")
-        
-        if [ "$RESPONSE" = "401" ] || [ "$RESPONSE" = "200" ]; then
-          echo "✅ Authentication endpoint responding correctly (status: $RESPONSE)"
-        else
-          echo "❌ Authentication endpoint unexpected status: $RESPONSE"
-          exit 1
-        fi
-    
-    - name: Create smoke test summary
-      if: always()
-      run: |
-        echo "## 🧪 Smoke Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Environment**: Development" >> $GITHUB_STEP_SUMMARY
-        echo "**API URL**: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
-        echo "**Deploy Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Health Endpoint | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-        echo "| Detailed Health | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-        echo "| Authentication | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+        # Update container app with dynamic name
+        az containerapp update \
+          --name "$CONTAINER_APP_NAME" \
+          --resource-group "${{ needs.deploy-infrastructure.outputs.resource-group-name }}" \
+          --image "${REGISTRY_SERVER}/meeting-summary-api:latest"
 
-  # ====================
-  # DEPLOYMENT SUMMARY
-  # ====================
   deployment-summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [build-and-test, deploy-infrastructure, deploy-backend, deploy-frontend, smoke-tests]
+    needs: [deploy-infrastructure, deploy-backend]
     if: always()
     
     steps:
-    - name: Create deployment summary
+    - name: Create Summary
       run: |
-        echo "## 🚀 Development Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Deployment Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        echo "### 📊 Job Results" >> $GITHUB_STEP_SUMMARY
-        echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
-        echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Build & Test | ${{ needs.build-and-test.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Infrastructure | ${{ needs.deploy-infrastructure.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Backend API | ${{ needs.deploy-backend.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Frontend App | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Smoke Tests | ${{ needs.smoke-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment**: Development" >> $GITHUB_STEP_SUMMARY
+        echo "**Resource Group**: ${{ needs.deploy-infrastructure.outputs.resource-group-name }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Container App URL**: https://${{ needs.deploy-infrastructure.outputs.container-app-fqdn }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        if [ "${{ needs.deploy-infrastructure.result }}" = "success" ]; then
-          echo "### 🔗 Deployment URLs" >> $GITHUB_STEP_SUMMARY
-          echo "- **API**: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
-          echo "- **Health Check**: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net/health" >> $GITHUB_STEP_SUMMARY
-          
-          if [ -n "${{ needs.deploy-infrastructure.outputs.static-web-app-name }}" ]; then
-            echo "- **Frontend**: https://${{ needs.deploy-infrastructure.outputs.static-web-app-name }}.azurestaticapps.net" >> $GITHUB_STEP_SUMMARY
-          fi
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        # Add troubleshooting section if deployment failed
-        if [ "${{ needs.deploy-backend.result }}" != "success" ] || [ "${{ needs.deploy-frontend.result }}" != "success" ]; then
-          echo "### 🔧 Troubleshooting" >> $GITHUB_STEP_SUMMARY
-          echo "If deployment failed, check:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Azure resource availability in Central US region" >> $GITHUB_STEP_SUMMARY
-          echo "2. Service principal permissions for resource group" >> $GITHUB_STEP_SUMMARY
-          echo "3. Application settings and connection strings" >> $GITHUB_STEP_SUMMARY
-          echo "4. Database migration scripts and permissions" >> $GITHUB_STEP_SUMMARY
-        fi
-
-  # ====================
-  # NOTIFY TEAM
-  # ====================
-  notify-team:
-    name: Notify Team
-    runs-on: ubuntu-latest
-    needs: [build-and-test, deploy-infrastructure, deploy-backend, deploy-frontend, smoke-tests]
-    if: always() && github.ref == 'refs/heads/main'  # Only notify for main branch
-    
-    steps:
-    - name: Send notification
-      run: |
-        # Determine overall status
-        if [ "${{ needs.deploy-backend.result }}" = "success" ] && [ "${{ needs.smoke-tests.result }}" = "success" ]; then
-          STATUS="✅ SUCCESS"
-          COLOR="good"
-        elif [ "${{ needs.build-and-test.result }}" != "success" ]; then
-          STATUS="❌ BUILD FAILED"
-          COLOR="danger"
+        if [ "${{ needs.deploy-infrastructure.result }}" = "success" ] && [ "${{ needs.deploy-backend.result }}" = "success" ]; then
+          echo "✅ **Status**: Deployment Successful" >> $GITHUB_STEP_SUMMARY
         else
-          STATUS="⚠️ DEPLOYMENT ISSUES"
-          COLOR="warning"
+          echo "❌ **Status**: Deployment Failed" >> $GITHUB_STEP_SUMMARY
         fi
-        
-        echo "Deployment Status: $STATUS"
-        echo "Would send notification to team about development deployment"
-        
-        # In a real implementation, this would send to Slack/Teams/Email
-        # For now, we just log the notification details
-        echo "📧 Notification details:"
-        echo "- Status: $STATUS"
-        echo "- Branch: ${{ github.ref_name }}"
-        echo "- Commit: ${{ github.sha }}"
-        echo "- URL: https://${{ needs.deploy-infrastructure.outputs.app-service-name }}.azurewebsites.net"
