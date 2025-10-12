@@ -1,6 +1,10 @@
 # Main Terraform configuration for Meeting Summary application infrastructure
 # This configuration orchestrates all the required Azure resources for the application
 
+# 🚫 WARNING: DO NOT RUN TERRAFORM MANUALLY
+# This configuration MUST be executed through GitHub Actions CI/CD pipeline only
+# See MANUAL_EXECUTION_BLOCKED.md for details
+
 terraform {
   required_version = ">= 1.0"
   required_providers {
