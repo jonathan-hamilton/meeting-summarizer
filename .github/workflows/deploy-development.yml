@@ -150,9 +150,16 @@ jobs:
         
         # Tag and push image
         VERSION="${{ needs.build-and-test.outputs.backend-version }}"
+        echo "Tagging images for ACR..."
+        
+        # Tag the version image for ACR
         docker tag meeting-summarizer-api:$VERSION $ACR_SERVER/meeting-summarizer-api:$VERSION
+        
+        # Create latest tag from version tag
+        docker tag meeting-summarizer-api:$VERSION meeting-summarizer-api:latest
         docker tag meeting-summarizer-api:latest $ACR_SERVER/meeting-summarizer-api:latest
         
+        echo "Pushing images to ACR..."
         docker push $ACR_SERVER/meeting-summarizer-api:$VERSION
         docker push $ACR_SERVER/meeting-summarizer-api:latest
         
