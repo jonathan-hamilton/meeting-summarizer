@@ -26,6 +26,7 @@ defaults:
 env:
   AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
   ENVIRONMENT: development
+  ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 
 jobs:
   # ====================
@@ -78,7 +79,8 @@ jobs:
     - name: Terraform Init
       run: |
         cd azure-infrastructure/terraform
-        terraform init
+        terraform init \
+          -backend-config="key=dev/terraform.tfstate"
     
     - name: Terraform Plan
       run: |

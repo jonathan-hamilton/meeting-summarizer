@@ -14,6 +14,15 @@ terraform {
       version = "~> 3.0"
     }
   }
+  
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "tfstatemeetingsummary"
+    container_name       = "terraform-state"
+    # Key will be set via GitHub Actions based on environment
+    # Dev: key = "dev/terraform.tfstate"  
+    # Prod: key = "prod/terraform.tfstate"
+  }
 }
 
 provider "azurerm" {
@@ -32,10 +41,10 @@ locals {
   environment_title_case = var.environment == "dev" ? "Dev" : var.environment == "staging" ? "Staging" : "Prod"
   
   # Use static naming for development environment, timestamp for production to avoid conflicts
-  unique_suffix = var.environment == "dev" ? "${var.app_name}-${var.environment}" : "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"
+  unique_suffix = var.environment == "dev" ? "${var.app_name}-${var.environment}-v2" : "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"
   
-  # Descriptive suffix for Container Apps and other resources
-  short_suffix = var.environment == "dev" ? "meeting-summary-io" : "ms${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"
+  # Descriptive suffix for Container Apps and other resources - use v2 to avoid soft-delete conflicts
+  short_suffix = var.environment == "dev" ? "meeting-summary-io-v2" : "ms${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"
 }
 
 # Data source for current client configuration
