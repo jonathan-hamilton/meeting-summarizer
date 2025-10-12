@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// Use relative URL when not on localhost (i.e., in deployed container)
-const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5029/api' : '/api';
+// Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
+const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
+const API_BASE_URL = isLocalDev ? 'http://localhost:5029/api' : '/api';
 
 export interface EmailVerificationStatus {
   success: boolean;
