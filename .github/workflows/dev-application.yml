@@ -25,6 +25,7 @@ on:
     types:
       - completed
 
+# Updated: Container now builds with React frontend + .NET API integration
 concurrency:
   group: dev-application
   cancel-in-progress: true
