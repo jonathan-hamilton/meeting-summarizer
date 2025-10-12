@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5029/api';
+// Use relative URL in production (container), localhost in development
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:5029/api' : '/api';
 
 export interface EnvironmentFeatures {
   [key: string]: boolean;
