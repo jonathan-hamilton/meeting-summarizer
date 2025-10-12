@@ -122,7 +122,7 @@ resource "azurerm_key_vault_secret" "storage_connection_string" {
   value        = module.storage.connection_string
   key_vault_id = module.key_vault.key_vault_id
 
-  depends_on = [module.key_vault.azurerm_key_vault_access_policy_current_user]
+  depends_on = [module.key_vault]
 }
 
 resource "azurerm_key_vault_secret" "database_connection_string" {
@@ -130,7 +130,7 @@ resource "azurerm_key_vault_secret" "database_connection_string" {
   value        = module.sql_database.connection_string
   key_vault_id = module.key_vault.key_vault_id
 
-  depends_on = [module.key_vault.azurerm_key_vault_access_policy_current_user]
+  depends_on = [module.key_vault]
 }
 
 resource "azurerm_key_vault_secret" "speech_key" {
@@ -138,5 +138,5 @@ resource "azurerm_key_vault_secret" "speech_key" {
   value        = module.cognitive_services.speech_key
   key_vault_id = module.key_vault.key_vault_id
 
-  depends_on = [module.key_vault.azurerm_key_vault_access_policy_current_user]
+  depends_on = [module.key_vault]
 }
