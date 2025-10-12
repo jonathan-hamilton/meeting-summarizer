@@ -12,7 +12,7 @@ variable "environment" {
 variable "location" {
   description = "Location for all resources"
   type        = string
-  default     = "centralus"
+  default     = "westus"
 }
 
 variable "app_name" {
