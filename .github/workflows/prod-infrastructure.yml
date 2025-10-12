@@ -94,6 +94,9 @@ jobs:
           -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
           -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
           -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+          -var="custom_domain_name=meeting-summary.io" \
+          -var="create_dns_zone=true" \
+          -var="enable_custom_domain=true" \
           -out=tfplan
     
     - name: Terraform Apply
