@@ -111,10 +111,11 @@ jobs:
     
     - name: Build and Deploy Container
       run: |
-        # Get ACR login server and container app name from Terraform outputs
+        # Get outputs from Terraform
         REGISTRY_NAME="${{ needs.deploy-infrastructure.outputs.container-registry-name }}"
         REGISTRY_SERVER="${REGISTRY_NAME}.azurecr.io"
         CONTAINER_APP_NAME="${{ needs.deploy-infrastructure.outputs.container-app-name }}"
+        RESOURCE_GROUP="${{ needs.deploy-infrastructure.outputs.resource-group-name }}"
         
         echo "🚀 Deploying to Container App: $CONTAINER_APP_NAME"
         echo "📦 Using Container Registry: $REGISTRY_SERVER"
@@ -122,17 +123,13 @@ jobs:
         # Build and push container image from repository root
         az acr build --registry $REGISTRY_NAME --image meeting-summary-api:latest --file MeetingSummarizer.Api/Dockerfile .
         
-        # Wait a moment for the container app to be fully ready after Terraform deployment
-        echo "⏳ Waiting for Container App to be ready..."
-        sleep 30
-        
-        # Update container app with new image using a more reliable approach
-        echo "🔄 Updating Container App with new image..."
+        # Try a simpler approach - just set the image using the container property
+        echo "🔄 Updating Container App image..."
         az containerapp update \
           --name "$CONTAINER_APP_NAME" \
-          --resource-group "${{ needs.deploy-infrastructure.outputs.resource-group-name }}" \
-          --image "${REGISTRY_SERVER}/meeting-summary-api:latest" \
-          --output table
+          --resource-group "$RESOURCE_GROUP" \
+          --container-name "meeting-summarizer-api" \
+          --image "${REGISTRY_SERVER}/meeting-summary-api:latest"
 
   deployment-summary:
     name: Deployment Summary
