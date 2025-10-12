@@ -4,8 +4,8 @@
 # Environment (required)
 environment = "dev"  # dev, staging, or prod
 
-# Location (optional, defaults to East US)
-location = "East US"
+# Location (optional, defaults to Central US)
+location = "centralus"
 
 # Application name (optional, defaults to meetingsummary)
 app_name = "meetingsummary"

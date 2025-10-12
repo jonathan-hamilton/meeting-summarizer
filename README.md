@@ -38,6 +38,7 @@ A modern web application for transcribing and summarizing meeting audio with AI-
   - **Infrastructure Enhancement**: Terraform modules enhanced with blue-green deployment slot support
   - **Security Framework**: Azure Key Vault integration with environment-specific secret management
   - **Operational Excellence**: Complete documentation ecosystem with setup guides, operational procedures, and test plans
+  - **✅ Recent Enhancement (October 11, 2025)**: All Terraform configurations standardized to Central US region for optimal quota availability and deployment reliability
 
 **Performance Metrics Achieved**:
 - **Development Deployment**: <10 minutes end-to-end with automated testing gates
