@@ -83,13 +83,6 @@ jobs:
     - name: Terraform Plan
       run: |
         cd azure-infrastructure/terraform
-        
-        # Import existing resource group if it exists
-        if az group show --name "rg-meetingsummary-dev" > /dev/null 2>&1; then
-          echo "Resource group exists, importing into Terraform state..."
-          terraform import azurerm_resource_group.main "/subscriptions/${{ vars.AZURE_SUBSCRIPTION_ID }}/resourceGroups/rg-meetingsummary-dev" || echo "Resource group already imported or import failed"
-        fi
-        
         terraform plan \
           -var="environment=dev" \
           -var="location=${{ vars.AZURE_LOCATION || 'Central US' }}" \
