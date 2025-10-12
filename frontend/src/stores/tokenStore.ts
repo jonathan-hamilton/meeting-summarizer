@@ -11,7 +11,9 @@ import type {
 import { useAuthStore } from './authStore';
 
 // Token API service calls
-const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5029' : '';
+// Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
+const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
+const API_BASE_URL = isLocalDev ? 'http://localhost:5029' : '';
 
 class TokenAPI {
   static async getBalance(): Promise<{ balance: number }> {

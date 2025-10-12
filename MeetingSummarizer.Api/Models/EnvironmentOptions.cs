@@ -8,7 +8,7 @@ public class EnvironmentOptions
     public const string SectionName = "Environment";
 
     /// <summary>
-    /// Environment name (Development, Staging, Production)
+    /// Environment name (Development, Production)
     /// </summary>
     public string Name { get; set; } = "Development";
 
@@ -69,7 +69,6 @@ public class EnvironmentOptions
     /// Environment-specific settings
     /// </summary>
     public bool IsDevelopment => Name.Equals("Development", StringComparison.OrdinalIgnoreCase);
-    public bool IsStaging => Name.Equals("Staging", StringComparison.OrdinalIgnoreCase);
     public bool ShouldEnableDetailedErrors => !IsProduction;
     public bool ShouldEnableSwagger => !IsProduction || AllowTestFeatures;
     public bool ShouldLogSensitiveData => !IsProduction;
