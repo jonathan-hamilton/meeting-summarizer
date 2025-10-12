@@ -119,9 +119,8 @@ jobs:
         echo "🚀 Deploying to Container App: $CONTAINER_APP_NAME"
         echo "📦 Using Container Registry: $REGISTRY_SERVER"
         
-        # Build and push container image
-        cd MeetingSummarizer.Api
-        az acr build --registry $REGISTRY_NAME --image meeting-summary-api:latest .
+        # Build and push container image from repository root
+        az acr build --registry $REGISTRY_NAME --image meeting-summary-api:latest --file MeetingSummarizer.Api/Dockerfile .
         
         # Update container app with dynamic name
         az containerapp update \
