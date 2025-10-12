@@ -180,31 +180,11 @@ jobs:
         echo "Container App: $CONTAINER_APP"
         echo "Image: $ACR_SERVER/meeting-summarizer-api:$VERSION"
         
-        # Add debugging to check Azure context and wait longer
-        echo "🔍 Current Azure subscription:"
-        az account show --query "{name: name, id: id}" --output table
-        
+        # Wait for Container App to be ready after infrastructure deployment
         echo "⏳ Waiting 120 seconds for Container App to be fully ready..."
         sleep 120
         
-        # Add more debugging before the update
-        echo "🔍 Checking if Container App exists with detailed info..."
-        echo "Expected: $CONTAINER_APP in $RESOURCE_GROUP"
-        
-        # Try to get basic info about the Container App
-        echo "📋 Attempting to show Container App details:"
-        if az containerapp show --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP" --query "name" -o tsv; then
-          echo "✅ Container App found successfully"
-        else
-          echo "❌ Container App not found. Investigating..."
-          echo "🔍 Listing all Container Apps in subscription:"
-          az containerapp list --query "[].{Name:name, RG:resourceGroup}" --output table
-          echo "🔍 Listing all resource groups with 'meeting' in name:"
-          az group list --query "[?contains(name, 'meeting')].name" --output table
-          exit 1
-        fi
-        
-        # Update the Container App
+        # Update the Container App directly (resources verified to exist correctly)
         echo "🔄 Updating Container App with new image..."
         az containerapp update \
           --name "$CONTAINER_APP" \
