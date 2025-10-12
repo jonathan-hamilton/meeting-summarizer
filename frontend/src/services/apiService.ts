@@ -40,8 +40,8 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // Use relative URL in production (container), localhost in development
-    this.baseURL = import.meta.env.DEV ? 'http://localhost:5029' : '';
+    // Use relative URL when not on localhost (i.e., in deployed container)
+    this.baseURL = window.location.hostname === 'localhost' ? 'http://localhost:5029' : '';
     
     this.client = axios.create({
       baseURL: this.baseURL,

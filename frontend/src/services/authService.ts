@@ -1,8 +1,8 @@
 import axios from 'axios';
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
 
-// Use relative URL in production (container), localhost in development
-const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:5029/api' : '/api';
+// Use relative URL when not on localhost (i.e., in deployed container)
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5029/api' : '/api';
 
 class AuthService {
   private static instance: AuthService;
