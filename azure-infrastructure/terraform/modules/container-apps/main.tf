@@ -94,6 +94,24 @@ resource "azurerm_container_app" "api" {
     value = var.azure_speech_key
   }
 
+  # Container Registry credentials for pulling images
+  secret {
+    name  = "acr-username"
+    value = azurerm_container_registry.main.admin_username
+  }
+
+  secret {
+    name  = "acr-password"
+    value = azurerm_container_registry.main.admin_password
+  }
+
+  # Registry configuration for private registry access
+  registry {
+    server   = azurerm_container_registry.main.login_server
+    username = azurerm_container_registry.main.admin_username
+    password_secret_name = "acr-password"
+  }
+
   # Ingress configuration for external access
   ingress {
     allow_insecure_connections = false
@@ -119,17 +137,7 @@ resource "azurerm_container_app" "api" {
   ]
 }
 
-# Grant Container App permission to pull images from Container Registry
-resource "azurerm_role_assignment" "container_app_acr_pull" {
-  scope                = azurerm_container_registry.main.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_container_app.api.identity[0].principal_id
-}
-
-# Grant Container Registry permission for GitHub Actions CI/CD
-resource "azurerm_role_assignment" "github_actions_acr_push" {
-  count                = var.github_actions_object_id != null ? 1 : 0
-  scope               = azurerm_container_registry.main.id
-  role_definition_name = "AcrPush"
-  principal_id        = var.github_actions_object_id
-}
+# Note: Using admin_enabled = true on the Container Registry instead of role assignments
+# This avoids permission issues with the GitHub Actions service principal
+# The Container App can authenticate using the registry's admin credentials
+# GitHub Actions will use the admin credentials for push operations
