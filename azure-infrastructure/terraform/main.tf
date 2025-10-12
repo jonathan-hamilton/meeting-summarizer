@@ -45,7 +45,7 @@ locals {
   unique_suffix = var.environment == "dev" ? "${var.app_name}-${var.environment}-v2" : "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"
   
   # Descriptive suffix for Container Apps and other resources - use v2 to avoid soft-delete conflicts
-  short_suffix = var.environment == "dev" ? "meeting-summary-io-v2" : "ms${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"
+  short_suffix = var.environment == "dev" ? "msio-dev-v2" : "msio-${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"
 }
 
 # Data source for current client configuration
