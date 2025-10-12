@@ -29,18 +29,20 @@ locals {
   resource_suffix        = "${var.app_name}-${var.environment}"
   storage_account_name   = "ms${var.environment}${formatdate("MMDDhhmm", timestamp())}"  # Keep it short for storage account
   environment_title_case = var.environment == "dev" ? "Dev" : var.environment == "staging" ? "Staging" : "Prod"
-  # Use timestamp suffix to avoid conflicts with existing resources
-  unique_suffix         = "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"  # More unique timestamp
-  # Very short suffix for resources with strict naming requirements
-  short_suffix          = "ms${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"  # e.g., msd10112241
+  
+  # Use static naming for development environment, timestamp for production to avoid conflicts
+  unique_suffix = var.environment == "dev" ? "${var.app_name}-${var.environment}" : "${var.app_name}-${var.environment}-${formatdate("MMDDhhmm", timestamp())}"
+  
+  # Descriptive suffix for Container Apps and other resources
+  short_suffix = var.environment == "dev" ? "meeting-summary-io" : "ms${substr(var.environment, 0, 1)}${formatdate("MMDDhhmm", timestamp())}"
 }
 
 # Data source for current client configuration
 data "azurerm_client_config" "current" {}
 
-# Resource Group - Create with unique naming to avoid conflicts
+# Resource Group - Use static naming for consistent deployments
 resource "azurerm_resource_group" "main" {
-  name     = "rg-${local.unique_suffix}"
+  name     = "rg-meetingsummary-dev"
   location = var.location
 
   tags = {
