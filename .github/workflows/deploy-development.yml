@@ -180,6 +180,27 @@ jobs:
         echo "Container App: $CONTAINER_APP"
         echo "Image: $ACR_SERVER/meeting-summarizer-api:$VERSION"
         
+        # Verify Container App exists and is ready
+        echo "🔍 Verifying Container App exists..."
+        for i in {1..10}; do
+          if az containerapp show --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP" --query "name" -o tsv > /dev/null 2>&1; then
+            echo "✅ Container App found and ready"
+            break
+          else
+            echo "⏳ Waiting for Container App to be available (attempt $i/10)..."
+            sleep 30
+          fi
+          
+          if [ $i -eq 10 ]; then
+            echo "❌ Container App not found after 5 minutes"
+            echo "🔍 Listing all Container Apps in resource group:"
+            az containerapp list --resource-group "$RESOURCE_GROUP" --query "[].name" -o table
+            exit 1
+          fi
+        done
+        
+        # Update the Container App
+        echo "🔄 Updating Container App with new image..."
         az containerapp update \
           --name "$CONTAINER_APP" \
           --resource-group "$RESOURCE_GROUP" \
