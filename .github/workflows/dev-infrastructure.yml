@@ -14,6 +14,7 @@ on:
       - 'azure-infrastructure/**'
       - '.github/workflows/dev-infrastructure.yml'
 
+# Updated to trigger DNS zone creation with custom domain variables
 concurrency:
   group: dev-infrastructure
   cancel-in-progress: false
