@@ -117,6 +117,7 @@ const AppContent: React.FC = () => {
     hasAcknowledgedLegalDisclaimer, 
     hasSeenAiChatDiscovery, 
     updatePreferences,
+    preferences,
     isLoading: isDialogPrefsLoading 
   } = useDialogPreferences();
   
@@ -131,7 +132,8 @@ const AppContent: React.FC = () => {
 
   // Handle first-time sign-in dialogs
   useEffect(() => {
-    if (isAuthenticated && !isAuthLoading && !isDialogPrefsLoading) {
+    // Only make dialog decisions when user is authenticated, not loading, and preferences have been loaded
+    if (isAuthenticated && !isAuthLoading && !isDialogPrefsLoading && preferences !== null) {
       // Check if this is a first-time sign-in
       if (!hasAcknowledgedLegalDisclaimer) {
         // Show legal acceptance dialog first
@@ -143,7 +145,7 @@ const AppContent: React.FC = () => {
         }, 500); // Small delay for better UX
       }
     }
-  }, [isAuthenticated, isAuthLoading, isDialogPrefsLoading, hasAcknowledgedLegalDisclaimer, hasSeenAiChatDiscovery]);
+  }, [isAuthenticated, isAuthLoading, isDialogPrefsLoading, preferences, hasAcknowledgedLegalDisclaimer, hasSeenAiChatDiscovery]);
 
   // Initialize transcription job store from session storage when app starts
   const { initializeFromStorage } = useTranscriptionJobStore();

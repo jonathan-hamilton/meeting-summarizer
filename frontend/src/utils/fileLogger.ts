@@ -49,8 +49,6 @@ class AutomaticPageLogger {
       this.captureLog('ERROR', args);
       this.originalConsole.error(...args);
     };
-
-    console.log(`🎯 Started automatic logging for page: ${page}`);
   }
 
   stopLogging() {
@@ -66,7 +64,6 @@ class AutomaticPageLogger {
     this.storeLogsForPage();
     
     this.isLogging = false;
-    this.originalConsole.log(`🎯 Stopped automatic logging for page: ${this.currentPage} (${this.logs.filter(log => log.page === this.currentPage).length} entries stored)`);
   }
 
   private captureLog(level: string, args: any[]) {

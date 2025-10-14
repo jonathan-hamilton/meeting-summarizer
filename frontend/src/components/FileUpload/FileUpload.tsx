@@ -256,36 +256,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
           if (progressInterval) clearInterval(progressInterval);
           
           // First, mark upload as completed (regardless of transcription status)
-        // Debug the response structure to see what transcription ID field is available
-        console.log('🔍 Upload Response Data:', response.data);
-        console.log('🔍 Response Headers:', response.headers);
-        
         // Get meeting ID from X-Meeting-Id header (for fast transcription) or response data
         const meetingIdFromHeader = response.headers?.['x-meeting-id'] || response.headers?.['X-Meeting-Id'];
         const meetingIdFromData = response.data?.transcriptionId || (response.data as any)?.TranscriptionId || (response.data as any)?.meetingId;
         const transcriptionJobId = meetingIdFromHeader || meetingIdFromData;
         
-        console.log('🔍 Available transcription ID fields:', {
-          headerMeetingId: meetingIdFromHeader,
-          transcriptionId: response.data?.transcriptionId,
-          TranscriptionId: (response.data as any)?.TranscriptionId,
-          meetingId: (response.data as any)?.meetingId
-        });
-        console.log('🎯 Using transcriptionJobId:', transcriptionJobId);
-        
         // Check if transcription is already completed in the response
         const isAlreadyCompleted = response.data?.status === 'Completed' && response.data?.transcribedText;
         
-        console.log('🔍 Transcription status check:', {
-          status: response.data?.status,
-          hasTranscribedText: !!response.data?.transcribedText,
-          isAlreadyCompleted: isAlreadyCompleted,
-          fullResponseData: response.data
-        });
-        
         if (isAlreadyCompleted) {
-          console.log('🎯 Fast transcription completed during upload - showing immediate completion');
-          
           // Complete the progress tracking
           completeFileProgress(uploadFile.id, true, response.data);
           
