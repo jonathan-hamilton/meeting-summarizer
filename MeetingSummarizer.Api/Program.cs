@@ -340,6 +340,10 @@ if (!app.Environment.IsDevelopment())
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
 
+// Enable serving static files from wwwroot (frontend)
+app.UseStaticFiles();
+app.UseDefaultFiles(); // This will serve index.html by default
+
 // Add Stripe webhook middleware (S6.3 Increment 4)
 app.UseMiddleware<StripeWebhookMiddleware>();
 
@@ -352,6 +356,9 @@ app.UseJwtAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Add fallback route for client-side routing (SPA support)
+app.MapFallbackToFile("index.html");
 
 app.Run();
 

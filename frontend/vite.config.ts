@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     visualizer({
       filename: 'dist/stats.html',
-      open: true,
+      open: false, // Don't auto-open in Docker builds
       gzipSize: true,
       brotliSize: true,
     }),
