@@ -532,13 +532,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
 
         {/* Speaker segments display */}
         {speakerSegments && speakerSegments.length > 0 ? (
-          <Box
-            id="transcript-display"
-            component="section"
-            role="region"
-            aria-labelledby="transcript-heading"
-            aria-describedby="transcript-description"
-          >
+          <>
+            <Box
+              id="transcript-display"
+              component="section"
+              role="region"
+              aria-labelledby="transcript-heading"
+              aria-describedby="transcript-description"
+            >
             <Stack
               direction="row"
               alignItems="center"
@@ -603,15 +604,18 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             </Stack>
 
             {/* Speaker segments */}
-            <Box 
-              sx={{ maxHeight: "400px", overflowY: "auto", position: "relative" }}
-              role="log"
-              aria-label="Speaker segments"
-              aria-live="polite"
-              tabIndex={0}
-            >
+            <Box sx={{ 
+              maxHeight: "400px", 
+              overflowY: "auto", 
+              padding: 2,
+              backgroundColor: "background.default",
+              borderRadius: 1,
+              border: 1,
+              borderColor: "divider"
+            }}>
               
-              {speakerSegments.map((segment, index) => (
+              {speakerSegments.map((segment, index) => {
+                return (
                 <Box 
                   key={`${index}-${forceUpdate}`} 
                   sx={{ mb: 2 }}
@@ -625,9 +629,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                     isTranscriptStructureInvalidated={isTranscriptStructureInvalidated}
                   />
                 </Box>
-              ))}
+                );
+              })}
             </Box>
           </Box>
+          </>
         ) : transcription.transcribedText ? (
           /* Fallback to simple text display */
           <>

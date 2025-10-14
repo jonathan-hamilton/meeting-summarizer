@@ -311,6 +311,8 @@ export const TranscriptSpeakerSegment: React.FC<
           border: "1px solid",
           borderColor: "divider",
           borderRadius: 1,
+          backgroundColor: "background.paper", // Use theme's paper background (much darker now)
+          borderLeft: `3px solid ${getSpeakerColor(currentSpeakerInfo.effectiveSpeakerId)}`,
         }}
       >
         {/* Speaker Header */}

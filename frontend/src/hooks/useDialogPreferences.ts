@@ -23,6 +23,7 @@ export const useDialogPreferences = (): UseDialogPreferencesResult => {
     const loadPreferences = async () => {
       if (!isAuthenticated || !user?.id) {
         setPreferences(null);
+        setIsLoading(false);
         return;
       }
 

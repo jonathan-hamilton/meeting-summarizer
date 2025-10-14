@@ -36,23 +36,11 @@ export const useAuthStore = create<AuthStore>()(
           // Extract user data from JWT claims - cast to any to access all possible claim fields
           const tokenClaims = decodedToken as any;
           
-          // Debug token claims
-          console.log('🔍 JWT Token Claims DEBUG:');
-          console.log('  ALL TOKEN CLAIMS:', Object.keys(tokenClaims));
-          console.log('  Token Claims Object:', tokenClaims);
-          
           // Try different possible claim field names
           const userId = tokenClaims.sub || tokenClaims.userId || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'];
           const userEmail = tokenClaims.email || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'];
           const fullName = tokenClaims.name || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '';
           const userRole = tokenClaims.role || tokenClaims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-          
-          // Debug extracted values
-          console.log('🔍 EXTRACTED VALUES:');
-          console.log('  userId:', userId);
-          console.log('  userEmail:', userEmail);
-          console.log('  fullName:', fullName);
-          console.log('  userRole:', userRole);
           
           // Validate required fields
           if (!userId || !userEmail) {
@@ -244,18 +232,7 @@ export const useAuthStore = create<AuthStore>()(
           const storedRefreshToken = authService.getRefreshToken();
           let storedUser = authService.getStoredUser();
 
-          console.log('🔍 checkAuthStatus DEBUG:');
-          console.log('  storedAccessToken exists:', !!storedAccessToken);
-          console.log('  storedRefreshToken exists:', !!storedRefreshToken);
-          console.log('  storedUser:', storedUser);
-          console.log('  storedUser keys:', storedUser ? Object.keys(storedUser) : null);
-          if (storedUser) {
-            console.log('  storedUser.id:', storedUser.id);
-            console.log('  storedUser.email:', storedUser.email);
-          }
-
           if (!storedAccessToken || !storedRefreshToken || !storedUser) {
-            console.log('Missing auth data, setting as unauthenticated');
             set({ 
               isLoading: false, 
               isAuthenticated: false,

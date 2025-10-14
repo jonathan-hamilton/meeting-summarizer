@@ -117,24 +117,6 @@ const TranscriptPage: React.FC = () => {
     navigate('/history');
   };
 
-  // Debug auth state
-  const authUser = useAuthStore.getState().user;
-  const storedUserRaw = localStorage.getItem('user');
-  const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
-  
-  console.log('🔍 TranscriptPage auth state DETAILED:');
-  console.log('  isAuthenticated:', isAuthenticated);
-  console.log('  isAuthLoading:', isAuthLoading);
-  console.log('  authUser?.id:', authUser?.id);
-  console.log('  authUser keys:', authUser ? Object.keys(authUser) : null);
-  console.log('  authUser values:', authUser);
-  console.log('  storedUser keys:', storedUser ? Object.keys(storedUser) : null);
-  console.log('  storedUser values:', storedUser);
-  if (authUser) {
-    console.log('  authUser.id:', authUser.id);
-    console.log('  authUser.email:', authUser.email);
-  }
-
   // Show nothing if user is not authenticated - let the main app handle auth UI
   if (!isAuthLoading && !isAuthenticated) {
     return null;

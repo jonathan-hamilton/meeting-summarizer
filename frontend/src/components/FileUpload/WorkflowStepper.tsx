@@ -57,12 +57,8 @@ const getStepIcon = (index: number, step: WorkflowStep, progressPercentage?: num
   const isProcessing = index === 1 && isActive; // Fast Transcription step (spinning)
   const isUploading = index === 0 && isActive; // Upload step (pulsing)
 
-  console.log(`🔍 getStepIcon - index: ${index}, step.status: ${step.status}, isActive: ${isActive}, isProcessing: ${isProcessing}, isUploading: ${isUploading}, progressPercentage: ${progressPercentage}`);
-
   // For processing step, show spinner with percentage if available
   if (isProcessing) {
-    console.log(`🎯 Rendering CircularProgress for Fast Transcription step - progress: ${progressPercentage}%`);
-    
     // Show determinate progress if we have a valid percentage, otherwise indeterminate
     const hasValidProgress = progressPercentage && progressPercentage > 0;
     
