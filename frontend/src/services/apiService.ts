@@ -40,10 +40,9 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // TODO: Fix environment variable loading issue
-    // See docs/technical-debt.md for details
-    // Using hardcoded URL until VITE_API_BASE_URL loading is resolved
-    this.baseURL = 'http://localhost:5029';
+    // Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
+    const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
+    this.baseURL = isLocalDev ? 'http://localhost:5029' : '';
     
     this.client = axios.create({
       baseURL: this.baseURL,

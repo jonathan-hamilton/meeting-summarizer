@@ -16,8 +16,9 @@
 #generate-frontend-tests
 ```
 
-- Automatically detects Sprint (highest numbered) and generates tests for current sprint features
-- Includes context from previous sprint_*_stories.md for integration testing
+- Automatically detects current sprint (highest numbered) and generates tests for current sprint features
+- Uses `detect-project-stack` to identify [FRONTEND_FRAMEWORK] and [FRONTEND_TEST_FRAMEWORK]
+- Includes context from previous sprint files for integration testing
 
 **Specific Sprint Mode:**
 
@@ -36,18 +37,29 @@
 #review-all-frontend-tests
 ```
 
-- Analyzes all sprints
-- Provides complete test coverage report
+- Analyzes all sprints and provides complete test coverage report
+- Uses detected [FRONTEND_FRAMEWORK] and [FRONTEND_TEST_FRAMEWORK]
 - Generates missing tests across all sprint features
 - Creates integration tests spanning multiple sprints
 
+## Technology Stack Integration
+
+**Prerequisites:**
+Run `detect-project-stack` to auto-detect:
+- [FRONTEND_FRAMEWORK] (React, Vue, Angular, Svelte)
+- [UI_LIBRARY] (Material-UI, Vuetify, Bootstrap, etc.)
+- [FRONTEND_TEST_FRAMEWORK] (Jest, Vitest, Cypress)
+- [FRONTEND_DIR] (Frontend directory location)
+- [PROJECT_NAME] (for test naming and descriptions)
+
 ## Project Context
 
-Target codebase: **Frontend** (React/TypeScript)
+Target codebase: **Frontend** ([FRONTEND_FRAMEWORK])
 
-- Directory: `frontend/`
-- Framework: React with TypeScript
-- Testing: Vitest + React Testing Library + jest-dom
+- Directory: [FRONTEND_DIR]
+- Framework: [FRONTEND_FRAMEWORK] with TypeScript
+- UI Library: [UI_LIBRARY]
+- Testing: [FRONTEND_TEST_FRAMEWORK] + Testing Library + jest-dom
 - Build: Vite
 
 ## 1. Requirements Analysis
@@ -56,7 +68,7 @@ Before generating tests, review:
 
 - `docs/sprint_*_stories.md` - Review all available sprint files to determine current sprint and requirements
 - `docs/meeting-summarizer-requirements.md` - Overall system requirements
-- Existing tests in `frontend/src/__tests__/` for patterns and coverage gaps
+- Existing tests in `[FRONTEND_DIR]/src/__tests__/` for patterns and coverage gaps
 
 **Sprint Detection Strategy:**
 
@@ -330,9 +342,9 @@ describe('serviceName', () => {
 ### Step 3: Validation
 
 ```bash
-cd frontend/
-npm run test ComponentName.test.tsx
-npm run test:coverage
+cd [FRONTEND_DIR]/
+[PACKAGE_MANAGER] run test ComponentName.test.tsx
+[PACKAGE_MANAGER] run test:coverage
 ```
 
 ### Step 4: Integration

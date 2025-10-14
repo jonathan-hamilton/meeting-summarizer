@@ -52,7 +52,6 @@ resource "azurerm_key_vault" "main" {
   enabled_for_deployment          = false
   enabled_for_template_deployment = true
   enabled_for_disk_encryption     = false
-  enable_rbac_authorization       = true
   
   soft_delete_retention_days = local.soft_delete_retention_days
   purge_protection_enabled   = local.is_production
@@ -70,7 +69,7 @@ resource "azurerm_key_vault" "main" {
   }
 }
 
-# Key Vault Access Policy for current user/service principal
+# Key Vault Access Policy for current user/service principal (GitHub Actions compatible)
 resource "azurerm_key_vault_access_policy" "current_user" {
   key_vault_id = azurerm_key_vault.main.id
   tenant_id    = data.azurerm_client_config.current.tenant_id

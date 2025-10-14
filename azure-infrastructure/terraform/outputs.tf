@@ -15,24 +15,29 @@ output "key_vault_uri" {
   value       = module.key_vault.key_vault_uri
 }
 
-output "app_service_name" {
-  description = "Name of the App Service"
-  value       = module.app_service.app_service_name
+output "container_app_name" {
+  description = "Name of the Container App"
+  value       = module.container_apps.container_app_name
 }
 
-output "app_service_url" {
-  description = "URL of the App Service"
-  value       = module.app_service.app_service_url
+output "container_app_url" {
+  description = "URL of the Container App"
+  value       = module.container_apps.container_app_url
 }
 
-output "staging_slot_name" {
-  description = "Name of the staging slot (for blue-green deployment)"
-  value       = module.app_service.staging_slot_name
+output "container_app_fqdn" {
+  description = "Fully qualified domain name of the Container App"
+  value       = module.container_apps.container_app_fqdn
 }
 
-output "staging_slot_url" {
-  description = "URL of the staging slot"
-  value       = module.app_service.staging_slot_url
+output "container_registry_name" {
+  description = "Name of the Container Registry"
+  value       = module.container_apps.container_registry_name
+}
+
+output "container_registry_login_server" {
+  description = "Login server URL of the Container Registry"
+  value       = module.container_apps.container_registry_login_server
 }
 
 output "storage_account_name" {
@@ -58,4 +63,46 @@ output "speech_service_name" {
 output "environment" {
   description = "Environment name"
   value       = var.environment
+}
+
+# Custom Domain Outputs
+output "dns_zone_id" {
+  description = "ID of the DNS Zone (if created)"
+  value       = length(module.dns_zone) > 0 ? module.dns_zone[0].dns_zone_id : null
+}
+
+output "dns_name_servers" {
+  description = "Name servers for the DNS Zone (if created)"
+  value       = length(module.dns_zone) > 0 ? module.dns_zone[0].name_servers : null
+}
+
+output "www_domain_url" {
+  description = "URL for the WWW custom domain"
+  value       = var.enable_custom_domain && var.custom_domain_name != "" ? "https://www.${var.custom_domain_name}" : null
+}
+
+output "api_domain_url" {
+  description = "URL for the API custom domain"  
+  value       = var.enable_custom_domain && var.custom_domain_name != "" ? "https://api.${var.custom_domain_name}" : null
+}
+
+output "custom_domains" {
+  description = "List of configured custom domains"
+  value       = var.enable_custom_domain && var.custom_domain_name != "" ? [
+    "www.${var.custom_domain_name}",
+    "api.${var.custom_domain_name}"
+  ] : []
+}
+
+output "domain_configuration_summary" {
+  description = "Summary of custom domain configuration"
+  value = {
+    domain_name = var.custom_domain_name
+    dns_zone_created = var.create_dns_zone && var.custom_domain_name != ""
+    custom_domain_enabled = var.enable_custom_domain
+    www_domain = length(module.dns_zone) > 0 ? module.dns_zone[0].www_domain : null
+    api_domain = length(module.dns_zone) > 0 ? module.dns_zone[0].api_domain : null
+    container_app_url = module.container_apps.container_app_url
+    container_registry_url = module.container_apps.container_registry_login_server
+  }
 }

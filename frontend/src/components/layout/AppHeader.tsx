@@ -25,7 +25,6 @@ interface AppHeaderProps {
   onHelpClick: () => void;
   onAccessibilityClick: () => void;
   onModeToggle: () => void;
-  onModeDoubleClick: () => void;
   onTokenPurchaseClick?: () => void;
   sessionStatus: 'active' | 'warning' | 'expired';
   getAppBarSx: () => any;
@@ -35,7 +34,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onHelpClick,
   onAccessibilityClick,
   onModeToggle,
-  onModeDoubleClick,
   onTokenPurchaseClick,
   sessionStatus,
   getAppBarSx,
@@ -64,13 +62,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 title={
                   appMode === 'production'
                     ? "Production mode (real API calls, Legal Acceptance enabled)"
-                    : "Development mode (mocked API calls) - Double-click to test Legal Acceptance"
+                    : "Development mode (mocked API calls)"
                 }
               >
                 <Switch
                   checked={appMode === 'production'}
                   onChange={onModeToggle}
-                  onDoubleClick={onModeDoubleClick}
                   color="default"
                   sx={{ mr: 1, cursor: 'pointer' }}
                   inputProps={{ 

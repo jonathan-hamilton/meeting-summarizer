@@ -96,11 +96,10 @@ public class SendGridEmailService : IEmailService
                 // Use provided content for non-summary emails (fallback)
                 _logger.LogInformation("Using provided content (plain text/markdown) for email (no MeetingSummary)");
                 
-                // Check if content is already HTML (starts with DOCTYPE or <html>)
-                if (request.Content.TrimStart().StartsWith("<!DOCTYPE") || 
-                    request.Content.TrimStart().StartsWith("<html"))
+                // Check if content is already formatted HTML (starts with <!DOCTYPE html>)
+                if (request.Content.TrimStart().StartsWith("<!DOCTYPE html>", StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogInformation("Content appears to be pre-formatted HTML, using as-is");
+                    _logger.LogInformation("Content is already formatted HTML, using as-is");
                     htmlContent = request.Content;
                 }
                 // Check if content contains transcript text and format it properly

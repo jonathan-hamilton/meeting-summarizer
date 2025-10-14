@@ -132,8 +132,11 @@ const AppContent: React.FC = () => {
 
   // Handle first-time sign-in dialogs
   useEffect(() => {
-    // Only make dialog decisions when user is authenticated, not loading, and preferences have been loaded
-    if (isAuthenticated && !isAuthLoading && !isDialogPrefsLoading && preferences !== null) {
+    // Don't show legal disclaimer or AI chat discovery while on email verification routes
+    const isOnVerificationRoute = location.pathname.startsWith('/verify-email');
+    
+    // Wait until we're authenticated AND dialog preferences have been loaded from API
+    if (isAuthenticated && !isAuthLoading && !isDialogPrefsLoading && preferences !== null && !isOnVerificationRoute) {
       // Check if this is a first-time sign-in
       if (!hasAcknowledgedLegalDisclaimer) {
         // Show legal acceptance dialog first
@@ -145,13 +148,21 @@ const AppContent: React.FC = () => {
         }, 500); // Small delay for better UX
       }
     }
-  }, [isAuthenticated, isAuthLoading, isDialogPrefsLoading, preferences, hasAcknowledgedLegalDisclaimer, hasSeenAiChatDiscovery]);
+  }, [isAuthenticated, isAuthLoading, isDialogPrefsLoading, hasAcknowledgedLegalDisclaimer, hasSeenAiChatDiscovery, preferences, location.pathname]);
 
   // Initialize transcription job store from session storage when app starts
   const { initializeFromStorage } = useTranscriptionJobStore();
   useEffect(() => {
     initializeFromStorage();
   }, [initializeFromStorage]);
+  
+  // Clear transcription results when user logs out
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setTranscriptionResults([]);
+    }
+  }, [isAuthenticated]);
+  
   const [transcriptionResults, setTranscriptionResults] = useState<
     TranscriptionResponse[]
   >([]);
@@ -346,13 +357,6 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleModeDoubleClick = () => {
-    // In development mode, allow triggering Legal Acceptance dialog for testing
-    if (appMode === 'development') {
-      setForceShowLegalAcceptance(true);
-    }
-  };
-
   // Health dialog functions removed
 
   // Server health checking removed to reduce console errors
@@ -434,7 +438,6 @@ const AppContent: React.FC = () => {
             onHelpClick={() => setHelpDialogOpen(true)}
             onAccessibilityClick={() => setAccessibilityPanelOpen(true)}
             onModeToggle={handleModeToggle}
-            onModeDoubleClick={handleModeDoubleClick}
             onTokenPurchaseClick={() => setTokenPurchaseDialogOpen(true)}
             sessionStatus={privacyControls.sessionStatus}
             getAppBarSx={getAppBarSx}

@@ -67,6 +67,11 @@ public class MeetingSummarizerDbContext : DbContext
     /// </summary>
     public DbSet<SavedActionItem> SavedActionItems { get; set; } = null!;
     
+    /// <summary>
+    /// Invitation codes for development environment access control
+    /// </summary>
+    public DbSet<InvitationCode> InvitationCodes { get; set; } = null!;
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -330,5 +335,35 @@ public class MeetingSummarizerDbContext : DbContext
         modelBuilder.Entity<Meeting>()
             .Property(m => m.Status)
             .HasConversion<string>(); // Store enum as string for readability
+            
+        // Configure InvitationCode entity
+        modelBuilder.Entity<InvitationCode>(entity =>
+        {
+            entity.HasKey(ic => ic.Id);
+            entity.HasIndex(ic => ic.Code).IsUnique(); // Unique code constraint for security
+            entity.HasIndex(ic => ic.Email); // For email-restricted invitations
+            entity.HasIndex(ic => ic.ExpiresAt); // For cleanup and validation queries
+            entity.HasIndex(ic => ic.IsActive); // For active invitation queries
+            entity.HasIndex(ic => new { ic.IsActive, ic.ExpiresAt }); // Composite index for validation
+            
+            entity.Property(ic => ic.Code).IsRequired().HasMaxLength(50);
+            entity.Property(ic => ic.Email).HasMaxLength(255);
+            entity.Property(ic => ic.CreatedBy).IsRequired().HasMaxLength(255);
+            entity.Property(ic => ic.ExpiresAt).IsRequired();
+            entity.Property(ic => ic.CreatedAt).HasDefaultValueSql("GETUTCDATE()")
+                .HasConversion(
+                    v => v,
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+            entity.Property(ic => ic.UsedAt)
+                .HasConversion(
+                    v => v.HasValue ? v.Value : (DateTime?)null,
+                    v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : (DateTime?)null);
+            
+            // Configure relationships
+            entity.HasOne(ic => ic.UsedByUser)
+                .WithMany()
+                .HasForeignKey(ic => ic.UsedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 }

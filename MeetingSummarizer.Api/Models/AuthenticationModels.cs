@@ -27,6 +27,13 @@ public class RegisterRequest
 
     [Required]
     public bool HasConsentedToDataProcessing { get; set; }
+
+    /// <summary>
+    /// Invitation code required for development environment registration
+    /// Optional in production environment
+    /// </summary>
+    [StringLength(50)]
+    public string? InvitationCode { get; set; }
 }
 
 /// <summary>

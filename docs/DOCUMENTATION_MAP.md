@@ -1,6 +1,12 @@
 # Meeting-Summary.io Documentation Map & Traceability
 
-This document provides clear navigation paths and traceability between all project documentation, ensuring consistency and maintainability.
+This document pr## 🔄 Update Workflow & Process
+
+### **The Complete Documentation Ecosystem**
+Full workflow overview documented in [`.prompts/documentation-ecosystem-overview.md`](../.prompts/documentation-ecosystem-overview.md)
+
+### **The Update-Commit Workflow**
+Documented in [`.prompts/update-commit.md`](../.prompts/update-commit.md)es clear navigation paths and traceability between all project documentation, ensuring consistency and maintainability.
 
 ---
 
@@ -171,6 +177,7 @@ Documented in [`.prompts/update-commit.md`](./.prompts/update-commit.md)
 - **What's been built** → [`docs/requirements/requirements-roadmap.md`](./requirements/requirements-roadmap.md) 
 - **Current sprint work** → [`docs/sprints/sprint_5_stories.md`](./sprints/sprint_5_stories.md)
 - **Mobile strategy** → [`docs/planning/mobile-deployment-strategy-summary.md`](./planning/mobile-deployment-strategy-summary.md)
+- **Documentation workflow** → [`.prompts/documentation-ecosystem-overview.md`](../.prompts/documentation-ecosystem-overview.md)
 
 ### **I want to find requirements for...**
 - **Audio processing** → [`docs/requirements/audio-transcription.md`](./requirements/audio-transcription.md)
