@@ -23,7 +23,8 @@ variable "environment" {
 # Local values
 locals {
   is_production = var.environment == "prod"
-  sku_name = local.is_production ? "S0" : "F0"
+  # Use S0 for all environments since F0 free tier is already used in subscription
+  sku_name = "S0"
 }
 
 # Cognitive Services Speech Service

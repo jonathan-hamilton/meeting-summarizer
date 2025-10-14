@@ -2,11 +2,22 @@
 
 When asked to generate initial scaffolding stories:
 
+## Prerequisites
+
+**Technology Stack Detection (Recommended):**
+If working with an existing project, run `detect-project-stack` first to auto-detect:
+- [FRONTEND_FRAMEWORK] (React, Vue, Angular, etc.)
+- [UI_LIBRARY] (Material-UI, Vuetify, Bootstrap, etc.)
+- [BACKEND_FRAMEWORK] (.NET, Node.js, Python, etc.)
+- [PACKAGE_MANAGER] (npm, yarn, pip, etc.)
+
+## Process
+
 1. Review provided context:
 
    - Project requirements
    - Architecture decisions
-   - Technology stack
+   - Technology stack (detected or specified)
    - Component structure
 
 2. Summarize your understanding of the above context. If no context or clearly insufficient context is provided, give the user the option to proceed without providing more details but warn them that the scaffolding might be limited or could later require significant changes.
@@ -35,10 +46,11 @@ When asked to generate initial scaffolding stories:
 
    ### Technical Notes
 
-   - Technology choices: [list relevant tech]
-   - Component structure: [describe structure]
-   - Configuration details: [specific settings]
-   - Command examples: [setup/run commands]
+   - Technology choices: [FRONTEND_FRAMEWORK] + [UI_LIBRARY] for frontend, [BACKEND_FRAMEWORK] for API
+   - Package management: [PACKAGE_MANAGER] for dependency installation
+   - Component structure: [describe structure based on detected framework]
+   - Configuration details: [specific settings for detected stack]
+   - Command examples: [PACKAGE_MANAGER] install, framework-specific run commands
 
    ### Definition of Done
 

@@ -53,8 +53,7 @@ public class EnvironmentController : ControllerBase
                 _environmentOptions.IsProduction,
                 _environmentOptions.AllowTestFeatures,
                 AspNetCoreEnvironment = _hostEnvironment.EnvironmentName,
-                IsDevelopment = _environmentOptions.IsDevelopment,
-                IsStaging = _environmentOptions.IsStaging
+                IsDevelopment = _environmentOptions.IsDevelopment
             },
             Application = new
             {
@@ -149,7 +148,7 @@ public class EnvironmentController : ControllerBase
     }
 
     /// <summary>
-    /// Get configuration status (only in development/staging)
+    /// Get configuration status (only in development)
     /// </summary>
     [HttpGet("config-status")]
     public IActionResult GetConfigurationStatus()

@@ -25,11 +25,40 @@ variable "key_vault_id" {
   type        = string
 }
 
+variable "custom_domain_name" {
+  description = "Custom domain name (e.g., meeting-summary.io)"
+  type        = string
+  default     = ""
+}
+
+variable "enable_custom_domain" {
+  description = "Whether to enable custom domain binding"
+  type        = bool
+  default     = false
+}
+
 # Local values
 locals {
   is_production = var.environment == "prod"
-  sku_size = local.is_production ? "P1v3" : (var.environment == "dev" ? "B1" : "S1")
+  sku_size = local.is_production ? "P1v3" : "S1"  # Use S1 (Standard) for dev - uses Standard VM quota pool
   enable_blue_green = local.is_production
+  
+  # Custom domain configuration
+  has_custom_domain = var.enable_custom_domain && var.custom_domain_name != ""
+  www_domain = local.has_custom_domain ? (var.environment == "prod" ? "www.${var.custom_domain_name}" : "${var.environment}.${var.custom_domain_name}") : ""
+  api_domain = local.has_custom_domain ? (var.environment == "prod" ? "api.${var.custom_domain_name}" : "api.${var.environment}.${var.custom_domain_name}") : ""
+  
+  # CORS allowed origins including custom domains
+  cors_origins = concat(
+    [
+      "https://${var.app_service_name}.azurewebsites.net"
+    ],
+    local.has_custom_domain ? [
+      "https://${local.www_domain}",
+      "https://${local.api_domain}"
+    ] : [],
+    local.is_production && local.has_custom_domain ? ["https://${var.custom_domain_name}"] : []
+  )
 }
 
 # App Service Plan
@@ -37,7 +66,7 @@ resource "azurerm_service_plan" "main" {
   name                = "${var.app_service_name}-plan"
   resource_group_name = var.resource_group_name
   location            = var.location
-  os_type             = "Linux"
+  os_type             = "Windows"
   sku_name            = local.sku_size
 
   tags = {
@@ -47,7 +76,7 @@ resource "azurerm_service_plan" "main" {
 }
 
 # App Service
-resource "azurerm_linux_web_app" "main" {
+resource "azurerm_windows_web_app" "main" {
   name                = var.app_service_name
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -56,18 +85,15 @@ resource "azurerm_linux_web_app" "main" {
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      dotnet_version = "v8.0"
     }
-    always_on = local.is_production
+    always_on = true  # S1 Standard tier supports always_on
     
     # Production-specific configurations
     dynamic "cors" {
       for_each = local.is_production ? [1] : []
       content {
-        allowed_origins = [
-          "https://${var.app_service_name}.azurewebsites.net",
-          "https://meetingsummary.io"  # Production domain
-        ]
+        allowed_origins = local.cors_origins
         support_credentials = true
       }
     }
@@ -77,11 +103,8 @@ resource "azurerm_linux_web_app" "main" {
   app_settings = {
     "ASPNETCORE_ENVIRONMENT" = var.environment == "prod" ? "Production" : (var.environment == "dev" ? "Development" : "Staging")
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
-    "DOCKER_ENABLE_CI" = "true"
     
-    # Health check endpoint
-    "WEBSITE_HEALTHCHECK_MAXPINGFAILURES" = "3"
-    "WEBSITE_HEALTHCHECK_MAXUNHEALTHYWORKERPERCENT" = "50"
+    # Custom application settings (removed reserved WEBSITE_HEALTHCHECK_* settings)
   }
 
   identity {
@@ -95,15 +118,15 @@ resource "azurerm_linux_web_app" "main" {
 }
 
 # Production Staging Slot for Blue-Green Deployment
-resource "azurerm_linux_web_app_slot" "staging" {
+resource "azurerm_windows_web_app_slot" "staging" {
   count           = local.enable_blue_green ? 1 : 0
   name            = "staging"
-  app_service_id  = azurerm_linux_web_app.main.id
+  app_service_id  = azurerm_windows_web_app.main.id
   https_only      = true
 
   site_config {
     application_stack {
-      dotnet_version = "8.0"
+      dotnet_version = "v8.0"
     }
     always_on = true
     
@@ -121,12 +144,9 @@ resource "azurerm_linux_web_app_slot" "staging" {
   app_settings = {
     "ASPNETCORE_ENVIRONMENT" = "Staging"
     "WEBSITES_ENABLE_APP_SERVICE_STORAGE" = "false"
-    "DOCKER_ENABLE_CI" = "true"
     "SLOT_NAME" = "staging"
     
-    # Health check endpoint
-    "WEBSITE_HEALTHCHECK_MAXPINGFAILURES" = "3"
-    "WEBSITE_HEALTHCHECK_MAXUNHEALTHYWORKERPERCENT" = "50"
+    # Custom application settings (removed reserved WEBSITE_HEALTHCHECK_* settings)
   }
 
   identity {
@@ -138,4 +158,70 @@ resource "azurerm_linux_web_app_slot" "staging" {
     Application = "MeetingSummary"
     Purpose = "BlueGreenDeployment"
   }
+}
+
+# Custom Domain Binding for WWW subdomain
+resource "azurerm_app_service_custom_hostname_binding" "www" {
+  count               = local.has_custom_domain ? 1 : 0
+  hostname            = local.www_domain
+  app_service_name    = azurerm_windows_web_app.main.name
+  resource_group_name = var.resource_group_name
+
+  # Depends on DNS configuration being in place
+  lifecycle {
+    ignore_changes = [ssl_state, thumbprint]
+  }
+}
+
+# Custom Domain Binding for API subdomain
+resource "azurerm_app_service_custom_hostname_binding" "api" {
+  count               = local.has_custom_domain ? 1 : 0
+  hostname            = local.api_domain
+  app_service_name    = azurerm_windows_web_app.main.name
+  resource_group_name = var.resource_group_name
+
+  # Depends on DNS configuration being in place
+  lifecycle {
+    ignore_changes = [ssl_state, thumbprint]
+  }
+}
+
+# Managed Certificate for WWW domain
+resource "azurerm_app_service_managed_certificate" "www" {
+  count                      = local.has_custom_domain ? 1 : 0
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.www[0].id
+
+  tags = {
+    Environment = var.environment
+    Application = "MeetingSummary"
+    DomainType  = "WWW"
+  }
+}
+
+# Managed Certificate for API domain
+resource "azurerm_app_service_managed_certificate" "api" {
+  count                      = local.has_custom_domain ? 1 : 0
+  custom_hostname_binding_id = azurerm_app_service_custom_hostname_binding.api[0].id
+
+  tags = {
+    Environment = var.environment
+    Application = "MeetingSummary"
+    DomainType  = "API"
+  }
+}
+
+# Certificate Binding for WWW domain
+resource "azurerm_app_service_certificate_binding" "www" {
+  count           = local.has_custom_domain ? 1 : 0
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.www[0].id
+  certificate_id      = azurerm_app_service_managed_certificate.www[0].id
+  ssl_state          = "SniEnabled"
+}
+
+# Certificate Binding for API domain
+resource "azurerm_app_service_certificate_binding" "api" {
+  count           = local.has_custom_domain ? 1 : 0
+  hostname_binding_id = azurerm_app_service_custom_hostname_binding.api[0].id
+  certificate_id      = azurerm_app_service_managed_certificate.api[0].id
+  ssl_state          = "SniEnabled"
 }

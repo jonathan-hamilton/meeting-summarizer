@@ -22,16 +22,19 @@ export const useDialogPreferences = (): UseDialogPreferencesResult => {
   useEffect(() => {
     const loadPreferences = async () => {
       if (!isAuthenticated || !user?.id) {
+        console.log('useDialogPreferences: Not authenticated or no user ID', { isAuthenticated, userId: user?.id });
         setPreferences(null);
         setIsLoading(false);
         return;
       }
 
+      console.log('useDialogPreferences: Loading preferences for user', user.id);
       setIsLoading(true);
       setError(null);
 
       try {
         const prefs = await userProfileService.getDialogPreferences(user.id);
+        console.log('useDialogPreferences: Loaded preferences:', prefs);
         setPreferences(prefs);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to load dialog preferences';
@@ -44,6 +47,7 @@ export const useDialogPreferences = (): UseDialogPreferencesResult => {
             hasAcknowledgedLegalDisclaimer: localStorage.getItem('meeting-summary-legal-accepted') === 'true',
             hasSeenAiChatDiscovery: localStorage.getItem('chat_discovery_shown') === 'true'
           };
+          console.log('useDialogPreferences: Using fallback preferences:', fallbackPrefs);
           setPreferences(fallbackPrefs);
         } catch (localError) {
           console.error('Fallback to localStorage also failed:', localError);

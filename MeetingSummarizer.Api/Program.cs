@@ -6,6 +6,7 @@ using MeetingSummarizer.Api.Services.Validation;
 using MeetingSummarizer.Api.Services.FileProcessing;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Services.UserManagement;
+using MeetingSummarizer.Api.Services.Invitation;
 using MeetingSummarizer.Api.Services.DataRetention;
 using MeetingSummarizer.Api.Services.Authentication;
 using MeetingSummarizer.Api.Services.TokenManagement;
@@ -230,6 +231,9 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 // Register Summary Persistence Service (S6.10 Summary Persistence)
 builder.Services.AddScoped<ISummaryPersistenceService, SummaryPersistenceService>();
 
+// Register Invitation Service (S7.2 Development Environment Access Control)
+builder.Services.AddScoped<IInvitationService, InvitationService>();
+
 // Register Fast Transcription Service (S6.13 Fast Transcription Migration)
 builder.Services.AddHttpClient<MeetingSummarizer.Api.Services.Transcription.AzureFastTranscriptionService>(client =>
 {
@@ -337,6 +341,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+// Enable static files for serving React frontend
+app.UseStaticFiles();
+
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
 
@@ -357,7 +364,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Add fallback route for client-side routing (SPA support)
+// SPA fallback routing - serve index.html for client-side routing
 app.MapFallbackToFile("index.html");
 
 app.Run();

@@ -33,6 +33,7 @@ defaults:
 env:
   AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
   ENVIRONMENT: production
+  ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 
 jobs:
   # ====================
@@ -137,17 +138,14 @@ jobs:
       run: |
         cd azure-infrastructure/terraform
         terraform init \
-          -backend-config="storage_account_name=${{ vars.TERRAFORM_STORAGE_ACCOUNT }}" \
-          -backend-config="container_name=${{ vars.TERRAFORM_CONTAINER }}" \
-          -backend-config="key=prod.terraform.tfstate" \
-          -backend-config="resource_group_name=${{ vars.TERRAFORM_RESOURCE_GROUP }}"
+          -backend-config="key=prod/terraform.tfstate"
     
     - name: Terraform Plan
       run: |
         cd azure-infrastructure/terraform
         terraform plan \
           -var="environment=prod" \
-          -var="location=${{ vars.AZURE_LOCATION || 'East US' }}" \
+          -var="location=${{ vars.AZURE_LOCATION || 'Central US' }}" \
           -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
           -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
           -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \

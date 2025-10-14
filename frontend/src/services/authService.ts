@@ -1,7 +1,9 @@
 import axios from 'axios';
 import type { AuthResponse, LoginRequest, RegisterRequest } from '../types/auth';
 
-const API_BASE_URL = 'http://localhost:5029/api';
+// Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
+const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
+const API_BASE_URL = isLocalDev ? 'http://localhost:5029/api' : '/api';
 
 class AuthService {
   private static instance: AuthService;

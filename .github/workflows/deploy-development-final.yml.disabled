@@ -1,0 +1,69 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: dev-deployment
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  deploy:
+    name: Deploy Infrastructure and Container
+    runs-on: ubuntu-latest
+    environment: development
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ~1.6
+        terraform_wrapper: false
+        
+    - name: Terraform Init
+      env:
+        ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+      run: |
+        cd azure-infrastructure/terraform
+        terraform init -backend-config="key=dev/terraform.tfstate"
+    
+    - name: Terraform Plan
+      env:
+        ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+      run: |
+        cd azure-infrastructure/terraform
+        terraform plan \
+          -var="environment=dev" \
+          -var="location=westus" \
+          -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
+          -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
+          -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+          -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+          -out=tfplan
+    
+    - name: Terraform Apply
+      env:
+        ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+      run: |
+        cd azure-infrastructure/terraform
+        terraform apply -auto-approve tfplan
