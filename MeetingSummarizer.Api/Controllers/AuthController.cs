@@ -412,19 +412,32 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Development testing endpoint - Create test invitation code
     /// WARNING: This endpoint should be removed before production
+    /// Requires authentication in Development environment, but not in Local environment
     /// </summary>
     [HttpPost("test/create-invitation")]
     public async Task<ActionResult<object>> CreateTestInvitation([FromBody] CreateTestInvitationRequest request)
     {
-        // Only allow in development environment
-        if (!_environment.IsDevelopment())
+        // Only allow in development/local environment
+        if (!_environment.IsDevelopment() && _environment.EnvironmentName != "Local")
         {
             return NotFound();
         }
 
+        // Require authentication in Development environment, but not in Local environment
+        if (_environment.IsDevelopment() && _environment.EnvironmentName != "Local")
+        {
+            // In Development environment, require authentication
+            if (!User.Identity?.IsAuthenticated ?? true)
+            {
+                return Unauthorized(new { message = "Authentication required in Development environment" });
+            }
+        }
+        // In Local environment, no authentication required
+
         try
         {
-            _logger.LogInformation("Creating test invitation for email: {Email}", request.Email);
+            _logger.LogInformation("Creating test invitation for email: {Email} in environment: {Environment}", 
+                request.Email, _environment.EnvironmentName);
             
             var invitation = await _invitationService.GenerateInvitationCodeAsync(
                 request.Email, 
@@ -436,12 +449,14 @@ public class AuthController : ControllerBase
                 invitationCode = invitation.Code, 
                 email = invitation.Email,
                 expiresAt = invitation.ExpiresAt,
-                message = "Test invitation created successfully" 
+                message = $"Test invitation created successfully in {_environment.EnvironmentName} environment",
+                requiresAuth = _environment.IsDevelopment() && _environment.EnvironmentName != "Local"
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create test invitation for email: {Email}", request.Email);
+            _logger.LogError(ex, "Failed to create test invitation for email: {Email} in environment: {Environment}", 
+                request.Email, _environment.EnvironmentName);
             return StatusCode(500, new { message = "Failed to create test invitation" });
         }
     }
