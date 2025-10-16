@@ -42,7 +42,7 @@ class ApiService {
   constructor() {
     // Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
     const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
-    this.baseURL = isLocalDev ? 'http://localhost:5029' : '';
+    this.baseURL = isLocalDev ? 'http://localhost:5029' : '/api';
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -105,12 +105,7 @@ class ApiService {
   // Generic request method
   private async request<T>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
-      // Minimal logging to avoid console spam
-      console.log(`🚀 API ${config.method?.toUpperCase()} ${config.url} (timeout: ${config.timeout}ms)`);
-      
       const response = await this.client.request<T>(config);
-      
-      console.log(`✅ API SUCCESS ${config.method?.toUpperCase()} ${config.url} (${response.status})`);
       
       return {
         data: response.data,
@@ -248,7 +243,6 @@ class ApiService {
       // Extract meeting ID from response headers if available
       const meetingId = result.headers?.['x-meeting-id'] || result.headers?.['X-Meeting-Id'];
       if (meetingId) {
-        console.log(`🎯 MEETING ID from headers: ${meetingId}`);
         // Add meeting ID to response data for easy access
         if (result.data) {
           (result.data as any).meetingId = meetingId;

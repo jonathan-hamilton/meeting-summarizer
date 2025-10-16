@@ -501,13 +501,15 @@ public class UserManagementController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Updating dialog preferences for user {UserId}: {Request}", userId, System.Text.Json.JsonSerializer.Serialize(request));
+            
             var success = await _userService.UpdateDialogPreferencesAsync(userId, request);
             if (!success)
             {
                 return NotFound(new { message = "User not found" });
             }
 
-            _logger.LogInformation("Updated dialog preferences for user {UserId}", userId);
+            _logger.LogInformation("Successfully updated dialog preferences for user {UserId}", userId);
             return Ok(new { message = "Dialog preferences updated successfully" });
         }
         catch (Exception ex)

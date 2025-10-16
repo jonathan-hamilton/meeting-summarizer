@@ -50,12 +50,9 @@ export class EmailService {
    */
   async sendEmail(request: SendEmailRequest): Promise<SendEmailResponse> {
     try {
-      console.log('🚀 Sending email to recipients:', request.recipients);
-      
       const response = await apiService.post<SendEmailResponse>('/api/Email/send', request);
       
       if (response.success && response.data) {
-        console.log('✅ Email sent successfully:', response.data);
         return response.data;
       } else {
         console.error('❌ Failed to send email:', response.message);
@@ -144,15 +141,11 @@ export class EmailService {
     includeTranscript: boolean;
   }): Promise<SendEmailResponse> {
     try {
-      console.log('🚀 Sending transcript email for transcription:', transcriptionId);
-      
       const response = await apiService.post<SendEmailResponse>(`/api/email/transcript/${transcriptionId}`, emailData);
       
       if (response.success && response.data) {
-        console.log('✅ Transcript email sent successfully:', response.data);
         return response.data;
       } else {
-        console.error('❌ Failed to send transcript email:', response.message);
         return {
           success: false,
           message: response.message || 'Failed to send transcript email',

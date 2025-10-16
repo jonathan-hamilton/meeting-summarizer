@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Typography,
@@ -43,6 +43,30 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const { mode: appMode } = useAppMode();
   const { isAuthenticated, logout } = useAuthStore();
   const openProfileDialog = useUserProfileDialogOpen();
+  
+  // State to track backend environment
+  const [backendEnvironment, setBackendEnvironment] = useState<string | null>(null);
+  
+  // Check backend environment on mount
+  useEffect(() => {
+    const checkBackendEnvironment = async () => {
+      try {
+        const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
+        const apiUrl = isLocalDev ? 'http://localhost:5029/api' : '/api';
+        const response = await fetch(`${apiUrl}/environment/features`);
+        if (response.ok) {
+          const data = await response.json();
+          setBackendEnvironment(data.Environment);
+        }
+      } catch (error) {
+        console.warn('Failed to fetch backend environment:', error);
+      }
+    };
+    
+    if (isAuthenticated) {
+      checkBackendEnvironment();
+    }
+  }, [isAuthenticated]);
 
   const handleSignOutClick = () => {
     logout();
@@ -54,8 +78,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
         {/* Left-aligned controls */}
         <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
-          {/* Development controls - only visible in local development environment and when authenticated */}
-          {import.meta.env.DEV && isAuthenticated && (
+          {/* Development controls - only visible when backend is running in Local environment and user is authenticated */}
+          {backendEnvironment === 'Local' && isAuthenticated && (
             <>
               {/* Mode Toggle Switch - Toggle between development and production modes */}
               <Tooltip

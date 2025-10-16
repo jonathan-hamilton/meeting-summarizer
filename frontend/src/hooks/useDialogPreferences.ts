@@ -24,6 +24,7 @@ export const useDialogPreferences = (): UseDialogPreferencesResult => {
       if (!isAuthenticated || !user?.id) {
         console.log('useDialogPreferences: Not authenticated or no user ID', { isAuthenticated, userId: user?.id });
         setPreferences(null);
+        setIsLoading(false);
         return;
       }
 

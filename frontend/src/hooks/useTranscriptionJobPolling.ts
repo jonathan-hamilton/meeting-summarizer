@@ -104,8 +104,6 @@ export const useTranscriptionJobPolling = () => {
 
   // Start polling
   const startPolling = useCallback((jobId: string) => {
-    console.log(`🚀 TRANSCRIPTION POLLING: Starting for job ${jobId}`);
-    
     cleanup(); // Clean up any existing polling
     setPolling(true);
     setPollingError(null);

@@ -60,8 +60,6 @@ export const enableHighContrastMode = (): void => {
   
   // Dispatch custom event for components to react to high contrast mode
   window.dispatchEvent(new CustomEvent('highContrastModeChanged', { detail: { enabled: true } }));
-  
-  console.log('🎯 High contrast mode enabled');
 };
 
 /**
@@ -73,8 +71,6 @@ export const disableHighContrastMode = (): void => {
   
   // Dispatch custom event for components to react to high contrast mode
   window.dispatchEvent(new CustomEvent('highContrastModeChanged', { detail: { enabled: false } }));
-  
-  console.log('🎯 High contrast mode disabled');
 };
 
 /**
@@ -109,8 +105,6 @@ export const initializeHighContrastDetection = (): void => {
       });
     }
   });
-  
-  console.log('🎯 High contrast detection initialized:', { isHighContrast });
 };
 
 /**
