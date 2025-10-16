@@ -118,15 +118,6 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
         transcriptData: transcriptDataToSend,
         includeTranscript: includeTranscript,
       });
-      
-      console.log('🔍 EmailCompositionDialog - Email send debug:');
-      console.log('  - transcriptOnly:', transcriptOnly);
-      console.log('  - summary:', summary);
-      console.log('  - summary type:', typeof summary);
-      console.log('  - summary undefined?:', summary === undefined);
-      console.log('  - summary null?:', summary === null);
-      console.log('  - meetingSummaryToSend:', meetingSummaryToSend);
-      console.log('  - meetingSummary sent to service:', meetingSummaryToSend);
 
       if (result.success) {
         setSendSuccess(`Email sent successfully to ${result.recipientsCount} recipient(s)!`);

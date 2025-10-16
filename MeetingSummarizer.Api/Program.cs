@@ -103,7 +103,11 @@ builder.Services.AddCors(options =>
 // Configure Entity Framework for user data persistence (S6.1)
 builder.Services.AddDbContext<MeetingSummarizerDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    // Try Key Vault secret name first, then ConnectionStrings configuration, then fallback
+    var connectionString = builder.Configuration["DatabaseConnectionString-Dev"] ?? 
+                          builder.Configuration["ConnectionStrings--DefaultConnection"] ?? 
+                          builder.Configuration.GetConnectionString("DefaultConnection");
+    
     if (!string.IsNullOrEmpty(connectionString))
     {
         options.UseSqlServer(connectionString, sqlServerOptions =>
@@ -196,11 +200,17 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.EmailVerification.IEma
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
-        var jwtKey = builder.Configuration["JWT:SecretKey"] ?? 
+        // Get JWT configuration from Key Vault (loaded via configuration provider)
+        var jwtKey = builder.Configuration["JWT--SecretKey"] ?? 
+                     builder.Configuration["JWT:SecretKey"] ?? 
                      Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
                      "your-super-secret-jwt-key-at-least-32-characters-long-for-security";
-        var jwtIssuer = builder.Configuration["JWT:Issuer"] ?? "MeetingSummary.io";
-        var jwtAudience = builder.Configuration["JWT:Audience"] ?? "MeetingSummary.io";
+        var jwtIssuer = builder.Configuration["JWT--Issuer"] ?? 
+                       builder.Configuration["JWT:Issuer"] ?? 
+                       "MeetingSummary.io";
+        var jwtAudience = builder.Configuration["JWT--Audience"] ?? 
+                         builder.Configuration["JWT:Audience"] ?? 
+                         "MeetingSummary.io";
         
         options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
         {
@@ -346,6 +356,10 @@ app.UseStaticFiles();
 
 // Enable environment-specific CORS policy
 app.UseCors("EnvironmentCorsPolicy");
+
+// Enable serving static files from wwwroot (frontend)
+app.UseStaticFiles();
+app.UseDefaultFiles(); // This will serve index.html by default
 
 // Add Stripe webhook middleware (S6.3 Increment 4)
 app.UseMiddleware<StripeWebhookMiddleware>();

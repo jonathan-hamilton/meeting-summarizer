@@ -55,22 +55,30 @@ namespace MeetingSummarizer.Api.Services.EmailVerification
                 {
                     rng.GetBytes(tokenBytes);
                 }
-                var token = Convert.ToBase64String(tokenBytes);
+                // Use URL-safe Base64 encoding (replace + with -, / with _, remove padding =)
+                var token = Convert.ToBase64String(tokenBytes)
+                    .Replace('+', '-')
+                    .Replace('/', '_')
+                    .TrimEnd('=');
 
                 // Set expiration to 24 hours from now
                 var expiry = DateTime.UtcNow.AddHours(TokenExpiryHours);
 
-                // Update user with new token
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-                if (user == null)
+                // Update user with new token - handle tracking conflicts
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+                if (existingUser == null)
                 {
                     _logger.LogWarning("User {UserId} not found when generating verification token", userId);
                     throw new InvalidOperationException($"User {userId} not found");
                 }
 
                 // Invalidate existing token and set new one
-                user.EmailVerificationToken = token;
-                user.EmailVerificationExpiry = expiry;
+                existingUser.EmailVerificationToken = token;
+                existingUser.EmailVerificationExpiry = expiry;
+
+                // Mark only the verification fields as modified
+                _context.Entry(existingUser).Property(u => u.EmailVerificationToken).IsModified = true;
+                _context.Entry(existingUser).Property(u => u.EmailVerificationExpiry).IsModified = true;
 
                 await _context.SaveChangesAsync();
 

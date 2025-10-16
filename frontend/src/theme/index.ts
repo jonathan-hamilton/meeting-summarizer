@@ -60,8 +60,8 @@ const lightThemeOptions: ThemeOptions = {
       dark: '#e65100',
     },
     background: {
-      default: '#e8e8e8', // Much dimmer than #f0f0f0
-      paper: '#f0f0f0',   // Dimmer off-white instead of #fafafa
+      default: '#d0d0d0', // Much darker than #e8e8e8
+      paper: '#e0e0e0',   // Much darker than #f0f0f0
     },
     text: {
       primary: '#1a1a1a',   // Even darker text for better contrast

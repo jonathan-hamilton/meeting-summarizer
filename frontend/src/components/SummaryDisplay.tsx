@@ -97,17 +97,8 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   // Load existing summary when transcriptionId changes or component mounts
   useEffect(() => {
     const loadExistingSummary = async () => {
-      console.log('🔍 SummaryDisplay loadExistingSummary called:', {
-        userId: user?.id,
-        transcriptionId: transcriptionId,
-        hasUser: !!user?.id,
-        hasTranscriptionId: !!transcriptionId,
-        isAuthLoading: isAuthLoading
-      });
-
       // Wait for authentication to finish loading
       if (isAuthLoading) {
-        console.log('⏳ Auth still loading, waiting...');
         return;
       }
 
@@ -126,14 +117,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         
         // Find existing summary for this meeting ID
         const currentState = useSummaryStore.getState();
-        console.log('🔍 Looking for existing summary with meetingId:', transcriptionId);
-        console.log('🔍 Available saved summaries:', currentState.savedSummaries.map(s => ({
-          id: s.id,
-          title: s.title,
-          meetingId: s.meetingId,
-          transcriptFileName: s.transcriptFileName
-        })));
-        
         // Try exact match first
         const exactMatch = currentState.savedSummaries.find(
           s => s.meetingId === transcriptionId
@@ -144,40 +127,13 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
           s => String(s.meetingId) === String(transcriptionId)
         );
         
-        // FALLBACK MATCHING COMMENTED OUT FOR ID CONSISTENCY TESTING
-        // Try matching by filename if the IDs don't match
-        // const filenameMatch = fileName ? currentState.savedSummaries.find(
-        //   s => s.transcriptFileName === fileName
-        // ) : null;
-        
-        // Try to find the most recent auto-saved summary (last resort)
-        // const recentAutoSave = currentState.savedSummaries.find(
-        //   s => s.title?.includes('Auto-saved')
-        // );
-        
-        console.log('🔍 Exact match found:', !!exactMatch);
-        console.log('🔍 String match found:', !!stringMatch);
-        // console.log('🔍 Filename match found:', !!filenameMatch);
-        // console.log('🔍 Recent auto-save found:', !!recentAutoSave);
-        console.log('🔍 Comparison details:', {
-          transcriptionId,
-          transcriptionIdType: typeof transcriptionId,
-          fileName,
-          sampleMeetingId: currentState.savedSummaries[0]?.meetingId,
-          sampleMeetingIdType: typeof currentState.savedSummaries[0]?.meetingId,
-          availableFilenames: currentState.savedSummaries.map(s => s.transcriptFileName)
-        });
-        
-        // ONLY USE EXACT ID MATCHING FOR TESTING
+        // ONLY USE EXACT ID MATCHING FOR CONSISTENCY
         const existingSummary = exactMatch || stringMatch;
-        // const existingSummary = exactMatch || stringMatch || filenameMatch || recentAutoSave;
 
         if (existingSummary) {
-          console.log('Found existing summary:', existingSummary.id, existingSummary.title);
           // Load the existing summary
           await selectSavedSummary(existingSummary.id, user.id);
         } else {
-          console.log('No existing summary found for meetingId:', transcriptionId);
           // No existing summary, clear current state
           clearSummary();
         }
@@ -405,13 +361,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   };
 
   const handleEmailShare = () => {
-    console.log('📧 Summary EMAIL button clicked - opening email dialog with summary context');
-    console.log('🔍 Debug - summary:', summary);
-    console.log('🔍 Debug - summary type:', typeof summary);
-    console.log('🔍 Debug - summary null?:', summary === null);
-    console.log('🔍 Debug - summary undefined?:', summary === undefined);
-    console.log('🔍 Debug - actionItems:', actionItems);
-    
     // Construct transcript data for email functionality
     const transcriptData = fileName && transcriptText ? {
       transcriptionId: transcriptionId,
@@ -421,14 +370,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
     } : null;
     
     // Open email dialog with summary context
-    console.log('🔍 DEBUG: Opening email dialog with summary:', {
-      hasSummary: !!summary,
-      summaryId: summary?.summaryId,
-      overviewLength: summary?.meetingOverview?.length || 0,
-      actionItemsCount: actionItems.length,
-      speakerMappingsCount: effectiveSpeakerMappings.length
-    });
-    
     openEmailDialog({
       summary: summary,
       actionItems: actionItems,
@@ -485,7 +426,43 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
         {/* Loading State */}
         {isGenerating && (
           <Box sx={{ textAlign: "center", py: 4 }}>
-            <CircularProgress size={40} sx={{ mb: 2 }} />
+            <CircularProgress 
+              size={40} 
+              sx={{ 
+                mb: 2,
+                // Force animation even with reduced motion preferences
+                '& .MuiCircularProgress-svg': {
+                  animation: 'mui-progress-circular-rotate 1.4s linear infinite !important',
+                },
+                '& .MuiCircularProgress-circle': {
+                  animation: 'mui-progress-circular-dash 1.4s ease-in-out infinite !important',
+                  strokeDasharray: '80px, 200px',
+                  strokeDashoffset: '0px',
+                },
+                '@keyframes mui-progress-circular-rotate': {
+                  '0%': {
+                    transform: 'rotate(0deg)',
+                  },
+                  '100%': {
+                    transform: 'rotate(360deg)',
+                  },
+                },
+                '@keyframes mui-progress-circular-dash': {
+                  '0%': {
+                    strokeDasharray: '1px, 200px',
+                    strokeDashoffset: '0px',
+                  },
+                  '50%': {
+                    strokeDasharray: '100px, 200px',
+                    strokeDashoffset: '-15px',
+                  },
+                  '100%': {
+                    strokeDasharray: '100px, 200px',
+                    strokeDashoffset: '-125px',
+                  },
+                },
+              }}
+            />
             <Typography variant="body1">
               Generating meeting summary...
             </Typography>

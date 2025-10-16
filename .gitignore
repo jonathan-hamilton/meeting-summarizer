@@ -197,3 +197,6 @@ temp/
 console-logs.txt
 
 sample-audio-files/
+
+# ASP.NET Core wwwroot - built frontend files
+MeetingSummarizer.Api/wwwroot/

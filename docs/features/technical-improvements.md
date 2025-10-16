@@ -6,6 +6,9 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[October 15: Development Environment Infrastructure Enhancement](technical-improvements/2025/10-15-development-environment-infrastructure-enhancement.md)** - Local 2-server development environment automation with PowerShell scripts, appsettings.Local.json configuration management, and middleware pipeline optimization
+- **[October 14: Development Infrastructure & External Service Integration](technical-improvements/2025/10-14-development-infrastructure-external-service-integration.md)** - Complete Docker containerization with external service validation, dependency compatibility fixes, and production logging cleanup
+- **[October 13: System-Wide Debug Console Cleanup & UX Enhancements](technical-improvements/2025/10-13-system-debug-cleanup-ux-enhancements.md)** - Production readiness improvements with debug cleanup, email template fixes, and UI theme enhancements
 - **[October 4: S6.16 PDF Export & Email System Enhancement](technical-improvements/2025/10-04-s6.16-pdf-export-email-enhancement.md)** - Complete PDF export functionality with JSON serialization fixes and email system improvements
 - **[December 21: S6.15 React/MUI Progress System Implementation](technical-improvements/2025/12-21-s6.15-react-mui-progress-system.md)** - Complete progress tracking system with MUI components, realistic time estimation, and Zustand store integration
 - **[September 26: S6.11 FileUpload Enhancement & Performance Optimization](technical-improvements/2025/09-26-s6.11-fileupload-enhancement-performance.md)** - Complete FileUpload system overhaul with upload queue state management and console performance optimization

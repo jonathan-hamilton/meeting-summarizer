@@ -3,6 +3,7 @@ using Microsoft.CognitiveServices.Speech;
 using System.Diagnostics;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Helpers;
+using MeetingSummarizer.Api.Configuration;
 
 namespace MeetingSummarizer.Api.Services.Validation;
 
@@ -14,15 +15,21 @@ public class ConfigurationValidationService : IConfigurationValidationService
 {
     private readonly ILogger<ConfigurationValidationService> _logger;
     private readonly IOptions<AzureSpeechOptions> _speechOptions;
+    private readonly IOptions<StripeOptions> _stripeOptions;
+    private readonly IOptions<SendGridOptions> _sendGridOptions;
     private readonly IWebHostEnvironment _environment;
 
     public ConfigurationValidationService(
         ILogger<ConfigurationValidationService> logger,
         IOptions<AzureSpeechOptions> speechOptions,
+        IOptions<StripeOptions> stripeOptions,
+        IOptions<SendGridOptions> sendGridOptions,
         IWebHostEnvironment environment)
     {
         _logger = logger;
         _speechOptions = speechOptions;
+        _stripeOptions = stripeOptions;
+        _sendGridOptions = sendGridOptions;
         _environment = environment;
     }
 
@@ -40,7 +47,9 @@ public class ConfigurationValidationService : IConfigurationValidationService
         {
             ValidateAzureSpeechServicesAsync(),
             ValidateFileTypeConsistencyAsync(),
-            ValidateAzureDependenciesAsync()
+            ValidateAzureDependenciesAsync(),
+            ValidateStripeServicesAsync(),
+            ValidateSendGridServicesAsync()
         };
 
         var results = await Task.WhenAll(validationTasks);
@@ -273,6 +282,204 @@ public class ConfigurationValidationService : IConfigurationValidationService
                 new List<string> { $"Validation error: {ex.Message}" },
                 null,
                 stopwatch.Elapsed));
+        }
+    }
+
+    /// <summary>
+    /// Validates Stripe payment service configuration (REQ-CFG-3, REQ-CFG-4)
+    /// </summary>
+    public Task<ServiceValidationResult> ValidateStripeServicesAsync()
+    {
+        var stopwatch = Stopwatch.StartNew();
+        const string serviceName = "Stripe Payment Services";
+
+        try
+        {
+            var options = _stripeOptions.Value;
+
+            // Basic configuration validation
+            if (!options.IsValid())
+            {
+                var errors = new List<string>();
+                if (string.IsNullOrWhiteSpace(options.SecretKey))
+                    errors.Add("Stripe secret key is not configured");
+                if (string.IsNullOrWhiteSpace(options.PublishableKey))
+                    errors.Add("Stripe publishable key is not configured");
+                if (string.IsNullOrWhiteSpace(options.WebhookSecret))
+                    errors.Add("Stripe webhook secret is not configured");
+
+                return Task.FromResult(ServiceValidationResult.Failure(serviceName, 
+                    "Stripe payment services configuration is incomplete", errors, null, stopwatch.Elapsed));
+            }
+
+            // Validate key formats
+            var warnings = new List<string>();
+            if (!options.SecretKey.StartsWith("sk_"))
+            {
+                warnings.Add("Stripe secret key does not start with expected 'sk_' prefix");
+            }
+            if (!options.PublishableKey.StartsWith("pk_"))
+            {
+                warnings.Add("Stripe publishable key does not start with expected 'pk_' prefix");
+            }
+
+            var details = new Dictionary<string, object>
+            {
+                ["SecretKeyMasked"] = MaskStripeKey(options.SecretKey),
+                ["PublishableKeyMasked"] = MaskStripeKey(options.PublishableKey),
+                ["WebhookSecretMasked"] = MaskStripeKey(options.WebhookSecret),
+                ["IsTestMode"] = options.IsTestMode,
+                ["Environment"] = options.GetEnvironmentDescription(),
+                ["UseKeyVault"] = options.UseKeyVault
+            };
+
+            stopwatch.Stop();
+
+            _logger.LogInformation("Stripe payment services validation passed - Environment: {Environment}, SecretKey: {SecretKeyMasked}, PublishableKey: {PublishableKeyMasked}",
+                options.GetEnvironmentDescription(), MaskStripeKey(options.SecretKey), MaskStripeKey(options.PublishableKey));
+
+            if (warnings.Any())
+            {
+                return Task.FromResult(ServiceValidationResult.Warning(serviceName,
+                    "Stripe payment services validated with warnings", warnings, details, stopwatch.Elapsed));
+            }
+
+            return Task.FromResult(ServiceValidationResult.Success(serviceName,
+                "Stripe payment services configuration validated successfully", details, stopwatch.Elapsed));
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, "Stripe payment services validation failed");
+
+            return Task.FromResult(ServiceValidationResult.Failure(serviceName,
+                "Stripe payment services validation failed",
+                new List<string> { $"Configuration error: {ex.Message}" },
+                null,
+                stopwatch.Elapsed));
+        }
+    }
+
+    /// <summary>
+    /// Validates SendGrid email service configuration (REQ-CFG-3, REQ-CFG-4)
+    /// </summary>
+    public Task<ServiceValidationResult> ValidateSendGridServicesAsync()
+    {
+        var stopwatch = Stopwatch.StartNew();
+        const string serviceName = "SendGrid Email Services";
+
+        try
+        {
+            var options = _sendGridOptions.Value;
+
+            // Basic configuration validation
+            var errors = new List<string>();
+            var warnings = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(options.ApiKey))
+            {
+                errors.Add("SendGrid API key is not configured");
+            }
+            else if (!options.ApiKey.StartsWith("SG."))
+            {
+                warnings.Add("SendGrid API key does not start with expected 'SG.' prefix");
+            }
+
+            if (string.IsNullOrWhiteSpace(options.FromEmail))
+            {
+                errors.Add("SendGrid from email is not configured");
+            }
+            else if (!IsValidEmail(options.FromEmail))
+            {
+                errors.Add("SendGrid from email is not a valid email address");
+            }
+
+            if (string.IsNullOrWhiteSpace(options.FromName))
+            {
+                errors.Add("SendGrid from name is not configured");
+            }
+
+            if (errors.Any())
+            {
+                return Task.FromResult(ServiceValidationResult.Failure(serviceName, 
+                    "SendGrid email services configuration is incomplete", errors, warnings, stopwatch.Elapsed));
+            }
+
+            var details = new Dictionary<string, object>
+            {
+                ["ApiKeyMasked"] = MaskSendGridKey(options.ApiKey),
+                ["FromEmail"] = options.FromEmail,
+                ["FromName"] = options.FromName
+            };
+
+            stopwatch.Stop();
+
+            _logger.LogInformation("SendGrid email services validation passed - ApiKey: {ApiKeyMasked}, FromEmail: {FromEmail}, FromName: {FromName}",
+                MaskSendGridKey(options.ApiKey), options.FromEmail, options.FromName);
+
+            if (warnings.Any())
+            {
+                return Task.FromResult(ServiceValidationResult.Warning(serviceName,
+                    "SendGrid email services validated with warnings", warnings, details, stopwatch.Elapsed));
+            }
+
+            return Task.FromResult(ServiceValidationResult.Success(serviceName,
+                "SendGrid email services configuration validated successfully", details, stopwatch.Elapsed));
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, "SendGrid email services validation failed");
+
+            return Task.FromResult(ServiceValidationResult.Failure(serviceName,
+                "SendGrid email services validation failed",
+                new List<string> { $"Configuration error: {ex.Message}" },
+                null,
+                stopwatch.Elapsed));
+        }
+    }
+
+    /// <summary>
+    /// Mask Stripe key for logging (show first 8 and last 4 characters)
+    /// </summary>
+    private static string MaskStripeKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return "Not configured";
+        
+        if (key.Length <= 12)
+            return new string('*', key.Length);
+        
+        return $"{key[..8]}***{key[^4..]}";
+    }
+
+    /// <summary>
+    /// Mask SendGrid key for logging (show first 8 characters)
+    /// </summary>
+    private static string MaskSendGridKey(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+            return "Not configured";
+        
+        if (key.Length <= 8)
+            return new string('*', key.Length);
+        
+        return $"{key[..8]}***";
+    }
+
+    /// <summary>
+    /// Validate email address format
+    /// </summary>
+    private static bool IsValidEmail(string email)
+    {
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
         }
     }
 
