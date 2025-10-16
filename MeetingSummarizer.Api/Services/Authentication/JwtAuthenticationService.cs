@@ -27,12 +27,22 @@ public class JwtAuthenticationService : IJwtAuthenticationService
         _configuration = configuration;
         _logger = logger;
         
-        // Get JWT configuration from appsettings
-        _secretKey = _configuration["JWT:SecretKey"] ?? throw new ArgumentException("JWT:SecretKey not configured");
-        _issuer = _configuration["JWT:Issuer"] ?? "MeetingSummary.io";
-        _audience = _configuration["JWT:Audience"] ?? "MeetingSummary.io";
-        _accessTokenExpiryMinutes = _configuration.GetValue<int>("JWT:AccessTokenExpiryMinutes", 30);
-        _refreshTokenExpiryDays = _configuration.GetValue<int>("JWT:RefreshTokenExpiryDays", 7);
+        // Get JWT configuration from Key Vault (--) or appsettings (:)
+        _secretKey = _configuration["JWT--SecretKey"] ?? 
+                    _configuration["JWT:SecretKey"] ?? 
+                    throw new ArgumentException("JWT SecretKey not configured");
+        _issuer = _configuration["JWT--Issuer"] ?? 
+                 _configuration["JWT:Issuer"] ?? 
+                 "MeetingSummary.io";
+        _audience = _configuration["JWT--Audience"] ?? 
+                   _configuration["JWT:Audience"] ?? 
+                   "MeetingSummary.io";
+        _accessTokenExpiryMinutes = _configuration.GetValue<int>("JWT--AccessTokenExpiryMinutes") != 0 ? 
+                                   _configuration.GetValue<int>("JWT--AccessTokenExpiryMinutes") :
+                                   _configuration.GetValue<int>("JWT:AccessTokenExpiryMinutes", 30);
+        _refreshTokenExpiryDays = _configuration.GetValue<int>("JWT--RefreshTokenExpiryDays") != 0 ? 
+                                 _configuration.GetValue<int>("JWT--RefreshTokenExpiryDays") :
+                                 _configuration.GetValue<int>("JWT:RefreshTokenExpiryDays", 7);
         
         // Validate secret key length for security
         if (_secretKey.Length < 32)
