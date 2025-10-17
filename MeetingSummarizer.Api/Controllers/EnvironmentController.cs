@@ -5,11 +5,13 @@ using MeetingSummarizer.Api.Configuration;
 using System.Reflection;
 using System.IO;
 
+#if DEBUG || DEVELOPMENT
 namespace MeetingSummarizer.Api.Controllers;
 
 /// <summary>
 /// Environment and application information controller
 /// Provides environment-specific configuration and system information
+/// WARNING: This controller is only available in DEBUG/DEVELOPMENT builds
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -296,3 +298,4 @@ public class EnvironmentController : ControllerBase
         });
     }
 }
+#endif

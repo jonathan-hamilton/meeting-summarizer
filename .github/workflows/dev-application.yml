@@ -7,12 +7,12 @@ on:
       - 'MeetingSummarizer.Api/**'
       - 'frontend/**'
       - '.github/workflows/dev-application.yml'
-  # pull_request:  # DISABLED: Container not working locally, prevent Azure deployment
-  #   branches: [main]
-  #   paths:
-  #     - 'MeetingSummarizer.Api/**'
-  #     - 'frontend/**'
-  #     - '.github/workflows/dev-application.yml'
+  pull_request:  # ENABLED: Container working, ready for Azure deployment
+    branches: [main]
+    paths:
+      - 'MeetingSummarizer.Api/**'
+      - 'frontend/**'
+      - '.github/workflows/dev-application.yml'
   workflow_dispatch:
     inputs:
       force_deploy:

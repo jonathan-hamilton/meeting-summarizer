@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Models;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -11,6 +13,7 @@ namespace MeetingSummarizer.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/users/{userId}/storage")]
+[Authorize] // Require authentication for all storage operations
 public class UserStorageController : ControllerBase
 {
     private readonly IUserStorageService _userStorageService;
@@ -25,6 +28,30 @@ public class UserStorageController : ControllerBase
     }
 
     /// <summary>
+    /// Validates that the requesting user can only access their own data
+    /// </summary>
+    /// <param name="userId">The user ID from the route</param>
+    /// <returns>True if authorized, false otherwise</returns>
+    private bool ValidateUserAccess(Guid userId)
+    {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var parsedUserId))
+        {
+            _logger.LogWarning("Invalid or missing user ID in JWT token");
+            return false;
+        }
+
+        var isAuthorized = parsedUserId == userId;
+        if (!isAuthorized)
+        {
+            _logger.LogWarning("User {CurrentUserId} attempted to access data for user {RequestedUserId}", 
+                parsedUserId, userId);
+        }
+
+        return isAuthorized;
+    }
+
+    /// <summary>
     /// Upload an audio file for transcription processing
     /// </summary>
     /// <param name="userId">User identifier</param>
@@ -36,6 +63,12 @@ public class UserStorageController : ControllerBase
         [FromRoute] Guid userId,
         IFormFile file)
     {
+        // Validate user access
+        if (!ValidateUserAccess(userId))
+        {
+            return Forbid("Access denied: You can only access your own data");
+        }
+
         if (file == null || file.Length == 0)
         {
             return BadRequest("Audio file is required");

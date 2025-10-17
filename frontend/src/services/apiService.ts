@@ -40,9 +40,42 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
+    // 🔍 SURGICAL DEBUGGING: Environment detection
+    const currentLocation = {
+      hostname: window.location.hostname,
+      port: window.location.port,
+      origin: window.location.origin,
+      href: window.location.href
+    };
+    
+    // Detect environment based on port:
+    // - Port 5173: 2-server mode (Vite dev server) → API on localhost:5029
+    // - Port 8080: Container mode (integrated) → API on same origin
     const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
-    this.baseURL = isLocalDev ? 'http://localhost:5029' : '/api';
+    const isContainer = window.location.hostname === 'localhost' && window.location.port === '8080';
+    
+    console.group('🏗️ API SERVICE INITIALIZATION');
+    console.log('📱 Current Location:', currentLocation);
+    console.log('🔍 Environment Detection:', {
+      isLocalDev,
+      isContainer,
+      hostname: window.location.hostname,
+      port: window.location.port
+    });
+    
+    if (isLocalDev) {
+      this.baseURL = 'http://localhost:5029';
+      console.log('🔧 Mode: 2-SERVER (Vite dev server)');
+    } else if (isContainer) {
+      this.baseURL = 'http://localhost:8080';
+      console.log('🔧 Mode: CONTAINER (integrated)');
+    } else {
+      this.baseURL = ''; // Production or other environments
+      console.log('🔧 Mode: PRODUCTION/OTHER');
+    }
+    
+    console.log('🎯 Selected Base URL:', this.baseURL);
+    console.groupEnd();
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -57,14 +90,40 @@ class ApiService {
   }
 
   private setupInterceptors(): void {
-    // Request interceptor
+    // Request interceptor with surgical debugging
     this.client.interceptors.request.use(
       (config) => {
+        // 🔍 SURGICAL DEBUGGING: Log every outbound request
+        console.group(`🚀 OUTBOUND API REQUEST [${config.method?.toUpperCase()}]`);
+        console.log('📍 Full URL:', `${config.baseURL || this.baseURL}${config.url}`);
+        console.log('🎯 Endpoint:', config.url);
+        console.log('🌐 Base URL:', config.baseURL || this.baseURL);
+        console.log('📱 Current Location:', {
+          hostname: window.location.hostname,
+          port: window.location.port,
+          origin: window.location.origin,
+          href: window.location.href
+        });
+        console.log('⚙️ Environment Detection:', {
+          isLocalDev: window.location.hostname === 'localhost' && window.location.port === '5173',
+          isContainer: window.location.hostname === 'localhost' && window.location.port === '8080',
+          detectedBaseURL: this.baseURL
+        });
+        
         // Add Authorization header if user is authenticated
         const authState = useAuthStore.getState();
         if (authState.isAuthenticated && authState.accessToken) {
           config.headers.Authorization = `Bearer ${authState.accessToken}`;
+          console.log('🔐 Auth Token:', authState.accessToken ? `${authState.accessToken.substring(0, 20)}...` : 'NONE');
+        } else {
+          console.log('🔓 No Auth Token - Request is unauthenticated');
         }
+        
+        console.log('📋 Headers:', config.headers);
+        console.log('📦 Data:', config.data);
+        console.log('🔧 Method:', config.method);
+        console.groupEnd();
+        
         return config;
       },
       (error) => {
@@ -73,12 +132,36 @@ class ApiService {
       }
     );
 
-    // Response interceptor
+    // Response interceptor with detailed debugging
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
+        // 🔍 SURGICAL DEBUGGING: Log successful responses
+        console.group(`✅ API RESPONSE SUCCESS [${response.status}]`);
+        console.log('📍 URL:', response.config.url);
+        console.log('🎯 Full URL:', `${response.config.baseURL || this.baseURL}${response.config.url}`);
+        console.log('📊 Status:', response.status, response.statusText);
+        console.log('📋 Response Headers:', response.headers);
+        console.log('📦 Response Data:', response.data);
+        console.groupEnd();
         return response;
       },
       async (error) => {
+        // 🔍 SURGICAL DEBUGGING: Log failed responses
+        console.group(`❌ API RESPONSE ERROR [${error.response?.status || 'NETWORK'}]`);
+        console.log('📍 URL:', error.config?.url);
+        console.log('🎯 Full URL:', error.config ? `${error.config.baseURL || this.baseURL}${error.config.url}` : 'Unknown');
+        console.log('📊 Status:', error.response?.status, error.response?.statusText);
+        console.log('🔥 Error Type:', error.code || error.name);
+        console.log('💬 Error Message:', error.message);
+        console.log('📋 Response Headers:', error.response?.headers);
+        console.log('📦 Response Data:', error.response?.data);
+        console.log('⚙️ Request Config:', {
+          method: error.config?.method,
+          headers: error.config?.headers,
+          data: error.config?.data
+        });
+        console.groupEnd();
+
         console.error('❌ Response Error:', {
           status: error.response?.status,
           message: error.message,

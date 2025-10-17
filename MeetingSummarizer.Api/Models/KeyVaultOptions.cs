@@ -33,6 +33,11 @@ public class KeyVaultOptions
     public string? TenantId { get; set; }
     
     /// <summary>
+    /// Whether to check environment variables for ClientSecret if not provided in config
+    /// </summary>
+    public bool UseEnvironmentVariable { get; set; } = false;
+    
+    /// <summary>
     /// Validates that required Key Vault configuration is present
     /// </summary>
     public bool IsValid()

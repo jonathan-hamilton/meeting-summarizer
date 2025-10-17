@@ -3,12 +3,13 @@ using Microsoft.Extensions.Logging;
 using MeetingSummarizer.Api.Services.TokenManagement;
 using MeetingSummarizer.Api.Models.Payment;
 
+#if DEBUG || DEVELOPMENT
 namespace MeetingSummarizer.Api.Controllers
 {
     /// <summary>
     /// Test controller for verifying the token refund system (S6.11 Phase 4)
     /// Updated to support Fast Transcription
-    /// This can be removed after testing is complete
+    /// WARNING: This controller is only available in DEBUG/DEVELOPMENT builds
     /// </summary>
     [ApiController]
     [Route("api/[controller]")]
@@ -116,3 +117,4 @@ namespace MeetingSummarizer.Api.Controllers
         public string? Reason { get; set; }
     }
 }
+#endif
