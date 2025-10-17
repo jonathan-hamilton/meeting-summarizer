@@ -3,11 +3,13 @@ using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Models;
 using System.Text;
 
+#if DEBUG || DEVELOPMENT
 namespace MeetingSummarizer.Api.Controllers;
 
 /// <summary>
 /// Test controller for User Storage Service functionality
 /// This controller provides per-user storage isolation and file management
+/// WARNING: This controller is only available in DEBUG/DEVELOPMENT builds
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -272,3 +274,4 @@ public class DeleteFileRequest
 {
     public string BlobUrl { get; set; } = string.Empty;
 }
+#endif

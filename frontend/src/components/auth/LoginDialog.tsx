@@ -97,8 +97,9 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
       onClose();
       
       // Check if user is email verified
-      // We need to wait for the verification status check that was triggered in login
-      setTimeout(() => {
+      // Wait for the verification status check that was triggered in login to complete
+      try {
+        await useAuthStore.getState().checkVerificationStatus();
         const { user } = useAuthStore.getState();
         if (user && !user.emailVerified) {
           // User is logged in but not verified - redirect to verification dialog
@@ -107,7 +108,11 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({
           // User is verified - navigate to /app page
           navigate('/app');
         }
-      }, 100); // Small delay to allow verification status to be checked
+      } catch (error) {
+        console.error('Failed to check verification status during login:', error);
+        // On error, default to app page
+        navigate('/app');
+      }
     }
   };
 

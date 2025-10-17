@@ -11,9 +11,18 @@ import type {
 import { useAuthStore } from './authStore';
 
 // Token API service calls
-// Only use localhost:5029 when in local development (localhost:5173), not in containers (localhost:8080)
+// Environment detection for different deployment modes
 const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
-const API_BASE_URL = isLocalDev ? 'http://localhost:5029' : '';
+const isContainer = window.location.hostname === 'localhost' && window.location.port === '8080';
+
+let API_BASE_URL: string;
+if (isLocalDev) {
+  API_BASE_URL = 'http://localhost:5029';
+} else if (isContainer) {
+  API_BASE_URL = 'http://localhost:8080';
+} else {
+  API_BASE_URL = '';
+}
 
 class TokenAPI {
   static async getBalance(): Promise<{ balance: number }> {
