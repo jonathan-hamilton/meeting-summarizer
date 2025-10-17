@@ -205,7 +205,11 @@ jobs:
         az containerapp update \
           --name "$CONTAINER_APP_NAME" \
           --resource-group "$RESOURCE_GROUP" \
-          --image "${REGISTRY_SERVER}/meeting-summary-api:latest" || {
+          --image "${REGISTRY_SERVER}/meeting-summary-api:latest" \
+          --set-env-vars ASPNETCORE_ENVIRONMENT=Development \
+          --set-env-vars KeyVault__ClientId=5ed62488-7c1f-42bf-b855-d501d84f1f7c \
+          --set-env-vars KeyVault__ClientSecret=${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET }} \
+          --set-env-vars KeyVault__TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b || {
             echo "❌ Standard update failed, trying alternative approach..."
             
             # Alternative: Delete and recreate the revision
