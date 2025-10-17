@@ -152,6 +152,8 @@ jobs:
         dotnet ef database update --verbose
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.DEV_DATABASE_CONNECTION_STRING }}
+        KeyVault__ClientSecret: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET }}
+        ASPNETCORE_ENVIRONMENT: Development
 
   deploy-application:
     name: Deploy Application Container
