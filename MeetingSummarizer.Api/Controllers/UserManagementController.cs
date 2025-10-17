@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.UserManagement;
 using MeetingSummarizer.Api.Services.Storage;
 using MeetingSummarizer.Api.Data.Entities;
+using System.Security.Claims;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -13,6 +15,7 @@ namespace MeetingSummarizer.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize] // Require authentication for all user management operations
 public class UserManagementController : ControllerBase
 {
     private readonly IUserManagementService _userService;
@@ -27,6 +30,30 @@ public class UserManagementController : ControllerBase
         _userService = userService;
         _storageService = storageService;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Validates that the requesting user can only access their own data
+    /// </summary>
+    /// <param name="userId">The user ID to validate</param>
+    /// <returns>True if authorized, false otherwise</returns>
+    private bool ValidateUserAccess(Guid userId)
+    {
+        var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(currentUserId) || !Guid.TryParse(currentUserId, out var parsedUserId))
+        {
+            _logger.LogWarning("Invalid or missing user ID in JWT token");
+            return false;
+        }
+
+        var isAuthorized = parsedUserId == userId;
+        if (!isAuthorized)
+        {
+            _logger.LogWarning("User {CurrentUserId} attempted to access data for user {RequestedUserId}", 
+                parsedUserId, userId);
+        }
+
+        return isAuthorized;
     }
 
     /// <summary>

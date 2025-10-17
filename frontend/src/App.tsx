@@ -706,7 +706,9 @@ const AppContent: React.FC = () => {
           <Box component="footer" sx={{ mt: 4, py: 2, borderTop: 1, borderColor: 'divider' }}>
             {/* First line: Copyright and support contact */}
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 1 }}>
-              © 2025 Vertec Solutions LLC | support@meeting-summary.io
+              {/* Hide company name in Local dev mode (port 5173) */}
+              {window.location.port !== '5173' && '© 2025 Vertec Solutions LLC | '}
+              support@meeting-summary.io
             </Typography>
             
             {/* Second line: Legal document links */}

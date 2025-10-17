@@ -147,10 +147,26 @@ public class AzureConfigurationService : IAzureConfigurationService
         else
         {
             _logger.LogDebug("Using Service Principal for Key Vault authentication");
+            
+            // Get client secret from options or environment variable
+            var clientSecret = _keyVaultOptions.ClientSecret;
+            
+            // Try environment variable if ClientSecret is empty and UseEnvironmentVariable is true
+            if (string.IsNullOrEmpty(clientSecret) && _keyVaultOptions.UseEnvironmentVariable)
+            {
+                clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+                _logger.LogDebug($"Using environment variable for client secret: {(!string.IsNullOrEmpty(clientSecret) ? "Success" : "Failed")}");
+            }
+            
+            if (string.IsNullOrEmpty(clientSecret))
+            {
+                throw new InvalidOperationException("AZURE_CLIENT_SECRET is required for Service Principal authentication but was not found in configuration or environment variables");
+            }
+            
             return new ClientSecretCredential(
                 _keyVaultOptions.TenantId,
                 _keyVaultOptions.ClientId,
-                _keyVaultOptions.ClientSecret);
+                clientSecret);
         }
     }
 }

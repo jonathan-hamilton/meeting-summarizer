@@ -33,10 +33,34 @@ public static class AzureConfigurationExtensions
             }
             else
             {
-                credential = new ClientSecretCredential(
-                    keyVaultOptions.TenantId,
-                    keyVaultOptions.ClientId,
-                    keyVaultOptions.ClientSecret);
+                // Enhanced credential chain for container support
+                var clientSecret = keyVaultOptions.ClientSecret;
+                
+                // Try environment variable if ClientSecret is empty and UseEnvironmentVariable is true
+                if (string.IsNullOrEmpty(clientSecret) && keyVaultOptions.UseEnvironmentVariable)
+                {
+                    clientSecret = Environment.GetEnvironmentVariable("AZURE_CLIENT_SECRET");
+                    Console.WriteLine($"[DEBUG] UseEnvironmentVariable: {keyVaultOptions.UseEnvironmentVariable}");
+                    Console.WriteLine($"[DEBUG] Environment AZURE_CLIENT_SECRET: {(string.IsNullOrEmpty(clientSecret) ? "NULL/EMPTY" : "HAS_VALUE")}");
+                }
+                
+                if (!string.IsNullOrEmpty(clientSecret))
+                {
+                    credential = new ClientSecretCredential(
+                        keyVaultOptions.TenantId,
+                        keyVaultOptions.ClientId,
+                        clientSecret);
+                }
+                else
+                {
+                    // Fallback to DefaultAzureCredential (includes Azure CLI, VS Code, etc.)
+                    credential = new DefaultAzureCredential(new DefaultAzureCredentialOptions
+                    {
+                        ExcludeVisualStudioCredential = false,
+                        ExcludeVisualStudioCodeCredential = false,
+                        ExcludeAzureCliCredential = false
+                    });
+                }
             }
             
             builder.AddAzureKeyVault(new Uri(keyVaultOptions.VaultUri), credential);

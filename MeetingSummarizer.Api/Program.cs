@@ -13,6 +13,7 @@ using MeetingSummarizer.Api.Services.TokenManagement;
 using MeetingSummarizer.Api.Services.Payment;
 using MeetingSummarizer.Api.Services;
 using MeetingSummarizer.Api.Services.Interfaces;
+using MeetingSummarizer.Api.Services.Configuration;
 using MeetingSummarizer.Api.Services.Chat;
 using MeetingSummarizer.Api.Middleware;
 using MeetingSummarizer.Api.Configuration;
@@ -22,6 +23,23 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Detect runtime environment for configuration
+var isContainer = EnvironmentDetector.IsContainerEnvironment();
+var environmentInfo = EnvironmentDetector.GetEnvironmentInfo();
+
+// Configure environment-specific settings
+if (isContainer)
+{
+    builder.Configuration.AddJsonFile("appsettings.Container.json", optional: true, reloadOnChange: true);
+    builder.Environment.EnvironmentName = "Container";
+}
+
+// Log environment detection results
+var tempLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
+tempLogger.LogInformation("🔍 Environment Detection: {EnvironmentInfo}", environmentInfo);
+tempLogger.LogInformation("📦 Container Mode: {IsContainer}, Environment: {Environment}", 
+    isContainer, builder.Environment.EnvironmentName);
 
 // Add Azure Key Vault configuration if enabled (S6.1 Increment 2)
 builder.Configuration.AddAzureKeyVault(builder.Configuration);
@@ -36,6 +54,19 @@ builder.Services.AddControllers()
         // Ensure DateTime serialization is consistent and includes timezone info
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
+
+// Configure routing options
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
+});
+
+// Configure routing to be case-insensitive
+builder.Services.AddRouting(options =>
+{
+    options.LowercaseUrls = true;
+});
 
 // Configure form options for large file uploads
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
@@ -65,7 +96,7 @@ builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOpt
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
 builder.Services.Configure<ChatAssistantOptions>(builder.Configuration.GetSection("ChatAssistant"));
 
-// Configure CORS based on environment
+// Configure CORS based on runtime environment
 var corsOptions = new CorsOptions();
 builder.Configuration.GetSection(CorsOptions.SectionName).Bind(corsOptions);
 
@@ -73,8 +104,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("EnvironmentCorsPolicy", policy =>
     {
+        // Use environment detector for smart CORS configuration
+        var allowedOrigins = EnvironmentDetector.GetCorsOrigins(builder.Environment, builder.Configuration);
+        
         if (corsOptions.AllowedOrigins.Any())
         {
+            // Use configured origins if available
             policy.WithOrigins(corsOptions.AllowedOrigins.ToArray())
                 .WithMethods(corsOptions.AllowedMethods.ToArray())
                 .WithHeaders(corsOptions.AllowedHeaders.ToArray());
@@ -86,44 +121,63 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            // Fallback for development
-            policy.WithOrigins(
-                    "http://localhost:3000",  // Default Vite React dev server
-                    "http://localhost:5173",  // Alternative Vite port
-                    "http://localhost:5174",  // Current Vite port
-                    "http://localhost:3001"   // Alternative React dev server port
-                )
+            // Use environment-detected origins
+            policy.WithOrigins(allowedOrigins)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials();
         }
+        
+        tempLogger.LogInformation("🌐 CORS configured for origins: {Origins}", 
+            corsOptions.AllowedOrigins.Any() ? corsOptions.AllowedOrigins : allowedOrigins);
     });
 });
 
-// Configure Entity Framework for user data persistence (S6.1)
-builder.Services.AddDbContext<MeetingSummarizerDbContext>(options =>
-{
-    // Try Key Vault secret name first, then ConnectionStrings configuration, then fallback
-    var connectionString = builder.Configuration["DatabaseConnectionString-Dev"] ?? 
-                          builder.Configuration["ConnectionStrings--DefaultConnection"] ?? 
-                          builder.Configuration.GetConnectionString("DefaultConnection");
-    
-    if (!string.IsNullOrEmpty(connectionString))
-    {
-        options.UseSqlServer(connectionString, sqlServerOptions =>
-        {
-            sqlServerOptions.EnableRetryOnFailure(
-                maxRetryCount: 3,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorNumbersToAdd: null);
-        });
-    }
-    // If no connection string, EF will be registered but not functional
-    // This maintains backward compatibility for existing functionality
-});
-
-// Add Azure configuration services (S6.1 Increment 2)
+// Add Azure configuration services (S6.1 Increment 2) - MOVED UP for DB connection
 builder.Services.AddAzureConfigurationServices(builder.Configuration);
+
+// Configure Entity Framework for user data persistence (S6.1)
+builder.Services.AddDbContext<MeetingSummarizerDbContext>((serviceProvider, options) =>
+{
+    var configuration = serviceProvider.GetRequiredService<IConfiguration>();
+    var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
+    
+    // Try to get connection string from Key Vault if in container mode
+    string connectionString = null;
+    if (isContainer)
+    {
+        try
+        {
+            var azureConfig = serviceProvider.GetService<IAzureConfigurationService>();
+            if (azureConfig?.IsKeyVaultEnabled() == true)
+            {
+                // Synchronously get the connection string from Key Vault
+                connectionString = azureConfig.GetDatabaseConnectionStringAsync(configuration, "DatabaseConnectionString-Dev")
+                    .GetAwaiter().GetResult();
+                
+                if (!string.IsNullOrEmpty(connectionString))
+                {
+                    logger.LogInformation("🔗 Using Azure SQL connection string from Key Vault");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "⚠️ Could not retrieve database connection string from Key Vault during DbContext configuration");
+        }
+    }
+    
+    // Fallback to configuration or default
+    connectionString ??= configuration.GetConnectionString("DefaultConnection") ?? "Server=temp;Database=temp;";
+    
+    options.UseSqlServer(connectionString, sqlServerOptions =>
+    {
+        sqlServerOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null);
+    });
+});
 
 // Add Azure Blob Storage client (S6.1 Increment 3)
 builder.Services.AddAzureBlobStorage(builder.Configuration);
@@ -290,6 +344,8 @@ using (var scope = app.Services.CreateScope())
     // Validate Azure configuration services (S6.1 Increment 2)
     await scope.ValidateAzureConfigurationAsync(logger);
 
+
+
     // Perform comprehensive startup validation (S4.3)
     var validationService = scope.ServiceProvider.GetService<IConfigurationValidationService>();
     if (validationService != null)
@@ -345,37 +401,60 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+// Environment-aware middleware pipeline configuration
+var isContainerMode = EnvironmentDetector.IsContainerEnvironment();
+tempLogger.LogInformation("🔧 Configuring middleware pipeline for {Mode} mode", 
+    isContainerMode ? "Container" : "Two-Server");
+
 // Only redirect to HTTPS in production to avoid CORS issues in development
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
-// Enable static files for serving React frontend
-app.UseStaticFiles();
-
-// Enable environment-specific CORS policy
-app.UseCors("EnvironmentCorsPolicy");
-
-// Enable serving static files from wwwroot (frontend)
-app.UseStaticFiles();
-app.UseDefaultFiles(); // This will serve index.html by default
-
-// Add Stripe webhook middleware (S6.3 Increment 4)
-app.UseMiddleware<StripeWebhookMiddleware>();
-
-// Add ASP.NET Core Authentication middleware (S6.2 Fix)
-app.UseAuthentication();
-
-// Add JWT authentication middleware (S6.2 Increment 2)
-app.UseJwtAuthentication();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
-// SPA fallback routing - serve index.html for client-side routing
-app.MapFallbackToFile("index.html");
+if (isContainerMode)
+{
+    // Container mode: Enable CORS first before static files
+    app.UseCors("EnvironmentCorsPolicy");
+    
+    // Serve static files for integrated frontend
+    app.UseStaticFiles();
+    app.UseDefaultFiles(); // This will serve index.html by default
+    
+    // Webhook middleware before authentication
+    app.UseMiddleware<StripeWebhookMiddleware>();
+    
+    // Authentication pipeline
+    app.UseAuthentication();
+    app.UseJwtAuthentication();
+    app.UseAuthorization();
+    
+    // API endpoints
+    app.MapControllers();
+    
+    // SPA fallback routing for client-side routing
+    app.MapFallbackToFile("index.html");
+}
+else
+{
+    // Two-server mode: API-only configuration
+    
+    // Enable CORS first for two-server mode (frontend on different port)
+    app.UseCors("EnvironmentCorsPolicy");
+    
+    // Webhook middleware before authentication
+    app.UseMiddleware<StripeWebhookMiddleware>();
+    
+    // Authentication pipeline
+    app.UseAuthentication();
+    app.UseJwtAuthentication();
+    app.UseAuthorization();
+    
+    // API endpoints only
+    app.MapControllers();
+    
+    // No static file serving or SPA fallback in two-server mode
+}
 
 app.Run();
 

@@ -2,45 +2,35 @@
 .git
 .gitignore
 
-# Node.js
+# Node.js - exclude all node_modules
+**/node_modules
+node_modules
 frontend/node_modules
 frontend/.next
 frontend/dist
 frontend/build
 frontend/.vite
 frontend/.cache
+frontend/coverage
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # .NET
 **/bin
 **/obj
 **/.vs
 **/.vscode/settings.json
-
-# IDE and editor files
-.vscode
-.idea
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs and temporary files
-*.log
-*.tmp
-*.temp
+**/packages
+*.user
+*.suo
+*.cache
 
 # Test and coverage files
 frontend/coverage
 **/TestResults
 **/test-results
+**/.nyc_output
 
 # Documentation and media files
 docs/
@@ -55,3 +45,36 @@ sample-video-files/
 azure-infrastructure/
 Dockerfile.temp
 *.zip
+
+# PowerShell and script artifacts
+*.ps1
+start-container-local.ps1
+!start-container.ps1
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+api.log
+app.log
+transcript.log
+transcript.txt
+history.log
+response_*.json
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.prompts/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
