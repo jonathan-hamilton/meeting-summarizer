@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using MeetingSummarizer.Api.Services.DataRetention;
 
 namespace MeetingSummarizer.Api.Controllers;
@@ -10,6 +11,7 @@ namespace MeetingSummarizer.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
+[Authorize] // TODO: Consider [AdminOnly] for production deployment
 public class DataRetentionController : ControllerBase
 {
     private readonly IDataRetentionService _retentionService;
