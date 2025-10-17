@@ -152,7 +152,7 @@ builder.Services.AddDbContext<MeetingSummarizerDbContext>((serviceProvider, opti
             if (azureConfig?.IsKeyVaultEnabled() == true)
             {
                 // Synchronously get the connection string from Key Vault
-                connectionString = azureConfig.GetDatabaseConnectionStringAsync(configuration, "DatabaseConnectionString-Dev")
+                connectionString = azureConfig.GetDatabaseConnectionStringAsync(configuration, "DatabaseConnectionString-Dev-SQL")
                     .GetAwaiter().GetResult();
                 
                 if (!string.IsNullOrEmpty(connectionString))

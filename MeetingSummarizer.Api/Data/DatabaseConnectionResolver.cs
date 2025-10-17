@@ -43,7 +43,7 @@ namespace MeetingSummarizer.Api.Data
                     _logger.LogDebug("Resolving database connection string from Key Vault");
                     _cachedConnectionString = await _azureConfig.GetDatabaseConnectionStringAsync(
                         _configuration, 
-                        "DatabaseConnectionString-Dev");
+                        "DatabaseConnectionString-Dev-SQL");
                     
                     if (!string.IsNullOrEmpty(_cachedConnectionString))
                     {
