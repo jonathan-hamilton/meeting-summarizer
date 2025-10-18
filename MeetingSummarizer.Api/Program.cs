@@ -436,9 +436,8 @@ if (isContainerMode)
     // Webhook middleware before authentication
     app.UseMiddleware<StripeWebhookMiddleware>();
     
-    // Authentication pipeline
+    // Authentication pipeline - ASP.NET Core JWT Bearer only
     app.UseAuthentication();
-    app.UseJwtAuthentication();
     app.UseAuthorization();
     
     // API endpoints
@@ -457,9 +456,8 @@ else
     // Webhook middleware before authentication
     app.UseMiddleware<StripeWebhookMiddleware>();
     
-    // Authentication pipeline
+    // Authentication pipeline - Use ASP.NET Core JWT Bearer only (no custom middleware)
     app.UseAuthentication();
-    app.UseJwtAuthentication();
     app.UseAuthorization();
     
     // API endpoints only

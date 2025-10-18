@@ -1,12 +1,12 @@
 # Start Local Development Script
 Write-Host "🚀 Starting Local Development Environment..." -ForegroundColor Yellow
 
-# Get the script directory
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Get the repository root directory (parent of scripts folder)
+$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
 
 # Start API in background
 Write-Host "Starting API server..." -ForegroundColor Cyan
-$apiPath = Join-Path $scriptDir "MeetingSummarizer.Api"
+$apiPath = Join-Path $repoRoot "MeetingSummarizer.Api"
 $apiCmd = "cd '$apiPath'; dotnet run --launch-profile local | Tee-Object -FilePath '../api.log'"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $apiCmd -WindowStyle Normal
 
@@ -15,7 +15,7 @@ Start-Sleep -Seconds 2
 
 # Start Frontend in new window
 Write-Host "Starting Frontend server..." -ForegroundColor Cyan
-$frontendPath = Join-Path $scriptDir "frontend"
+$frontendPath = Join-Path $repoRoot "frontend"
 $frontendCmd = "cd '$frontendPath'; npm run dev"
 Start-Process powershell -ArgumentList "-NoExit", "-Command", $frontendCmd -WindowStyle Normal
 
