@@ -37,12 +37,8 @@ if (isContainer && string.IsNullOrEmpty(explicitEnvironment))
     builder.Configuration.AddJsonFile("appsettings.Container.json", optional: true, reloadOnChange: true);
     builder.Environment.EnvironmentName = "Container";
 }
-else if (isContainer && !string.IsNullOrEmpty(explicitEnvironment))
-{
-    // In container but ASPNETCORE_ENVIRONMENT is explicitly set - respect it
-    // Add Container config as fallback but don't override environment name
-    builder.Configuration.AddJsonFile("appsettings.Container.json", optional: true, reloadOnChange: true);
-}
+// If ASPNETCORE_ENVIRONMENT is explicitly set, don't add Container config
+// Let the normal appsettings.{Environment}.json loading handle it
 
 // Log environment detection results
 var tempLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
