@@ -3,15 +3,9 @@ param(
     [string]$Email
 )
 
-# Delete User Script - Fixed Version
+# Delete User Script - Comprehensive Version
 Write-Host "🗑️  Delete User Script" -ForegroundColor Yellow
 Write-Host "Email to delete: $Email" -ForegroundColor Cyan
-
-# Database connection details
-$serverName = "meetingsummary-dev-v2-sql.database.windows.net"
-$databaseName = "meetingsummary-dev-v2-db"
-$username = "meetingadmin"
-$password = "ir3oNhe8xMAZxrloLVf5JmLhsTunCTv1"
 
 # Validate email format
 if ($Email -notmatch "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$") {
@@ -19,112 +13,119 @@ if ($Email -notmatch "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$") {
     exit 1
 }
 
-Write-Host "`n🔍 Checking if user exists..." -ForegroundColor Gray
+# Get connection string from Key Vault
+Write-Host "`n� Getting database connection from Key Vault..." -ForegroundColor Gray
+$connectionString = az keyvault secret show --vault-name msio-dev-v2-kv --name DatabaseConnectionString-Dev --query "value" --output tsv
 
-# Get user ID - use a more reliable approach
-$getUserQuery = "SELECT Id FROM Users WHERE Email = '$Email'"
-$userIdOutput = sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $getUserQuery -h -1 -W
-
-# Parse the user ID from output more reliably
-$userId = $null
-foreach ($line in $userIdOutput) {
-    if ($line -match "^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}$") {
-        $userId = $line.Trim()
-        break
-    }
-}
-
-if (-not $userId) {
-    Write-Host "❌ User with email '$Email' not found in database" -ForegroundColor Red
+if (-not $connectionString) {
+    Write-Host "❌ Failed to get database connection string from Key Vault" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "✅ Found user with ID: $userId" -ForegroundColor Green
+# Parse connection string to get individual components
+$serverPattern = "Server=tcp:([^,;]+)"
+$databasePattern = "Initial Catalog=([^;]+)"
+$userPattern = "User Id=([^;]+)"
+$passwordPattern = "Password=([^;]+)"
 
-Write-Host "`n🔍 Checking related records..." -ForegroundColor Gray
+$serverName = [regex]::Match($connectionString, $serverPattern).Groups[1].Value
+$databaseName = [regex]::Match($connectionString, $databasePattern).Groups[1].Value
+$username = [regex]::Match($connectionString, $userPattern).Groups[1].Value
+$password = [regex]::Match($connectionString, $passwordPattern).Groups[1].Value
 
-# Check related records with individual queries for better reliability
-$meetingsQuery = "SELECT COUNT(*) as Count FROM Meetings WHERE UserId = '$userId'"
-$tokensQuery = "SELECT COUNT(*) as Count FROM TokenUsages WHERE UserId = '$userId'"
-$invitationsQuery = "SELECT COUNT(*) as Count FROM InvitationCodes WHERE UsedByUserId = '$userId'"
-
-$meetingsCount = (sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $meetingsQuery -h -1 -W | Where-Object { $_ -match "^\s*\d+\s*$" }).Trim()
-$tokensCount = (sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $tokensQuery -h -1 -W | Where-Object { $_ -match "^\s*\d+\s*$" }).Trim()
-$invitationsCount = (sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $invitationsQuery -h -1 -W | Where-Object { $_ -match "^\s*\d+\s*$" }).Trim()
-
-Write-Host "Related records found:" -ForegroundColor Gray
-Write-Host "  Meetings: $meetingsCount" -ForegroundColor Gray
-Write-Host "  TokenUsages: $tokensCount" -ForegroundColor Gray
-Write-Host "  InvitationCodes: $invitationsCount" -ForegroundColor Gray
-
-# Confirm deletion
-Write-Host "`n⚠️  This will permanently delete:" -ForegroundColor Yellow
-Write-Host "   • User: $Email" -ForegroundColor Yellow
-Write-Host "   • All associated meetings ($meetingsCount)" -ForegroundColor Yellow
-Write-Host "   • All associated token usages ($tokensCount)" -ForegroundColor Yellow
-Write-Host "   • Clear invitation code references ($invitationsCount)" -ForegroundColor Yellow
-
-$confirmation = Read-Host "`nAre you sure you want to continue? (y/N)"
-if ($confirmation -ne "y" -and $confirmation -ne "Y") {
-    Write-Host "❌ Operation cancelled by user" -ForegroundColor Red
-    exit 0
+if (-not $serverName -or -not $databaseName) {
+    Write-Host "❌ Failed to parse connection string" -ForegroundColor Red
+    exit 1
 }
 
-Write-Host "`n🗑️  Deleting user and related records..." -ForegroundColor Red
+Write-Host "✅ Connected to: $serverName\$databaseName" -ForegroundColor Green
 
-try {
-    # Execute deletion using a transaction for data integrity
-    $deleteQuery = @"
-BEGIN TRANSACTION;
-    UPDATE InvitationCodes SET UsedByUserId = NULL WHERE UsedByUserId = '$userId';
-    DELETE FROM Meetings WHERE UserId = '$userId';
-    DELETE FROM TokenUsages WHERE UserId = '$userId';
-    DELETE FROM Users WHERE Id = '$userId';
-    SELECT @@ROWCOUNT as DeletedUserCount;
-COMMIT TRANSACTION;
+# SQL script with proper variable handling
+$deleteScript = @"
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+
+DECLARE @userEmail NVARCHAR(255) = '$Email';
+DECLARE @userId UNIQUEIDENTIFIER;
+
+-- Get user ID
+SELECT @userId = Id FROM dbo.Users WHERE Email = @userEmail;
+
+IF @userId IS NULL
+BEGIN
+    PRINT 'ERROR: User with email $Email not found';
+    RETURN;
+END
+
+PRINT 'Found user ID: ' + CAST(@userId AS NVARCHAR(36));
+
+-- Delete TokenUsages that reference Meetings first
+DECLARE @tokenUsagesDeleted INT;
+DELETE FROM dbo.TokenUsages WHERE MeetingId IN (SELECT Id FROM dbo.Meetings WHERE UserId = @userId);
+SET @tokenUsagesDeleted = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@tokenUsagesDeleted AS NVARCHAR(10)) + ' token usage(s) linked to meetings';
+
+-- Delete from Meetings
+DECLARE @meetingsDeleted INT;
+DELETE FROM dbo.Meetings WHERE UserId = @userId;
+SET @meetingsDeleted = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@meetingsDeleted AS NVARCHAR(10)) + ' meeting(s)';
+
+-- Delete from TokenPurchases
+DECLARE @tokenPurchasesDeleted INT;
+DELETE FROM dbo.TokenPurchases WHERE UserId = @userId;
+SET @tokenPurchasesDeleted = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@tokenPurchasesDeleted AS NVARCHAR(10)) + ' token purchase(s)';
+
+-- Delete from InvitationCodes
+DECLARE @invitationsDeleted INT;
+DELETE FROM dbo.InvitationCodes WHERE UsedByUserId = @userId;
+SET @invitationsDeleted = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@invitationsDeleted AS NVARCHAR(10)) + ' invitation code(s)';
+
+-- Delete remaining TokenUsages
+DECLARE @remainingTokensDeleted INT;
+DELETE FROM dbo.TokenUsages WHERE UserId = @userId;
+SET @remainingTokensDeleted = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@remainingTokensDeleted AS NVARCHAR(10)) + ' remaining token usage(s)';
+
+-- Delete from Users
+DECLARE @usersDeleted INT;
+DELETE FROM dbo.Users WHERE Id = @userId;
+SET @usersDeleted = @@ROWCOUNT;
+PRINT 'Deleted ' + CAST(@usersDeleted AS NVARCHAR(10)) + ' user(s)';
+
+PRINT 'User deletion completed successfully';
 "@
 
-    Write-Host "   Executing deletion transaction..." -ForegroundColor Gray
-    $deleteResult = sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $deleteQuery -l 10
+Write-Host "`n🗑️  Executing user deletion..." -ForegroundColor Red
 
-    # Check if user was actually deleted by looking for the row count
-    $deletedUserCount = 0
-    foreach ($line in $deleteResult) {
-        if ($line -match "^\s*(\d+)\s*$") {
-            $deletedUserCount = [int]$matches[1]
-            break
-        }
-    }
-
-    if ($deletedUserCount -eq 1) {
-        Write-Host "✅ User '$Email' and all related records deleted successfully" -ForegroundColor Green
-        
-        # Final verification - check if user still exists
-        $verifyQuery = "SELECT COUNT(*) as UserCount FROM Users WHERE Email = '$Email'"
-        $verifyResult = sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $verifyQuery -h -1 -W
-        
-        $finalUserCount = 0
-        foreach ($line in $verifyResult) {
-            if ($line -match "^\s*(\d+)\s*$") {
-                $finalUserCount = [int]$matches[1]
-                break
+try {
+    # Execute the deletion script
+    $result = sqlcmd -S $serverName -d $databaseName -U $username -P $password -Q $deleteScript -l 30
+    
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "`n✅ User deletion completed successfully!" -ForegroundColor Green
+        Write-Host "Output from database:" -ForegroundColor Gray
+        foreach ($line in $result) {
+            if ($line -and $line.Trim() -ne "") {
+                Write-Host "   $line" -ForegroundColor Gray
             }
         }
-        
-        if ($finalUserCount -eq 0) {
-            Write-Host "   ✅ Verified: User completely removed from database" -ForegroundColor Green
-        } else {
-            Write-Host "   ⚠️  Warning: User may still exist in database (count: $finalUserCount)" -ForegroundColor Yellow
-            exit 1
-        }
     } else {
-        Write-Host "❌ Failed to delete user (deleted count: $deletedUserCount)" -ForegroundColor Red
+        Write-Host "`n❌ User deletion failed!" -ForegroundColor Red
+        Write-Host "Error output:" -ForegroundColor Red
+        foreach ($line in $result) {
+            if ($line -and $line.Trim() -ne "") {
+                Write-Host "   $line" -ForegroundColor Red
+            }
+        }
         exit 1
     }
-    
 } catch {
-    Write-Host "❌ Exception occurred during deletion: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host "`n❌ Exception occurred during user deletion:" -ForegroundColor Red
+    Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1
 }
 
-Write-Host "`n🎯 Deletion completed successfully" -ForegroundColor Green
+Write-Host "`n� User deletion process completed!" -ForegroundColor Green
