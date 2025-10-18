@@ -34,19 +34,31 @@ try {
 # Step 3/12: Handle client secret
 Write-Host "#3/$totalSteps Handle Service Principal authentication" -ForegroundColor Yellow
 if ([string]::IsNullOrEmpty($ClientSecret)) {
-    Write-Host ""
-    Write-Host "Azure Service Principal Authentication Required" -ForegroundColor Yellow
-    Write-Host "The container needs the Service Principal client secret to access Key Vault" -ForegroundColor Yellow
-    Write-Host ""
-    Write-Host "You can find this in:"
-    Write-Host "1. Azure Portal > App Registrations > meeting-summary-io-app > Certificates and secrets"
-    Write-Host "2. Or ask your Azure administrator"
-    Write-Host ""
-    
-    $ClientSecret = Read-Host "Enter the client secret (or press Enter to skip and use Azure CLI passthrough)"
+    # Check for environment variable first
+    $ClientSecret = $env:AZURE_CLIENT_SECRET_CONTAINER
     
     if ([string]::IsNullOrEmpty($ClientSecret)) {
-        Write-Host "No client secret provided. Container will attempt Azure CLI credential passthrough" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Azure Service Principal Authentication Required" -ForegroundColor Yellow
+        Write-Host "The container needs the Service Principal client secret to access Key Vault" -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "You can either:"
+        Write-Host "1. Set environment variable: `$env:AZURE_CLIENT_SECRET_CONTAINER = 'your-secret'"
+        Write-Host "2. Pass as parameter: .\start-container.ps1 -ClientSecret 'your-secret'"
+        Write-Host "3. Enter it now (will not be saved)"
+        Write-Host ""
+        Write-Host "You can find the secret in:"
+        Write-Host "• Azure Portal > App Registrations > meeting-summary-io-app > Certificates and secrets"
+        Write-Host "• Or ask your Azure administrator"
+        Write-Host ""
+        
+        $ClientSecret = Read-Host "Enter the client secret (or press Enter to skip and use Azure CLI passthrough)"
+        
+        if ([string]::IsNullOrEmpty($ClientSecret)) {
+            Write-Host "No client secret provided. Container will attempt Azure CLI credential passthrough" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "Using client secret from environment variable AZURE_CLIENT_SECRET_CONTAINER" -ForegroundColor Green
     }
 }
 
