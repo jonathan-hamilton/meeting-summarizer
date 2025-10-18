@@ -49,6 +49,13 @@ tempLogger.LogInformation("📦 Container Mode: {IsContainer}, Environment: {Env
 // Add Azure Key Vault configuration if enabled (S6.1 Increment 2)
 builder.Configuration.AddAzureKeyVault(builder.Configuration);
 
+// Add User Secrets for Local environment (Environment 1: Local 2-Server Development)
+if (builder.Environment.EnvironmentName == "Local")
+{
+    builder.Configuration.AddUserSecrets<Program>();
+    tempLogger.LogInformation("🔐 User Secrets loaded for Local environment");
+}
+
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

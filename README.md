@@ -8,17 +8,21 @@ A modern web application for transcribing and summarizing meeting audio with AI-
 
 **Status**: 14/14 stories complete | **Latest Update**: October 16, 2025 - **Security Hardening for Azure Development Deployment** 🔄
 
-### 🚀 **Sprint 7: Production Deployment & Advanced Features - 93% COMPLETE**
+### 🚀 **Sprint 7: Production Deployment & Advanced Features - 96% COMPLETE**
 
-**Status**: 6.5/7 stories complete | **Started**: December 30, 2024 | **Latest Update**: October 17, 2025 - **Container Authentication & Local Development Enhancement** 🔄
+**Status**: 6.7/7 stories complete | **Started**: December 30, 2024 | **Latest Update**: October 18, 2025 - **PowerShell Script Organization & Security Enhancement** 🔄
 
-**Latest Achievement (October 17, 2025):**
-- 🔄 **S7.7 Container Authentication & Local Development Enhancement - IN PROGRESS**: Enhanced Docker container authentication and local development tooling with Service Principal integration 🔄
-  - **Container Authentication Analysis**: Completed comprehensive analysis of Azure Container Apps deployment configuration with verified Development environment setup
+**Latest Achievement (October 18, 2025):**
+- 🔄 **S7.7 Container Authentication & Local Development Enhancement - IN PROGRESS**: Enhanced Docker container authentication and local development tooling with comprehensive PowerShell script organization and security improvements 🔄
+  - **PowerShell Script Organization**: Moved 18+ scripts from root to organized `/scripts` folder with comprehensive documentation and secure authentication patterns
+  - **Security Enhancement**: Removed hardcoded secrets from scripts, implemented Azure CLI credential passthrough, and migrated Local environment to .NET User Secrets
+  - **Environment Validation Remaining**: Local Docker Container (appsettings.Container) and Azure Container Apps (appsettings.Development) testing required for completion
+  - **User Management Automation**: Enhanced `scripts/delete-user.ps1` with comprehensive foreign key handling and created `scripts/update-user-tokens.ps1` for flexible token management
+  - **Configuration Security**: Enhanced Program.cs with User Secrets loading, cleaned appsettings.Local.json of hardcoded credentials
+
+**Previous Achievement (October 17, 2025):**
+- 🔄 **Container Authentication Analysis**: Completed comprehensive analysis of Azure Container Apps deployment configuration with verified Development environment setup
   - **Key Vault Integration Validation**: Confirmed Service Principal authentication (`5ed62488-7c1f-42bf-b855-d501d84f1f7c`) with all 13 required secrets present and proper managed identity permissions
-  - **Local Container Enhancement**: Created `set-container-env.ps1` for persistent environment variable management and enhanced `start-container.ps1` with automatic Key Vault authentication
-  - **User Management Automation**: Enhanced `delete-user.ps1` with comprehensive foreign key handling and created `update-user-tokens.ps1` for flexible token management
-  - **Configuration Alignment**: Perfect synchronization between `appsettings.Development.json` and Key Vault secrets with dual authentication redundancy
   - **Production Validation**: Confirmed Container Apps configuration follows Azure security best practices with managed identity + Service Principal backup
 
 **Previous Achievement (October 16, 2025):**
@@ -33,11 +37,11 @@ A modern web application for transcribing and summarizing meeting audio with AI-
 
 **Previous Achievement (October 15, 2025):**
 - ✅ **Development Environment Infrastructure Enhancement - COMPLETE**: Local 2-server development environment successfully configured with appsettings.Local.json ✅
-  - **Automation Scripts**: Created start-local.ps1 and start-dev.ps1 for automated multi-server development setup with health checks
+  - **Automation Scripts**: Created `scripts/start-local.ps1` and `scripts/start-dev.ps1` for automated multi-server development setup with health checks
   - **Configuration Management**: Proper environment differentiation between Local, Development, and Production configurations with appsettings.Local.json loading
   - **Middleware Pipeline**: Fixed middleware order issues in Program.cs preventing proper local frontend/API communication and static file serving
   - **2-Server Setup**: API (port 5029) and Frontend (port 5173) running independently with automated startup and status validation
-  - **User Management**: Added delete-user-*.ps1 scripts for development environment user management and testing workflows
+  - **User Management**: Added `scripts/delete-user-*.ps1` scripts for development environment user management and testing workflows
   - **Development Workflow**: Streamlined local development experience with automated server startup, health checks, and proper configuration loading
 - ✅ **S7.6 Infrastructure Integration & External Service Validation - COMPLETE**: Complete infrastructure code integration with comprehensive external service validation ✅
   - **Infrastructure Code Merge**: Successfully integrated container-deployment-work branch resolving all merge conflicts across 11 files
@@ -788,6 +792,24 @@ npm run dev
 ```
 
 The frontend will be available at `http://localhost:5173`
+
+### 4. Automated Development Scripts (Optional)
+
+For faster development setup, use the PowerShell automation scripts:
+
+```powershell
+# Start Local 2-Server Development (Environment 1)
+.\scripts\start-local.ps1
+
+# Start Local Docker Container (Environment 2)  
+az login  # Ensure Azure CLI authentication
+.\scripts\start-container.ps1 -Build
+
+# Create test invitation codes
+.\scripts\create-test-invitation.ps1 -Email "user@example.com"
+```
+
+See [`scripts/README.md`](scripts/README.md) for complete script documentation.
 
 ## 🔧 Configuration
 
