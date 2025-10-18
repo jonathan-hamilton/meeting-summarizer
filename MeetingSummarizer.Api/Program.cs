@@ -29,10 +29,19 @@ var isContainer = EnvironmentDetector.IsContainerEnvironment();
 var environmentInfo = EnvironmentDetector.GetEnvironmentInfo();
 
 // Configure environment-specific settings
-if (isContainer)
+// Respect explicit ASPNETCORE_ENVIRONMENT setting, only override if not explicitly set
+var explicitEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+if (isContainer && string.IsNullOrEmpty(explicitEnvironment))
 {
+    // Only use Container environment if ASPNETCORE_ENVIRONMENT is not explicitly set
     builder.Configuration.AddJsonFile("appsettings.Container.json", optional: true, reloadOnChange: true);
     builder.Environment.EnvironmentName = "Container";
+}
+else if (isContainer && !string.IsNullOrEmpty(explicitEnvironment))
+{
+    // In container but ASPNETCORE_ENVIRONMENT is explicitly set - respect it
+    // Add Container config as fallback but don't override environment name
+    builder.Configuration.AddJsonFile("appsettings.Container.json", optional: true, reloadOnChange: true);
 }
 
 // Log environment detection results
