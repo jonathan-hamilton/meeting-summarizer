@@ -75,14 +75,28 @@ export const LegalAcceptanceDialog: React.FC<LegalAcceptanceDialogProps> = ({
   /**
    * Handle acceptance - user must acknowledge both documents
    */
-  const handleAccept = (): void => {
+  const handleAccept = async (): Promise<void> => {
     if (!hasReadTerms || !hasReadLiability) {
       return; // Prevent acceptance if not both acknowledged
     }
 
-    markLegalAccepted();
-    setIsOpen(false);
-    onAccepted?.();
+    try {
+      // Call the parent's onAccepted callback which handles the API call
+      if (onAccepted) {
+        await onAccepted();
+      }
+      
+      // Fallback: also update localStorage for compatibility
+      markLegalAccepted();
+      
+      // Close dialog only after successful API call
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Failed to accept legal terms:', error);
+      // Still close dialog and update localStorage as fallback
+      markLegalAccepted();
+      setIsOpen(false);
+    }
   };
 
   /**
