@@ -20,7 +20,7 @@ console-logs.txt
 x86/
 
 # Local development scripts with secrets (DO NOT COMMIT)
-# start-container-local.ps1 (removed for security)
+scripts/start-container-local.ps1
 build/
 [Bb]in/
 [Oo]bj/
