@@ -6,6 +6,7 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[October 18: JWT Authentication Middleware Fix](technical-improvements/2025/10-18-jwt-authentication-middleware-fix.md)** - Resolved dialog preferences API failures by eliminating conflicting JWT authentication middleware, simplifying to ASP.NET Core JWT Bearer authentication only
 - **[October 16: Security Hardening for Azure Development Deployment](technical-improvements/2025/10-16-security-hardening-azure-deployment.md)** - Comprehensive API security enhancements with controller authorization, test environment protection, user access validation, and CI/CD pipeline security for Azure deployment readiness
 - **[October 15: Development Environment Infrastructure Enhancement](technical-improvements/2025/10-15-development-environment-infrastructure-enhancement.md)** - Local 2-server development environment automation with PowerShell scripts, appsettings.Local.json configuration management, and middleware pipeline optimization
 - **[October 14: Development Infrastructure & External Service Integration](technical-improvements/2025/10-14-development-infrastructure-external-service-integration.md)** - Complete Docker containerization with external service validation, dependency compatibility fixes, and production logging cleanup
