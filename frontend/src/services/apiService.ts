@@ -48,17 +48,20 @@ class ApiService {
       href: window.location.href
     };
     
-    // Detect environment based on port:
+    // Detect environment based on hostname and port:
     // - Port 5173: 2-server mode (Vite dev server) → API on localhost:5029
     // - Port 8080: Container mode (integrated) → API on same origin
+    // - dev.meeting-summary.io: Development environment → API on api.dev.meeting-summary.io
     const isLocalDev = window.location.hostname === 'localhost' && window.location.port === '5173';
     const isContainer = window.location.hostname === 'localhost' && window.location.port === '8080';
+    const isDevEnvironment = window.location.hostname === 'dev.meeting-summary.io';
     
     console.group('🏗️ API SERVICE INITIALIZATION');
     console.log('📱 Current Location:', currentLocation);
     console.log('🔍 Environment Detection:', {
       isLocalDev,
       isContainer,
+      isDevEnvironment,
       hostname: window.location.hostname,
       port: window.location.port
     });
@@ -69,6 +72,9 @@ class ApiService {
     } else if (isContainer) {
       this.baseURL = 'http://localhost:8080';
       console.log('🔧 Mode: CONTAINER (integrated)');
+    } else if (isDevEnvironment) {
+      this.baseURL = 'https://api.dev.meeting-summary.io';
+      console.log('🔧 Mode: DEVELOPMENT (custom domain)');
     } else {
       this.baseURL = ''; // Production or other environments
       console.log('🔧 Mode: PRODUCTION/OTHER');
