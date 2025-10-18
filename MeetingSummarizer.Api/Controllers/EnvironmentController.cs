@@ -5,13 +5,12 @@ using MeetingSummarizer.Api.Configuration;
 using System.Reflection;
 using System.IO;
 
-#if DEBUG || DEVELOPMENT
 namespace MeetingSummarizer.Api.Controllers;
 
 /// <summary>
 /// Environment and application information controller
 /// Provides environment-specific configuration and system information
-/// WARNING: This controller is only available in DEBUG/DEVELOPMENT builds
+/// Available in Development and Container environments
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
@@ -37,12 +36,26 @@ public class EnvironmentController : ControllerBase
         _logger = logger;
     }
 
+    // Check if this controller should be available in the current environment
+    private bool IsControllerEnabled()
+    {
+        // Available in Development environment or when AllowTestFeatures is true
+        return _hostEnvironment.IsDevelopment() || 
+               _environmentOptions.AllowTestFeatures ||
+               _hostEnvironment.EnvironmentName == "Container";
+    }
+
     /// <summary>
     /// Get environment information
     /// </summary>
     [HttpGet("info")]
     public IActionResult GetEnvironmentInfo()
     {
+        if (!IsControllerEnabled())
+        {
+            return NotFound();
+        }
+
         var assembly = Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version?.ToString() ?? "Unknown";
         
@@ -98,6 +111,11 @@ public class EnvironmentController : ControllerBase
     [HttpGet("features")]
     public IActionResult GetFeatureFlags()
     {
+        if (!IsControllerEnabled())
+        {
+            return NotFound();
+        }
+
         return Ok(new
         {
             Environment = _environmentOptions.Name,
@@ -290,6 +308,11 @@ public class EnvironmentController : ControllerBase
     [HttpGet("stripe")]
     public IActionResult GetStripeConfig()
     {
+        if (!IsControllerEnabled())
+        {
+            return NotFound();
+        }
+
         return Ok(new
         {
             PublishableKey = _stripeOptions.PublishableKey,
@@ -298,4 +321,3 @@ public class EnvironmentController : ControllerBase
         });
     }
 }
-#endif
