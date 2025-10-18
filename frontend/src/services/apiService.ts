@@ -73,7 +73,7 @@ class ApiService {
       this.baseURL = 'http://localhost:8080';
       console.log('🔧 Mode: CONTAINER (integrated)');
     } else if (isDevEnvironment) {
-      this.baseURL = 'https://api.dev.meeting-summary.io';
+      this.baseURL = 'https://dev.meeting-summary.io';
       console.log('🔧 Mode: DEVELOPMENT (custom domain)');
     } else {
       this.baseURL = ''; // Production or other environments
