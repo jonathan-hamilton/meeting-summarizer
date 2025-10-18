@@ -1,5 +1,64 @@
 # Technical Debt & Known Issues
 
+## ⚠️ CRITICAL SECURITY TECHNICAL DEBT - PRODUCTION BLOCKER
+
+### Production Security Vulnerabilities Requiring Immediate Remediation 🔴 CRITICAL
+
+**Date Identified**: October 18, 2025  
+**Status**: 🚧 **PLANNED** - S7.8 Production Security Hardening  
+**Priority**: **CRITICAL** - Production deployment blocker  
+**Sprint**: Sprint 7 (S7.8)
+
+**Critical Issues Identified**:
+
+#### 🔴 HIGH RISK - Test Controllers in Production Builds
+- **UserStorageTestController**: Allows arbitrary file uploads for any user ID without authentication
+- **TokenRefundTestController**: Can manipulate token balances and process unauthorized refunds  
+- **Root Cause**: Controllers protected only by `#if DEBUG || DEVELOPMENT` compilation directives
+- **Impact**: Potential data corruption, unauthorized access, financial manipulation
+
+#### 🟡 MEDIUM RISK - Information Disclosure
+- **EnvironmentController**: Exposes configuration details and system information in development
+- **Health Endpoints**: `/health/detailed` reveals sensitive system status without authentication
+- **Impact**: Information gathering for potential attacks, configuration exposure
+
+#### 🟡 MEDIUM RISK - Public Endpoint Security
+- **Webhook Endpoints**: Public Stripe webhook requires signature validation verification
+- **Rate Limiting**: Public endpoints lack protection against abuse
+- **Security Headers**: Missing standard security headers for production deployment
+
+**Remediation Plan (S7.8)**:
+```csharp
+// Phase 1: Remove test controllers from production builds
+#if !PRODUCTION
+namespace MeetingSummarizer.Api.Controllers.Test
+{
+    // Test controllers here
+}
+#endif
+
+// Phase 2: Harden environment controller
+[HttpGet("info")]
+public ActionResult<object> GetEnvironmentInfo()
+{
+    if (_hostEnvironment.IsProduction())
+        return NotFound("Not available in production");
+}
+
+// Phase 3: Add security headers and rate limiting
+services.AddRateLimiter(options => {
+    options.AddPolicy("PublicEndpoints", policy =>
+        policy.FixedWindow(1, TimeSpan.FromMinutes(1)).Limit(60));
+});
+```
+
+**Resolution Timeline**:
+- **Week 1**: Critical vulnerability fixes (test controllers, environment hardening)
+- **Week 2**: Enhanced security measures (rate limiting, headers, monitoring)
+- **Production Readiness**: ❌ **BLOCKED** until completion
+
+---
+
 ## Recently Resolved Technical Debt
 
 ### System-Wide Debug Console Cleanup & Production Readiness ✅ RESOLVED
