@@ -1,0 +1,71 @@
+{
+  "summary": {
+    "summaryId": "test-halloween-meeting-123",
+    "transcriptionId": "transcript-456",
+    "meetingOverview": "The meeting revolved around the participants discussing their plans for the upcoming Halloween. Eva mentioned that she would be going trick or treating with Mikayla and they are yet to decide on their costumes. She expressed interest in possibly going as a vampire or dressing up as characters from old TV shows. Angelle plans to go with Sammy, Maddie, Nicoletta, and Myla. She intends to dress up as a Kakamora but mentioned that she hasn't gotten the costume yet. The third participant intends to get a Spider-Man costume, hoping it would give them real Spider-Man powers, and then use it to web sling through downtown San Francisco.",
+    "actionItemsByRole": [
+      {
+        "speakerId": "Speaker1",
+        "speakerName": "Eva",
+        "speakerRole": "Participant",
+        "actionItems": [
+          {
+            "description": "Decide on costume with Mikayla",
+            "isExplicitAssignment": true,
+            "confidence": 0.95
+          },
+          {
+            "description": "Choose between vampire or TV character costume",
+            "isExplicitAssignment": false,
+            "confidence": 0.87
+          }
+        ]
+      },
+      {
+        "speakerId": "Speaker2", 
+        "speakerName": "Angelle",
+        "speakerRole": "Participant",
+        "actionItems": [
+          {
+            "description": "Get Kakamora costume",
+            "isExplicitAssignment": true,
+            "confidence": 0.92
+          }
+        ]
+      },
+      {
+        "speakerId": "Speaker3",
+        "speakerName": "Speaker 3",
+        "speakerRole": "Participant", 
+        "actionItems": [
+          {
+            "description": "Purchase Spider-Man costume",
+            "isExplicitAssignment": true,
+            "confidence": 0.89
+          },
+          {
+            "description": "Test web-slinging capabilities",
+            "isExplicitAssignment": false,
+            "confidence": 0.65
+          }
+        ]
+      }
+    ],
+    "unassignedActionItems": [
+      {
+        "description": "Plan trick-or-treating route",
+        "confidence": 0.78,
+        "unassignedReason": "No specific speaker mentioned"
+      }
+    ],
+    "metadata": {
+      "participants": ["Eva", "Angelle", "Speaker 3"],
+      "duration": "00:17:24"
+    },
+    "generation": {
+      "generatedAt": "2025-10-19T18:00:00Z",
+      "model": "gpt-4o-mini",
+      "processingTime": 12.5
+    }
+  }
+}

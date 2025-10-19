@@ -450,58 +450,75 @@ public class AzureCommunicationEmailService : IEmailService
     /// </summary>
     public string GenerateSummaryWithTranscriptTemplate(MeetingSummary summary, List<Models.SpeakerMapping>? speakerMappings = null, TranscriptEmailData? transcriptData = null)
     {
-        var sb = new StringBuilder();
+        // DEBUG: Log the summary content details
+        _logger.LogInformation("DEBUG GenerateSummaryWithTranscriptTemplate - MeetingOverview: '{Overview}', Participants count: {ParticipantCount}, ActionItemsByRole count: {ActionItemsCount}, UnassignedActionItems count: {UnassignedCount}", 
+            summary.MeetingOverview ?? "NULL", 
+            summary.Metadata?.Participants?.Count ?? 0,
+            summary.ActionItemsByRole?.Count ?? 0,
+            summary.UnassignedActionItems?.Count ?? 0);
         
-        sb.AppendLine("<!DOCTYPE html>");
-        sb.AppendLine("<html lang=\"en\">");
-        sb.AppendLine("<head>");
-        sb.AppendLine("    <meta charset=\"UTF-8\">");
-        sb.AppendLine("    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
-        sb.AppendLine("    <title>Meeting Summary & Transcript</title>");
-        sb.AppendLine("    <style>");
-        sb.AppendLine("        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #000000; margin: 0; padding: 0; background-color: #f4f4f4; }");
-        sb.AppendLine("        .container { max-width: 800px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.1); }");
-        sb.AppendLine("        .header { background-color: #9b59b6; color: #ffffff; padding: 30px; text-align: center; }");
-        sb.AppendLine("        .header h1 { margin: 0; font-size: 28px; font-weight: 300; }");
-        sb.AppendLine("        .content { padding: 30px; }");
-        sb.AppendLine("        .metadata { background-color: #ecf0f1; padding: 20px; border-radius: 4px; margin-bottom: 25px; color: #000000; }");
-        sb.AppendLine("        .section { margin-bottom: 30px; }");
-        sb.AppendLine("        .section h2 { color: #2c3e50; border-bottom: 2px solid #9b59b6; padding-bottom: 10px; font-size: 22px; margin-bottom: 15px; }");
-        sb.AppendLine("        .section h3 { color: #34495e; font-size: 18px; margin-bottom: 10px; }");
-        sb.AppendLine("        .participants { background-color: #f0f8ff; padding: 20px; border-radius: 4px; margin: 15px 0; color: #000000; }");
-        sb.AppendLine("        .discussion { background-color: #f8f9fa; padding: 20px; border-left: 4px solid #28a745; margin: 15px 0; border-radius: 4px; color: #000000; }");
-        sb.AppendLine("        .action-items { background-color: #fff3cd; padding: 20px; border-left: 4px solid #ffc107; margin: 15px 0; border-radius: 4px; color: #000000; }");
-        sb.AppendLine("        .decisions { background-color: #d1ecf1; padding: 20px; border-left: 4px solid #17a2b8; margin: 15px 0; border-radius: 4px; color: #000000; }");
-        sb.AppendLine("        .transcript { background-color: #f8f9fa; padding: 20px; border-left: 4px solid #6c5ce7; margin: 15px 0; border-radius: 4px; color: #000000; }");
-        sb.AppendLine("        .speaker { font-weight: bold; color: #2c3e50; margin-top: 15px; }");
-        sb.AppendLine("        .footer { background-color: #34495e; color: #ffffff; padding: 20px; text-align: center; font-size: 14px; }");
-        sb.AppendLine("        .disclaimer { background-color: #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; color: #000000; font-size: 14px; }");
-        sb.AppendLine("    </style>");
-        sb.AppendLine("</head>");
-        sb.AppendLine("<body>");
-        
-        sb.AppendLine("    <div class=\"container\">");
-        
-        // Header
-        sb.AppendLine("        <div class=\"header\">");
-        sb.AppendLine("            <h1>📋🎤 Meeting Summary & Transcript</h1>");
-        sb.AppendLine("        </div>");
-        
-        // Content
-        sb.AppendLine("        <div class=\"content\">");
-        
-        // First add summary content (same as GenerateMeetingSummaryTemplate)
-        // Then add transcript content below
-        
-        // [Summary content would be inserted here - abbreviated for brevity]
-        // [Transcript content would be inserted here - abbreviated for brevity]
-        
-        sb.AppendLine("        </div>");
-        sb.AppendLine("    </div>");
-        sb.AppendLine("</body>");
-        sb.AppendLine("</html>");
-        
-        return sb.ToString();
+        if (transcriptData != null)
+        {
+            _logger.LogInformation("DEBUG TranscriptData - SpeakerSegments count: {SegmentCount}",
+                transcriptData.SpeakerSegments?.Count ?? 0);
+        }
+
+        // Use the SendGrid approach - start with the existing summary template and insert transcript
+        var summaryHtml = GenerateMeetingSummaryTemplate(summary, speakerMappings);
+
+        // If no transcript data, return summary only
+        if (transcriptData?.SpeakerSegments == null || transcriptData.SpeakerSegments.Count == 0)
+        {
+            _logger.LogInformation("DEBUG No transcript data - returning summary only");
+            return summaryHtml;
+        }
+
+        // Insert transcript section before the closing footer/disclaimer
+        var footerIndex = summaryHtml.LastIndexOf("<div class=\"footer\">");
+        if (footerIndex == -1)
+        {
+            footerIndex = summaryHtml.LastIndexOf("<div class=\"disclaimer\">");
+        }
+        if (footerIndex == -1)
+        {
+            footerIndex = summaryHtml.LastIndexOf("</div></body>");
+        }
+
+        if (footerIndex != -1)
+        {
+            var sb = new StringBuilder();
+            sb.Append(summaryHtml.Substring(0, footerIndex));
+
+            // Add transcript section
+            sb.AppendLine("            <div class=\"section\">");
+            sb.AppendLine("                <h2>🎤 Full Transcript</h2>");
+            sb.AppendLine("                <div style=\"background-color: #f8f9fa; padding: 20px; border-left: 4px solid #3498db; margin: 15px 0; border-radius: 4px; color: #000000;\">");
+
+            foreach (var segment in transcriptData.SpeakerSegments)
+            {
+                var speakerMapping = speakerMappings?.FirstOrDefault(m => m.SpeakerId == segment.Speaker);
+                var speakerName = speakerMapping?.Name ?? segment.Speaker ?? "Unknown Speaker";
+
+                sb.AppendLine("                    <div style=\"margin-bottom: 15px; padding: 10px; background-color: #fff; border-radius: 4px; border-left: 3px solid #27ae60; color: #000000;\">");
+                sb.AppendLine($"                        <div style=\"font-weight: bold; color: #2c3e50; margin-bottom: 5px;\">{FormatTextForHtml(speakerName)}:</div>");
+                sb.AppendLine($"                        <div style=\"margin-left: 15px; color: #000000;\">{FormatTextForHtml(segment.Text)}</div>");
+                sb.AppendLine("                    </div>");
+            }
+
+            sb.AppendLine("                </div>");
+            sb.AppendLine("            </div>");
+
+            // Add the rest of the original template (footer, disclaimer, etc.)
+            sb.Append(summaryHtml.Substring(footerIndex));
+
+            var result = sb.ToString();
+            _logger.LogInformation("DEBUG Final template length: {Length} characters", result.Length);
+            return result;
+        }
+
+        // Fallback: return summary template only
+        _logger.LogWarning("DEBUG Could not find footer insertion point - returning summary only");
+        return summaryHtml;
     }
 
     /// <summary>
