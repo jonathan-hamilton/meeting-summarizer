@@ -16,20 +16,20 @@ public class ConfigurationValidationService : IConfigurationValidationService
     private readonly ILogger<ConfigurationValidationService> _logger;
     private readonly IOptions<AzureSpeechOptions> _speechOptions;
     private readonly IOptions<StripeOptions> _stripeOptions;
-    private readonly IOptions<SendGridOptions> _sendGridOptions;
+    private readonly IOptions<AzureCommunicationEmailOptions> _emailOptions;
     private readonly IWebHostEnvironment _environment;
 
     public ConfigurationValidationService(
         ILogger<ConfigurationValidationService> logger,
         IOptions<AzureSpeechOptions> speechOptions,
         IOptions<StripeOptions> stripeOptions,
-        IOptions<SendGridOptions> sendGridOptions,
+        IOptions<AzureCommunicationEmailOptions> emailOptions,
         IWebHostEnvironment environment)
     {
         _logger = logger;
         _speechOptions = speechOptions;
         _stripeOptions = stripeOptions;
-        _sendGridOptions = sendGridOptions;
+        _emailOptions = emailOptions;
         _environment = environment;
     }
 
@@ -49,7 +49,7 @@ public class ConfigurationValidationService : IConfigurationValidationService
             ValidateFileTypeConsistencyAsync(),
             ValidateAzureDependenciesAsync(),
             ValidateStripeServicesAsync(),
-            ValidateSendGridServicesAsync()
+            ValidateAzureCommunicationEmailServicesAsync()
         };
 
         var results = await Task.WhenAll(validationTasks);
@@ -361,78 +361,84 @@ public class ConfigurationValidationService : IConfigurationValidationService
     }
 
     /// <summary>
-    /// Validates SendGrid email service configuration (REQ-CFG-3, REQ-CFG-4)
+    /// Validates Azure Communication Services email configuration (REQ-CFG-3, REQ-CFG-4)
     /// </summary>
-    public Task<ServiceValidationResult> ValidateSendGridServicesAsync()
+    public Task<ServiceValidationResult> ValidateAzureCommunicationEmailServicesAsync()
     {
         var stopwatch = Stopwatch.StartNew();
-        const string serviceName = "SendGrid Email Services";
+        const string serviceName = "Azure Communication Email Services";
 
         try
         {
-            var options = _sendGridOptions.Value;
+            var options = _emailOptions.Value;
 
             // Basic configuration validation
             var errors = new List<string>();
             var warnings = new List<string>();
 
-            if (string.IsNullOrWhiteSpace(options.ApiKey))
+            if (string.IsNullOrWhiteSpace(options.ConnectionString))
             {
-                errors.Add("SendGrid API key is not configured");
+                errors.Add("Azure Communication Services connection string is not configured");
             }
-            else if (!options.ApiKey.StartsWith("SG."))
+            else if (!options.ConnectionString.Contains("endpoint=", StringComparison.OrdinalIgnoreCase))
             {
-                warnings.Add("SendGrid API key does not start with expected 'SG.' prefix");
+                warnings.Add("Azure Communication Services connection string does not contain expected 'endpoint=' parameter");
             }
 
             if (string.IsNullOrWhiteSpace(options.FromEmail))
             {
-                errors.Add("SendGrid from email is not configured");
+                errors.Add("Azure Communication Services from email is not configured");
             }
             else if (!IsValidEmail(options.FromEmail))
             {
-                errors.Add("SendGrid from email is not a valid email address");
+                errors.Add("Azure Communication Services from email is not a valid email address");
             }
 
-            if (string.IsNullOrWhiteSpace(options.FromName))
+            if (options.MaxRetryAttempts < 1 || options.MaxRetryAttempts > 5)
             {
-                errors.Add("SendGrid from name is not configured");
+                warnings.Add("Azure Communication Services max retry attempts should be between 1 and 5");
+            }
+
+            if (options.RetryDelaySeconds < 1 || options.RetryDelaySeconds > 60)
+            {
+                warnings.Add("Azure Communication Services retry delay should be between 1 and 60 seconds");
             }
 
             if (errors.Any())
             {
                 return Task.FromResult(ServiceValidationResult.Failure(serviceName, 
-                    "SendGrid email services configuration is incomplete", errors, warnings, stopwatch.Elapsed));
+                    "Azure Communication Services email configuration is incomplete", errors, warnings, stopwatch.Elapsed));
             }
 
             var details = new Dictionary<string, object>
             {
-                ["ApiKeyMasked"] = MaskSendGridKey(options.ApiKey),
+                ["ConnectionStringMasked"] = MaskConnectionString(options.ConnectionString),
                 ["FromEmail"] = options.FromEmail,
-                ["FromName"] = options.FromName
+                ["MaxRetryAttempts"] = options.MaxRetryAttempts,
+                ["RetryDelaySeconds"] = options.RetryDelaySeconds
             };
 
             stopwatch.Stop();
 
-            _logger.LogInformation("SendGrid email services validation passed - ApiKey: {ApiKeyMasked}, FromEmail: {FromEmail}, FromName: {FromName}",
-                MaskSendGridKey(options.ApiKey), options.FromEmail, options.FromName);
+            _logger.LogInformation("Azure Communication Services email validation passed - ConnectionString: {ConnectionStringMasked}, FromEmail: {FromEmail}",
+                MaskConnectionString(options.ConnectionString), options.FromEmail);
 
             if (warnings.Any())
             {
                 return Task.FromResult(ServiceValidationResult.Warning(serviceName,
-                    "SendGrid email services validated with warnings", warnings, details, stopwatch.Elapsed));
+                    "Azure Communication Services email validated with warnings", warnings, details, stopwatch.Elapsed));
             }
 
             return Task.FromResult(ServiceValidationResult.Success(serviceName,
-                "SendGrid email services configuration validated successfully", details, stopwatch.Elapsed));
+                "Azure Communication Services email configuration validated successfully", details, stopwatch.Elapsed));
         }
         catch (Exception ex)
         {
             stopwatch.Stop();
-            _logger.LogError(ex, "SendGrid email services validation failed");
+            _logger.LogError(ex, "Azure Communication Services email validation failed");
 
             return Task.FromResult(ServiceValidationResult.Failure(serviceName,
-                "SendGrid email services validation failed",
+                "Azure Communication Services email validation failed",
                 new List<string> { $"Configuration error: {ex.Message}" },
                 null,
                 stopwatch.Elapsed));
@@ -465,6 +471,31 @@ public class ConfigurationValidationService : IConfigurationValidationService
             return new string('*', key.Length);
         
         return $"{key[..8]}***";
+    }
+
+    /// <summary>
+    /// Mask Azure Communication Services connection string for logging
+    /// </summary>
+    private static string MaskConnectionString(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            return "Not configured";
+        
+        // Extract endpoint for identification
+        var endpointMatch = System.Text.RegularExpressions.Regex.Match(
+            connectionString, @"endpoint=([^;]+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        
+        if (endpointMatch.Success)
+        {
+            var endpoint = endpointMatch.Groups[1].Value;
+            return $"endpoint={endpoint};accesskey=***";
+        }
+        
+        // Fallback masking
+        if (connectionString.Length <= 20)
+            return new string('*', connectionString.Length);
+        
+        return $"{connectionString[..20]}***";
     }
 
     /// <summary>

@@ -3,33 +3,6 @@ using System.ComponentModel.DataAnnotations;
 namespace MeetingSummarizer.Api.Models;
 
 /// <summary>
-/// Configuration options for SendGrid email service
-/// </summary>
-public class SendGridOptions
-{
-    public const string SectionName = "SendGrid";
-    
-    /// <summary>
-    /// SendGrid API Key
-    /// </summary>
-    [Required(ErrorMessage = "SendGrid API Key is required")]
-    public string ApiKey { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Default "From" email address
-    /// </summary>
-    [Required(ErrorMessage = "From email is required")]
-    [EmailAddress(ErrorMessage = "Invalid from email format")]
-    public string FromEmail { get; set; } = string.Empty;
-    
-    /// <summary>
-    /// Default "From" name for emails
-    /// </summary>
-    [Required(ErrorMessage = "From name is required")]
-    public string FromName { get; set; } = string.Empty;
-}
-
-/// <summary>
 /// Request model for sending emails via the email API
 /// </summary>
 public class SendEmailRequest

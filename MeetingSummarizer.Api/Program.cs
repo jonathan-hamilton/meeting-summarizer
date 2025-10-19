@@ -107,6 +107,7 @@ builder.Services.Configure<EnvironmentOptions>(builder.Configuration.GetSection(
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 builder.Services.Configure<StripeOptions>(builder.Configuration.GetSection(StripeOptions.SectionName));
 builder.Services.Configure<ChatAssistantOptions>(builder.Configuration.GetSection("ChatAssistant"));
+builder.Services.Configure<AzureCommunicationEmailOptions>(builder.Configuration.GetSection("AzureCommunicationEmail"));
 
 // Configure CORS based on runtime environment
 var corsOptions = new CorsOptions();
