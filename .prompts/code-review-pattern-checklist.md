@@ -2,7 +2,7 @@
 
 ## 🏗️ **MANDATORY DESIGN PATTERN VALIDATION**
 
-This checklist ensures all code changes comply with established design patterns documented in [`docs/architecture/design-patterns.md`](../docs/architecture/design-patterns.md).
+This checklist ensures all code changes comply with established design patterns documented in [`docs/design/design-patterns.md`](../docs/design/design-patterns.md).
 
 **🚨 ALL ITEMS MUST BE VALIDATED BEFORE MERGE**
 
