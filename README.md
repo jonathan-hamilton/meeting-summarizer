@@ -736,7 +736,7 @@ A modern web application for transcribing and summarizing meeting audio with AI-
 ## 🏗️ Architecture
 
 ### Design Patterns & Standards
-**🚨 MANDATORY COMPLIANCE**: All development follows established design patterns documented in [`docs/architecture/design-patterns.md`](./docs/architecture/design-patterns.md).
+**🚨 MANDATORY COMPLIANCE**: All development follows established design patterns documented in [`docs/design/design-patterns.md`](./docs/design/design-patterns.md).
 
 **Backend Patterns:**
 - **Service Layer Pattern**: All business logic through interfaces with dependency injection

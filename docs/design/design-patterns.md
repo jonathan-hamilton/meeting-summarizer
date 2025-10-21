@@ -367,7 +367,7 @@ This design patterns document is referenced by:
 ## 📖 **References & Further Reading**
 
 **Internal Documentation:**
-- `docs/architecture/zustand-store-directive.md` - State management enforcement
+- `docs/design/zustand-store-directive.md` - State management enforcement
 - `docs/features/architecture.md` - System architecture overview
 - `docs/technical-improvements/architecture-decisions.md` - Historical decisions
 - `.prompts/documentation-ecosystem-overview.md` - Complete documentation workflow
