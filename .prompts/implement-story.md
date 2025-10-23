@@ -170,10 +170,21 @@ CRITICAL:
 
 [STEP 3] Create implementation plan:
 
-1. Break down into logical increments
-2. For each increment:
+1. **🏗️ MANDATORY: Design Pattern Validation**
+   - Review required patterns from [`docs/design/design-patterns.md`](../docs/design/design-patterns.md)
+   - Validate story requirements against established patterns:
+     - **Backend**: Service Layer, Repository (EF), Dependency Injection, Adapter, Composite
+     - **Frontend**: Factory (API services), State Management (Zustand), Provider (React Context), Lazy Loading
+     - **Security**: Attribute-based authorization, Token-based authentication
+     - **Testing**: Universal providers, Factory mocks, Store testing patterns
+   - Document any pattern deviations and justification
+   - **⚠️ CRITICAL**: All application state MUST use Zustand stores (NO `useState` for app data)
+
+2. Break down into logical increments
+3. For each increment:
    - Functionality to be added
    - Acceptance criteria addressed
+   - Design patterns applied
    - How working state is maintained
    [EXAMPLE]
 
@@ -181,13 +192,23 @@ CRITICAL:
    Increment 1: Basic Form Structure
    Adds: Form component with fields
    Criteria Met: "Form displays required fields"
+   Patterns Applied: Zustand store for form state, Factory pattern for API service
    Maintains Working State: No integration yet
    ```
-3. If Front End State management is needed, then use/expand the Centralized State Managment strategy using Zustand
 
-4. **Document Implementation Plan:**
+4. **State Management Strategy:**
+   - ALL application state MUST use Zustand stores (form data, dialog states, user data)
+   - Local `useState` ONLY for ephemeral UI state (hover, focus, animations)
+   - Reference existing stores: accessibilityStore, userProfileStore, tokenStore, etc.
+
+5. **API Service Strategy:**
+   - MUST use Factory pattern: `createApiService()` - NO direct service imports
+   - Follow established `apiServiceFactory.ts` patterns
+
+6. **Document Implementation Plan:**
    - Create implementation plan file in `docs/sprints/implementations/`
    - Use naming convention: `s<X.Y>-implementation-plan.md` (lowercase, matching existing pattern)
+   - **MANDATORY**: Include architectural directives section with pattern compliance validation
    - Include all increments, acceptance criteria mapping, and technical approach
    - This provides tracking for complex stories and future reference
 
@@ -203,12 +224,20 @@ CRITICAL:
    Implementing Increment X: [Name]
    Purpose: [What this adds]
    Acceptance Criteria Addressed: [Which ones]
+   Design Patterns Applied: [Specific patterns being used]
    ```
 
-2. Propose implementation details
-3. Wait for approval
-4. Implement changes
-5. Request user verification
+2. **Pattern Compliance Validation:**
+   - Validate proposed implementation against design patterns
+   - Ensure Zustand store usage for all application state
+   - Verify Factory pattern usage for API services
+   - Confirm Provider pattern for context dependencies
+   - Check Security patterns for sensitive operations
+
+3. Propose implementation details
+4. Wait for approval
+5. Implement changes
+6. Request user verification
 
 [STOP after each increment]
 
@@ -235,8 +264,16 @@ CRITICAL:
 [STEP 6] Final verification:
 
 1. Confirm all acceptance criteria met
-2. Verify all dependencies properly used
-3. Request user to confirm implementation is complete
+2. Verify all dependencies properly used  
+3. **🏗️ MANDATORY: Design Pattern Compliance Validation:**
+   - ✅ Zustand stores used for ALL application state (NO `useState` for app data)
+   - ✅ Factory pattern used for API services (NO direct service imports)
+   - ✅ Provider pattern used for context dependencies
+   - ✅ Service Layer pattern followed (backend business logic in services)
+   - ✅ Security patterns applied for sensitive operations
+   - ✅ Testing patterns implemented for new functionality
+4. Request user to confirm implementation is complete
+5. **Recommend**: Use code review checklist in `.prompts/code-review-pattern-checklist.md` for final validation
 
 [STOP - Wait for final approval]
 
