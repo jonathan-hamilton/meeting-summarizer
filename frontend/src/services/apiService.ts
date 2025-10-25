@@ -17,6 +17,11 @@ import type {
   UpdateSavedSummaryRequest,
   UpdateSavedActionItemRequest
 } from '../types';
+import type { 
+  PaymentIntent, 
+  PaymentResult, 
+  TokenBalance 
+} from '../types/tokens';
 import { sessionManager, type SessionOverrideAction } from './sessionManager';
 import { useAuthStore } from '../stores/authStore';
 
@@ -1020,6 +1025,94 @@ class ApiService {
       return {
         success: false,
         message: errorData.message || errorData.error || axiosError.message || 'Failed to estimate duration',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  // ========================
+  // PAYMENT & TOKEN METHODS
+  // ========================
+
+  /**
+   * Create a payment intent for token purchase
+   */
+  async createPaymentIntent(tokenCount: number, amount: number): Promise<ApiResponse<PaymentIntent>> {
+    try {
+      console.log('🔵 ApiService: Creating payment intent for', { tokenCount, amount });
+      
+      const response = await this.client.post('/api/payments/create-intent', {
+        tokenCount,
+        amount
+      });
+      
+      console.log('🔵 ApiService: Payment intent created successfully', response.data);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('❌ ApiService: Error creating payment intent:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to create payment intent',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Confirm a payment intent
+   */
+  async confirmPaymentIntent(paymentIntentId: string): Promise<ApiResponse<PaymentResult>> {
+    try {
+      console.log('🔵 ApiService: Confirming payment intent', paymentIntentId);
+      
+      const response = await this.client.post(`/api/payments/confirm/${paymentIntentId}`);
+      
+      console.log('🔵 ApiService: Payment confirmed successfully', response.data);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('❌ ApiService: Error confirming payment:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to confirm payment',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+
+  /**
+   * Get current token balance for the authenticated user
+   */
+  async getTokenBalance(): Promise<ApiResponse<TokenBalance>> {
+    try {
+      console.log('🔵 ApiService: Getting token balance');
+      
+      const response = await this.client.get('/api/tokens/balance');
+      
+      console.log('🔵 ApiService: Token balance retrieved', response.data);
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error: unknown) {
+      const axiosError = error as { response?: { data?: any; status?: number }; message?: string };
+      console.error('❌ ApiService: Error getting token balance:', error);
+      const errorData = axiosError.response?.data || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to get token balance',
         errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
         errorData: errorData,
       };

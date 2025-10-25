@@ -69,8 +69,8 @@ Documented in [`.prompts/update-commit.md`](../.prompts/update-commit.md)es clea
 ### **4. Architecture & Implementation Level**
 | File | Purpose | Updates When | Traces From | Traces To |
 |------|---------|--------------|-------------|-----------|
-| [`docs/architecture/design-patterns.md`](./architecture/design-patterns.md) | **MANDATORY** design patterns and architectural standards | Pattern changes, new requirements | All implementation work | Implementation plans, code reviews |
-| [`docs/architecture/zustand-store-directive.md`](./architecture/zustand-store-directive.md) | Zustand state management enforcement | State management changes | Design patterns | Frontend implementation |
+| [`docs/design/design-patterns.md`](./design/design-patterns.md) | **MANDATORY** design patterns and architectural standards | Pattern changes, new requirements | All implementation work | Implementation plans, code reviews |
+| [`docs/design/zustand-store-directive.md`](./design/zustand-store-directive.md) | Zustand state management enforcement | State management changes | Design patterns | Frontend implementation |
 | [`docs/features/architecture.md`](./features/architecture.md) | System architecture overview | Major architectural changes | Design patterns, technical requirements | Implementation decisions |
 | [`docs/implementation/summary-persistence-implementation-plan.md`](./implementation/summary-persistence-implementation-plan.md) | Summary persistence system architecture and execution plan | Summary persistence features | Email functionality enhancement, user history requirements | Database schema, API endpoints, frontend components |
 | [`docs/implementation/S5.3-implementation-plan.md`](./implementation/S5.3-implementation-plan.md) | Performance optimization implementation guide | Performance sprint work | Sprint 5.3 requirements | Code optimizations, bundle analysis |

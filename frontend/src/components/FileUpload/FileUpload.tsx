@@ -426,6 +426,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       processFiles([pendingFile]);
       setPendingFile(null);
+      setCostDialogOpen(false);
+      setPendingTokenCalc(null);
     }
   }, [pendingFile, processFiles, hasPreviousResults, onClearPreviousData, clearUploadQueue]);
 
@@ -609,6 +611,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             setPendingTokenCalc(null);
           }}
           onConfirm={handleCostConfirm}
+          onTokenPurchaseClick={onPurchaseTokens}
           fileName={pendingTokenCalc?.fileEstimation.fileName || getFileEstimation(pendingFile).fileName}
           fileSize={pendingTokenCalc?.fileEstimation.fileSize || getFileEstimation(pendingFile).fileSize}
           estimatedDuration={pendingTokenCalc?.tokenCalc.estimatedDuration || getTokenCalculation(pendingFile).estimatedDuration}

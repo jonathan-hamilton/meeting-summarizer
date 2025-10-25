@@ -37,13 +37,19 @@ public class PaymentController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("🔵 PaymentController: CreatePaymentIntent called");
+            _logger.LogInformation("🔵 Request received: Amount={Amount}, TokenCount={TokenCount}", 
+                request.Amount, request.TokenCount);
+
             // Get user ID from JWT claims
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                _logger.LogWarning("User ID not found in JWT claims");
+                _logger.LogWarning("❌ User ID not found in JWT claims");
                 return Unauthorized("User not authenticated");
             }
+
+            _logger.LogInformation("🔵 User authenticated: {UserId}", userIdClaim);
 
             // Override the user ID from claims for security
             request.UserId = userIdClaim;
