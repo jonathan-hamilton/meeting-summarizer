@@ -17,6 +17,8 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   CheckCircle as CheckIcon,
@@ -134,6 +136,9 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
   open,
   onClose,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [selectedPackage, setSelectedPackage] = useState<TokenPackage | null>(null);
   const [paymentStep, setPaymentStep] = useState<'select' | 'payment' | 'complete' | 'error'>('select');
   const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(null);
@@ -271,7 +276,7 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
         )}
       </DialogTitle>
       
-      <DialogContent>
+      <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Select a token package to purchase. Tokens are used for meeting transcription and AI-powered summaries.
           {stripeConfig && (
@@ -286,15 +291,20 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
 
         <Box sx={{ 
           display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: 2 
+          gridTemplateColumns: { 
+            xs: '1fr',        // Mobile: single column
+            sm: '1fr 1fr',    // Tablet and up: two columns
+          }, 
+          gap: 2,
+          maxHeight: { xs: '60vh', sm: 'none' }, // Limit height on mobile
+          overflowY: { xs: 'auto', sm: 'visible' }, // Enable scrolling on mobile
         }}>
           {TOKEN_PACKAGES.map((pkg) => (
             <Box key={pkg.id}>
               <Card 
                 sx={{ 
                   cursor: 'pointer',
-                  height: '200px', // Fixed height for equal-sized tiles
+                  height: { xs: '180px', sm: '200px' }, // Slightly shorter on mobile
                   display: 'flex',
                   flexDirection: 'column',
                   '&:hover': { 
@@ -525,7 +535,15 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
       onClose={handleClose}
       maxWidth="md"
       fullWidth
+      fullScreen={isMobile} // Full screen on mobile
+      scroll="paper"
       aria-labelledby="token-purchase-dialog"
+      sx={{
+        '& .MuiDialog-paper': {
+          margin: { xs: 0, sm: 2 }, // No margin on mobile
+          maxHeight: { xs: '100vh', sm: '90vh' }, // Full height on mobile
+        }
+      }}
     >
       {paymentStep === 'select' && renderPackageSelection()}
       {paymentStep === 'payment' && renderPaymentForm()}

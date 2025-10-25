@@ -2,7 +2,9 @@ import React from 'react';
 import {
   Paper,
   Typography,
-  Button
+  Button,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import { useDropzone, type FileRejection } from 'react-dropzone';
@@ -18,6 +20,9 @@ const acceptedFileTypes = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.we
 export const FileDropzone: React.FC<FileDropzoneProps> = ({
   onFilesDropped,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles, rejections) => {
       // Call the parent handler
@@ -114,7 +119,12 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       <Button 
         variant="contained" 
         startIcon={<CloudUpload />} 
-        sx={{ mt: 2 }}
+        size={isMobile ? "large" : "medium"}
+        sx={{ 
+          mt: 2,
+          minHeight: isMobile ? 48 : 'auto',
+          px: isMobile ? 3 : 2,
+        }}
       >
         Select File
       </Button>

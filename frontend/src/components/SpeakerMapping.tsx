@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
-import { Box, Button, Typography, Chip, Skeleton } from "@mui/material";
+import { Box, Button, Typography, Chip, Skeleton, useTheme, useMediaQuery } from "@mui/material";
 import {
   Person as PersonIcon,
   Edit as EditIcon,
@@ -48,7 +48,10 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   onMappingsChanged,
   onMappingsSaved,
 }) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { highContrast } = useAccessibilityStore();
   
@@ -113,11 +116,11 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   );
 
   const handleOpenDialog = useCallback(() => {
-    setDialogOpen(true);
+    setIsDialogOpen(true);
   }, []);
 
   const handleCloseDialog = useCallback(() => {
-    setDialogOpen(false);
+    setIsDialogOpen(false);
   }, []);
 
   // Simplified effective data using centralized store (fixed cache issue)
@@ -232,11 +235,15 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
             mapping.role ? ` (${mapping.role})` : ""
           }`}
           variant="filled"
-          size="small"
+          size={isMobile ? "medium" : "small"}
           sx={{
             backgroundColor: getSpeakerColor(mapping.speakerId, highContrast),
             color: getSpeakerTextColor(getSpeakerColor(mapping.speakerId, highContrast)),
             fontWeight: 'bold', // Better text readability
+            minHeight: isMobile ? 44 : 32, // Touch-friendly height on mobile
+            minWidth: isMobile ? 200 : 150, // Uniform width for all chips
+            fontSize: isMobile ? '0.875rem' : '0.75rem',
+            justifyContent: 'center', // Center-align content within the chip
             "& .MuiChip-icon": {
               color: getSpeakerTextColor(getSpeakerColor(mapping.speakerId, highContrast)),
             },
@@ -263,11 +270,15 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           icon={<EditNoteIcon />}
           label={`${speakerId} → ${override.newValue}`}
           variant="filled"
-          size="small"
+          size={isMobile ? "medium" : "small"}
           sx={{
             backgroundColor: getSpeakerColor(speakerId, highContrast),
             color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
             fontWeight: 'bold', // Better text readability
+            minHeight: isMobile ? 44 : 32, // Touch-friendly height on mobile
+            minWidth: isMobile ? 200 : 150, // Uniform width for all chips
+            fontSize: isMobile ? '0.875rem' : '0.75rem',
+            justifyContent: 'center', // Center-align content within the chip
             "& .MuiChip-icon": {
               color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
             },
@@ -303,11 +314,15 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
           icon={<Icon />}
           label={formatSpeakerLabel(speakerId)}
           variant="filled"
-          size="small"
+          size={isMobile ? "medium" : "small"}
           sx={{
             backgroundColor: getSpeakerColor(speakerId, highContrast),
             color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
             fontWeight: 'bold', // Better text readability
+            minHeight: isMobile ? 44 : 32, // Touch-friendly height on mobile
+            minWidth: isMobile ? 200 : 150, // Uniform width for all chips
+            fontSize: isMobile ? '0.875rem' : '0.75rem',
+            justifyContent: 'center', // Center-align content within the chip
             "& .MuiChip-icon": {
               color: getSpeakerTextColor(getSpeakerColor(speakerId, highContrast)),
             },
@@ -327,20 +342,33 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        mb: 2,
+        mb: isMobile ? 3 : 2,
+        flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? 2 : 0,
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <PersonIcon color="primary" />
-        <Typography variant="h6">Speakers</Typography>
+        <Typography 
+          variant={isMobile ? "h5" : "h6"}
+          sx={{ fontWeight: isMobile ? 600 : 500 }}
+        >
+          Speakers
+        </Typography>
       </Box>
 
       <Button
         variant="outlined"
-        size="small"
+        size={isMobile ? "medium" : "small"}
         startIcon={<EditIcon />}
         onClick={handleOpenDialog}
         aria-label="Open speaker management dialog"
+        sx={{
+          minHeight: isMobile ? 44 : 'auto',
+          fontSize: isMobile ? '0.875rem' : '0.75rem',
+          textTransform: 'none',
+          fontWeight: 500,
+        }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -375,15 +403,26 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
     return (
       <Box>
-        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+        <Typography 
+          variant={isMobile ? "subtitle1" : "subtitle2"} 
+          sx={{ 
+            mb: isMobile ? 2 : 1,
+            fontWeight: isMobile ? 600 : 500,
+          }}
+        >
           Unnamed Speakers:
         </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+        <Box sx={{ 
+          display: isMobile ? "flex" : "flex", 
+          flexDirection: isMobile ? "column" : "row",
+          flexWrap: isMobile ? "nowrap" : "wrap", 
+          gap: isMobile ? 1.5 : 1 
+        }}>
           {unmappedSpeakersChips}
         </Box>
       </Box>
     );
-  }, [computedSpeakerData.unmappedSpeakers, unmappedSpeakersChips]);
+  }, [computedSpeakerData.unmappedSpeakers, unmappedSpeakersChips, isMobile]);
 
   // Memoize empty state
   const emptyState = useMemo(() => {
@@ -404,11 +443,11 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
   return (
     <Box
       sx={{
-        p: 2,
+        p: isMobile ? 3 : 2,
         position: "relative",
         border: "1px solid",
         borderColor: "divider",
-        borderRadius: 1,
+        borderRadius: isMobile ? 2 : 1,
       }}
     >
       {headerSection}
@@ -418,7 +457,7 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
 
       <Suspense fallback={<Skeleton variant="rectangular" height={400} />}>
         <SpeakerMappingDialog
-          open={dialogOpen}
+          open={isDialogOpen}
           onClose={handleCloseDialog}
           transcriptionId={transcriptionId}
           detectedSpeakers={effectiveData.speakers}
