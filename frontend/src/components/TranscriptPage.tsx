@@ -6,7 +6,6 @@ import {
   Button,
   CircularProgress,
   Alert,
-  Paper,
 } from '@mui/material';
 import { ArrowBack } from '@mui/icons-material';
 import TranscriptDisplay from './TranscriptDisplay';
@@ -84,6 +83,14 @@ const TranscriptPage: React.FC = () => {
           }
         }
         
+        // Calculate processing time from meeting timestamps
+        let processingTimeMs = 0;
+        if (meeting.createdAt && meeting.completedAt) {
+          const createdDate = new Date(meeting.createdAt);
+          const completedDate = new Date(meeting.completedAt);
+          processingTimeMs = completedDate.getTime() - createdDate.getTime();
+        }
+
         // Convert meeting data to TranscriptionResponse format
         const transcriptionResponse: TranscriptionResponse = {
           transcriptionId: meeting.id,
@@ -92,7 +99,7 @@ const TranscriptPage: React.FC = () => {
           status: meeting.status,
           transcribedText: transcribedText,
           speakerSegments: speakerSegments,
-          processingTimeMs: 0, // Not available from meeting endpoint
+          processingTimeMs: processingTimeMs,
           createdAt: meeting.createdAt,
           completedAt: meeting.completedAt,
           duration: meeting.durationSeconds,
@@ -183,15 +190,6 @@ const TranscriptPage: React.FC = () => {
       >
         Back to History
       </Button>
-      
-      <Paper elevation={1} sx={{ p: 3, mb: 2 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          {transcription.fileName}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Meeting ID: {transcription.transcriptionId}
-        </Typography>
-      </Paper>
 
       <TranscriptDisplay
         transcription={transcription}

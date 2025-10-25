@@ -45,14 +45,6 @@ class ApiService {
   private baseURL: string;
 
   constructor() {
-    // 🔍 SURGICAL DEBUGGING: Environment detection
-    const currentLocation = {
-      hostname: window.location.hostname,
-      port: window.location.port,
-      origin: window.location.origin,
-      href: window.location.href
-    };
-    
     // Detect environment based on hostname and port:
     // - Port 5173: 2-server mode (Vite dev server) → API on localhost:5029
     // - Port 8080: Container mode (integrated) → API on same origin
@@ -61,32 +53,15 @@ class ApiService {
     const isContainer = window.location.hostname === 'localhost' && window.location.port === '8080';
     const isDevEnvironment = window.location.hostname === 'dev.meeting-summary.io';
     
-    console.group('🏗️ API SERVICE INITIALIZATION');
-    console.log('📱 Current Location:', currentLocation);
-    console.log('🔍 Environment Detection:', {
-      isLocalDev,
-      isContainer,
-      isDevEnvironment,
-      hostname: window.location.hostname,
-      port: window.location.port
-    });
-    
     if (isLocalDev) {
       this.baseURL = 'http://localhost:5029';
-      console.log('🔧 Mode: 2-SERVER (Vite dev server)');
     } else if (isContainer) {
       this.baseURL = 'http://localhost:8080';
-      console.log('🔧 Mode: CONTAINER (integrated)');
     } else if (isDevEnvironment) {
       this.baseURL = 'https://dev.meeting-summary.io';
-      console.log('🔧 Mode: DEVELOPMENT (custom domain)');
     } else {
       this.baseURL = ''; // Production or other environments
-      console.log('🔧 Mode: PRODUCTION/OTHER');
     }
-    
-    console.log('🎯 Selected Base URL:', this.baseURL);
-    console.groupEnd();
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -101,39 +76,14 @@ class ApiService {
   }
 
   private setupInterceptors(): void {
-    // Request interceptor with surgical debugging
+    // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        // 🔍 SURGICAL DEBUGGING: Log every outbound request
-        console.group(`🚀 OUTBOUND API REQUEST [${config.method?.toUpperCase()}]`);
-        console.log('📍 Full URL:', `${config.baseURL || this.baseURL}${config.url}`);
-        console.log('🎯 Endpoint:', config.url);
-        console.log('🌐 Base URL:', config.baseURL || this.baseURL);
-        console.log('📱 Current Location:', {
-          hostname: window.location.hostname,
-          port: window.location.port,
-          origin: window.location.origin,
-          href: window.location.href
-        });
-        console.log('⚙️ Environment Detection:', {
-          isLocalDev: window.location.hostname === 'localhost' && window.location.port === '5173',
-          isContainer: window.location.hostname === 'localhost' && window.location.port === '8080',
-          detectedBaseURL: this.baseURL
-        });
-        
         // Add Authorization header if user is authenticated
         const authState = useAuthStore.getState();
         if (authState.isAuthenticated && authState.accessToken) {
           config.headers.Authorization = `Bearer ${authState.accessToken}`;
-          console.log('🔐 Auth Token:', authState.accessToken ? `${authState.accessToken.substring(0, 20)}...` : 'NONE');
-        } else {
-          console.log('🔓 No Auth Token - Request is unauthenticated');
         }
-        
-        console.log('📋 Headers:', config.headers);
-        console.log('📦 Data:', config.data);
-        console.log('🔧 Method:', config.method);
-        console.groupEnd();
         
         return config;
       },
@@ -143,48 +93,16 @@ class ApiService {
       }
     );
 
-    // Response interceptor with detailed debugging
+    // Response interceptor
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
-        // 🔍 SURGICAL DEBUGGING: Log successful responses
-        console.group(`✅ API RESPONSE SUCCESS [${response.status}]`);
-        console.log('📍 URL:', response.config.url);
-        console.log('🎯 Full URL:', `${response.config.baseURL || this.baseURL}${response.config.url}`);
-        console.log('📊 Status:', response.status, response.statusText);
-        console.log('📋 Response Headers:', response.headers);
-        console.log('📦 Response Data:', response.data);
-        console.groupEnd();
         return response;
       },
       async (error) => {
-        // 🔍 SURGICAL DEBUGGING: Log failed responses
-        console.group(`❌ API RESPONSE ERROR [${error.response?.status || 'NETWORK'}]`);
-        console.log('📍 URL:', error.config?.url);
-        console.log('🎯 Full URL:', error.config ? `${error.config.baseURL || this.baseURL}${error.config.url}` : 'Unknown');
-        console.log('📊 Status:', error.response?.status, error.response?.statusText);
-        console.log('🔥 Error Type:', error.code || error.name);
-        console.log('💬 Error Message:', error.message);
-        console.log('📋 Response Headers:', error.response?.headers);
-        console.log('📦 Response Data:', error.response?.data);
-        console.log('⚙️ Request Config:', {
-          method: error.config?.method,
-          headers: error.config?.headers,
-          data: error.config?.data
-        });
-        console.groupEnd();
-
-        console.error('❌ Response Error:', {
-          status: error.response?.status,
-          message: error.message,
-          url: error.config?.url,
-          data: error.response?.data,
-        });
-
         // Handle 401 Unauthorized - token might be expired
         if (error.response?.status === 401) {
           const authState = useAuthStore.getState();
           if (authState.isAuthenticated) {
-            console.warn('🔄 Access token expired, user will need to re-authenticate');
             // Note: Automatic token refresh could be implemented here
             // For now, we'll let the auth store handle re-authentication
             authState.logout();
@@ -298,9 +216,6 @@ class ApiService {
 
   // File upload and transcription endpoints
   async uploadFile(file: File, onProgress?: (progress: number, meetingId?: string) => void): Promise<ApiResponse<TranscriptionResponse>> {
-    console.log(`📁 UPLOAD START: ${file.name} (${file.size} bytes)`);
-    
-    const startTime = Date.now();
     const formData = new FormData();
     formData.append('AudioFile', file);
 
@@ -315,9 +230,6 @@ class ApiService {
       config.onUploadProgress = (progressEvent) => {
         if (progressEvent.total) {
           const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          if (percentCompleted % 25 === 0) { // Only log every 25%
-            console.log(`📊 UPLOAD ${file.name}: ${percentCompleted}%`);
-          }
           onProgress(percentCompleted);
         }
       };
@@ -331,9 +243,6 @@ class ApiService {
         ...config,
       });
       
-      const duration = Date.now() - startTime;
-      console.log(`✅ UPLOAD SUCCESS: ${file.name} (${duration}ms)`);
-      
       // Extract meeting ID from response headers if available
       const meetingId = result.headers?.['x-meeting-id'] || result.headers?.['X-Meeting-Id'];
       if (meetingId) {
@@ -345,8 +254,6 @@ class ApiService {
       
       return result;
     } catch (error) {
-      const duration = Date.now() - startTime;
-      console.error(`❌ UPLOAD FAILED: ${file.name} (${duration}ms)`, error);
       throw error;
     }
   }
@@ -392,12 +299,6 @@ class ApiService {
 
   // Speaker Mapping endpoints (S2.2)
   async saveSpeakerMappings(request: SpeakerMappingRequest): Promise<ApiResponse<SpeakerMappingResponse>> {
-    console.log('=== SAVING SPEAKER MAPPINGS DEBUG ===');
-    console.log('Request:', request);
-    console.log('TranscriptionId being sent:', request.transcriptionId);
-    console.log('Number of mappings:', request.mappings?.length || 0);
-    console.log('Email fields in mappings:', request.mappings?.map(m => ({ speakerId: m.speakerId, email: m.email })));
-    
     return this.request<SpeakerMappingResponse>({
       method: 'POST',
       url: '/api/SpeakerMapping/map',
@@ -406,16 +307,10 @@ class ApiService {
   }
 
   async getSpeakerMappings(transcriptionId: string): Promise<ApiResponse<SpeakerMappingResponse>> {
-    console.log('=== LOADING SPEAKER MAPPINGS DEBUG ===');
-    console.log('Loading mappings for transcriptionId:', transcriptionId);
-    
     const response = await this.request<SpeakerMappingResponse>({
       method: 'GET',
       url: `/api/SpeakerMapping/${transcriptionId}`,
     });
-    
-    console.log('API Response:', response);
-    console.log('Email fields in loaded mappings:', response.data?.mappings?.map(m => ({ speakerId: m.speakerId, email: m.email })));
     
     return response;
   }
@@ -622,14 +517,12 @@ class ApiService {
    */
   async downloadMeetingTranscript(meetingId: string): Promise<void> {
     try {
-      console.log(`Starting download for meeting ID: ${meetingId}`);
       const response = await this.client.get(`/api/meetings/${meetingId}/export`, {
         responseType: 'blob',
         headers: {
           'Accept': 'text/plain'
         }
       });
-      console.log('Download response received:', response.status, response.statusText);
 
       // Extract filename from Content-Disposition header or use default
       let filename = `meeting-${meetingId}-transcript.txt`;
@@ -656,14 +549,6 @@ class ApiService {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error('Failed to download meeting transcript:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
-      
       // Provide more specific error message
       if (error.response?.status === 404) {
         throw new Error('Meeting not found or you do not have access to it.');
@@ -684,14 +569,12 @@ class ApiService {
    */
   async downloadTranscriptPdf(transcriptionId: string): Promise<void> {
     try {
-      console.log(`Starting PDF download for transcription ID: ${transcriptionId}`);
       const response = await this.client.get(`/api/export/transcript/${transcriptionId}/pdf`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/pdf'
         }
       });
-      console.log('PDF download response received:', response.status, response.statusText);
 
       // Extract filename from Content-Disposition header or use default
       let filename = `meeting-transcript-${new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '-')}.pdf`;
@@ -717,8 +600,6 @@ class ApiService {
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
-      console.log(`PDF download completed: ${filename}`);
     } catch (error: any) {
       console.error('Failed to download transcript PDF:', error);
       console.error('Error details:', {
@@ -750,14 +631,12 @@ class ApiService {
    */
   async downloadSummaryPdf(summaryId: string): Promise<void> {
     try {
-      console.log(`Starting summary PDF download for summary ID: ${summaryId}`);
       const response = await this.client.get(`/api/export/summary/${summaryId}/pdf`, {
         responseType: 'blob',
         headers: {
           'Accept': 'application/pdf'
         }
       });
-      console.log('Summary PDF download response received:', response.status, response.statusText);
 
       // Extract filename from Content-Disposition header or use default
       let filename = `meeting-summary-${new Date().toISOString().slice(0, 16).replace('T', '-').replace(':', '-')}.pdf`;
@@ -783,8 +662,6 @@ class ApiService {
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
-      console.log(`Summary PDF download completed: ${filename}`);
     } catch (error: any) {
       console.error('Failed to download summary PDF:', error);
       console.error('Error details:', {
@@ -1040,14 +917,11 @@ class ApiService {
    */
   async createPaymentIntent(tokenCount: number, amount: number): Promise<ApiResponse<PaymentIntent>> {
     try {
-      console.log('🔵 ApiService: Creating payment intent for', { tokenCount, amount });
-      
       const response = await this.client.post('/api/payments/create-intent', {
         tokenCount,
         amount
       });
       
-      console.log('🔵 ApiService: Payment intent created successfully', response.data);
       return {
         success: true,
         data: response.data
@@ -1070,11 +944,8 @@ class ApiService {
    */
   async confirmPaymentIntent(paymentIntentId: string): Promise<ApiResponse<PaymentResult>> {
     try {
-      console.log('🔵 ApiService: Confirming payment intent', paymentIntentId);
-      
       const response = await this.client.post(`/api/payments/confirm/${paymentIntentId}`);
       
-      console.log('🔵 ApiService: Payment confirmed successfully', response.data);
       return {
         success: true,
         data: response.data
@@ -1097,11 +968,8 @@ class ApiService {
    */
   async getTokenBalance(): Promise<ApiResponse<TokenBalance>> {
     try {
-      console.log('🔵 ApiService: Getting token balance');
-      
       const response = await this.client.get('/api/tokens/balance');
       
-      console.log('🔵 ApiService: Token balance retrieved', response.data);
       return {
         success: true,
         data: response.data

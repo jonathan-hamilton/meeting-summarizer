@@ -9,6 +9,8 @@ import {
   AccordionSummary,
   AccordionDetails,
   Stack,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add,
@@ -54,16 +56,76 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
   onUpdateActionItem,
   onSnackbar,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   // Accordion expansion state - track which speaker accordions are expanded
   const [expandedAccordions, setExpandedAccordions] = useState<Set<string>>(new Set());
 
-  // Drag and drop sensors
+  // Drag and drop sensors - optimized for touch
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      // Improve touch handling
+      activationConstraint: {
+        distance: 8, // Require 8px movement before drag starts (prevents accidental drags)
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Handle moving items up/down (mobile alternative to drag-and-drop)
+  // This reassigns action items to different users (speakers)
+  const handleMoveUp = (itemId: string) => {
+    const item = actionItems.find(item => item.id === itemId);
+    if (!item) return;
+
+    // Find current user's group index
+    const currentGroupIndex = groupedActionItems.findIndex(group => 
+      group.items.some(groupItem => groupItem.id === itemId)
+    );
+    
+    if (currentGroupIndex > 0) {
+      // Move to previous user (up)
+      const targetGroup = groupedActionItems[currentGroupIndex - 1];
+      const newAssignedTo = targetGroup.speakerId === 'Unassigned' ? undefined : targetGroup.speakerId;
+      
+      onUpdateActionItem(itemId, { assignedTo: newAssignedTo });
+      
+      // Auto-expand the target accordion to show the newly assigned item
+      if (newAssignedTo) {
+        setExpandedAccordions(prev => new Set(prev).add(newAssignedTo));
+      }
+      
+      onSnackbar(`Action item reassigned to ${targetGroup.speakerName}`, 'success');
+    }
+  };
+
+  const handleMoveDown = (itemId: string) => {
+    const item = actionItems.find(item => item.id === itemId);
+    if (!item) return;
+
+    // Find current user's group index
+    const currentGroupIndex = groupedActionItems.findIndex(group => 
+      group.items.some(groupItem => groupItem.id === itemId)
+    );
+    
+    if (currentGroupIndex < groupedActionItems.length - 1) {
+      // Move to next user (down)
+      const targetGroup = groupedActionItems[currentGroupIndex + 1];
+      const newAssignedTo = targetGroup.speakerId === 'Unassigned' ? undefined : targetGroup.speakerId;
+      
+      onUpdateActionItem(itemId, { assignedTo: newAssignedTo });
+      
+      // Auto-expand the target accordion to show the newly assigned item
+      if (newAssignedTo) {
+        setExpandedAccordions(prev => new Set(prev).add(newAssignedTo));
+      }
+      
+      onSnackbar(`Action item reassigned to ${targetGroup.speakerName}`, 'success');
+    }
+  };
 
   // Handle accordion expansion/collapse
   const handleAccordionChange = (speakerId: string) => (_event: React.SyntheticEvent, isExpanded: boolean) => {
@@ -118,14 +180,28 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
   const groupedActionItems = useMemo(() => {
     const groups: { [speakerId: string]: { speakerName: string; items: ActionItem[] } } = {};
     
-    // First, populate the groups with action items
+    // First, initialize all speakers from mappings (to maintain stable order)
+    speakerMappings.forEach(mapping => {
+      groups[mapping.speakerId] = {
+        speakerName: mapping.name,
+        items: []
+      };
+    });
+    
+    // Also initialize Unassigned group
+    groups['Unassigned'] = {
+      speakerName: 'Unassigned',
+      items: []
+    };
+    
+    // Then, populate the groups with action items
     actionItems.forEach(item => {
       const speakerId = item.assignedTo || 'Unassigned';
       
+      // If speaker doesn't exist in groups (shouldn't happen with proper mappings), create it
       if (!groups[speakerId]) {
-        // Find speaker name from mappings
         const speakerMapping = speakerMappings.find(m => m.speakerId === speakerId);
-        const speakerName = speakerMapping?.name || (speakerId === 'Unassigned' ? 'Unassigned' : speakerId);
+        const speakerName = speakerMapping?.name || speakerId;
         
         groups[speakerId] = {
           speakerName,
@@ -139,15 +215,13 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
     // Create ordered list based on speaker mappings order, then add Unassigned at the end
     const orderedGroups: Array<{ speakerId: string; speakerName: string; items: ActionItem[] }> = [];
     
-    // Add speakers in the order they appear in speaker mappings (maintains original order)
+    // Add speakers in the order they appear in speaker mappings (always include all speakers)
     speakerMappings.forEach(mapping => {
-      if (groups[mapping.speakerId]) {
-        orderedGroups.push({
-          speakerId: mapping.speakerId,
-          speakerName: groups[mapping.speakerId].speakerName,
-          items: groups[mapping.speakerId].items
-        });
-      }
+      orderedGroups.push({
+        speakerId: mapping.speakerId,
+        speakerName: groups[mapping.speakerId].speakerName,
+        items: groups[mapping.speakerId].items
+      });
     });
     
     // Add any other assigned speakers that aren't in mappings (shouldn't happen, but safe fallback)
@@ -161,14 +235,12 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
       }
     });
     
-    // Always add Unassigned at the end if it has items
-    if (groups['Unassigned']) {
-      orderedGroups.push({
-        speakerId: 'Unassigned',
-        speakerName: 'Unassigned',
-        items: groups['Unassigned'].items
-      });
-    }
+    // Always add Unassigned at the end
+    orderedGroups.push({
+      speakerId: 'Unassigned',
+      speakerName: 'Unassigned',
+      items: groups['Unassigned'].items
+    });
     
     return orderedGroups;
   }, [actionItems, speakerMappings]);
@@ -185,7 +257,10 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
             variant="outlined"
             startIcon={<Add />}
             onClick={onCreateActionItem}
-            size="small"
+            size={isMobile ? "medium" : "small"}
+            sx={{
+              minHeight: isMobile ? 44 : 'auto',
+            }}
           >
             Add Item
           </Button>
@@ -218,7 +293,10 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
           variant="outlined"
           startIcon={<Add />}
           onClick={onCreateActionItem}
-          size="small"
+          size={isMobile ? "medium" : "small"}
+          sx={{
+            minHeight: isMobile ? 44 : 'auto',
+          }}
         >
           Add Item
         </Button>
@@ -255,14 +333,29 @@ const ActionItemsSection: React.FC<ActionItemsSectionProps> = ({
               </AccordionSummary>
               <AccordionDetails>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  {group.items.map((item) => (
-                    <SortableActionItem
-                      key={item.id}
-                      item={item}
-                      onEdit={onEditActionItem}
-                      onDelete={onDeleteActionItem}
-                    />
-                  ))}
+                  {group.items.length > 0 ? (
+                    group.items.map((item) => {
+                      // Find the current group index for reassignment logic
+                      const currentGroupIndex = groupedActionItems.findIndex(g => g.speakerId === group.speakerId);
+                      
+                      return (
+                        <SortableActionItem
+                          key={item.id}
+                          item={item}
+                          onEdit={onEditActionItem}
+                          onDelete={onDeleteActionItem}
+                          onMoveUp={handleMoveUp}
+                          onMoveDown={handleMoveDown}
+                          canMoveUp={currentGroupIndex > 0}
+                          canMoveDown={currentGroupIndex < groupedActionItems.length - 1}
+                        />
+                      );
+                    })
+                  ) : (
+                    <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                      No action items assigned to {group.speakerName}
+                    </Typography>
+                  )}
                 </Box>
               </AccordionDetails>
             </Accordion>

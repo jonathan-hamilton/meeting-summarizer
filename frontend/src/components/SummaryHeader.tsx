@@ -8,6 +8,8 @@ import {
   IconButton,
   Tooltip,
   Chip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -34,23 +36,112 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   onShareClick,
   onPdfDownload,
 }) => {
+  // Mobile detection
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
     <Paper sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
-      <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
+      {/* Header with title only */}
+      <Stack 
+        direction="row" 
+        alignItems="center" 
+        spacing={2} 
+        sx={{ mb: 2 }}
+      >
         <CheckCircle color="success" />
-        <Typography variant="h6">Summary Generated</Typography>
-        <Box sx={{ flexGrow: 1 }} />
+        <Typography 
+          variant={isMobile ? "h6" : "h6"}
+          sx={{
+            fontWeight: isMobile ? 600 : 500,
+            textAlign: isMobile ? 'center' : 'left',
+          }}
+        >
+          Summary Generated
+        </Typography>
+      </Stack>
+
+      {/* Metadata Chips */}
+      <Stack 
+        direction={isMobile ? "column" : "row"} 
+        spacing={isMobile ? 1 : 1} 
+        alignItems={isMobile ? "center" : "flex-start"}
+        flexWrap="wrap"
+        sx={{ mb: 2 }}
+      >
+        <Chip
+          icon={<Schedule />}
+          label={`${(summary.generation.processingTimeMs / 1000).toFixed(1)}s`}
+          variant="outlined"
+          size={isMobile ? "medium" : "small"}
+          sx={{
+            height: isMobile ? 40 : 'auto',
+            minWidth: isMobile ? 150 : 'auto',
+            '& .MuiChip-label': {
+              px: isMobile ? 2 : 1,
+              fontSize: isMobile ? '0.875rem' : '0.75rem',
+            },
+          }}
+        />
+        <Chip
+          icon={<Assignment />}
+          label={`${totalActionItems} action items`}
+          variant="outlined"
+          size={isMobile ? "medium" : "small"}
+          sx={{
+            height: isMobile ? 40 : 'auto',
+            minWidth: isMobile ? 150 : 'auto',
+            '& .MuiChip-label': {
+              px: isMobile ? 2 : 1,
+              fontSize: isMobile ? '0.875rem' : '0.75rem',
+            },
+          }}
+        />
+        <Chip
+          icon={<Person />}
+          label={`${speakerCount} speakers`}
+          variant="outlined"
+          size={isMobile ? "medium" : "small"}
+          sx={{
+            height: isMobile ? 40 : 'auto',
+            minWidth: isMobile ? 150 : 'auto',
+            '& .MuiChip-label': {
+              px: isMobile ? 2 : 1,
+              fontSize: isMobile ? '0.875rem' : '0.75rem',
+            },
+          }}
+        />
+      </Stack>
         
-        {/* Action Buttons - PDF first, then Email */}
+      {/* Action buttons - now below the chips */}
+      <Box sx={{ 
+        display: 'flex', 
+        gap: isMobile ? 2 : 1,
+        flexDirection: isMobile ? 'row' : 'row',
+        justifyContent: isMobile ? 'center' : 'flex-start',
+        alignItems: 'center',
+        width: isMobile ? '100%' : 'auto',
+        mb: 1,
+      }}>
         <Tooltip title="Download summary as PDF">
           <span>
             <IconButton
+              size={isMobile ? "medium" : "small"}
               onClick={onPdfDownload}
-              size="small"
               aria-label="Download summary as PDF"
               aria-describedby="pdf-download-tooltip"
+              sx={{
+                minHeight: isMobile ? 44 : 'auto',
+                minWidth: isMobile ? 44 : 'auto',
+                border: isMobile ? '1px solid' : 'none',
+                borderColor: isMobile ? 'divider' : 'transparent',
+                '&:hover': isMobile ? {
+                  borderColor: 'primary.main',
+                  bgcolor: 'primary.50',
+                } : {},
+              }}
             >
-              <PictureAsPdf fontSize="small" />
+              <PictureAsPdf fontSize={isMobile ? "medium" : "small"} />
             </IconButton>
           </span>
         </Tooltip>
@@ -59,43 +150,22 @@ const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           <span>
             <Button
               variant="contained"
-              size="small"
+              size={isMobile ? "medium" : "small"}
               startIcon={<Email />}
-              onClick={() => {
-                onShareClick();
+              onClick={onShareClick}
+              sx={{ 
+                minHeight: isMobile ? 44 : 'auto',
+                fontSize: isMobile ? '0.875rem' : '0.75rem',
+                textTransform: 'none',
+                fontWeight: 500,
               }}
-              sx={{ ml: 1 }}
               aria-label="Share summary via email"
-              aria-describedby="share-email-tooltip"
             >
               Email
             </Button>
           </span>
         </Tooltip>
-
-      </Stack>
-
-      {/* Metadata Chips */}
-      <Stack direction="row" spacing={1} flexWrap="wrap">
-        <Chip
-          icon={<Schedule />}
-          label={`${summary.generation.processingTimeMs}ms`}
-          variant="outlined"
-          size="small"
-        />
-        <Chip
-          icon={<Assignment />}
-          label={`${totalActionItems} action items`}
-          variant="outlined"
-          size="small"
-        />
-        <Chip
-          icon={<Person />}
-          label={`${speakerCount} speakers`}
-          variant="outlined"
-          size="small"
-        />
-      </Stack>
+      </Box>
       
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
         Generated: {new Date(summary.generation.generatedAt).toLocaleString()}

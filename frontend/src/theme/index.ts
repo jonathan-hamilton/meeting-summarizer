@@ -257,7 +257,7 @@ const lightThemeOptions: ThemeOptions = {
         }),
       },
     },
-    // Softer AppBar
+    // Enhanced AppBar with gradient
     MuiAppBar: {
       styleOverrides: {
         root: ({ theme }) => ({
@@ -266,8 +266,42 @@ const lightThemeOptions: ThemeOptions = {
             boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
           }),
           ...(theme.palette.mode === 'dark' && {
-            backgroundColor: '#1a1a1a',
-            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.5)',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: '0px 4px 12px rgba(102, 126, 234, 0.3)',
+            color: '#ffffff',
+          }),
+        }),
+      },
+    },
+    // Enhanced Button styling with gradient
+    MuiButton: {
+      styleOverrides: {
+        containedPrimary: ({ theme }) => ({
+          ...(theme.palette.mode === 'dark' && {
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: '0px 4px 12px rgba(102, 126, 234, 0.3)',
+            color: '#ffffff',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+              boxShadow: '0px 6px 16px rgba(102, 126, 234, 0.4)',
+            },
+            '&:active': {
+              background: 'linear-gradient(135deg, #4e63c6 0%, #5e377e 100%)',
+            },
+          }),
+        }),
+      },
+    },
+    // Enhanced Chip styling with gradient
+    MuiChip: {
+      styleOverrides: {
+        colorPrimary: ({ theme }) => ({
+          ...(theme.palette.mode === 'dark' && {
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: '#ffffff',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+            },
           }),
         }),
       },
@@ -298,14 +332,14 @@ const darkThemeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
-      main: '#90caf9',      // Light blue for better visibility on dark
-      light: '#e3f2fd',
-      dark: '#42a5f5',
+      main: '#667eea',      // Gradient start color as main
+      light: '#9bb5ff',     // Lighter version
+      dark: '#4c63d2',      // Darker version
     },
     secondary: {
-      main: '#f48fb1',
-      light: '#ffc1cc',
-      dark: '#c2185b',
+      main: '#764ba2',      // Gradient end color as secondary
+      light: '#a478d0',
+      dark: '#5e3c82',
     },
     warning: {
       main: '#ffa726',

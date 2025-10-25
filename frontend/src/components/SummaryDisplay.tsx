@@ -10,10 +10,12 @@ import {
   Snackbar,
   Divider,
   Stack,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import SummaryHeader from "./SummaryHeader";
 import ActionItemsSection from "./ActionItemsSection";
-import FormattedSummaryText from "./FormattedSummaryText";
+import ResponsiveSummaryText from "./ResponsiveSummaryText";
 
 import {
   Psychology,
@@ -58,6 +60,10 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   fileName,
   speakerSegments = [],
 }) => {
+  // Mobile detection
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   // Get current speaker mappings from centralized store
   const speakerMappings_store = useSpeakerSessionStore(state => state.speakerMappings);
   
@@ -387,19 +393,50 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   return (
     <Card sx={{ width: "100%", position: "relative", overflow: "visible" }}>
       <CardContent>
-        <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ mb: 3 }}>
-          <Psychology color="primary" />
-          <Typography 
-            variant="h5" 
-            component="h3"
-            ref={(node) => {
-              if (aiSummaryRef) {
-                aiSummaryRef(node);
-              }
-            }}
-          >
-            AI-Powered Meeting Summary
-          </Typography>
+        <Stack
+          direction={isMobile ? "column" : "row"}
+          alignItems={isMobile ? "stretch" : "center"}
+          spacing={isMobile ? 2 : 1}
+          sx={{ mb: isMobile ? 3 : 2 }}
+        >
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: isMobile ? 'center' : 'center',
+            gap: isMobile ? 1 : 2,
+            flex: 1
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+              <Psychology color="primary" />
+              <Typography 
+                variant={isMobile ? "h5" : "h6"} 
+                component="h3"
+                sx={{
+                  fontWeight: isMobile ? 600 : 500,
+                  mb: isMobile ? 0.5 : 0,
+                  textAlign: isMobile ? 'center' : 'left',
+                }}
+                ref={(node) => {
+                  if (aiSummaryRef) {
+                    aiSummaryRef(node);
+                  }
+                }}
+              >
+                AI-Powered Meeting Summary
+              </Typography>
+            </Box>
+            <Typography 
+              variant={isMobile ? "body1" : "body2"}
+              color="text.secondary"
+              sx={{ 
+                lineHeight: isMobile ? 1.5 : 1.2,
+                fontSize: isMobile ? '0.875rem' : '0.75rem',
+                textAlign: isMobile ? 'center' : 'left',
+              }}
+            >
+              Comprehensive summary with role-aware action items.{isMobile ? '' : ' Works with or without custom speaker names.'}
+            </Typography>
+          </Box>
         </Stack>
 
         {/* Generate Button */}
@@ -502,7 +539,7 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               <Typography variant="h6" gutterBottom>
                 {mode === 'development' ? 'Development Meeting Overview' : 'Meeting Overview'}
               </Typography>
-              <FormattedSummaryText text={summary.meetingOverview} />
+              <ResponsiveSummaryText text={summary.meetingOverview} mobilePreviewLength={180} />
             </Box>
 
             <Divider sx={{ my: 3 }} />

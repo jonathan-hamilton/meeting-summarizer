@@ -7,6 +7,8 @@ import {
   ListItemText,
   Divider,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   MoreVert as MoreIcon,
@@ -16,7 +18,7 @@ import {
   Brightness7,
   Person as ProfileIcon,
 } from '@mui/icons-material';
-import { useTheme } from '../../theme/useTheme';
+import { useTheme as useCustomTheme } from '../../theme/useTheme';
 
 interface MoreMenuProps {
   onHelpClick: () => void;
@@ -31,7 +33,9 @@ export const MoreMenu: React.FC<MoreMenuProps> = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const { mode, toggleTheme } = useTheme();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { mode, toggleTheme } = useCustomTheme();
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -71,9 +75,14 @@ export const MoreMenu: React.FC<MoreMenuProps> = ({
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
           aria-label="More options"
-          sx={{ ml: 1 }}
+          size={isMobile ? "medium" : "small"}
+          sx={{ 
+            ml: 1,
+            minHeight: isMobile ? 44 : 'auto',
+            minWidth: isMobile ? 44 : 'auto',
+          }}
         >
-          <MoreIcon />
+          <MoreIcon fontSize={isMobile ? "medium" : "small"} />
         </IconButton>
       </Tooltip>
       
@@ -112,34 +121,50 @@ export const MoreMenu: React.FC<MoreMenuProps> = ({
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleProfileClick}>
+        <MenuItem 
+          onClick={handleProfileClick}
+          sx={{ minHeight: isMobile ? 48 : 'auto', py: isMobile ? 1.5 : 1 }}
+        >
           <ListItemIcon>
-            <ProfileIcon fontSize="small" />
+            <ProfileIcon fontSize={isMobile ? "medium" : "small"} />
           </ListItemIcon>
           <ListItemText>Account Settings</ListItemText>
         </MenuItem>
         
         <Divider />
         
-        <MenuItem onClick={handleHelpClick}>
+        <MenuItem 
+          onClick={handleHelpClick}
+          sx={{ minHeight: isMobile ? 48 : 'auto', py: isMobile ? 1.5 : 1 }}
+        >
           <ListItemIcon>
-            <HelpIcon fontSize="small" />
+            <HelpIcon fontSize={isMobile ? "medium" : "small"} />
           </ListItemIcon>
           <ListItemText>Help & Support</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={handleAccessibilityClick}>
+        <MenuItem 
+          onClick={handleAccessibilityClick}
+          sx={{ minHeight: isMobile ? 48 : 'auto', py: isMobile ? 1.5 : 1 }}
+        >
           <ListItemIcon>
-            <AccessibilityIcon fontSize="small" />
+            <AccessibilityIcon fontSize={isMobile ? "medium" : "small"} />
           </ListItemIcon>
           <ListItemText>Accessibility Settings</ListItemText>
         </MenuItem>
         
         <Divider />
         
-        <MenuItem onClick={handleThemeToggle}>
+        <MenuItem 
+          onClick={handleThemeToggle}
+          sx={{ minHeight: isMobile ? 48 : 'auto', py: isMobile ? 1.5 : 1 }}
+        >
           <ListItemIcon>
-            {mode === 'dark' ? <Brightness7 fontSize="small" /> : <Brightness4 fontSize="small" />}
+            {mode === 'dark' ? (
+              <Brightness7 fontSize={isMobile ? "medium" : "small"} />
+            ) : (
+              <Brightness4 fontSize={isMobile ? "medium" : "small"} />
+            )}
           </ListItemIcon>
           <ListItemText>
             {mode === 'dark' ? 'Light Mode' : 'Dark Mode'}
