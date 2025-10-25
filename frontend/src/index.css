@@ -1,65 +1,176 @@
+/* Mobile-First CSS Reset */
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  /* Removed color and background-color to let Material-UI theme control them */
-
+  /* Mobile-optimized viewport */
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Font optimization for mobile */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Color scheme support */
+  color-scheme: light dark;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+/* Box sizing reset */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
+/* Body optimization for mobile */
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 320px; /* Minimum mobile width */
   min-height: 100vh;
+  
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  
+  /* Improved touch interaction */
+  touch-action: manipulation;
+  
+  /* Better mobile scrolling */
+  -webkit-overflow-scrolling: touch;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* Touch-friendly links */
+a {
+  text-decoration: none;
+  color: inherit;
+  
+  /* Minimum touch target size */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  
+  /* Smooth tap transitions */
+  transition: opacity 0.2s ease;
 }
 
+a:active {
+  opacity: 0.7;
+}
+
+/* Remove default button styles (Material-UI will provide styling) */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  
+  /* Touch optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  
+  /* Minimum touch target */
+  min-height: 44px;
+  min-width: 44px;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    /* Removed background-color override to let Material-UI theme control it */
+/* Form inputs optimization for mobile */
+input, textarea, select {
+  /* Prevent zoom on iOS */
+  font-size: 16px;
+  
+  /* Better mobile interaction */
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}
+
+/* Remove default heading styles (Material-UI typography will handle) */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+/* Paragraph spacing optimization */
+p {
+  margin: 0;
+}
+
+/* List reset */
+ul, ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Image optimization for responsive design */
+img {
+  max-width: 100%;
+  height: auto;
+  vertical-align: middle;
+}
+
+/* Table responsiveness */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Focus styles for accessibility (enhanced for mobile) */
+:focus-visible {
+  outline: 2px solid #005fcc;
+  outline-offset: 2px;
+}
+
+/* Disable focus outlines for mouse users, keep for keyboard/screen readers */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :focus-visible {
+    outline: 3px solid;
+    outline-offset: 2px;
   }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 767px) {
+  /* Prevent horizontal scroll from content */
+  body {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Optimize click targets for mobile */
+  [role="button"], button, a, input, textarea, select {
+    min-height: 44px;
+  }
+}
+
+/* Tablet and desktop enhancements */
+@media (min-width: 768px) {
+  /* Re-enable hover effects for devices that support them */
   a:hover {
-    color: #747bff;
+    opacity: 0.8;
   }
-  button {
-    background-color: #f9f9f9;
+  
+  /* Smaller minimum touch targets for larger screens */
+  [role="button"], button, a, input, textarea, select {
+    min-height: 32px;
   }
 }
