@@ -75,34 +75,109 @@ const lightThemeOptions: ThemeOptions = {
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    // Mobile-first responsive typography
     h1: {
-      fontSize: '2.5rem',
+      fontSize: '1.75rem', // Mobile: 28px
       fontWeight: 500,
+      lineHeight: 1.2,
+      '@media (min-width:768px)': {
+        fontSize: '2.25rem', // Tablet: 36px
+      },
+      '@media (min-width:1200px)': {
+        fontSize: '2.5rem', // Desktop: 40px
+      },
     },
     h2: {
-      fontSize: '2rem',
+      fontSize: '1.5rem', // Mobile: 24px
       fontWeight: 500,
+      lineHeight: 1.25,
+      '@media (min-width:768px)': {
+        fontSize: '1.875rem', // Tablet: 30px
+      },
+      '@media (min-width:1200px)': {
+        fontSize: '2rem', // Desktop: 32px
+      },
     },
     h3: {
-      fontSize: '1.75rem',
+      fontSize: '1.25rem', // Mobile: 20px
       fontWeight: 500,
+      lineHeight: 1.3,
+      '@media (min-width:768px)': {
+        fontSize: '1.5rem', // Tablet: 24px
+      },
+      '@media (min-width:1200px)': {
+        fontSize: '1.75rem', // Desktop: 28px
+      },
     },
     h4: {
-      fontSize: '1.5rem',
+      fontSize: '1.125rem', // Mobile: 18px
       fontWeight: 500,
+      lineHeight: 1.35,
+      '@media (min-width:768px)': {
+        fontSize: '1.25rem', // Tablet: 20px
+      },
+      '@media (min-width:1200px)': {
+        fontSize: '1.5rem', // Desktop: 24px
+      },
     },
     h5: {
-      fontSize: '1.25rem',
+      fontSize: '1rem', // Mobile: 16px
       fontWeight: 500,
+      lineHeight: 1.4,
+      '@media (min-width:768px)': {
+        fontSize: '1.125rem', // Tablet: 18px
+      },
+      '@media (min-width:1200px)': {
+        fontSize: '1.25rem', // Desktop: 20px
+      },
     },
     h6: {
-      fontSize: '1rem',
+      fontSize: '0.875rem', // Mobile: 14px
       fontWeight: 500,
+      lineHeight: 1.45,
+      '@media (min-width:768px)': {
+        fontSize: '1rem', // Tablet: 16px
+      },
+      '@media (min-width:1200px)': {
+        fontSize: '1rem', // Desktop: 16px
+      },
+    },
+    body1: {
+      fontSize: '1rem', // Mobile: 16px
+      lineHeight: 1.5,
+      '@media (min-width:768px)': {
+        fontSize: '1rem', // Tablet: 16px
+      },
+    },
+    body2: {
+      fontSize: '0.875rem', // Mobile: 14px
+      lineHeight: 1.43,
+      '@media (min-width:768px)': {
+        fontSize: '0.875rem', // Tablet: 14px
+      },
+    },
+    button: {
+      fontSize: '0.875rem', // Mobile: 14px
+      fontWeight: 500,
+      textTransform: 'none' as const, // Avoid all caps for better readability
+      '@media (min-width:768px)': {
+        fontSize: '0.875rem', // Tablet: 14px
+      },
     },
   },
   shape: {
     borderRadius: 8,
   },
+  breakpoints: {
+    values: {
+      xs: 0,      // Mobile portrait (320px+ in practice)
+      sm: 768,    // Mobile landscape / Small tablet 
+      md: 1024,   // Tablet
+      lg: 1200,   // Desktop
+      xl: 1536,   // Large desktop (MUI default)
+    },
+  },
+  spacing: (factor: number) => `${0.25 * factor}rem`, // Base: 4px, mobile-optimized
   status: {
     danger: '#e53e3e',
   },
@@ -254,6 +329,16 @@ const darkThemeOptions: ThemeOptions = {
   },
   typography: lightThemeOptions.typography,
   shape: lightThemeOptions.shape,
+  breakpoints: {
+    values: {
+      xs: 0,      // Mobile portrait (320px+ in practice)
+      sm: 768,    // Mobile landscape / Small tablet 
+      md: 1024,   // Tablet
+      lg: 1200,   // Desktop
+      xl: 1536,   // Large desktop (MUI default)
+    },
+  },
+  spacing: (factor: number) => `${0.25 * factor}rem`, // Base: 4px, mobile-optimized
   status: {
     danger: '#f56565',
   },
