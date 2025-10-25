@@ -203,3 +203,6 @@ sample-audio-files/
 
 # ASP.NET Core wwwroot - built frontend files
 MeetingSummarizer.Api/wwwroot/
+
+# Development SQL scratch files
+scratch-pad.sql
