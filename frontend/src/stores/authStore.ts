@@ -52,10 +52,21 @@ export const useAuthStore = create<AuthStore>()(
             throw new Error('Invalid token: missing required user information');
           }
           
-          // Split full name into first and last name
-          const nameParts = fullName.split(' ');
-          const firstName = nameParts[0] || '';
-          const lastName = nameParts.slice(1).join(' ') || '';
+          // Split full name into first and last name - but handle email edge case
+          let firstName = '';
+          let lastName = '';
+          
+          if (fullName && !fullName.includes('@')) {
+            // Normal full name case
+            const nameParts = fullName.split(' ');
+            firstName = nameParts[0] || '';
+            lastName = nameParts.slice(1).join(' ') || '';
+          } else {
+            // Fallback case - JWT probably doesn't have proper name data
+            console.warn('⚠️ JWT token name field appears to be email or empty, using placeholders');
+            firstName = 'User';
+            lastName = '';
+          }
           
           const user: User = {
             id: userId,
@@ -271,10 +282,21 @@ export const useAuthStore = create<AuthStore>()(
               const fullName = tokenClaims.name || tokenClaims['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || '';
               const userRole = tokenClaims.role || tokenClaims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
               
-              // Split full name into first and last name
-              const nameParts = fullName.split(' ');
-              const firstName = nameParts[0] || '';
-              const lastName = nameParts.slice(1).join(' ') || '';
+              // Split full name into first and last name - but handle email edge case
+              let firstName = '';
+              let lastName = '';
+              
+              if (fullName && !fullName.includes('@')) {
+                // Normal full name case
+                const nameParts = fullName.split(' ');
+                firstName = nameParts[0] || '';
+                lastName = nameParts.slice(1).join(' ') || '';
+              } else {
+                // Fallback case - JWT probably doesn't have proper name data
+                console.warn('⚠️ JWT token name field appears to be email or empty, using placeholders');
+                firstName = 'User';
+                lastName = '';
+              }
               
               // Create complete user object merging JWT data with stored data
               const completeUser: User = {
@@ -411,6 +433,21 @@ export const useAuthStore = create<AuthStore>()(
           // Re-throw the error to be handled by the UI component
           throw error;
         }
+      },
+
+      // Update user data (for profile changes)
+      updateUser: (updates: Partial<User>) => {
+        const currentUser = get().user;
+        if (!currentUser) {
+          console.warn('Cannot update user: no current user');
+          return;
+        }
+
+        const updatedUser = { ...currentUser, ...updates };
+        console.log('📝 Updating user in auth store:', updates);
+        
+        set({ user: updatedUser });
+        authService.setUser(updatedUser);
       },
 
       // S7.2: Check environment requirements for invitation codes
