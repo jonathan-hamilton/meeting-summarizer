@@ -1,5 +1,22 @@
 # Technical Debt & Known Issues
 
+## ✅ RESOLVED TECHNICAL DEBT (October 25, 2025)
+
+### Dialog State Management & File Input Handling - RESOLVED ✅
+**Issue**: Token purchase dialog not opening on subsequent file upload attempts  
+**Root Cause**: Improper dialog state reset and browser file input behavior  
+**Resolution**: S7.10 Token Purchase Dialog Bug Fix  
+**Date Resolved**: October 25, 2025
+
+**Technical Details**:
+- **Dialog State Issue**: `handleCostConfirm` function wasn't properly closing cost dialog and resetting state
+- **File Input Reset**: Browser file input wasn't being cleared, preventing same file selection multiple times
+- **Solution**: Added comprehensive state cleanup in dialog handlers and input value reset in FileDropzone
+- **Components Affected**: CostEstimationDialog, FileDropzone, FileUpload, apiService
+- **Impact**: Payment flow now works reliably across all file upload scenarios
+
+---
+
 ## ⚠️ CRITICAL SECURITY TECHNICAL DEBT - PRODUCTION BLOCKER
 
 ### Production Security Vulnerabilities Requiring Immediate Remediation 🔴 CRITICAL
