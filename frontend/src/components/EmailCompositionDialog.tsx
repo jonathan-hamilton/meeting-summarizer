@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -31,8 +31,10 @@ interface EmailCompositionDialogProps {
 const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend: _onSend }) => {
   console.log('🚨 EmailCompositionDialog COMPONENT CALLED - start of function');
   
+  // Ref to track dialog content scroll position
+  const dialogContentRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
-  
   // Email store state
   const {
     isDialogOpen: open,
@@ -64,6 +66,25 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     open,
     isDialogOpen: open,
   });
+
+  // Preserve scroll position when sending state changes
+  useEffect(() => {
+    if (dialogContentRef.current) {
+      // When sending starts, save the current scroll position
+      if (isSending) {
+        scrollPositionRef.current = dialogContentRef.current.scrollTop;
+      } else {
+        // When sending finishes, restore the scroll position
+        const timeoutId = setTimeout(() => {
+          if (dialogContentRef.current) {
+            dialogContentRef.current.scrollTop = scrollPositionRef.current;
+          }
+        }, 50); // Small delay to ensure DOM has updated
+        
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [isSending]);
 
   // Helper functions
   const handleAddRecipientFromInput = () => {
@@ -174,10 +195,11 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
         }}
       >
       <FocusTrap 
-        active={open && !isSending}
+        active={open}
         focusTrapOptions={{
           allowOutsideClick: false,
           escapeDeactivates: true,
+          clickOutsideDeactivates: false,
         }}
       >
         <div>
@@ -193,7 +215,7 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
         </Stack>
       </DialogTitle>
 
-      <DialogContent>
+      <DialogContent ref={dialogContentRef}>
         <Stack spacing={3} sx={{ pt: 2 }}>
           {/* Recipients Section */}
           <Box>
@@ -321,7 +343,10 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
             variant="caption" 
             sx={{ display: 'block', mt: 0.5, color: 'text.secondary' }}
           >
-            Optional: Add your own message. Transcript content will be appended if selected below.
+            {transcriptOnly 
+              ? "Optional: Add your own message."
+              : "Optional: Add your own message. Transcript content will be appended if selected below."
+            }
           </Typography>
           
           {/* Append Transcript Option - Show only for summary emails with transcript data */}
@@ -339,21 +364,32 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
             />
           )}
         </Stack>
+        
+        {/* Success/Error Messages - Positioned above buttons for better visibility */}
+        {(sendSuccess || sendError) && (
+          <Box sx={{ 
+            mt: 2, 
+            p: 2, 
+            borderRadius: 1,
+            bgcolor: sendSuccess ? 'success.50' : 'error.50',
+            border: 1,
+            borderColor: sendSuccess ? 'success.main' : 'error.main',
+          }}>
+            {sendSuccess && (
+              <Typography variant="body2" color="success.main" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                ✅ {sendSuccess}
+              </Typography>
+            )}
+            {sendError && (
+              <Typography variant="body2" color="error.main" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                ❌ {sendError}
+              </Typography>
+            )}
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions>
-        {/* Success/Error Messages */}
-        {sendSuccess && (
-          <Typography variant="body2" color="success.main" sx={{ flexGrow: 1 }}>
-            ✅ {sendSuccess}
-          </Typography>
-        )}
-        {sendError && (
-          <Typography variant="body2" color="error.main" sx={{ flexGrow: 1 }}>
-            ❌ {sendError}
-          </Typography>
-        )}
-        
         <Button onClick={handleClose} variant="outlined" disabled={isSending}>
           Cancel
         </Button>

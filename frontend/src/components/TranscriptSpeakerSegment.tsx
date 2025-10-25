@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useMemo, useCallback } from "react";
-import { Box, Chip, IconButton, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Alert, Snackbar, Stack } from "@mui/material";
-import { Person, Check, Schedule, SwapHoriz } from "@mui/icons-material";
+import { Box, Chip, IconButton, Typography, Menu, MenuItem, ListItemIcon, ListItemText, Tooltip, Alert, Snackbar, Stack, useMediaQuery, useTheme, Button } from "@mui/material";
+import { Person, Check, Schedule, SwapHoriz, ExpandMore, ExpandLess } from "@mui/icons-material";
 import { useAppMode } from "../contexts/AppModeContext";
 import type { SpeakerSegment, SpeakerMapping } from "../types";
 import { useSessionManagement } from "../hooks/useSessionManagement";
@@ -57,6 +57,9 @@ export const TranscriptSpeakerSegment: React.FC<
   isTranscriptStructureInvalidated = false,
 }) => {
   const { isLoading } = useSessionManagement();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   // Use centralized store for speaker management (fixed infinite loop)
   const storeMappings = useSpeakerSessionStore(state => state.speakerMappings);
   const originalSegments = useSpeakerSessionStore(state => state.originalSegments);
@@ -71,6 +74,7 @@ export const TranscriptSpeakerSegment: React.FC<
   const allStoreDetectedSpeakers = storeMappings.map((mapping: SpeakerMapping) => mapping.speakerId);
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isTextExpanded, setIsTextExpanded] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
     message: string;
@@ -276,6 +280,27 @@ export const TranscriptSpeakerSegment: React.FC<
     setFeedback((prev) => ({ ...prev, open: false }));
   }, []);
 
+  // Handle text expansion toggle
+  const handleToggleText = useCallback(() => {
+    setIsTextExpanded(prev => !prev);
+  }, []);
+
+  // Memoize text truncation logic
+  const textDisplay = useMemo(() => {
+    const fullText = (segment as any).Text || segment.text;
+    
+    if (!isMobile) {
+      return { text: fullText, needsTruncation: false };
+    }
+
+    // For mobile, we'll use CSS to limit to 2 lines and check if truncation is needed
+    // This is a simple heuristic - in practice, CSS will handle the visual truncation
+    const wordsCount = fullText.split(' ').length;
+    const needsTruncation = wordsCount > 15; // Approximate 2 lines worth of words
+    
+    return { text: fullText, needsTruncation };
+  }, [segment, isMobile]);
+
   // Memoize speaker options - moved for proper dependency order
   const speakerOptions = getSpeakerOptions;
 
@@ -369,9 +394,45 @@ export const TranscriptSpeakerSegment: React.FC<
         </Stack>
 
         {/* Segment Text */}
-        <Typography variant="body1" sx={{ mt: 1, pl: 2 }}>
-          {(segment as any).Text || segment.text}
-        </Typography>
+        <Box sx={{ mt: 1, pl: 2 }}>
+          <Typography 
+            variant="body1"
+            sx={{
+              ...(isMobile && !isTextExpanded && textDisplay.needsTruncation && {
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                lineHeight: 1.5,
+              })
+            }}
+          >
+            {textDisplay.text}
+          </Typography>
+          
+          {/* Show More/Less button for mobile - positioned as 3rd line */}
+          {isMobile && textDisplay.needsTruncation && (
+            <Button
+              size="small"
+              onClick={handleToggleText}
+              startIcon={isTextExpanded ? <ExpandLess /> : <ExpandMore />}
+              sx={{
+                mt: 0.5,
+                textTransform: 'none',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                minHeight: 32,
+                color: 'primary.main',
+                p: 0,
+                '& .MuiButton-startIcon': {
+                  marginRight: 0.5,
+                },
+              }}
+            >
+              {isTextExpanded ? 'Show Less' : 'Show More'}
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Speaker Reassignment Menu */}

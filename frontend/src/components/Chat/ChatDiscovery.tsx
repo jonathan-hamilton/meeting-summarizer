@@ -8,6 +8,8 @@ import {
   Typography,
   Box,
   Alert,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   SmartToy as BotIcon,
@@ -24,6 +26,8 @@ interface ChatDiscoveryProps {
  * First-time user discovery dialog for chat assistant
  */
 export const ChatDiscovery: React.FC<ChatDiscoveryProps> = ({ open = false, onDiscoveryShown }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { setDiscoveryShown } = useChatStore();
 
   // Dialog visibility is controlled by the open prop from parent
@@ -105,6 +109,10 @@ export const ChatDiscovery: React.FC<ChatDiscoveryProps> = ({ open = false, onDi
         <Button 
           onClick={handleGotIt}
           variant="outlined"
+          size={isMobile ? "large" : "medium"}
+          sx={{
+            minHeight: isMobile ? 48 : 'auto',
+          }}
         >
           Got it
         </Button>

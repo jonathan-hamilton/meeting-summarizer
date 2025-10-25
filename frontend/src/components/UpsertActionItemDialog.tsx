@@ -160,10 +160,14 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
         <IconButton
           aria-label="close"
           onClick={handleCancel}
-          size="small"
-          sx={{ ml: 1 }}
+          size={isMobile ? "medium" : "small"}
+          sx={{ 
+            ml: 1,
+            minHeight: isMobile ? 44 : 'auto',
+            minWidth: isMobile ? 44 : 'auto',
+          }}
         >
-          <CloseIcon />
+          <CloseIcon fontSize={isMobile ? "medium" : "small"} />
         </IconButton>
       </DialogTitle>
 
@@ -254,6 +258,10 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
           onClick={handleCancel}
           variant="outlined"
           color="inherit"
+          size={isMobile ? "large" : "medium"}
+          sx={{
+            minHeight: isMobile ? 48 : 'auto',
+          }}
         >
           Cancel
         </Button>
@@ -262,6 +270,10 @@ export const UpsertActionItemDialog: React.FC<UpsertActionItemDialogProps> = ({
           variant="contained"
           color="primary"
           disabled={!description.trim()}
+          size={isMobile ? "large" : "medium"}
+          sx={{
+            minHeight: isMobile ? 48 : 'auto',
+          }}
         >
           {actionItem ? 'Update' : 'Add'} Action Item
         </Button>

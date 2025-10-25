@@ -373,8 +373,11 @@ const AppContent: React.FC = () => {
     const baseColor = getAppBarColor();
     return {
       width: "100%",
-      backgroundColor: baseColor === "primary" ? "primary.main" : "warning.main",
-      color: "primary.contrastText"
+      background: baseColor === "primary" 
+        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+        : "warning.main",
+      color: "white", // Always white text on gradient
+      boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
     };
   };
 
