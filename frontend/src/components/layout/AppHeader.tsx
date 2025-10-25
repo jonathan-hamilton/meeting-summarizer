@@ -167,8 +167,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         color="inherit" 
                         onClick={() => navigate('/app')}
                         aria-label="Go to home page"
+                        size={isMobile ? "medium" : "small"}
+                        sx={{
+                          minHeight: isMobile ? 44 : 'auto',
+                          minWidth: isMobile ? 44 : 'auto',
+                        }}
                       >
-                        <HomeIcon />
+                        <HomeIcon fontSize={isMobile ? "medium" : "small"} />
                       </IconButton>
                     </Tooltip>
                   ) : (
@@ -177,8 +182,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                         color="inherit" 
                         onClick={() => navigate('/history')}
                         aria-label="View meeting history"
+                        size={isMobile ? "medium" : "small"}
+                        sx={{
+                          minHeight: isMobile ? 44 : 'auto',
+                          minWidth: isMobile ? 44 : 'auto',
+                        }}
                       >
-                        <HistoryIcon />
+                        <HistoryIcon fontSize={isMobile ? "medium" : "small"} />
                       </IconButton>
                     </Tooltip>
                   )}
@@ -195,10 +205,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                     variant="contained"
                     color="secondary"
                     onClick={handleSignOutClick}
+                    size={isMobile ? "large" : "medium"}
                     sx={{ 
                       ml: 1,
                       mr: 2,
                       minWidth: '80px',
+                      minHeight: isMobile ? 44 : 'auto',
                       fontWeight: 'bold',
                       backgroundColor: '#1976d2',
                       '&:hover': {

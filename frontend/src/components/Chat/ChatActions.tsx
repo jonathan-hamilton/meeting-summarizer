@@ -4,6 +4,8 @@ import {
   ButtonGroup,
   Box,
   Typography,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Navigation as NavigateIcon,
@@ -23,6 +25,9 @@ interface ChatActionsProps {
  * Allows users to directly execute navigation, dialog opening, scrolling, etc.
  */
 export const ChatActions: React.FC<ChatActionsProps> = ({ actions, onActionClick }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   if (!actions || actions.length === 0) {
     return null;
   }
@@ -30,13 +35,13 @@ export const ChatActions: React.FC<ChatActionsProps> = ({ actions, onActionClick
   const getActionIcon = (type: string) => {
     switch (type) {
       case 'navigate':
-        return <NavigateIcon fontSize="small" />;
+        return <NavigateIcon fontSize={isMobile ? "medium" : "small"} />;
       case 'scroll':
-        return <ScrollIcon fontSize="small" />;
+        return <ScrollIcon fontSize={isMobile ? "medium" : "small"} />;
       case 'dialog':
-        return <DialogIcon fontSize="small" />;
+        return <DialogIcon fontSize={isMobile ? "medium" : "small"} />;
       case 'trigger':
-        return <TriggerIcon fontSize="small" />;
+        return <TriggerIcon fontSize={isMobile ? "medium" : "small"} />;
       default:
         return null;
     }
@@ -77,7 +82,7 @@ export const ChatActions: React.FC<ChatActionsProps> = ({ actions, onActionClick
         {Object.entries(groupedActions).map(([type, typeActions]) => (
           <ButtonGroup 
             key={type}
-            size="small" 
+            size={isMobile ? "medium" : "small"}
             variant="outlined"
             orientation="horizontal"
             sx={{ flexWrap: 'wrap' }}
@@ -90,10 +95,11 @@ export const ChatActions: React.FC<ChatActionsProps> = ({ actions, onActionClick
                 color={getActionColor(action.type) as any}
                 sx={{
                   textTransform: 'none',
-                  fontSize: '0.75rem',
-                  px: 1.5,
-                  py: 0.5,
+                  fontSize: isMobile ? '0.875rem' : '0.75rem',
+                  px: isMobile ? 2 : 1.5,
+                  py: isMobile ? 1 : 0.5,
                   minWidth: 'auto',
+                  minHeight: isMobile ? 44 : 'auto',
                   whiteSpace: 'nowrap',
                 }}
               >

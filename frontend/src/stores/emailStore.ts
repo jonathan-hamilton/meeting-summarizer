@@ -137,6 +137,10 @@ export const useEmailStore = create<EmailState>()((set, get) => ({
       recipients: [], // Start with empty recipients, let user add from suggestions
       recipientInput: '', // Clear recipient input
       isSending: false,
+      // Clear any previous success/error messages
+      sendSuccess: null,
+      sendError: null,
+      error: null,
     });
     console.log('🏪 STORE set() called, isDialogOpen should now be true');
     

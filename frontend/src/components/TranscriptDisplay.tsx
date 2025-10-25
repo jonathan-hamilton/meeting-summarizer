@@ -13,6 +13,9 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Collapse,
 } from "@mui/material";
 import {
   PictureAsPdf,
@@ -20,6 +23,8 @@ import {
   Schedule,
   Error,
   Email,
+  ExpandMore,
+  ExpandLess,
 } from "@mui/icons-material";
 import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
@@ -53,11 +58,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
   loading = false,
   aiSummaryRef,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [forceUpdate, setForceUpdate] = useState(0);
   const [speakerMappingDialogOpen, setSpeakerMappingDialogOpen] =
     useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [showAllMetadata, setShowAllMetadata] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   // S6.5 Phase 3: Email dialog state using Zustand store
@@ -450,70 +458,155 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       <CardContent>
         {/* Header with file info and metadata */}
         <Box sx={{ mb: 3, position: 'relative' }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-            <Typography variant="h5" component="h3">
+          {/* File name - larger and more prominent on mobile */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mb: isMobile ? 3 : 2 }}>
+            <Typography 
+              variant={isMobile ? "h4" : "h5"} 
+              component="h3"
+              sx={{
+                fontWeight: isMobile ? 600 : 500,
+                textAlign: 'center',
+                lineHeight: 1.2,
+                wordBreak: 'break-word',
+              }}
+            >
               {transcription.fileName}
             </Typography>
           </Box>
 
-          {/* Metadata chips */}
-          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+          {/* Essential metadata - always visible */}
+          <Stack 
+            direction={isMobile ? "column" : "row"} 
+            spacing={isMobile ? 1 : 1} 
+            flexWrap={isMobile ? "nowrap" : "wrap"} 
+            sx={{ mb: 2 }}
+          >
             <Chip
               icon={<Schedule />}
-              label={`Processed in ${formatTime(Math.round(transcription.processingTimeMs / 1000))}`}
-              size="small"
+              label={`Processed in ${(transcription.processingTimeMs / 1000).toFixed(1)}s`}
+              size={isMobile ? "medium" : "small"}
               variant="outlined"
+              sx={{
+                fontSize: isMobile ? '0.875rem' : '0.75rem',
+                height: isMobile ? 40 : 32,
+              }}
             />
             <Chip
               label={formatFileSize(transcription.fileSize)}
-              size="small"
+              size={isMobile ? "medium" : "small"}
               variant="outlined"
+              sx={{
+                fontSize: isMobile ? '0.875rem' : '0.75rem',
+                height: isMobile ? 40 : 32,
+              }}
             />
             {transcription.duration && (
               <Chip
                 label={`Duration ${formatTime(transcription.duration)}`}
-                size="small"
-                variant="outlined"
-              />
-            )}
-            {transcription.speakerCount && (
-              <Chip
-                icon={<Person />}
-                label={`${speakerMappingStats.mappedCount}/${speakerMappingStats.totalCount} speakers named`}
-                size="small"
-                variant="outlined"
-                color={
-                  speakerMappingStats.isFullyMapped ? "success" : "default"
-                }
-              />
-            )}
-            {transcription.confidenceScore && (
-              <Chip
-                label={`${Math.round(
-                  transcription.confidenceScore * 100
-                )}% confidence`}
-                size="small"
+                size={isMobile ? "medium" : "small"}
                 variant="outlined"
                 sx={{
-                  textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
-                  opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
+                  fontSize: isMobile ? '0.875rem' : '0.75rem',
+                  height: isMobile ? 40 : 32,
                 }}
-                title={
-                  isTranscriptStructureInvalidated
-                    ? "Original confidence - invalidated by transcript modifications"
-                    : "Original transcription confidence"
-                }
               />
             )}
-            {transcription.detectedLanguage && (
-              <Chip
-                label={transcription.detectedLanguage.toUpperCase()}
-                size="small"
-                variant="outlined"
-              />
-            )}
-            
+            <Chip
+              icon={<Person />}
+              label={`${speakerMappingStats.mappedCount}/${speakerMappingStats.totalCount} speakers named`}
+              size={isMobile ? "medium" : "small"}
+              variant="outlined"
+              color={speakerMappingStats.isFullyMapped ? "success" : "default"}
+              sx={{
+                fontSize: isMobile ? '0.875rem' : '0.75rem',
+                height: isMobile ? 40 : 32,
+              }}
+            />
           </Stack>
+
+          {/* Additional metadata - collapsible on mobile */}
+          {isMobile ? (
+            <>
+              <Collapse in={showAllMetadata} timeout={300}>
+                <Stack direction="column" spacing={1} sx={{ mb: 2 }}>
+                  {transcription.confidenceScore && (
+                    <Chip
+                      label={`${Math.round(transcription.confidenceScore * 100)}% confidence`}
+                      size="medium"
+                      variant="outlined"
+                      sx={{
+                        fontSize: '0.875rem',
+                        height: 40,
+                        textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
+                        opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
+                      }}
+                      title={
+                        isTranscriptStructureInvalidated
+                          ? "Original confidence - invalidated by transcript modifications"
+                          : "Original transcription confidence"
+                      }
+                    />
+                  )}
+                  {transcription.detectedLanguage && (
+                    <Chip
+                      label={transcription.detectedLanguage.toUpperCase()}
+                      size="medium"
+                      variant="outlined"
+                      sx={{
+                        fontSize: '0.875rem',
+                        height: 40,
+                      }}
+                    />
+                  )}
+                </Stack>
+              </Collapse>
+              
+              {(transcription.confidenceScore || transcription.detectedLanguage) && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                  <Button
+                    onClick={() => setShowAllMetadata(!showAllMetadata)}
+                    startIcon={showAllMetadata ? <ExpandLess /> : <ExpandMore />}
+                    variant="text"
+                    size="medium"
+                    sx={{
+                      minHeight: 44,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {showAllMetadata ? 'Show Less Info' : 'Show More Info'}
+                  </Button>
+                </Box>
+              )}
+            </>
+          ) : (
+            // Desktop: show all metadata inline as before
+            <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+              {transcription.confidenceScore && (
+                <Chip
+                  label={`${Math.round(transcription.confidenceScore * 100)}% confidence`}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
+                    opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
+                  }}
+                  title={
+                    isTranscriptStructureInvalidated
+                      ? "Original confidence - invalidated by transcript modifications"
+                      : "Original transcription confidence"
+                  }
+                />
+              )}
+              {transcription.detectedLanguage && (
+                <Chip
+                  label={transcription.detectedLanguage.toUpperCase()}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+            </Stack>
+          )}
         </Box>
 
         <Divider sx={{ mb: 3 }} />
@@ -541,66 +634,107 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               aria-describedby="transcript-description"
             >
             <Stack
-              direction="row"
-              alignItems="center"
-              spacing={1}
-              sx={{ mb: 2 }}
+              direction={isMobile ? "column" : "row"}
+              alignItems={isMobile ? "stretch" : "center"}
+              spacing={isMobile ? 2 : 1}
+              sx={{ mb: isMobile ? 3 : 2 }}
             >
-              <Typography 
-                id="transcript-heading"
-                variant="h6" 
-                component="h4"
-              >
-                Transcript
-              </Typography>
-              <Typography 
-                id="transcript-description"
-                variant="body2"
-                color="text.secondary"
-                sx={{ sr: { position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clipPath: 'inset(50%)', border: '0' } }}
-              >
-                Interactive meeting transcript with speaker segments. Use arrow keys to navigate between segments.
-              </Typography>
-              <Box sx={{ flexGrow: 1 }} />
-              <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
-                <span>
-                  <IconButton
-                    size="small"
-                    onClick={handleDownloadPdf}
-                    disabled={isDownloadingPdf}
-                    color={isDownloadingPdf ? "primary" : "default"}
-                    aria-label="Download transcript as PDF"
-                    aria-describedby="download-pdf-tooltip"
-                  >
-                    {isDownloadingPdf ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      <PictureAsPdf fontSize="small" />
-                    )}
-                  </IconButton>
-                </span>
-              </Tooltip>
-              {/* Email button - shown on /app and /transcript pages */}
-              {shouldShowEmailButton && (
-                <Tooltip title="Email transcript">
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'center' : 'center',
+                gap: isMobile ? 1 : 0,
+                flex: 1
+              }}>
+                <Typography 
+                  id="transcript-heading"
+                  variant={isMobile ? "h5" : "h6"} 
+                  component="h4"
+                  sx={{
+                    fontWeight: isMobile ? 600 : 500,
+                    mb: isMobile ? 0.5 : 0,
+                    textAlign: isMobile ? 'center' : 'left',
+                  }}
+                >
+                  Transcript
+                </Typography>
+                <Typography 
+                  id="transcript-description"
+                  variant={isMobile ? "body1" : "body2"}
+                  color="text.secondary"
+                  sx={{ 
+                    lineHeight: isMobile ? 1.5 : 1.2,
+                    fontSize: isMobile ? '0.875rem' : '0.75rem',
+                  }}
+                >
+                  Interactive meeting transcript with speaker segments.{isMobile ? '' : ' Use arrow keys to navigate between segments.'}
+                </Typography>
+              </Box>
+              
+              {/* Action buttons */}
+              <Box sx={{ 
+                display: 'flex', 
+                gap: isMobile ? 2 : 1,
+                flexDirection: isMobile ? 'row' : 'row',
+                justifyContent: isMobile ? 'center' : 'flex-end',
+                alignItems: 'center',
+                width: isMobile ? '100%' : 'auto',
+              }}>
+                <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
                   <span>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      startIcon={<Email />}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleEmailTranscript();
+                    <IconButton
+                      size={isMobile ? "medium" : "small"}
+                      onClick={handleDownloadPdf}
+                      disabled={isDownloadingPdf}
+                      color={isDownloadingPdf ? "primary" : "default"}
+                      aria-label="Download transcript as PDF"
+                      aria-describedby="download-pdf-tooltip"
+                      sx={{
+                        minHeight: isMobile ? 44 : 'auto',
+                        minWidth: isMobile ? 44 : 'auto',
+                        border: isMobile ? '1px solid' : 'none',
+                        borderColor: isMobile ? 'divider' : 'transparent',
+                        '&:hover': isMobile ? {
+                          borderColor: 'primary.main',
+                          bgcolor: 'primary.50',
+                        } : {},
                       }}
-                      sx={{ ml: 1 }}
-                      aria-label="Email transcript"
                     >
-                      Email
-                    </Button>
+                      {isDownloadingPdf ? (
+                        <CircularProgress size={isMobile ? 20 : 16} />
+                      ) : (
+                        <PictureAsPdf fontSize={isMobile ? "medium" : "small"} />
+                      )}
+                    </IconButton>
                   </span>
                 </Tooltip>
-              )}
+                {/* Email button - shown on /app and /transcript pages */}
+                {shouldShowEmailButton && (
+                  <Tooltip title="Email transcript">
+                    <span>
+                      <Button
+                        variant="contained"
+                        size={isMobile ? "medium" : "small"}
+                        startIcon={<Email />}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEmailTranscript();
+                        }}
+                        sx={{ 
+                          minHeight: isMobile ? 44 : 'auto',
+                          fontSize: isMobile ? '0.875rem' : '0.75rem',
+                          textTransform: 'none',
+                          fontWeight: 500,
+                        }}
+                        aria-label="Email transcript"
+                      >
+                        Email
+                      </Button>
+                    </span>
+                  </Tooltip>
+                )}
+              </Box>
             </Stack>
 
             {/* Speaker segments */}

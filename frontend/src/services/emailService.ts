@@ -50,7 +50,10 @@ export class EmailService {
    */
   async sendEmail(request: SendEmailRequest): Promise<SendEmailResponse> {
     try {
-      const response = await apiService.post<SendEmailResponse>('/api/Email/send', request);
+      // Email sending can take longer than the default 10s timeout, especially with transcript data
+      const response = await apiService.post<SendEmailResponse>('/api/Email/send', request, {
+        timeout: 30000 // 30 seconds timeout for email operations
+      });
       
       if (response.success && response.data) {
         return response.data;
