@@ -4,7 +4,7 @@
 
 **MeetingSummarizer** is a full-stack application built with .NET 9 Web API backend and React/TypeScript frontend that enables users to upload meeting audio files, which are then transcribed and summarized using OpenAI services. The system is designed to return either a full transcript or a concise natural-language summary, with optional role-based insights in future versions.
 
-The app is structured for modularity and extensibility using **established design patterns** documented in [`docs/architecture/design-patterns.md`](../architecture/design-patterns.md). The backend follows service layer patterns with dependency injection, while the frontend uses factory patterns for API services and Zustand for state management. All development must adhere to these architectural standards.
+The app is structured for modularity and extensibility using **established design patterns** documented in [`docs/design/design-patterns.md`](../design/design-patterns.md). The backend follows service layer patterns with dependency injection, while the frontend uses factory patterns for API services and Zustand for state management. All development must adhere to these architectural standards.
 
 ## Design Pattern Implementation
 

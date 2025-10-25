@@ -37,7 +37,7 @@ This ecosystem implements a **documentation-first development methodology** wher
 **Outputs**: 
 - Technology stack variables: `[PROJECT_NAME]`, `[FRONTEND_FRAMEWORK]`, `[BACKEND_FRAMEWORK]`
 - Initial requirements documentation in `docs/requirements/`
-- Architecture decisions in `docs/architecture/`
+- Architecture decisions in `docs/design/`
 
 **Next Phase**: Project Scaffolding
 
@@ -144,7 +144,7 @@ This ecosystem implements a **documentation-first development methodology** wher
 **Implementation Level:**
 - `docs/sprints/sprint_X_stories.md` - Sprint work breakdown
 - `docs/sprints/implementations/` - Technical implementation plans
-- `docs/architecture/` - Design patterns and architectural decisions
+- `docs/design/` - Design patterns and architectural decisions
 
 ### **Progress Synchronization Points**
 
@@ -253,7 +253,7 @@ This prompt ecosystem is designed to work with:
 **External Documentation:**
 - `README.md` - Project overview and status dashboard
 - `docs/DOCUMENTATION_MAP.md` - Navigation and traceability matrix
-- `docs/architecture/design-patterns.md` - Mandatory architectural standards
+- `docs/design/design-patterns.md` - Mandatory architectural standards
 
 **Generated Documentation:**
 - Sprint documentation (`docs/sprints/`)

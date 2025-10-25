@@ -6,7 +6,7 @@
 ## 🏗️ **ARCHITECTURAL DIRECTIVES - MANDATORY**
 
 ### **Design Pattern Compliance**
-⚠️ **CRITICAL**: ALL implementation must follow established design patterns documented in [`docs/architecture/design-patterns.md`](../architecture/design-patterns.md). 
+⚠️ **CRITICAL**: ALL implementation must follow established design patterns documented in [`docs/design/design-patterns.md`](../design/design-patterns.md). 
 
 **Pattern deviations require architectural review and approval during user story planning.**
 
