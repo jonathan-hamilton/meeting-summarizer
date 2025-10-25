@@ -24,6 +24,7 @@ interface CostEstimationDialogProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onTokenPurchaseClick?: () => void; // New prop to open token purchase dialog
   fileName: string;
   fileSize: string;
   estimatedDuration: number;
@@ -37,6 +38,7 @@ const CostEstimationDialog: React.FC<CostEstimationDialogProps> = ({
   open,
   onClose,
   onConfirm,
+  onTokenPurchaseClick,
   fileName,
   fileSize,
   estimatedDuration,
@@ -148,9 +150,28 @@ const CostEstimationDialog: React.FC<CostEstimationDialogProps> = ({
                 variant="outlined"
                 color="primary"
                 onClick={() => {
-                  // This would typically open the token purchase dialog
-                  console.log('Open token purchase dialog');
-                  onClose();
+                  console.log('🔵 Buy Tokens button clicked!');
+                  console.log('🔵 Button state:', {
+                    hasSufficientTokens,
+                    currentTokens: availableTokens,
+                    requiredTokens: requiredTokens
+                  });
+                  
+                  try {
+                    console.log('🔵 Opening token purchase dialog...');
+                    
+                    // Close the current dialog and open the token purchase dialog
+                    onClose();
+                    
+                    if (onTokenPurchaseClick) {
+                      console.log('🔵 Calling onTokenPurchaseClick callback');
+                      onTokenPurchaseClick();
+                    } else {
+                      console.warn('⚠️ onTokenPurchaseClick callback not provided');
+                    }
+                  } catch (error) {
+                    console.error('❌ Error in Buy Tokens button handler:', error);
+                  }
                 }}
               >
                 Buy Tokens
