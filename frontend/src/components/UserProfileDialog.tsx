@@ -37,7 +37,7 @@ export const UserProfileDialog: React.FC = () => {
   
   // Get authenticated user from auth store
   const authUser = useAuthStore((state) => state.user);
-  const { resendVerificationEmail } = useAuthStore();
+  const { resendVerificationEmail, updateUser } = useAuthStore();
   
   // Get current token balance from token store (this updates after transactions)
   const currentTokenBalance = useTokenStore((state) => state.balance);
@@ -59,6 +59,17 @@ export const UserProfileDialog: React.FC = () => {
   useEffect(() => {
     if (authUser && profile && profile.email === 'demo@meetingsummary.io') {
       // Clear test profile so we use auth user data instead
+      setProfile(null);
+    }
+  }, [authUser, profile, setProfile]);
+
+  // Clear profile store if auth user has different data (to prevent stale cache issues)
+  useEffect(() => {
+    if (authUser && profile && 
+        (authUser.firstName !== profile.firstName || 
+         authUser.lastName !== profile.lastName || 
+         authUser.email !== profile.email)) {
+      console.log('🔄 Clearing stale profile data - auth user has different data');
       setProfile(null);
     }
   }, [authUser, profile, setProfile]);
@@ -90,7 +101,15 @@ export const UserProfileDialog: React.FC = () => {
   };
 
   const handleEditComplete = (updatedProfile: any) => {
+    // Update the profile store
     setProfile(updatedProfile);
+    
+    // Also update the auth store to keep both in sync
+    updateUser({
+      firstName: updatedProfile.firstName,
+      lastName: updatedProfile.lastName
+    });
+    
     setIsEditing(false);
   };
 
@@ -131,7 +150,8 @@ export const UserProfileDialog: React.FC = () => {
     });
   };
 
-  // Use authUser as the primary data source, fall back to profile store if needed
+  // Use auth store data first (since it comes from JWT token),
+  // only fall back to profile store if auth data is not available
   const displayUser = authUser || profile;
 
   if (!displayUser) {

@@ -265,7 +265,7 @@ export const UserProfileForm: React.FC<UserProfileFormProps> = ({
                   type="password"
                   value={passwordData.currentPassword}
                   onChange={handlePasswordInputChange('currentPassword')}
-                  required
+                  required={passwordChangeOpen}
                   fullWidth
                   disabled={passwordLoading}
                   size="small"
@@ -279,7 +279,7 @@ export const UserProfileForm: React.FC<UserProfileFormProps> = ({
                   type="password"
                   value={passwordData.newPassword}
                   onChange={handlePasswordInputChange('newPassword')}
-                  required
+                  required={passwordChangeOpen}
                   fullWidth
                   disabled={passwordLoading}
                   size="small"
@@ -294,7 +294,7 @@ export const UserProfileForm: React.FC<UserProfileFormProps> = ({
                   type="password"
                   value={passwordData.confirmNewPassword}
                   onChange={handlePasswordInputChange('confirmNewPassword')}
-                  required
+                  required={passwordChangeOpen}
                   fullWidth
                   disabled={passwordLoading}
                   size="small"

@@ -78,6 +78,8 @@ export interface AuthActions {
   clearVerificationError: () => void;
   // Password change action (S6.2.2)
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  // Update user data (for profile changes)
+  updateUser: (updates: Partial<User>) => void;
   // Environment actions (S7.2)
   checkEnvironmentRequirements: () => Promise<void>;
 }

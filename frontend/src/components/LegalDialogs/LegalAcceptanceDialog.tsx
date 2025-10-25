@@ -27,6 +27,7 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import { useAppMode } from "../../contexts/AppModeContext";
+import { useAuthStore } from "../../stores/authStore";
 
 const LEGAL_ACCEPTANCE_KEY = "meeting-summary-legal-accepted";
 
@@ -48,6 +49,7 @@ export const LegalAcceptanceDialog: React.FC<LegalAcceptanceDialogProps> = ({
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const [hasReadLiability, setHasReadLiability] = useState(false);
   const { isProduction } = useAppMode();
+  const { isAuthenticated } = useAuthStore();
 
   /**
    * Check if legal documents have been accepted before
@@ -101,12 +103,13 @@ export const LegalAcceptanceDialog: React.FC<LegalAcceptanceDialogProps> = ({
 
   /**
    * Check if dialog should show on component mount
+   * Only show for authenticated users in production mode who haven't accepted legal terms
    */
   useEffect(() => {
-    if (forceShow || (isProduction && !hasAcceptedLegal())) {
+    if (forceShow || (isAuthenticated && isProduction && !hasAcceptedLegal())) {
       setIsOpen(true);
     }
-  }, [forceShow, isProduction]);
+  }, [forceShow, isAuthenticated, isProduction]);
 
   const canAccept = hasReadTerms && hasReadLiability;
 

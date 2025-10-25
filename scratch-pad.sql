@@ -20,8 +20,8 @@ INSERT INTO InvitationCodes (
     CreatedBy)
     VALUES (
         NEWID(),
-        'Q8Cj98!:xTJVRMp4', 
-        'marc.c.david@gmail.com', 
+        'Q8Cj98!:xTJVRMpZZ', 
+        'jhamilton.swe@gmail.com', 
         '2025-10-25 11:45:21', 
         NULL, 
         1, 
