@@ -9,17 +9,22 @@ import {
   Switch,
   Button,
   Tooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   History as HistoryIcon,
   Home as HomeIcon,
+  Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useAppMode } from '../../contexts/AppModeContext';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserProfileDialogOpen } from '../../stores/userProfileStore';
+import { useNavigationStore } from '../../stores/navigationStore';
 import { SessionIndicator } from '../SessionIndicator';
 import { TokenBalanceDisplay } from '../TokenBalanceDisplay';
 import { MoreMenu } from './MoreMenu';
+import { MobileNavigationDrawer } from './MobileNavigationDrawer';
 
 interface AppHeaderProps {
   onHelpClick: () => void;
@@ -40,9 +45,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { mode: appMode } = useAppMode();
   const { isAuthenticated, logout } = useAuthStore();
   const openProfileDialog = useUserProfileDialogOpen();
+  const { toggleMobileDrawer } = useNavigationStore();
   
   // State to track backend environment
   const [backendEnvironment, setBackendEnvironment] = useState<string | null>(null);
@@ -78,8 +86,24 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       <Toolbar sx={{ width: "100%", position: "relative", justifyContent: "center" }}>
         {/* Left-aligned controls */}
         <Box sx={{ position: "absolute", left: 0, display: "flex", alignItems: "center" }}>
+          {/* Mobile Hamburger Menu - only visible on mobile */}
+          {isMobile && (
+            <IconButton
+              color="inherit"
+              aria-label="Open navigation menu"
+              onClick={toggleMobileDrawer}
+              sx={{ 
+                mr: 1,
+                minWidth: 44, // Touch target minimum
+                minHeight: 44,
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+
           {/* Development controls - only visible when backend is running in Local environment and user is authenticated */}
-          {backendEnvironment === 'Local' && isAuthenticated && (
+          {backendEnvironment === 'Local' && isAuthenticated && !isMobile && (
             <>
               {/* Mode Toggle Switch - Toggle between development and production modes */}
               <Tooltip
@@ -113,8 +137,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           Meeting-Summary.io
         </Typography>
         
-        {/* Right-aligned controls */}
-        <Box sx={{ position: "absolute", right: 0, display: "flex", alignItems: "center" }}>
+        {/* Right-aligned controls - hidden on mobile */}
+        <Box sx={{ 
+          position: "absolute", 
+          right: 0, 
+          display: { xs: 'none', sm: 'flex' }, // Hidden on mobile (xs), visible on sm+
+          alignItems: "center" 
+        }}>
           {appMode === 'development' && (
             <SessionIndicator status={sessionStatus} />
           )}
@@ -185,6 +214,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           )}
         </Box>
       </Toolbar>
+      
+      {/* Mobile Navigation Drawer */}
+      <MobileNavigationDrawer
+        onHelpClick={onHelpClick}
+        onAccessibilityClick={onAccessibilityClick}
+        onTokenPurchaseClick={onTokenPurchaseClick}
+      />
     </AppBar>
   );
 };
