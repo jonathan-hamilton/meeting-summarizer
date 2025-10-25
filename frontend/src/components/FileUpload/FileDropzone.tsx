@@ -19,7 +19,17 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   onFilesDropped,
 }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop: onFilesDropped,
+    onDrop: (acceptedFiles, rejections) => {
+      // Call the parent handler
+      onFilesDropped(acceptedFiles, rejections);
+      
+      // Reset the input value to allow selecting the same file again
+      // This is necessary because browsers don't trigger onChange if the same file is selected
+      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+      if (input) {
+        input.value = '';
+      }
+    },
     accept: {
       "audio/*": acceptedFileTypes,
     },

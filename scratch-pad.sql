@@ -20,8 +20,8 @@ INSERT INTO InvitationCodes (
     CreatedBy)
     VALUES (
         NEWID(),
-        'Q8Cj98!:xTJVRMp4', 
-        'marc.c.david@gmail.com', 
+        'Q8Cj98!:xTJVRMpP1', 
+        'jhamilton.swe@gmail.com', 
         '2025-10-25 11:45:21', 
         NULL, 
         1, 
@@ -30,13 +30,13 @@ INSERT INTO InvitationCodes (
 
 UPDATE [dbo].[Users]
 SET EmailVerified = 1
-WHERE Email = 'jhamilton.swe@gmail.com';
+WHERE Email = 'katie.aurigemma@gmail.com';
 
 UPDATE [dbo].[Users]
 SET TokenBalance = 1000
 WHERE Email = 'jhamilton.swe@gmail.com';
 
-SELECT TOP (10) email, 
+SELECT TOP (100) email, 
 EmailVerified, 
 LegalDisclaimerAcknowledgedAt, 
 AiChatDiscoveryShownAt,

@@ -670,6 +670,7 @@ const AppContent: React.FC = () => {
                       </Typography>
                       <FileUpload 
                         onTranscriptionComplete={handleTranscriptionCompleteWrapper}
+                        onPurchaseTokens={() => setTokenPurchaseDialogOpen(true)}
                         onClearPreviousData={handleClearPreviousData}
                         hasPreviousResults={transcriptionResults.length > 0}
                       />
