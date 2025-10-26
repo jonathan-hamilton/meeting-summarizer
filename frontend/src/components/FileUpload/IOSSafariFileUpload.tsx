@@ -33,7 +33,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'direct-visible-input-comprehensive-accept'
+            pattern: 'programmatic-file-input-button'
           })
         });
       } catch (error) {
@@ -95,7 +95,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   }, [onFilesDropped]);
 
   const handleInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('🍎 iOS Safari: File input change event triggered (Material-UI label pattern)');
+    console.log('🍎 iOS Safari: File input change event triggered (programmatic approach)');
     
     // Track file selection for debugging
     try {
@@ -104,8 +104,8 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'direct-visible-input-comprehensive-accept',
-          acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
+          pattern: 'programmatic-file-input',
+          acceptAttribute: event.target?.accept || 'none (all files allowed)'
         })
       });
     } catch (error) {
@@ -114,6 +114,30 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     
     handleFileSelection(event.target.files);
   }, [handleFileSelection]);
+
+  // iOS Safari programmatic file input trigger
+  const triggerFileInput = useCallback(() => {
+    console.log('🍎 iOS Safari: Triggering programmatic file input');
+    
+    // Create fresh input element
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'audio/*,audio/mp3,audio/mp4,audio/mpeg,audio/wav,audio/wave,audio/x-wav,audio/x-m4a,audio/m4a,audio/flac,audio/ogg,audio/webm,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm';
+    
+    // Set up change handler
+    input.onchange = (e) => {
+      const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleInputChange(event);
+    };
+    
+    // Trigger file picker
+    input.click();
+    
+    // Clean up (optional - browser usually handles this)
+    setTimeout(() => {
+      input.remove();
+    }, 1000);
+  }, [handleInputChange]);
 
   return (
     <Paper
@@ -151,32 +175,46 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Direct visible file input with comprehensive accept */}
+      {/* iOS Safari: Programmatic file input trigger */}
       <form>
+        <button
+          type="button"
+          onClick={triggerFileInput}
+          style={{
+            fontSize: '18px',
+            padding: '15px 25px',
+            border: '3px solid #007AFF',
+            borderRadius: '12px',
+            backgroundColor: '#007AFF',
+            color: 'white',
+            cursor: 'pointer',
+            outline: 'none',
+            fontWeight: 'bold',
+            minWidth: '250px',
+            textAlign: 'center'
+          }}
+        >
+          Choose Audio File
+        </button>
+        {/* Hidden fallback input */}
         <input
           ref={fileInputRef}
           type="file"
           accept="audio/*,audio/mp3,audio/mp4,audio/mpeg,audio/wav,audio/wave,audio/x-wav,audio/x-m4a,audio/m4a,audio/flac,audio/ogg,audio/webm,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
           onChange={handleInputChange}
           style={{
-            fontSize: '18px',
-            padding: '15px',
-            border: '3px solid #007AFF',
-            borderRadius: '12px',
-            width: '100%',
-            maxWidth: '400px',
-            backgroundColor: '#f8f9fa',
-            cursor: 'pointer',
-            outline: 'none',
-            WebkitAppearance: 'none',
-            appearance: 'none'
+            position: 'absolute',
+            left: '-9999px',
+            opacity: 0,
+            width: '1px',
+            height: '1px'
           }}
         />
       </form>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • Direct Visible Input + Comprehensive Accept
+        iOS Safari • Programmatic File Input (Fresh DOM Element)
       </Typography>
     </Paper>
   );
