@@ -38,14 +38,29 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       }
     },
     accept: {
+      // Broader audio acceptance for iOS Safari compatibility
       "audio/*": acceptedFileTypes,
-      // Enhanced mobile file picker - add explicit MIME types for better mobile support
-      "video/mp4": [".mp4"],
+      "video/mp4": [".mp4", ".m4a"], // iOS Safari sometimes reports .m4a as video/mp4
+      "video/quicktime": [".m4a"],    // iOS Safari alternative MIME type
       "video/webm": [".webm"],
+      // Add generic catch-all for iOS Safari quirks
+      "*/*": acceptedFileTypes,
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
     disabled: false, // Always allow uploads
+    // More lenient validation for iOS Safari
+    validator: (file) => {
+      // Use extension-based validation for iOS Safari compatibility
+      const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+      if (!acceptedFileTypes.includes(extension)) {
+        return {
+          code: 'invalid-file-type',
+          message: `File type ${extension} not supported`
+        };
+      }
+      return null;
+    }
   });
 
   // Enhanced mobile file picker trigger
@@ -176,7 +191,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         data-testid="file-input"
         // Enhanced mobile file picker attributes
         aria-label={isMobile ? "Tap to select audio files" : "Select audio files to upload"}
-        accept="audio/*,video/mp4,video/webm,.wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
+        // iOS Safari optimized accept attribute - prioritize extensions over MIME types
+        accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm,audio/*,video/mp4"
         // iOS Safari optimization
         capture={isMobile ? undefined : false}
         style={{ 
