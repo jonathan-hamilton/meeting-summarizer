@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MeetingSummarizer.Api.Data.Entities;
+using MeetingSummarizer.Api.Models;
 
 namespace MeetingSummarizer.Api.Data;
 
@@ -46,6 +47,11 @@ public class MeetingSummarizerDbContext : DbContext
     /// Token refunds for failed transcriptions
     /// </summary>
     public DbSet<TokenRefund> TokenRefunds { get; set; } = null!;
+
+    /// <summary>
+    /// Token reservations for preventing race conditions in token charging
+    /// </summary>
+    public DbSet<TokenReservation> TokenReservations { get; set; } = null!;
 
     /// <summary>
     /// Fast transcription jobs for all meetings (Azure Fast Transcription API)
@@ -364,6 +370,37 @@ public class MeetingSummarizerDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(ic => ic.UsedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Configure TokenReservation entity
+        modelBuilder.Entity<TokenReservation>(entity =>
+        {
+            entity.HasKey(tr => tr.Id);
+            
+            // Configure indexes for performance
+            entity.HasIndex(tr => tr.UserId);
+            entity.HasIndex(tr => tr.MeetingId);
+            entity.HasIndex(tr => tr.Status);
+            entity.HasIndex(tr => tr.ExpiresAt);
+            entity.HasIndex(tr => new { tr.Status, tr.ExpiresAt }); // For cleanup queries
+            
+            // Configure properties
+            entity.Property(tr => tr.TokensReserved).IsRequired();
+            entity.Property(tr => tr.ReservedAt).IsRequired();
+            entity.Property(tr => tr.ExpiresAt).IsRequired();
+            entity.Property(tr => tr.Status).IsRequired();
+            entity.Property(tr => tr.Description).HasMaxLength(500);
+            
+            // Configure foreign key relationships without navigation properties
+            entity.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(tr => tr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+                
+            entity.HasOne<Meeting>()
+                .WithMany()
+                .HasForeignKey(tr => tr.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
