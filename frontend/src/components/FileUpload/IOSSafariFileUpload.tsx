@@ -83,12 +83,19 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   const handleUploadClick = useCallback(() => {
     console.log('🍎 iOS Safari: Upload button clicked');
     console.log('🍎 iOS Safari: File input ref:', fileInputRef.current);
+    console.log('🍎 iOS Safari: User agent:', navigator.userAgent);
+    console.log('🍎 iOS Safari: Input accept attribute:', fileInputRef.current?.accept);
     
     if (fileInputRef.current) {
       try {
         console.log('🍎 iOS Safari: Attempting to trigger file input click');
-        fileInputRef.current.click();
-        console.log('🍎 iOS Safari: File input click triggered successfully');
+        // Add a small delay to ensure the element is ready
+        setTimeout(() => {
+          if (fileInputRef.current) {
+            fileInputRef.current.click();
+            console.log('🍎 iOS Safari: File input click triggered successfully');
+          }
+        }, 100);
       } catch (error) {
         console.error('🍎 iOS Safari: Error triggering file input:', error);
       }
@@ -115,11 +122,11 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       }}
       onClick={handleUploadClick}
     >
-      {/* Hidden file input - iOS Safari specific configuration */}
+      {/* Hidden file input - iOS Safari optimized configuration */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="audio/*,video/*,.wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
+        accept="audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" // MIME types only for iOS Safari
         multiple={false}
         onChange={handleInputChange}
         style={{ display: 'none' }}
