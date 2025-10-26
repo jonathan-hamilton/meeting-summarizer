@@ -1,10 +1,58 @@
 import { ACCEPTED_AUDIO_FORMATS, MAX_FILE_SIZE } from './types';
 
+// iOS Safari sometimes provides incorrect or empty MIME types
+// Use file extension as fallback validation
+const ACCEPTED_EXTENSIONS = ['.wav', '.mp3', '.mp4', '.m4a', '.flac', '.ogg', '.webm'];
+
+const getFileExtension = (filename: string): string => {
+  return filename.toLowerCase().substring(filename.lastIndexOf('.'));
+};
+
+const isValidAudioFile = (file: File): boolean => {
+  // Enhanced logging for iOS Safari debugging
+  const extension = getFileExtension(file.name);
+  const mimeTypeValid = file.type && ACCEPTED_AUDIO_FORMATS.includes(file.type as any);
+  const extensionValid = ACCEPTED_EXTENSIONS.includes(extension);
+  
+  console.log('🔍 File validation:', {
+    fileName: file.name,
+    mimeType: file.type || 'empty/unknown',
+    extension: extension,
+    mimeTypeValid: mimeTypeValid,
+    extensionValid: extensionValid,
+    userAgent: navigator.userAgent.includes('iPhone') ? 'iPhone Safari' : 'Other'
+  });
+  
+  // First try MIME type validation
+  if (mimeTypeValid) {
+    console.log('✅ File validated by MIME type:', file.type);
+    return true;
+  }
+  
+  // Fallback to extension validation for iOS Safari compatibility
+  if (extensionValid) {
+    console.log('✅ File validated by extension (iOS Safari fallback):', extension);
+    return true;
+  }
+  
+  console.log('❌ File validation failed:', {
+    fileName: file.name,
+    providedType: file.type || 'empty',
+    extension: extension,
+    acceptedTypes: ACCEPTED_AUDIO_FORMATS,
+    acceptedExtensions: ACCEPTED_EXTENSIONS
+  });
+  
+  return false;
+};
+
 export const validateFile = (file: File): { isValid: boolean; error?: string } => {
-  if (!ACCEPTED_AUDIO_FORMATS.includes(file.type as any)) {
+  // Use enhanced iOS Safari compatible validation
+  if (!isValidAudioFile(file)) {
+    const extension = getFileExtension(file.name);
     return {
       isValid: false,
-      error: `Invalid file type: ${file.type}. Supported formats: ${ACCEPTED_AUDIO_FORMATS.join(', ')}`
+      error: `Invalid file type: ${file.type || 'unknown'} (${extension}). Supported formats: ${ACCEPTED_EXTENSIONS.join(', ')}`
     };
   }
 

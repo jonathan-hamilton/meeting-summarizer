@@ -2,6 +2,20 @@
 
 ## ✅ RESOLVED TECHNICAL DEBT (October 25, 2025)
 
+### iOS Safari File Upload Compatibility - RESOLVED ✅
+**Issue**: iPhone users unable to upload files due to "feature not supported" error  
+**Root Cause**: iOS Safari MIME type inconsistencies and strict file type validation  
+**Resolution**: iOS Safari Compatibility Fix  
+**Date Resolved**: October 25, 2025
+
+**Technical Details**:
+- **MIME Type Issues**: iOS Safari provides incorrect/empty MIME types for valid audio files
+- **Validation Gap**: Strict MIME type validation rejected legitimate files from iOS Safari
+- **Accept Attribute**: HTML input accept needed iOS Safari specific formatting
+- **Solution**: Enhanced MIME type support, extension-based fallback validation, improved dropzone configuration
+- **Components Affected**: FileUpload, FileDropzone, validation utils, file type constants
+- **Impact**: iPhone users can now successfully select and upload audio files
+
 ### Dialog State Management & File Input Handling - RESOLVED ✅
 **Issue**: Token purchase dialog not opening on subsequent file upload attempts  
 **Root Cause**: Improper dialog state reset and browser file input behavior  
