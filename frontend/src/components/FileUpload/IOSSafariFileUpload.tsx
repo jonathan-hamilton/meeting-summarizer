@@ -33,7 +33,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'hidden-input-label-button'
+            pattern: 'comprehensive-accept-mime-and-extensions'
           })
         });
       } catch (error) {
@@ -104,7 +104,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'hidden-input-label-button',
+          pattern: 'comprehensive-accept-mime-and-extensions',
           acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
         })
       });
@@ -175,7 +175,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           id="ios-safari-file-input"
           ref={fileInputRef}
           type="file"
-          accept="audio/*"
+          accept="audio/*,audio/mp3,audio/mp4,audio/mpeg,audio/wav,audio/wave,audio/x-wav,audio/x-m4a,audio/m4a,audio/flac,audio/ogg,audio/webm,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
           onChange={handleInputChange}
           style={{
             position: 'absolute',
@@ -189,7 +189,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • Hidden Input + Label Button Pattern
+        iOS Safari • Comprehensive Accept (MIME types + extensions)
       </Typography>
     </Paper>
   );
