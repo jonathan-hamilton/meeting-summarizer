@@ -94,8 +94,23 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     }
   }, [onFilesDropped]);
 
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🍎 iOS Safari: File input change event triggered');
+    
+    // Track file selection for debugging
+    try {
+      await fetch('/api/IOSSafariDebug/fileinput', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'fileSelectionChanged',
+          acceptAttribute: fileInputRef.current?.accept
+        })
+      });
+    } catch (error) {
+      console.error('Failed to track file selection:', error);
+    }
+    
     handleFileSelection(event.target.files);
   }, [handleFileSelection]);
 
@@ -105,44 +120,28 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     console.log('🍎 iOS Safari: User agent:', navigator.userAgent);
     console.log('🍎 iOS Safari: Input accept attribute:', fileInputRef.current?.accept);
     
-    // Track file input click for debugging
-    try {
-      await fetch('/api/IOSSafariDebug/fileinput', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'uploadButtonClicked',
-          acceptAttribute: fileInputRef.current?.accept
-        })
-      });
-    } catch (error) {
-      console.error('Failed to track file input:', error);
-    }
-    
     if (fileInputRef.current) {
       try {
         console.log('🍎 iOS Safari: Attempting to trigger file input click');
-        // Add a small delay to ensure the element is ready
-        setTimeout(async () => {
-          if (fileInputRef.current) {
-            fileInputRef.current.click();
-            console.log('🍎 iOS Safari: File input click triggered successfully');
-            
-            // Track successful click
-            try {
-              await fetch('/api/IOSSafariDebug/fileinput', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  event: 'fileInputClickTriggered',
-                  acceptAttribute: fileInputRef.current?.accept
-                })
-              });
-            } catch (error) {
-              console.error('Failed to track file input click:', error);
-            }
-          }
-        }, 100);
+        
+        // Track file input click for debugging (single event per button click)
+        try {
+          await fetch('/api/IOSSafariDebug/fileinput', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'fileInputClickTriggered',
+              acceptAttribute: fileInputRef.current?.accept
+            })
+          });
+        } catch (error) {
+          console.error('Failed to track file input:', error);
+        }
+        
+        // Trigger the native file input
+        fileInputRef.current.click();
+        console.log('🍎 iOS Safari: File input click triggered successfully');
+        
       } catch (error) {
         console.error('🍎 iOS Safari: Error triggering file input:', error);
       }
@@ -160,14 +159,12 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         border: `2px dashed ${theme.palette.primary.main}`,
         borderRadius: 2,
         backgroundColor: theme.palette.background.default,
-        cursor: 'pointer',
         transition: 'all 0.3s ease',
         '&:hover': {
           backgroundColor: theme.palette.action.hover,
           borderColor: theme.palette.primary.dark,
         },
       }}
-      onClick={handleUploadClick}
     >
       {/* Hidden file input - iOS Safari optimized configuration */}
       <input
@@ -203,10 +200,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       <Button
         variant="contained"
         startIcon={<CloudUpload />}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleUploadClick();
-        }}
+        onClick={handleUploadClick}
         sx={{ mt: 2 }}
       >
         Choose File
