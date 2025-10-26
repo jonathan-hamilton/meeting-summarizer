@@ -33,7 +33,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'no-accept-attribute'
+            pattern: 'hidden-input-label-button'
           })
         });
       } catch (error) {
@@ -104,7 +104,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'no-accept-attribute',
+          pattern: 'hidden-input-label-button',
           acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
         })
       });
@@ -151,25 +151,45 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Remove accept attribute entirely to test file visibility */}
+      {/* iOS Safari: Label wrapper approach for better touch handling */}
       <form>
+        <label 
+          htmlFor="ios-safari-file-input"
+          style={{
+            display: 'inline-block',
+            padding: '12px 20px',
+            backgroundColor: '#007AFF',
+            color: 'white',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            border: 'none',
+            textAlign: 'center',
+            minWidth: '200px'
+          }}
+        >
+          Choose Audio File
+        </label>
         <input
+          id="ios-safari-file-input"
           ref={fileInputRef}
           type="file"
+          accept="audio/*"
           onChange={handleInputChange}
           style={{
-            fontSize: '16px',
-            padding: '8px',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            width: '250px',
+            position: 'absolute',
+            left: '-9999px',
+            opacity: 0,
+            width: '1px',
+            height: '1px'
           }}
         />
       </form>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • No Accept Attribute (Test All Files)
+        iOS Safari • Hidden Input + Label Button Pattern
       </Typography>
     </Paper>
   );
