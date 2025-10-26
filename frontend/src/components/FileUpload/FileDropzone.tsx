@@ -91,28 +91,55 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
 
   // Enhanced mobile file picker trigger with iOS Safari detection
   const handleFilePickerClick = useCallback((e: React.MouseEvent) => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    
     console.log('📱 File picker clicked:', { 
       isMobile, 
-      isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
-      isSafari: /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+      isIOS,
+      isSafari,
+      userAgent: navigator.userAgent,
+      inputRef: !!inputRef.current,
+      inputAccept: inputRef.current?.accept,
+      inputMultiple: inputRef.current?.multiple
     });
     
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // iOS Safari optimization - direct input trigger
-    if (inputRef.current) {
-      // Clear any previous value for iOS Safari compatibility
-      inputRef.current.value = '';
+    // Try different approaches for iOS Safari
+    if (isIOS && isSafari) {
+      console.log('🍎 iOS Safari detected - using aggressive compatibility mode');
       
-      // Trigger file picker with focus for accessibility
-      inputRef.current.click();
+      // Method 1: Try to completely bypass react-dropzone
+      e.preventDefault();
+      e.stopPropagation();
       
-      // iOS Safari: Ensure focus for screen reader announcements
-      if (isMobile) {
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 100);
+      if (inputRef.current) {
+        console.log('🍎 Triggering iOS Safari file picker directly');
+        inputRef.current.value = '';
+        
+        // Add error handling for iOS Safari click
+        try {
+          inputRef.current.click();
+          console.log('🍎 iOS Safari click successful');
+        } catch (error) {
+          console.error('🍎 iOS Safari click failed:', error);
+          // Fallback: try without preventDefault
+          return;
+        }
+      }
+    } else {
+      // Standard mobile/desktop handling
+      e.preventDefault();
+      e.stopPropagation();
+      
+      if (inputRef.current) {
+        inputRef.current.value = '';
+        inputRef.current.click();
+        
+        if (isMobile) {
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 100);
+        }
       }
     }
   }, [isMobile]);
@@ -240,6 +267,27 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           height: '1px',
         }}
       />
+      
+      {/* iOS Safari Emergency Fallback - Visible Input */}
+      {isMobile && /iPad|iPhone|iPod/.test(navigator.userAgent) && (
+        <input
+          type="file"
+          accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
+          multiple
+          onChange={handleFileChange}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            left: '10px',
+            zIndex: 1000,
+            opacity: 0.1,
+            width: '100px',
+            height: '44px',
+            backgroundColor: 'red',
+            border: '2px solid red'
+          }}
+        />
+      )}
       
       <CloudUpload
         sx={{
