@@ -24,6 +24,25 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   const theme = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Track page load for iOS Safari debugging
+  React.useEffect(() => {
+    const trackPageLoad = async () => {
+      try {
+        await fetch('/api/IOSSafariDebug/pageload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            page: 'IOSSafariFileUpload',
+            componentDetected: true
+          })
+        });
+      } catch (error) {
+        console.error('Failed to track page load:', error);
+      }
+    };
+    trackPageLoad();
+  }, []);
+
   const handleFileSelection = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) {
       console.log('🍎 iOS Safari: No files selected');
@@ -80,20 +99,48 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     handleFileSelection(event.target.files);
   }, [handleFileSelection]);
 
-  const handleUploadClick = useCallback(() => {
+  const handleUploadClick = useCallback(async () => {
     console.log('🍎 iOS Safari: Upload button clicked');
     console.log('🍎 iOS Safari: File input ref:', fileInputRef.current);
     console.log('🍎 iOS Safari: User agent:', navigator.userAgent);
     console.log('🍎 iOS Safari: Input accept attribute:', fileInputRef.current?.accept);
     
+    // Track file input click for debugging
+    try {
+      await fetch('/api/IOSSafariDebug/fileinput', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'uploadButtonClicked',
+          acceptAttribute: fileInputRef.current?.accept
+        })
+      });
+    } catch (error) {
+      console.error('Failed to track file input:', error);
+    }
+    
     if (fileInputRef.current) {
       try {
         console.log('🍎 iOS Safari: Attempting to trigger file input click');
         // Add a small delay to ensure the element is ready
-        setTimeout(() => {
+        setTimeout(async () => {
           if (fileInputRef.current) {
             fileInputRef.current.click();
             console.log('🍎 iOS Safari: File input click triggered successfully');
+            
+            // Track successful click
+            try {
+              await fetch('/api/IOSSafariDebug/fileinput', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  event: 'fileInputClickTriggered',
+                  acceptAttribute: fileInputRef.current?.accept
+                })
+              });
+            } catch (error) {
+              console.error('Failed to track file input click:', error);
+            }
           }
         }, 100);
       } catch (error) {
