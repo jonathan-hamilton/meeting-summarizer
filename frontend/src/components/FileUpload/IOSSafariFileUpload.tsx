@@ -33,7 +33,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'programmatic-file-input-button'
+            pattern: 'react-dropzone-issue-1039-specific-MIME-types-fix'
           })
         });
       } catch (error) {
@@ -104,8 +104,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'programmatic-file-input',
-          acceptAttribute: event.target?.accept || 'none (all files allowed)'
+          pattern: 'react-dropzone-issue-1039-fix',
+          acceptAttribute: event.target?.accept || 'none (all files allowed)',
+          solution: 'specific-MIME-types-instead-of-audio-wildcard'
         })
       });
     } catch (error) {
@@ -130,8 +131,8 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     console.log('🍎 iOS Safari: Attempt 2 - Creating fresh input element');
     const input = document.createElement('input');
     input.type = 'file';
-    // Simplified accept attribute for iOS Safari compatibility
-    input.accept = 'audio/*,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm';
+    // iOS Safari fix: Use specific MIME types instead of audio/* wildcard (react-dropzone issue #1039)
+    input.accept = 'audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac';
     input.multiple = false; // Single file selection for better iOS Safari compatibility
     
     // Add to DOM temporarily (some iOS versions require this)
@@ -198,9 +199,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari Compatible Upload
+        iOS Safari Fix: Specific MIME Types (react-dropzone #1039)
         <br />
-        Supported: WAV, MP3, MP4, M4A, FLAC, OGG, WebM
+        Supported: WAV, MP3, MP4, M4A, FLAC, OGG, WebM, AAC
         <br />
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
@@ -226,11 +227,11 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         >
           Choose Audio File
         </button>
-        {/* Hidden fallback input with iOS Safari compatible attributes */}
+        {/* Hidden fallback input with iOS Safari specific MIME types (react-dropzone issue #1039 fix) */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
+          accept="audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
           multiple={false}
           onChange={handleInputChange}
           style={{
@@ -246,7 +247,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • Multi-Approach File Input • Single File Selection
+        iOS Safari • react-dropzone #1039 Fix • Specific MIME Types
       </Typography>
     </Paper>
   );
