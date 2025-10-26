@@ -2,7 +2,6 @@ import React, { useRef, useCallback } from 'react';
 import {
   Paper,
   Typography,
-  Box,
   useTheme,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
@@ -152,30 +151,26 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Completely visible file input - most compatible approach */}
-      <Box sx={{ width: '100%', textAlign: 'center' }}>
+      {/* iOS Safari: Absolute simplest form approach */}
+      <form>
         <input
           ref={fileInputRef}
           type="file"
-          multiple={false}
+          accept="audio/*"
           onChange={handleInputChange}
           style={{
-            width: '100%',
-            padding: '12px',
-            fontSize: '16px', // Prevents zoom on iOS
-            borderRadius: '8px',
-            border: `2px solid ${theme.palette.primary.main}`,
-            backgroundColor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
-            cursor: 'pointer',
-            marginTop: '16px',
+            fontSize: '16px',
+            padding: '8px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            width: '250px',
           }}
         />
-      </Box>
+      </form>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari Optimized • Fully Visible Native File Input
+        iOS Safari • Absolute Minimal Form (No Styling)
       </Typography>
     </Paper>
   );
