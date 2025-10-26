@@ -104,7 +104,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          acceptAttribute: fileInputRef.current?.accept
+          acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
         })
       });
     } catch (error) {
@@ -156,7 +156,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           id="ios-safari-file-input"
           ref={fileInputRef}
           type="file"
-          accept="audio/*"
+          /* No accept attribute - iOS Safari sometimes blocks files even with correct MIME types */
           multiple={false}
           onChange={handleInputChange}
           style={{
@@ -180,7 +180,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari Optimized • Label-Based File Input (Apple Recommended)
+        iOS Safari Optimized • No Accept Filter (Client-Side Validation)
       </Typography>
     </Paper>
   );
