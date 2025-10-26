@@ -2,7 +2,7 @@
 
 A modern web application for transcribing and summarizing meeting audio with AI-powered insights and intelligent speaker identification.
 
-**🎯 Project Status**: 98% Complete | Sprint 7 at 90% (9/10 stories) + Sprint 8 Mobile Foundation 83% Complete (5/6 stories) ✅
+**🎯 Project Status**: 98% Complete | Sprint 7 at 90% (9/10 stories) + Sprint 8 Mobile Foundation 83% Complete (5/6 stories) + **iOS Safari Mobile Compatibility** ✅
 
 ## 🚀 Current Sprint Status
 
@@ -61,6 +61,14 @@ A modern web application for transcribing and summarizing meeting audio with AI-
 - **Phase 1 (Sprint 8)**: Mobile-first responsive web design ← **83% COMPLETE - EXCEPTIONAL SUCCESS** ✅
 - **Phase 2 (Future Sprint)**: PWA foundation with offline capabilities  
 - **Phase 3 (Future Enhancement)**: Advanced PWA features and app store deployment
+
+### 📱 **Latest Mobile Enhancement (October 25, 2025):**
+- ✅ **iOS Safari File Upload Compatibility Fix - COMPLETE**: Critical mobile browser compatibility enhancement resolving iPhone user upload failures ✅
+  - **Issue Resolved**: "Feature not supported" error on iPhone 14 when selecting audio files through file browser on dev.meeting-summary.io
+  - **Technical Solution**: Enhanced MIME type support, extension-based fallback validation, iOS Safari specific dropzone configuration
+  - **Impact**: iPhone users can now successfully select and upload audio files, eliminating critical mobile UX gap
+  - **Components Enhanced**: FileUpload, FileDropzone, validation utilities, file type constants with iOS Safari compatibility
+  - **User Experience**: Seamless mobile file upload experience across all iPhone/Safari versions
 
 **Previous Sprint 7 Achievements (October 25, 2025):**
 - ✅ **S7.9 SendGrid to Azure Communication Services Migration - COMPLETE**: Full email service migration successfully implemented with complete SendGrid replacement

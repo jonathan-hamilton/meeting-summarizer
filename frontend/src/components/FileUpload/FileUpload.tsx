@@ -560,10 +560,37 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-      console.log('🎯 onDrop triggered:', { acceptedFiles: acceptedFiles.length, rejections: fileRejections.length });
+      console.log('🎯 onDrop triggered:', { 
+        acceptedFiles: acceptedFiles.length, 
+        rejections: fileRejections.length,
+        userAgent: navigator.userAgent.includes('iPhone') ? 'iPhone Safari' : 'Other'
+      });
+      
+      // Enhanced iOS Safari debugging
+      if (acceptedFiles.length > 0) {
+        acceptedFiles.forEach((file, index) => {
+          console.log(`📁 File ${index + 1}:`, {
+            name: file.name,
+            size: file.size,
+            type: file.type || 'unknown/empty',
+            lastModified: file.lastModified,
+            extension: file.name.substring(file.name.lastIndexOf('.'))
+          });
+        });
+      }
+      
       if (fileRejections.length > 0) {
         const errorMessages = fileRejections.map((rejection) => {
-          const errors = rejection.errors.map((error) => error.message).join(", ");
+          const errors = rejection.errors.map((error) => {
+            console.error('🚫 File rejection:', {
+              fileName: rejection.file.name,
+              fileType: rejection.file.type,
+              fileSize: rejection.file.size,
+              errorCode: error.code,
+              errorMessage: error.message
+            });
+            return error.message;
+          }).join(", ");
           return `${rejection.file.name}: ${errors}`;
         });
         setValidationErrors(errorMessages);
@@ -574,12 +601,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
       const { validFiles, errors } = validateFiles(acceptedFiles);
       if (errors.length > 0) {
+        console.error('🚫 File validation errors:', errors);
         setValidationErrors(errors);
+      }
+
+      // Enhanced iOS Safari validation logging
+      if (validFiles.length > 0) {
+        console.log('✅ Valid files for processing:', validFiles.map(f => ({
+          name: f.name,
+          type: f.type || 'unknown',
+          size: f.size
+        })));
       }
 
       // For single file uploads, show cost estimation dialog first
       if (validFiles.length === 1) {
         const file = validFiles[0];
+        console.log('💰 Setting up cost estimation for single file:', file.name);
         setPendingFile(file);
         
         // Calculate token data using API for accuracy
@@ -589,10 +627,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
             getFileEstimationAsync(file)
           ]);
           
+          console.log('📊 Token calculation successful:', { tokenCalc, fileEstimation });
           setPendingTokenCalc({ tokenCalc, fileEstimation });
           openCostDialog();
         } catch (error) {
-          console.error('Error calculating token data:', error);
+          console.error('❌ Error calculating token data:', error);
           // Fallback to synchronous calculation if API fails
           setPendingTokenCalc(null);
           openCostDialog();
