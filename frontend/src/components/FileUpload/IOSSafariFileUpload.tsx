@@ -4,11 +4,25 @@ import {
   Typography,
   Button,
   useTheme,
+  styled,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import { type FileRejection } from 'react-dropzone';
 import { isValidAudioFile, formatFileSize } from './validation';
 import { MAX_FILE_SIZE } from './types';
+
+// Material-UI official pattern for file uploads
+const VisuallyHiddenInput = styled('input')({
+  clip: 'rect(0 0 0 0)',
+  clipPath: 'inset(50%)',
+  height: 1,
+  overflow: 'hidden',
+  position: 'absolute',
+  bottom: 0,
+  left: 0,
+  whiteSpace: 'nowrap',
+  width: 1,
+});
 
 interface IOSSafariFileUploadProps {
   onFilesDropped: (acceptedFiles: File[], rejections: FileRejection[]) => void;
@@ -33,7 +47,8 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
-            componentDetected: true
+            componentDetected: true,
+            pattern: 'material-ui-label'
           })
         });
       } catch (error) {
@@ -95,7 +110,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   }, [onFilesDropped]);
 
   const handleInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('🍎 iOS Safari: File input change event triggered');
+    console.log('🍎 iOS Safari: File input change event triggered (Material-UI label pattern)');
     
     // Track file selection for debugging
     try {
@@ -104,6 +119,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
+          pattern: 'material-ui-label',
           acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
         })
       });
@@ -150,37 +166,25 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Use visible file input with label - Apple's recommended approach */}
-      <label htmlFor="ios-safari-file-input" style={{ cursor: 'pointer' }}>
-        <input
-          id="ios-safari-file-input"
+      {/* Material-UI official file upload pattern for iOS Safari compatibility */}
+      <Button
+        component="label"
+        variant="contained"
+        startIcon={<CloudUpload />}
+        sx={{ mt: 2 }}
+      >
+        Choose File
+        <VisuallyHiddenInput
           ref={fileInputRef}
           type="file"
-          /* No accept attribute - iOS Safari sometimes blocks files even with correct MIME types */
           multiple={false}
           onChange={handleInputChange}
-          style={{
-            opacity: 0,
-            position: 'absolute',
-            zIndex: -1,
-            width: '1px',
-            height: '1px',
-            overflow: 'hidden',
-          }}
         />
-        <Button
-          component="span"
-          variant="contained"
-          startIcon={<CloudUpload />}
-          sx={{ mt: 2 }}
-        >
-          Choose File
-        </Button>
-      </label>
+      </Button>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari Optimized • No Accept Filter (Client-Side Validation)
+        iOS Safari Optimized • Material-UI Label Pattern (Touch-Friendly)
       </Typography>
     </Paper>
   );
