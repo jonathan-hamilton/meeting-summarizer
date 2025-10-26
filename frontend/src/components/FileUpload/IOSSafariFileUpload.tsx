@@ -2,27 +2,13 @@ import React, { useRef, useCallback } from 'react';
 import {
   Paper,
   Typography,
-  Button,
+  Box,
   useTheme,
-  styled,
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
 import { type FileRejection } from 'react-dropzone';
 import { isValidAudioFile, formatFileSize } from './validation';
 import { MAX_FILE_SIZE } from './types';
-
-// Material-UI official pattern for file uploads
-const VisuallyHiddenInput = styled('input')({
-  clip: 'rect(0 0 0 0)',
-  clipPath: 'inset(50%)',
-  height: 1,
-  overflow: 'hidden',
-  position: 'absolute',
-  bottom: 0,
-  left: 0,
-  whiteSpace: 'nowrap',
-  width: 1,
-});
 
 interface IOSSafariFileUploadProps {
   onFilesDropped: (acceptedFiles: File[], rejections: FileRejection[]) => void;
@@ -166,25 +152,30 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* Material-UI official file upload pattern for iOS Safari compatibility */}
-      <Button
-        component="label"
-        variant="contained"
-        startIcon={<CloudUpload />}
-        sx={{ mt: 2 }}
-      >
-        Choose File
-        <VisuallyHiddenInput
+      {/* iOS Safari: Completely visible file input - most compatible approach */}
+      <Box sx={{ width: '100%', textAlign: 'center' }}>
+        <input
           ref={fileInputRef}
           type="file"
           multiple={false}
           onChange={handleInputChange}
+          style={{
+            width: '100%',
+            padding: '12px',
+            fontSize: '16px', // Prevents zoom on iOS
+            borderRadius: '8px',
+            border: `2px solid ${theme.palette.primary.main}`,
+            backgroundColor: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            cursor: 'pointer',
+            marginTop: '16px',
+          }}
         />
-      </Button>
+      </Box>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari Optimized • Material-UI Label Pattern (Touch-Friendly)
+        iOS Safari Optimized • Fully Visible Native File Input
       </Typography>
     </Paper>
   );
