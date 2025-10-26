@@ -22,6 +22,7 @@ import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
 
 import { FileDropzone } from "./FileDropzone";
+import { IOSSafariFileUpload } from "./IOSSafariFileUpload";
 import { validateFiles } from "./validation";
 import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
@@ -77,6 +78,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // iOS Safari detection
+  const isIOSSafari = useCallback(() => {
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    const result = isIOS && isSafari;
+    console.log('🍎 iOS Safari Detection:', { isIOS, isSafari, result, userAgent });
+    return result;
+  }, []);
   
   // Use Zustand store for state management (design pattern compliance)
   const { 
@@ -661,8 +672,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
         Audio File Upload
       </Typography>
       
-      {/* File Dropzone */}
-      <FileDropzone onFilesDropped={onDrop} />
+      {/* File Dropzone - iOS Safari gets specialized component */}
+      {isIOSSafari() ? (
+        <IOSSafariFileUpload onFilesDropped={onDrop} />
+      ) : (
+        <FileDropzone onFilesDropped={onDrop} />
+      )}
 
       {/* Validation Errors */}
       {validationErrors.length > 0 && (
