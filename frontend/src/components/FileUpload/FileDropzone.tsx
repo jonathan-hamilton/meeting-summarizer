@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback, useState } from 'react';
 import {
   Paper,
   Typography,
@@ -24,39 +24,74 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   
+  // Enhanced mobile file input reference management
+  const inputRef = useRef<HTMLInputElement>(null);
+  
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles, rejections) => {
       // Call the parent handler
       onFilesDropped(acceptedFiles, rejections);
       
-      // Reset the input value to allow selecting the same file again
-      // This is necessary because browsers don't trigger onChange if the same file is selected
-      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-      if (input) {
-        input.value = '';
+      // Enhanced input reset for mobile browsers
+      if (inputRef.current) {
+        inputRef.current.value = '';
       }
     },
     accept: {
       "audio/*": acceptedFileTypes,
+      // Enhanced mobile file picker - add explicit MIME types for better mobile support
+      "video/mp4": [".mp4"],
+      "video/webm": [".webm"],
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
     disabled: false, // Always allow uploads
   });
 
-  const handleClick = (e: React.MouseEvent) => {
-    // In production mode, trigger the file picker directly
-    const input = e.currentTarget.parentElement?.querySelector('input[type="file"]') as HTMLInputElement;
-    if (input) {
-      input.click();
+  // Enhanced mobile file picker trigger
+  const handleFilePickerClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // iOS Safari optimization - direct input trigger
+    if (inputRef.current) {
+      // Clear any previous value for iOS Safari compatibility
+      inputRef.current.value = '';
+      
+      // Trigger file picker with focus for accessibility
+      inputRef.current.click();
+      
+      // iOS Safari: Ensure focus for screen reader announcements
+      if (isMobile) {
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      }
     }
-  };
+  }, [isMobile]);
+
+  // Enhanced mobile touch feedback states
+  const [isTouching, setIsTouching] = useState(false);
+  
+  const handleTouchStart = useCallback(() => {
+    if (isMobile) {
+      setIsTouching(true);
+    }
+  }, [isMobile]);
+  
+  const handleTouchEnd = useCallback(() => {
+    if (isMobile) {
+      setIsTouching(false);
+    }
+  }, [isMobile]);
 
   return (
     <Paper
       {...getRootProps()}
       data-testid="dropzone"
-      onClick={handleClick}
+      onClick={handleFilePickerClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       sx={{
         // Mobile-first responsive padding (S8.1 breakpoints)
         p: isMobile ? 3 : isTablet ? 3.5 : 4,
@@ -69,12 +104,21 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         justifyContent: 'center',
         alignItems: 'center',
         border: "2px dashed",
-        borderColor: isDragActive 
+        borderColor: (isDragActive || (isMobile && isTouching))
           ? "primary.main" 
           : (theme) => theme.palette.mode === 'dark' ? '#555555' : '#a0a0a0',
-        backgroundColor: isDragActive 
+        backgroundColor: (isDragActive || (isMobile && isTouching))
           ? "primary.50" 
           : (theme) => theme.palette.mode === 'dark' ? '#1a1a1a' : '#e8e8e8',
+        // S8.3 gradient theming - enhanced for mobile touch states
+        ...((isDragActive || (isMobile && isTouching)) && theme.palette.mode === 'dark' && {
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%), #1a1a1a',
+          borderColor: '#667eea',
+        }),
+        ...((isDragActive || (isMobile && isTouching)) && theme.palette.mode === 'light' && {
+          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%), #f5f5f5',
+          borderColor: '#667eea',
+        }),
         textAlign: "center",
         cursor: "pointer",
         transition: "all 0.3s ease-in-out", // Slightly longer for better mobile feedback
@@ -82,34 +126,83 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           theme.palette.mode === 'dark' 
             ? "0px 2px 8px rgba(0, 0, 0, 0.6)" 
             : "0px 2px 8px rgba(0, 0, 0, 0.12)",
-        // Enhanced hover/touch feedback
+        // Enhanced hover/touch feedback with gradient theming
         "&:hover": {
-          borderColor: "primary.main",
-          backgroundColor: isDragActive ? "primary.100" : "primary.50",
-          boxShadow: (theme) => 
-            theme.palette.mode === 'dark' 
-              ? "0px 4px 12px rgba(0, 0, 0, 0.8)" 
-              : "0px 4px 12px rgba(0, 0, 0, 0.16)",
-          transform: isMobile ? "scale(0.98)" : "translateY(-1px)", // Mobile-friendly scale instead of translate
+          // Only apply hover effects on non-touch devices to avoid sticky hover on mobile
+          ...((!isMobile || !('ontouchstart' in window)) && {
+            borderColor: "primary.main",
+            backgroundColor: isDragActive ? "primary.100" : "primary.50",
+            // S8.3 gradient theming for hover state
+            ...(theme.palette.mode === 'dark' && {
+              background: isDragActive 
+                ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%), #1a1a1a'
+                : 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%), #2a2a2a',
+              borderColor: '#667eea',
+            }),
+            ...(theme.palette.mode === 'light' && {
+              background: isDragActive 
+                ? 'linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%), #f0f0f0'
+                : 'linear-gradient(135deg, rgba(102, 126, 234, 0.04) 0%, rgba(118, 75, 162, 0.04) 100%), #f8f8f8',
+            }),
+            boxShadow: (theme) => 
+              theme.palette.mode === 'dark' 
+                ? "0px 4px 12px rgba(0, 0, 0, 0.8)" 
+                : "0px 4px 12px rgba(0, 0, 0, 0.16)",
+            transform: "translateY(-1px)",
+          }),
         },
-        // Touch feedback for mobile devices
+        // Enhanced touch feedback for mobile devices with haptic-like visual response
         "&:active": {
           transform: isMobile ? "scale(0.96)" : "translateY(-1px)",
           transition: "transform 0.1s ease-in-out",
+          // Enhanced active state for mobile touches
+          ...(isMobile && {
+            borderColor: "primary.main",
+            ...(theme.palette.mode === 'dark' && {
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%), #1a1a1a',
+              boxShadow: "0px 2px 8px rgba(102, 126, 234, 0.4)",
+            }),
+            ...(theme.palette.mode === 'light' && {
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%), #f0f0f0',
+              boxShadow: "0px 2px 8px rgba(102, 126, 234, 0.2)",
+            }),
+          }),
         },
       }}
     >
-      <input {...getInputProps()} data-testid="file-input" />
+      <input 
+        {...getInputProps()} 
+        ref={inputRef}
+        data-testid="file-input"
+        // Enhanced mobile file picker attributes
+        aria-label={isMobile ? "Tap to select audio files" : "Select audio files to upload"}
+        accept="audio/*,video/mp4,video/webm,.wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
+        // iOS Safari optimization
+        capture={isMobile ? undefined : false}
+        style={{ 
+          // Ensure input is properly hidden but accessible
+          position: 'absolute',
+          opacity: 0,
+          pointerEvents: 'none',
+          width: '1px',
+          height: '1px',
+        }}
+      />
       
       <CloudUpload
         sx={{
           // Mobile-first responsive icon sizing
           fontSize: isMobile ? 56 : isTablet ? 52 : 48,
-          color: isDragActive 
+          color: (isDragActive || (isMobile && isTouching))
             ? "primary.main" 
             : (theme) => theme.palette.mode === 'dark' ? '#999999' : '#666666',
           mb: isMobile ? 1.5 : 2,
           transition: "all 0.3s ease-in-out",
+          // Enhanced mobile touch feedback for icon
+          ...(isMobile && isTouching && {
+            transform: "scale(1.05)",
+            filter: "drop-shadow(0px 2px 4px rgba(102, 126, 234, 0.3))",
+          }),
         }}
       />
       
@@ -124,10 +217,18 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           lineHeight: 1.3,
           mb: isMobile ? 1 : 1.5,
           px: isMobile ? 1 : 0, // Prevent text overflow on small screens
+          transition: "all 0.3s ease-in-out",
+          // Enhanced mobile touch feedback for text
+          ...(isMobile && isTouching && {
+            color: "primary.main",
+            fontWeight: 600,
+          }),
         }}
       >
-        {isDragActive
-          ? "Drop your audio files here"
+        {(isDragActive || (isMobile && isTouching))
+          ? isMobile 
+            ? "Ready to select files!"
+            : "Drop your audio files here"
           : isMobile 
             ? "Tap to select audio files"
             : "Drag & drop audio files here, or click to select"}
@@ -135,6 +236,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       
       <Typography 
         variant="body2" 
+        id="file-format-help"
         sx={{ 
           color: (theme) => theme.palette.mode === 'dark' ? '#b3b3b3' : '#4a4a4a',
           mb: isMobile ? 1 : 2,
@@ -164,6 +266,10 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         variant="contained" 
         startIcon={<CloudUpload />} 
         size={isMobile ? "large" : "medium"}
+        onClick={handleFilePickerClick}
+        // Enhanced mobile accessibility
+        aria-label={isMobile ? "Tap to select audio files from your device" : "Click to select audio files"}
+        aria-describedby="file-format-help"
         sx={{ 
           mt: isMobile ? 1 : 2,
           // S8.3 touch optimization - 44px minimum height
@@ -172,6 +278,19 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           fontSize: isMobile ? '1rem' : '0.875rem',
           fontWeight: 500,
           borderRadius: isMobile ? 2 : 1,
+          // S8.3 gradient theming integration for dark mode
+          ...(theme.palette.mode === 'dark' && {
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            boxShadow: '0px 4px 12px rgba(102, 126, 234, 0.3)',
+            color: '#ffffff',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
+              boxShadow: '0px 6px 16px rgba(102, 126, 234, 0.4)',
+            },
+            '&:active': {
+              background: 'linear-gradient(135deg, #4e63c6 0%, #5e377e 100%)',
+            },
+          }),
           // Enhanced touch feedback
           transition: "all 0.2s ease-in-out",
           "&:active": {
@@ -179,7 +298,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
           },
         }}
       >
-        SELECT FILE
+        {isMobile ? "SELECT AUDIO" : "SELECT FILE"}
       </Button>
     </Paper>
   );
