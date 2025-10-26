@@ -40,7 +40,7 @@ const animationStyles = `
 `;
 
 interface WorkflowStepperProps {
-  uploadStatus?: 'pending' | 'uploading' | 'processing' | 'completed' | 'error';
+  uploadStatus?: 'pending' | 'uploading' | 'processing' | 'completed' | 'error' | 'cancelled';
   processingStatus?: 'pending' | 'processing' | 'completed' | 'error';
   isComplete?: boolean;
   progressPercentage?: number; // Add progress percentage support

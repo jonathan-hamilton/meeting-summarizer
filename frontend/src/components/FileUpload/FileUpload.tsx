@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import type { FileRejection } from "react-dropzone";
 import {
   Box,
@@ -7,7 +7,9 @@ import {
   Typography,
   Alert,
   Chip,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import { CheckCircle, Error as ErrorIcon } from "@mui/icons-material";
 import { useAppMode } from "../../contexts/AppModeContext";
@@ -35,6 +37,7 @@ const mapUploadStatusToProgressStage = (status: string): ProcessingStage => {
     case 'uploading': return 'upload';
     case 'processing': return 'processing';
     case 'completed': return 'complete';
+    case 'cancelled': return 'complete'; // Show as complete stage but with cancelled status
     default: return 'upload';
   }
 };
@@ -46,6 +49,7 @@ const mapUploadStatusToProgressStatus = (status: string): ProgressStatus => {
     case 'processing': return 'active';
     case 'completed': return 'completed';
     case 'error': return 'failed';
+    case 'cancelled': return 'cancelled';
     default: return 'pending';
   }
 };
@@ -60,13 +64,6 @@ interface FileUploadProps {
   hasPreviousResults?: boolean;
 }
 
-interface TokenError {
-  required: number;
-  available: number;
-  estimatedDuration: number;
-  fileName: string;
-}
-
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
   onPurchaseTokens,
@@ -78,6 +75,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const { mode } = useAppMode();
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // Use Zustand store for state management (design pattern compliance)
   const { 
     uploadFiles, 
     setUploadFiles, 
@@ -85,6 +86,23 @@ const FileUpload: React.FC<FileUploadProps> = ({
     startFileProgress,
     updateFileStage,
     completeFileProgress,
+    // Upload validation and error state
+    validationErrors,
+    setValidationErrors,
+    removeValidationError,
+    tokenError,
+    setTokenError,
+    pendingFile,
+    setPendingFile,
+    pendingTokenCalc,
+    setPendingTokenCalc,
+    // Dialog state
+    tokenDialogOpen,
+    openTokenDialog,
+    closeTokenDialog,
+    costDialogOpen,
+    openCostDialog,
+    closeCostDialog,
   } = useUploadQueueStore();
   
   // Cleanup effect: Clear upload queue when component unmounts or when navigating away
@@ -116,16 +134,25 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // Track which files have already triggered completion callbacks to prevent infinite loops
   const processedFileIds = useRef<Set<string>>(new Set());
+  const cancelledFileIds = useRef<Set<string>>(new Set()); // Track cancelled files across all async operations
 
   // Clean up processed file IDs when files are removed from the queue
   useEffect(() => {
     const currentFileIds = new Set(uploadFiles.map(f => f.id));
     const processedIds = processedFileIds.current;
+    const cancelledIds = cancelledFileIds.current;
     
     // Remove processed IDs for files that are no longer in the queue
     for (const id of processedIds) {
       if (!currentFileIds.has(id)) {
         processedIds.delete(id);
+      }
+    }
+    
+    // Remove cancelled IDs for files that are no longer in the queue
+    for (const id of cancelledIds) {
+      if (!currentFileIds.has(id)) {
+        cancelledIds.delete(id);
       }
     }
   }, [uploadFiles]);
@@ -140,18 +167,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
       }
     });
   }, [uploadFiles, onTranscriptionComplete]);
-
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [tokenError, setTokenError] = useState<TokenError | null>(null);
-  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
-  
-  // Cost estimation dialog state
-  const [costDialogOpen, setCostDialogOpen] = useState(false);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [pendingTokenCalc, setPendingTokenCalc] = useState<{ 
-    tokenCalc: Awaited<ReturnType<typeof getTokenCalculationAsync>>;
-    fileEstimation: Awaited<ReturnType<typeof getFileEstimationAsync>>;
-  } | null>(null);
 
   const apiService = createApiService(mode);
 
@@ -227,7 +242,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           
           setUploadFiles((prev) =>
             prev.map((f) =>
-              f.id === uploadFile.id
+              f.id === uploadFile.id && !cancelledFileIds.current.has(uploadFile.id) // Don't update cancelled files
                 ? { 
                     ...f, 
                     progress: displayProgress,
@@ -255,27 +270,83 @@ const FileUpload: React.FC<FileUploadProps> = ({
           // Clear the progress interval since upload completed
           if (progressInterval) clearInterval(progressInterval);
           
-          // First, mark upload as completed (regardless of transcription status)
-        // Get meeting ID from X-Meeting-Id header (for fast transcription) or response data
-        const meetingIdFromHeader = response.headers?.['x-meeting-id'] || response.headers?.['X-Meeting-Id'];
-        const meetingIdFromData = response.data?.transcriptionId || (response.data as any)?.TranscriptionId || (response.data as any)?.meetingId;
-        const transcriptionJobId = meetingIdFromHeader || meetingIdFromData;
-        
-        // Check if transcription is already completed in the response
-        const isAlreadyCompleted = response.data?.status === 'Completed' && response.data?.transcribedText;
+          // CRITICAL: Extract and store meeting ID immediately for cancel functionality
+          const meetingIdFromHeader = response.headers?.['x-meeting-id'] || response.headers?.['X-Meeting-Id'];
+          const meetingIdFromData = response.data?.transcriptionId || (response.data as any)?.TranscriptionId || (response.data as any)?.meetingId;
+          const transcriptionJobId = meetingIdFromHeader || meetingIdFromData;
+          
+          // IMMEDIATELY update the file with the transcriptionJobId so it's available for cancellation
+          setUploadFiles((prev) =>
+            prev.map((f) =>
+              f.id === uploadFile.id && !cancelledFileIds.current.has(uploadFile.id) // Don't update cancelled files
+                ? {
+                    ...f,
+                    transcriptionJobId: transcriptionJobId, // Store this ASAP for cancel functionality
+                  }
+                : f
+            )
+          );
+          
+          console.log(`✅ Meeting ID stored for cancellation: ${transcriptionJobId} (file: ${uploadFile.file.name})`);
+          
+          // CRITICAL: If file was cancelled before meeting ID was available, cancel it now
+          if (cancelledFileIds.current.has(uploadFile.id)) {
+            console.log(`🚫 File was previously cancelled, calling backend cancel API now: ${transcriptionJobId}`);
+            try {
+              const cancelResponse = await apiService.cancelUpload(transcriptionJobId);
+              if (cancelResponse.success && cancelResponse.data?.Success) {
+                console.log(`✅ Delayed backend cancellation successful: ${cancelResponse.data.Message}`);
+                // Update the file with cancellation info
+                setUploadFiles((prev) => prev.map(f => 
+                  f.id === uploadFile.id 
+                    ? { 
+                        ...f, 
+                        status: 'cancelled',
+                        endTime: new Date()
+                      }
+                    : f
+                ));
+                refreshBalance();
+              } else {
+                console.warn(`⚠️ Delayed cancellation had issues: ${cancelResponse.data?.Message || 'Unknown error'}`);
+                // With the new token reservation system, even "failed" cancellations should be handled gracefully
+                setUploadFiles((prev) => prev.map(f => 
+                  f.id === uploadFile.id 
+                    ? { 
+                        ...f, 
+                        status: 'cancelled',
+                        endTime: new Date()
+                      }
+                    : f
+                ));
+                refreshBalance(); // Refresh balance to show current state
+              }
+            } catch (error) {
+              console.error('❌ Error in delayed cancel API call:', error);
+            }
+            return; // Don't continue with completion processing
+          }
+          
+          // Check if transcription is already completed in the response
+          const isAlreadyCompleted = response.data?.status === 'Completed' && response.data?.transcribedText;
         
         if (isAlreadyCompleted) {
+          // Check if file was cancelled before completing
+          if (cancelledFileIds.current.has(uploadFile.id)) {
+            console.log(`🚫 Skipping completion for cancelled file: ${uploadFile.file.name}`);
+            return;
+          }
+          
           // Complete the progress tracking
           completeFileProgress(uploadFile.id, true, response.data);
           
           setUploadFiles((prev) =>
             prev.map((f) =>
-              f.id === uploadFile.id
+              f.id === uploadFile.id && !cancelledFileIds.current.has(uploadFile.id) // Don't update cancelled files
                 ? {
                     ...f,
                     status: "completed",
                     progress: 100,
-                    transcriptionJobId: transcriptionJobId,
                     result: response.data
                   }
                 : f
@@ -290,12 +361,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
           // Start with processing status and update to completion when ready
           setUploadFiles((prev) =>
             prev.map((f) =>
-              f.id === uploadFile.id
+              f.id === uploadFile.id && !cancelledFileIds.current.has(uploadFile.id) // Don't update cancelled files
                 ? {
                     ...f,
                     status: "processing",
                     progress: 30, // Initial progress
-                    transcriptionJobId: transcriptionJobId,
                     // Store the immediate result if available, but don't mark as completed yet
                     ...(response.data?.transcribedText && { result: response.data })
                   }
@@ -327,7 +397,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               estimatedDuration: errorData.estimatedDuration || 0,
               fileName: uploadFile.file.name,
             });
-            setTokenDialogOpen(true);
+            openTokenDialog();
             setUploadFiles((prev) => prev.filter((f) => f.id !== uploadFile.id));
           } else {
             setUploadFiles((prev) =>
@@ -353,9 +423,66 @@ const FileUpload: React.FC<FileUploadProps> = ({
     [onTranscriptionComplete, apiService]
   );
 
-  const handleClearFile = useCallback((fileId: string) => {
-    setUploadFiles((prev) => prev.filter(f => f.id !== fileId));
-  }, []);
+  const handleClearFile = useCallback(async (fileId: string) => {
+    // Get the file to check if we have a meetingId/transcriptionJobId for API cancel
+    const fileToCancel = uploadFiles.find(f => f.id === fileId);
+    
+    if (fileToCancel?.transcriptionJobId && (fileToCancel.status === "uploading" || fileToCancel.status === "processing")) {
+      try {
+        console.log('🚫 Calling backend cancel API for meeting:', fileToCancel.transcriptionJobId);
+        
+        // Call the backend cancel API to refund tokens
+        const cancelResponse = await apiService.cancelUpload(fileToCancel.transcriptionJobId);
+        
+        if (cancelResponse.success && cancelResponse.data) {
+          console.log('✅ Backend cancellation successful:', cancelResponse.data);
+          
+          // Mark file as cancelled in ref to prevent any further processing
+          cancelledFileIds.current.add(fileId);
+          
+          // Update the file status to cancelled with backend response info
+          setUploadFiles((prev) => prev.map(f => 
+            f.id === fileId 
+              ? { 
+                  ...f, 
+                  status: "cancelled", 
+                  progress: f.progress, 
+                  endTime: new Date()
+                }
+              : f
+          ));
+          
+          // Refresh token balance to show the refund
+          refreshBalance();
+          
+          console.log(`🎉 Upload cancelled with ${cancelResponse.data.tokensRefunded} tokens refunded`);
+          return;
+        } else {
+          console.warn('⚠️ Backend cancellation failed:', cancelResponse.message);
+        }
+      } catch (error) {
+        console.error('❌ Error calling cancel API:', error);
+      }
+    }
+    
+    // Mark file as cancelled in both state and ref to prevent any further processing
+    cancelledFileIds.current.add(fileId);
+    
+    // Fallback: Set to cancelled status locally (for files without meetingId or API failures)
+    setUploadFiles((prev) => prev.map(f => 
+      f.id === fileId 
+        ? { ...f, status: "cancelled", progress: f.progress, endTime: new Date() }
+        : f
+    ));
+    
+    // Refresh balance to get current token state (in case there were any backend changes)
+    refreshBalance();
+    
+    console.log('🚫 File upload cancelled locally:', fileId);
+    if (!fileToCancel?.transcriptionJobId) {
+      console.warn('⚠️ No meeting ID found - tokens may not be refunded');
+    }
+  }, [uploadFiles, apiService, setUploadFiles, refreshBalance]);
 
   // Process files after cost confirmation
   const processFiles = useCallback(async (validFiles: File[]) => {
@@ -390,7 +517,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
           estimatedDuration: validation.estimatedDuration,
           fileName: file.name,
         });
-        setTokenDialogOpen(true);
+        openTokenDialog();
         return; // Stop processing if insufficient tokens
       }
     }
@@ -426,7 +553,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       
       processFiles([pendingFile]);
       setPendingFile(null);
-      setCostDialogOpen(false);
+      closeCostDialog();
       setPendingTokenCalc(null);
     }
   }, [pendingFile, processFiles, hasPreviousResults, onClearPreviousData, clearUploadQueue]);
@@ -463,12 +590,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
           ]);
           
           setPendingTokenCalc({ tokenCalc, fileEstimation });
-          setCostDialogOpen(true);
+          openCostDialog();
         } catch (error) {
           console.error('Error calculating token data:', error);
           // Fallback to synchronous calculation if API fails
           setPendingTokenCalc(null);
-          setCostDialogOpen(true);
+          openCostDialog();
         }
         return;
       }
@@ -514,7 +641,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
               aria-live="polite"
               aria-atomic="true"
               onClose={() => {
-                setValidationErrors((prev) => prev.filter((_, i) => i !== index));
+                removeValidationError(index);
               }}
             >
               {error}
@@ -568,6 +695,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     size="small"
                   />
                 )}
+                {uploadFiles.filter((f) => f.status === "cancelled").length > 0 && (
+                  <Chip
+                    icon={<ErrorIcon />}
+                    label={`${uploadFiles.filter((f) => f.status === "cancelled").length} cancelled`}
+                    color="error"
+                    size="small"
+                  />
+                )}
               </Box>
             </Box>
             
@@ -577,6 +712,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 {uploadFiles.map((uploadFile) => (
                   <FileUploadProgress
                     key={uploadFile.id}
+                    compact={isMobile} // Use compact mode on mobile devices
                     progressData={{
                       fileId: uploadFile.id,
                       fileName: uploadFile.file.name,
@@ -592,7 +728,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     }}
                     onCancel={handleClearFile}
                     onRetry={(fileId) => console.log('Retry not implemented yet for', fileId)}
-                    compact={false}
                   />
                 ))}
               </Box>
@@ -606,7 +741,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
         <CostEstimationDialog
           open={costDialogOpen}
           onClose={() => {
-            setCostDialogOpen(false);
+            closeCostDialog();
             setPendingFile(null);
             setPendingTokenCalc(null);
           }}
@@ -625,14 +760,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {/* Insufficient Tokens Dialog */}
       <InsufficientTokensDialog
         open={tokenDialogOpen}
-        onClose={() => setTokenDialogOpen(false)}
+        onClose={() => closeTokenDialog()}
         requiredTokens={tokenError?.required || 0}
         availableTokens={tokenError?.available || 0}
         estimatedDuration={tokenError?.estimatedDuration || 0}
         fileName={tokenError?.fileName}
         onPurchaseTokens={() => {
           // Close the insufficient tokens dialog and open purchase dialog
-          setTokenDialogOpen(false);
+          closeTokenDialog();
           // This should trigger opening the purchase dialog in the parent App component
           if (onPurchaseTokens) {
             onPurchaseTokens();

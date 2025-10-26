@@ -151,7 +151,8 @@ public class SummaryController : ControllerBase
 
             _logger.LogInformation("File {FileName} validated for fast transcription processing", 
                 request.AudioFile.FileName);
-            // Token validation for authenticated user
+            
+            // Token reservation for authenticated user (NEW ARCHITECTURE)
             var user = await _context.Users.FindAsync(currentUserId.Value);
             if (user == null)
             {
@@ -159,34 +160,55 @@ public class SummaryController : ControllerBase
                 return NotFound(new { error = "User not found" });
             }
 
-            // Check if user has sufficient tokens for fast transcription processing
+            // Calculate required tokens
             var tokenCalculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
             var requiredTokens = tokenCalculation.FinalTokens;
             
-            if (user.TokenBalance < requiredTokens)
+            // Create meeting record FIRST to get consistent ID
+            meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
+
+            // Reserve tokens instead of immediately validating/deducting
+            var reservationResult = await _tokenService.ReserveTokensAsync(
+                currentUserId.Value.ToString(),
+                meetingId.Value.ToString(),
+                requiredTokens,
+                $"Fast transcription for {request.AudioFile.FileName} ({estimatedDurationMinutes:F1} min estimated)"
+            );
+
+            if (!reservationResult.Success)
             {
-                _logger.LogWarning("User {UserId} ({Email}) has insufficient tokens for fast transcription. Required: {Required}, Available: {Available}",
-                    currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
+                _logger.LogWarning("Token reservation failed for user {UserId} ({Email}). {ErrorMessage}",
+                    currentUserId.Value, user.Email, reservationResult.ErrorMessage);
+
+                // Update meeting status to Failed since we can't proceed
+                if (meetingId.HasValue)
+                {
+                    await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                }
                 
                 return BadRequest(new 
                 { 
-                    error = "Insufficient tokens to process this audio file",
-                    required = requiredTokens,
-                    available = user.TokenBalance,
+                    error = reservationResult.ErrorMessage ?? "Unable to reserve tokens for processing",
+                    required = reservationResult.RequiredTokens ?? requiredTokens,
+                    available = reservationResult.AvailableTokens ?? user.TokenBalance,
                     estimatedDuration = estimatedDurationMinutes,
                     processingType = "fast-transcription"
                 });
             }
 
-            _logger.LogInformation("User {UserId} ({Email}) has sufficient tokens for fast transcription. Required: {Required}, Available: {Available}",
-                currentUserId.Value, user.Email, requiredTokens, user.TokenBalance);
+            // Store reservation ID in meeting for later consumption/release
+            await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE Meetings SET TokenReservationId = {0} WHERE Id = {1}",
+                reservationResult.ReservationId,
+                meetingId.Value);
+
+            _logger.LogInformation("✅ Token reservation successful for user {UserId} ({Email}). Reserved: {RequiredTokens} tokens, ReservationId: {ReservationId}, Expires: {ExpiresAt}",
+                currentUserId.Value, user.Email, requiredTokens, reservationResult.ReservationId, reservationResult.ExpiresAt);
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             try
             {
-                // Create meeting record FIRST for consistent ID usage
-                meetingId = await CreateMeetingForRealTimeTranscriptionUpfront(request.AudioFile, estimatedDurationMinutes);
 
                 // S6.13: Use Fast Transcription service for all files ≤2hr/200MB
                 using var audioStream = request.AudioFile.OpenReadStream();
@@ -210,36 +232,8 @@ public class SummaryController : ControllerBase
                 _logger.LogInformation("Transcription completed for file: {FileName}, Meeting ID: {MeetingId}, Speakers: {SpeakerCount}",
                     request.AudioFile.FileName, meetingId, response.SpeakerCount);
 
-                // Update the meeting record with transcription results
-                await UpdateMeetingWithTranscriptionResults(meetingId, transcriptionResult);
-
-                // Record token usage for authenticated users (fast transcription processing)
-                if (currentUserId.HasValue)
-                {
-                    try
-                    {
-                        var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes);
-                        var tokensUsed = calculation.FinalTokens;
-                        
-                        await _tokenService.RecordTokenUsageAsync(
-                            currentUserId.Value.ToString(),
-                            meetingId?.ToString() ?? throw new InvalidOperationException("Meeting ID is null"),
-                            tokensUsed,
-                            (int)estimatedDurationMinutes,
-                            calculation.VolumeDiscountMultiplier > 0 ? 
-                                (decimal)(calculation.BaseTokens - calculation.FinalTokens) : 0m
-                        );
-                        
-                        _logger.LogInformation("Recorded token usage for user {UserId}: {TokensUsed} tokens for fast transcription of {FileName} ({Duration} minutes)",
-                            currentUserId.Value, tokensUsed, request.AudioFile.FileName, estimatedDurationMinutes);
-                    }
-                    catch (Exception tokenEx)
-                    {
-                        _logger.LogError(tokenEx, "Failed to record token usage for user {UserId} and meeting {MeetingId} - transcription succeeded but token tracking failed",
-                            currentUserId.Value, meetingId);
-                        // Don't fail the request if token tracking fails - transcription was successful
-                    }
-                }
+                // Update the meeting record with transcription results and handle token charging
+                await UpdateMeetingWithTranscriptionResults(meetingId, transcriptionResult, currentUserId, estimatedDurationMinutes, request.AudioFile.FileName);
 
                 return Ok(response);
             }
@@ -254,6 +248,7 @@ public class SummaryController : ControllerBase
                     try
                     {
                         await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                        await ReleaseTokenReservationOnFailureAsync(meetingId.Value, "Transcription service error");
                         _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to transcription service error", meetingId.Value);
                     }
                     catch (Exception meetingUpdateEx)
@@ -282,6 +277,7 @@ public class SummaryController : ControllerBase
                     try
                     {
                         await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                        await ReleaseTokenReservationOnFailureAsync(meetingId.Value, "Authentication error");
                         _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to authentication error", meetingId.Value);
                     }
                     catch (Exception meetingUpdateEx)
@@ -359,6 +355,7 @@ public class SummaryController : ControllerBase
                 try
                 {
                     await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Failed);
+                    await ReleaseTokenReservationOnFailureAsync(meetingId.Value, "Unexpected error during processing");
                     _logger.LogInformation("Updated meeting {MeetingId} status to Failed due to unexpected error", meetingId.Value);
                 }
                 catch (Exception meetingUpdateEx)
@@ -1035,11 +1032,52 @@ public class SummaryController : ControllerBase
     }
 
     /// <summary>
-    /// Updates meeting record with transcription results after processing
+    /// Helper method to release token reservation when a meeting fails
+    /// </summary>
+    /// <param name="meetingId">Meeting ID that failed</param>
+    /// <param name="reason">Reason for the failure</param>
+    private async Task ReleaseTokenReservationOnFailureAsync(Guid meetingId, string reason)
+    {
+        try
+        {
+            var meeting = await _context.Meetings
+                .Where(m => m.Id == meetingId)
+                .Select(m => new { m.TokenReservationId })
+                .FirstOrDefaultAsync();
+
+            if (meeting?.TokenReservationId.HasValue == true)
+            {
+                var releaseResult = await _tokenService.ReleaseReservationAsync(
+                    meeting.TokenReservationId.Value, 
+                    reason);
+                
+                if (releaseResult.Success)
+                {
+                    _logger.LogInformation("✅ Token reservation released for failed meeting {MeetingId}: {TokensReleased} tokens returned to available pool. Reason: {Reason}",
+                        meetingId, releaseResult.TokensReserved, reason);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to release token reservation for failed meeting {MeetingId}: {ErrorMessage}",
+                        meetingId, releaseResult.ErrorMessage);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error releasing token reservation for failed meeting {MeetingId}", meetingId);
+        }
+    }
+
+    /// <summary>
+    /// Updates meeting record with transcription results after processing and handles token charging on completion
     /// </summary>
     /// <param name="meetingId">Meeting ID to update</param>
     /// <param name="transcriptionResult">Transcription results</param>
-    private async Task UpdateMeetingWithTranscriptionResults(Guid? meetingId, TranscriptionResult transcriptionResult)
+    /// <param name="userId">User ID for token charging (optional)</param>
+    /// <param name="estimatedDurationMinutes">Estimated duration for token calculation (optional)</param>
+    /// <param name="fileName">File name for logging (optional)</param>
+    private async Task UpdateMeetingWithTranscriptionResults(Guid? meetingId, TranscriptionResult transcriptionResult, Guid? userId = null, double? estimatedDurationMinutes = null, string? fileName = null)
     {
         if (!meetingId.HasValue)
         {
@@ -1103,10 +1141,118 @@ public class SummaryController : ControllerBase
             // Update speaker count
             await _meetingService.UpdateMeetingSpeakerCountAsync(meetingId.Value, speakerCount);
 
-            // Mark meeting as completed
+            // CRITICAL: Check if meeting was cancelled during transcription BEFORE marking as completed
+            var currentMeetingStatus = await _context.Meetings
+                .Where(m => m.Id == meetingId.Value)
+                .Select(m => m.Status)
+                .FirstOrDefaultAsync();
+
+            if (currentMeetingStatus == MeetingStatus.Failed || currentMeetingStatus == MeetingStatus.Cancelled)
+            {
+                _logger.LogInformation("🚫 Meeting {MeetingId} was cancelled during transcription - releasing token reservation",
+                    meetingId.Value);
+                
+                // Release the token reservation since the meeting was cancelled
+                try
+                {
+                    var meeting = await _context.Meetings
+                        .Where(m => m.Id == meetingId.Value)
+                        .Select(m => new { m.TokenReservationId })
+                        .FirstOrDefaultAsync();
+
+                    if (meeting?.TokenReservationId.HasValue == true)
+                    {
+                        var releaseResult = await _tokenService.ReleaseReservationAsync(
+                            meeting.TokenReservationId.Value, 
+                            "Meeting cancelled during transcription");
+                        
+                        if (releaseResult.Success)
+                        {
+                            _logger.LogInformation("✅ Token reservation released for cancelled meeting {MeetingId}: {TokensReleased} tokens returned to available pool",
+                                meetingId.Value, releaseResult.TokensReserved);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to release token reservation for cancelled meeting {MeetingId}: {ErrorMessage}",
+                                meetingId.Value, releaseResult.ErrorMessage);
+                        }
+                    }
+                }
+                catch (Exception releaseEx)
+                {
+                    _logger.LogError(releaseEx, "Error releasing token reservation for cancelled meeting {MeetingId}", meetingId.Value);
+                }
+                
+                return; // Don't mark as completed or charge tokens for cancelled meetings
+            }
+
+            // Mark meeting as completed only if not cancelled
             await _meetingService.UpdateMeetingStatusAsync(meetingId.Value, MeetingStatus.Completed);
 
             _logger.LogInformation("Successfully updated meeting {MeetingId} with transcription results", meetingId.Value);
+
+            // Record token usage ONLY after successful completion using Token Reservation System
+            if (userId.HasValue)
+            {
+                try
+                {
+                    // Get the token reservation ID from the meeting
+                    var meeting = await _context.Meetings
+                        .Where(m => m.Id == meetingId.Value)
+                        .Select(m => new { m.TokenReservationId })
+                        .FirstOrDefaultAsync();
+
+                    if (meeting?.TokenReservationId.HasValue == true)
+                    {
+                        // Consume the token reservation (this deducts tokens and creates usage record)
+                        var consumptionResult = await _tokenService.ConsumeReservationAsync(meeting.TokenReservationId.Value);
+                        
+                        if (consumptionResult.Success)
+                        {
+                            _logger.LogInformation("✅ Token reservation consumed successfully for completed meeting {MeetingId} - user {UserId}: {TokensConsumed} tokens, new balance: {NewBalance}",
+                                meetingId.Value, userId.Value, consumptionResult.TokensReserved, consumptionResult.NewBalance);
+                        }
+                        else
+                        {
+                            _logger.LogError("Failed to consume token reservation for completed meeting {MeetingId} - user {UserId}: {ErrorMessage}",
+                                meetingId.Value, userId.Value, consumptionResult.ErrorMessage);
+                            
+                            // This is a critical error - meeting completed but tokens weren't charged
+                            // Log for manual investigation but don't fail the request
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No token reservation found for completed meeting {MeetingId} - user {UserId}. This may be a legacy meeting or an error.",
+                            meetingId.Value, userId.Value);
+                        
+                        // Fallback to old token charging method for legacy meetings
+                        if (estimatedDurationMinutes.HasValue)
+                        {
+                            var calculation = _tokenCalculationService.CalculateTokensRequired((int)estimatedDurationMinutes.Value);
+                            var tokensUsed = calculation.FinalTokens;
+                            
+                            await _tokenService.RecordTokenUsageAsync(
+                                userId.Value.ToString(),
+                                meetingId.Value.ToString(),
+                                tokensUsed,
+                                (int)estimatedDurationMinutes.Value,
+                                calculation.VolumeDiscountMultiplier > 0 ? 
+                                    (decimal)(calculation.BaseTokens - calculation.FinalTokens) : 0m
+                            );
+                            
+                            _logger.LogInformation("✅ Legacy token charging completed for meeting {MeetingId} - user {UserId}: {TokensUsed} tokens",
+                                meetingId.Value, userId.Value, tokensUsed);
+                        }
+                    }
+                }
+                catch (Exception tokenEx)
+                {
+                    _logger.LogError(tokenEx, "Failed to process token consumption for completed meeting {MeetingId} - user {UserId}",
+                        meetingId.Value, userId.Value);
+                    // Don't fail the request if token processing fails - transcription and completion were successful
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -1240,5 +1386,212 @@ public class SummaryController : ControllerBase
         return anonymizedTranscript;
     }
 
+    /// <summary>
+    /// Cancel an upload and refund tokens if transcription hasn't completed
+    /// </summary>
+    /// <param name="meetingId">The meeting ID to cancel</param>
+    /// <returns>Cancellation result with refund information</returns>
+    [HttpPost("cancel/{meetingId:guid}")]
+    [Authorize]
+    [RequireEmailVerification]
+    [ProducesResponseType(typeof(CancelUploadResponse), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(401)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(500)]
+    public async Task<IActionResult> CancelUpload(Guid meetingId)
+    {
+        string? currentUserId = null;
+        
+        try
+        {
+            currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                _logger.LogWarning("Unable to extract user ID from claims for cancel upload request");
+                return Unauthorized(new { error = "User authentication required" });
+            }
+
+            _logger.LogInformation("Processing cancel upload request for Meeting {MeetingId} by User {UserId}", 
+                meetingId, currentUserId);
+
+            // Get the meeting to verify ownership and get reservation info
+            var meeting = await _context.Meetings
+                .FirstOrDefaultAsync(m => m.Id == meetingId && m.UserId == Guid.Parse(currentUserId));
+
+            if (meeting == null)
+            {
+                _logger.LogWarning("Meeting {MeetingId} not found or user {UserId} is not the owner", 
+                    meetingId, currentUserId);
+                return NotFound(new { error = "Meeting not found or access denied" });
+            }
+
+            // NEW ARCHITECTURE: Simple token reservation release instead of complex refund logic
+            var tokenOperationResult = new { Success = false, TokensReleased = 0, RefundProcessed = false, Message = "" };
+
+            if (meeting.TokenReservationId.HasValue)
+            {
+                // Use new reservation system - much simpler!
+                var releaseResult = await _tokenService.ReleaseReservationAsync(
+                    meeting.TokenReservationId.Value,
+                    $"User cancellation of meeting {meetingId}"
+                );
+
+                if (releaseResult.Success)
+                {
+                    tokenOperationResult = new { 
+                        Success = true, 
+                        TokensReleased = releaseResult.TokensReserved, 
+                        RefundProcessed = false, // It's a release, not a refund
+                        Message = "Token reservation released successfully" 
+                    };
+                    
+                    _logger.LogInformation("✅ Token reservation released for cancelled meeting {MeetingId}: {TokensReleased} tokens returned to available pool",
+                        meetingId, releaseResult.TokensReserved);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to release token reservation for meeting {MeetingId}: {ErrorMessage}",
+                        meetingId, releaseResult.ErrorMessage);
+                    
+                    tokenOperationResult = new { 
+                        Success = false, 
+                        TokensReleased = 0, 
+                        RefundProcessed = false,
+                        Message = $"Failed to release reservation: {releaseResult.ErrorMessage}" 
+                    };
+                }
+            }
+            else if (meeting.Status == MeetingStatus.Completed)
+            {
+                // Legacy meeting that was completed - try to process refund using old system
+                _logger.LogInformation("Meeting {MeetingId} already completed and has no reservation - attempting legacy refund", meetingId);
+                
+                try
+                {
+                    var refundResult = await _tokenService.ProcessMeetingRefundAsync(
+                        meetingId, 
+                        "User cancellation (late arrival - legacy meeting)"
+                    );
+
+                    if (refundResult.Success)
+                    {
+                        tokenOperationResult = new { 
+                            Success = true, 
+                            TokensReleased = refundResult.TokensRefunded, 
+                            RefundProcessed = true,
+                            Message = "Legacy refund processed successfully" 
+                        };
+                        
+                        _logger.LogInformation("✅ Legacy refund processed for completed meeting {MeetingId}: {TokensRefunded} tokens", 
+                            meetingId, refundResult.TokensRefunded);
+                    }
+                    else
+                    {
+                        tokenOperationResult = new { 
+                            Success = false, 
+                            TokensReleased = 0, 
+                            RefundProcessed = false,
+                            Message = $"Legacy refund failed: {refundResult.ErrorMessage}" 
+                        };
+                    }
+                }
+                catch (Exception refundEx)
+                {
+                    _logger.LogError(refundEx, "Failed to process legacy refund for Meeting {MeetingId}", meetingId);
+                    tokenOperationResult = new { 
+                        Success = false, 
+                        TokensReleased = 0, 
+                        RefundProcessed = false,
+                        Message = "Legacy refund processing failed" 
+                    };
+                }
+            }
+            else
+            {
+                // No reservation and not completed - likely old meeting format, no tokens charged yet
+                tokenOperationResult = new { 
+                    Success = true, 
+                    TokensReleased = 0, 
+                    RefundProcessed = false,
+                    Message = "No tokens were charged yet - cancellation successful" 
+                };
+            }
+
+            // Mark meeting as cancelled to prevent any future token charging
+            meeting.Status = MeetingStatus.Cancelled;
+            meeting.CompletedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("✅ Upload cancelled successfully for Meeting {MeetingId} - marked as Cancelled. Token operation: {TokenResult}",
+                meetingId, tokenOperationResult.Message);
+
+            // Get current user balance for response
+            var currentBalance = await _tokenService.GetTokenBalanceAsync(currentUserId);
+
+            return Ok(new CancelUploadResponse
+            {
+                Success = true,
+                MeetingId = meetingId,
+                Status = "Cancelled",
+                RefundProcessed = tokenOperationResult.RefundProcessed,
+                TokensRefunded = tokenOperationResult.TokensReleased,
+                NewTokenBalance = currentBalance,
+                Message = $"Upload cancelled successfully. {tokenOperationResult.Message}"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling upload for Meeting {MeetingId} by User {UserId}", 
+                meetingId, currentUserId);
+            
+            return StatusCode(500, new { 
+                error = "An error occurred while cancelling the upload",
+                details = ex.Message 
+            });
+        }
+    }
+
     #endregion
+}
+
+/// <summary>
+/// Response model for upload cancellation
+/// </summary>
+public class CancelUploadResponse
+{
+    /// <summary>
+    /// Whether the cancellation was successful
+    /// </summary>
+    public required bool Success { get; set; }
+
+    /// <summary>
+    /// The meeting ID that was cancelled
+    /// </summary>
+    public required Guid MeetingId { get; set; }
+
+    /// <summary>
+    /// New status of the meeting
+    /// </summary>
+    public required string Status { get; set; }
+
+    /// <summary>
+    /// Whether token refund was processed
+    /// </summary>
+    public required bool RefundProcessed { get; set; }
+
+    /// <summary>
+    /// Number of tokens refunded
+    /// </summary>
+    public required int TokensRefunded { get; set; }
+
+    /// <summary>
+    /// User's token balance after refund
+    /// </summary>
+    public required decimal NewTokenBalance { get; set; }
+
+    /// <summary>
+    /// Human-readable message about the cancellation
+    /// </summary>
+    public required string Message { get; set; }
 }

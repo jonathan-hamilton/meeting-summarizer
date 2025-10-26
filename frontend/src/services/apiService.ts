@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import type { 
   ApiResponse, 
   HealthStatus, 
@@ -986,6 +986,38 @@ class ApiService {
       };
     }
   }
+
+  // Cancel upload and refund tokens
+  async cancelUpload(meetingId: string): Promise<ApiResponse<CancelUploadResponse>> {
+    try {
+      const result = await this.request<CancelUploadResponse>({
+        method: 'POST',
+        url: `/api/summary/cancel/${meetingId}`,
+        timeout: 30000, // 30 seconds timeout
+      });
+      
+      return result;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      const errorData = axiosError.response?.data as any || {};
+      return {
+        success: false,
+        message: errorData.message || errorData.error || axiosError.message || 'Failed to cancel upload',
+        errors: errorData.errors || [errorData.message || errorData.error || axiosError.message || 'Unknown error'],
+        errorData: errorData,
+      };
+    }
+  }
+}
+
+interface CancelUploadResponse {
+  success: boolean;
+  meetingId: string;
+  status: string;
+  refundProcessed: boolean;
+  tokensRefunded: number;
+  newTokenBalance: number;
+  message: string;
 }
 
 // Export singleton instance

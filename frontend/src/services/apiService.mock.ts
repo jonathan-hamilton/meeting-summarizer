@@ -198,6 +198,36 @@ const apiServiceMock = {
     await delay(100);
     return { data: { status: 'Available', service: 'MockAI', isAvailable: true }, success: true };
   },
+  async getTokenBalance(): Promise<ApiResponse<any>> {
+    await delay(100);
+    return { 
+      data: { 
+        balance: 1500, // Mock token balance
+        tier: 'Standard',
+        monthlyUsage: 250 
+      }, 
+      success: true 
+    };
+  },
+  async cancelUpload(meetingId: string): Promise<ApiResponse<any>> {
+    console.log('🔧 MockApiService.cancelUpload called for meeting:', meetingId);
+    await delay(500); // Simulate API call delay
+    
+    const mockRefundAmount = Math.floor(Math.random() * 50) + 10; // Random refund 10-60 tokens
+    
+    return { 
+      data: {
+        success: true,
+        meetingId: meetingId,
+        status: 'Cancelled',
+        refundProcessed: true,
+        tokensRefunded: mockRefundAmount,
+        newTokenBalance: 1500 + mockRefundAmount,
+        message: `Upload cancelled successfully. ${mockRefundAmount} tokens refunded.`
+      }, 
+      success: true 
+    };
+  },
   async generateSummary(): Promise<ApiResponse<any>> {
     await delay(200);
     return { data: { summary: mockSummary.meetingOverview }, success: true };

@@ -299,6 +299,9 @@ builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.IToken
 // Register Token Service (S6.3 Increment 3)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.TokenManagement.ITokenService, MeetingSummarizer.Api.Services.TokenManagement.TokenService>();
 
+// Register Token Reservation Cleanup Background Service
+builder.Services.AddHostedService<MeetingSummarizer.Api.Services.Background.TokenReservationCleanupService>();
+
 // Register Payment Service (S6.3 Increment 4)
 builder.Services.AddScoped<MeetingSummarizer.Api.Services.Payment.IPaymentService, MeetingSummarizer.Api.Services.Payment.StripePaymentService>();
 
