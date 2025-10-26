@@ -33,7 +33,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'comprehensive-accept-mime-and-extensions'
+            pattern: 'direct-visible-input-comprehensive-accept'
           })
         });
       } catch (error) {
@@ -104,7 +104,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'comprehensive-accept-mime-and-extensions',
+          pattern: 'direct-visible-input-comprehensive-accept',
           acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
         })
       });
@@ -151,45 +151,32 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Label wrapper approach for better touch handling */}
+      {/* iOS Safari: Direct visible file input with comprehensive accept */}
       <form>
-        <label 
-          htmlFor="ios-safari-file-input"
-          style={{
-            display: 'inline-block',
-            padding: '12px 20px',
-            backgroundColor: '#007AFF',
-            color: 'white',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            border: 'none',
-            textAlign: 'center',
-            minWidth: '200px'
-          }}
-        >
-          Choose Audio File
-        </label>
         <input
-          id="ios-safari-file-input"
           ref={fileInputRef}
           type="file"
           accept="audio/*,audio/mp3,audio/mp4,audio/mpeg,audio/wav,audio/wave,audio/x-wav,audio/x-m4a,audio/m4a,audio/flac,audio/ogg,audio/webm,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
           onChange={handleInputChange}
           style={{
-            position: 'absolute',
-            left: '-9999px',
-            opacity: 0,
-            width: '1px',
-            height: '1px'
+            fontSize: '18px',
+            padding: '15px',
+            border: '3px solid #007AFF',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '400px',
+            backgroundColor: '#f8f9fa',
+            cursor: 'pointer',
+            outline: 'none',
+            WebkitAppearance: 'none',
+            appearance: 'none'
           }}
         />
       </form>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • Comprehensive Accept (MIME types + extensions)
+        iOS Safari • Direct Visible Input + Comprehensive Accept
       </Typography>
     </Paper>
   );
