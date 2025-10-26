@@ -46,6 +46,8 @@ const isValidAudioFile = (file: File): boolean => {
   return false;
 };
 
+export { isValidAudioFile };
+
 export const validateFile = (file: File): { isValid: boolean; error?: string } => {
   // Use enhanced iOS Safari compatible validation
   if (!isValidAudioFile(file)) {
