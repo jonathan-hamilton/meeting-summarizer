@@ -189,10 +189,13 @@ jobs:
         
         # Build and push container image
         echo "🏗️ Building container image..."
+        TIMESTAMP_TAG=$(date +%Y%m%d-%H%M%S)
+        echo "📅 Using timestamp tag: $TIMESTAMP_TAG"
+        
         az acr build \
           --registry $REGISTRY_NAME \
           --image meeting-summary-api:latest \
-          --image meeting-summary-api:$(date +%Y%m%d-%H%M%S) \
+          --image meeting-summary-api:$TIMESTAMP_TAG \
           --file MeetingSummarizer.Api/Dockerfile \
           .
         
@@ -200,19 +203,20 @@ jobs:
         echo "⏳ Ensuring container app is ready for update..."
         sleep 15
         
-        # Update container app - simplified approach
+        # Update container app with timestamped image to force refresh
         echo "🔄 Updating container app with new image..."
+        echo "🎯 Using timestamped image: ${REGISTRY_SERVER}/meeting-summary-api:$TIMESTAMP_TAG"
         az containerapp update \
           --name "$CONTAINER_APP_NAME" \
           --resource-group "$RESOURCE_GROUP" \
-          --image "${REGISTRY_SERVER}/meeting-summary-api:latest" \
+          --image "${REGISTRY_SERVER}/meeting-summary-api:$TIMESTAMP_TAG" \
           --set-env-vars ASPNETCORE_ENVIRONMENT=Development \
           --set-env-vars KeyVault__ClientId=REDACTED_CLIENT_ID \
           --set-env-vars KeyVault__ClientSecret=${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET }} \
           --set-env-vars KeyVault__TenantId=REDACTED_TENANT_ID || {
             echo "❌ Standard update failed, trying alternative approach..."
             
-            # Alternative: Delete and recreate the revision
+            # Alternative: Create new revision with timestamped image
             az containerapp revision set-mode \
               --name "$CONTAINER_APP_NAME" \
               --resource-group "$RESOURCE_GROUP" \
@@ -222,7 +226,7 @@ jobs:
               --name "$CONTAINER_APP_NAME" \
               --resource-group "$RESOURCE_GROUP" \
               --from-revision "" \
-              --image "${REGISTRY_SERVER}/meeting-summary-api:latest"
+              --image "${REGISTRY_SERVER}/meeting-summary-api:$TIMESTAMP_TAG"
         }
         
         # Get the updated app URL
