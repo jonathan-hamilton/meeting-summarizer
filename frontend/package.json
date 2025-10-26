@@ -6,13 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:analyze": "vite build --mode=analyze",
+    "build:analyze": "vite build --mode=analyze && echo 'Bundle analysis available at dist/stats.html'",
+    "build:profile": "vite build --mode=production --profile",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "analyze-bundle": "npm run build"
+    "analyze-bundle": "npm run build:analyze && node scripts/analyze-bundle.js"
   },
   "dependencies": {
     "@dnd-kit/core": "6.3.1",
