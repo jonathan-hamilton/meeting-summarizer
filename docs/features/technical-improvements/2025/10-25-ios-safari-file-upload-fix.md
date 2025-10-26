@@ -14,7 +14,7 @@ iOS Safari has known quirks with file upload handling:
 
 ## Technical Solution Implemented
 
-### 1. Enhanced MIME Type Support (`types.ts`)
+### Phase 1: Enhanced MIME Type Support (`types.ts`)
 ```typescript
 export const ACCEPTED_AUDIO_FORMATS = [
   // Standard audio formats
@@ -32,17 +32,43 @@ export const ACCEPTED_AUDIO_FORMATS = [
 ] as const;
 ```
 
-### 2. Extension-Based Fallback Validation (`validation.ts`)
+### Phase 2: Extension-Based Fallback Validation (`validation.ts`)
 - Implemented dual validation strategy: MIME type first, extension fallback
 - Added iOS Safari specific logging for debugging
 - Enhanced error messages for better user feedback
 
-### 3. Improved Dropzone Configuration (`FileDropzone.tsx`)
-- Enhanced accept configuration with iOS Safari compatibility
-- Added custom validator using extension-based validation
-- Optimized HTML input accept attribute format for iOS Safari
+### Phase 3: Simplified Dropzone Configuration (`FileDropzone.tsx`)
+- **Mobile Strategy**: Simplified react-dropzone accept configuration
+- **iOS Safari Optimization**: Direct file input handler bypassing react-dropzone complexity
+- **Desktop Preservation**: Full MIME type support and validation maintained
 
-### 4. Enhanced Error Handling (`FileUpload.tsx`)
+```typescript
+// Mobile: Simplified accept for iOS Safari compatibility
+accept: isMobile ? {
+  "*/*": acceptedFileTypes, // iOS Safari: Use catch-all with extensions
+} : {
+  // Desktop: Full MIME type support
+  "audio/*": acceptedFileTypes,
+  "video/mp4": [".mp4", ".m4a"],
+  "video/quicktime": [".m4a"],
+  "video/webm": [".webm"],
+}
+```
+
+### Phase 4: Enhanced iOS Detection & Debugging
+- Added comprehensive iOS and Safari detection in logs
+- Enhanced file information logging with MIME type fallback details
+- User agent tracking for better mobile browser diagnostics
+
+```typescript
+console.log('📱 File picker clicked:', { 
+  isMobile, 
+  isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+  isSafari: /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+});
+```
+
+### Phase 5: Enhanced Error Handling (`FileUpload.tsx`)
 - Added comprehensive iOS Safari debugging
 - Enhanced file rejection logging
 - Improved user agent detection for mobile-specific handling
@@ -51,7 +77,15 @@ export const ACCEPTED_AUDIO_FORMATS = [
 - **Target Device**: iPhone 14 with Safari
 - **Test Environment**: dev.meeting-summary.io
 - **Test Files**: Various audio formats (.mp3, .m4a, .wav, .mp4)
-- **Expected Result**: Successful file selection and upload initiation
+- **Approach**: Multi-phase iOS Safari compatibility enhancement
+- **Expected Result**: Successful file selection and upload initiation without "feature not supported" error
+
+## Technical Strategy
+- **Phase 1**: Enhanced MIME type support for iOS Safari quirks
+- **Phase 2**: Extension-based validation fallback system
+- **Phase 3**: Simplified react-dropzone configuration for mobile
+- **Phase 4**: Direct file input handler for iOS Safari
+- **Phase 5**: Comprehensive debugging and error tracking
 
 ## Performance Impact
 - **Bundle Size**: Minimal impact (added validation logic only)

@@ -37,21 +37,22 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         inputRef.current.value = '';
       }
     },
-    accept: {
-      // Broader audio acceptance for iOS Safari compatibility
+    // Simplified accept for iOS Safari compatibility
+    accept: isMobile ? {
+      "*/*": acceptedFileTypes, // iOS Safari: Use catch-all with extensions
+    } : {
+      // Desktop: Full MIME type support
       "audio/*": acceptedFileTypes,
-      "video/mp4": [".mp4", ".m4a"], // iOS Safari sometimes reports .m4a as video/mp4
-      "video/quicktime": [".m4a"],    // iOS Safari alternative MIME type
+      "video/mp4": [".mp4", ".m4a"],
+      "video/quicktime": [".m4a"],
       "video/webm": [".webm"],
-      // Add generic catch-all for iOS Safari quirks
-      "*/*": acceptedFileTypes,
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
-    disabled: false, // Always allow uploads
-    // More lenient validation for iOS Safari
-    validator: (file) => {
-      // Use extension-based validation for iOS Safari compatibility
+    disabled: false,
+    // Disable validator for iOS Safari to prevent conflicts
+    validator: isMobile ? undefined : (file) => {
+      // Desktop: Use extension-based validation
       const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
       if (!acceptedFileTypes.includes(extension)) {
         return {
@@ -63,8 +64,39 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     }
   });
 
-  // Enhanced mobile file picker trigger
+  // iOS Safari specific file change handler
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    console.log('📱 iOS Safari file change:', { 
+      fileCount: files.length, 
+      files: files.map(f => ({ 
+        name: f.name, 
+        type: f.type || 'unknown', 
+        size: f.size,
+        extension: f.name.substring(f.name.lastIndexOf('.'))
+      })),
+      userAgent: navigator.userAgent
+    });
+    
+    if (files.length > 0) {
+      // Call the parent handler directly for iOS Safari
+      onFilesDropped(files, []);
+    }
+    
+    // Reset for iOS Safari compatibility
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+  }, [onFilesDropped]);
+
+  // Enhanced mobile file picker trigger with iOS Safari detection
   const handleFilePickerClick = useCallback((e: React.MouseEvent) => {
+    console.log('📱 File picker clicked:', { 
+      isMobile, 
+      isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+      isSafari: /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent)
+    });
+    
     e.preventDefault();
     e.stopPropagation();
     
@@ -192,9 +224,13 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         // Enhanced mobile file picker attributes
         aria-label={isMobile ? "Tap to select audio files" : "Select audio files to upload"}
         // iOS Safari optimized accept attribute - prioritize extensions over MIME types
-        accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm,audio/*,video/mp4"
+        accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
         // iOS Safari optimization
         capture={isMobile ? undefined : false}
+        // iOS Safari specific change handler
+        onChange={isMobile ? handleFileChange : undefined}
+        // iOS Safari specific attributes
+        multiple={true}
         style={{ 
           // Ensure input is properly hidden but accessible
           position: 'absolute',
