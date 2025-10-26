@@ -33,7 +33,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'material-ui-label'
+            pattern: 'specific-extensions'
           })
         });
       } catch (error) {
@@ -104,7 +104,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'material-ui-label',
+          pattern: 'specific-extensions',
           acceptAttribute: fileInputRef.current?.accept || 'none (all files allowed)'
         })
       });
@@ -151,12 +151,12 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Absolute simplest form approach */}
+      {/* iOS Safari: Specific file extensions instead of audio/* */}
       <form>
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*"
+          accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
           onChange={handleInputChange}
           style={{
             fontSize: '16px',
@@ -170,7 +170,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • Absolute Minimal Form (No Styling)
+        iOS Safari • Specific Extensions (.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm)
       </Typography>
     </Paper>
   );
