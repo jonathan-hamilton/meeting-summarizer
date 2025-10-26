@@ -85,15 +85,21 @@ public class SummaryController : ControllerBase
         
         try
         {
-            _logger.LogInformation("Received transcription request for file: {FileName}, Size: {FileSize}",
-                request.AudioFile?.FileName, request.AudioFile?.Length);
+            // Enhanced iOS Safari logging
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            var isIOSSafari = userAgent.Contains("iPhone") || userAgent.Contains("iPad");
+            var contentType = Request.ContentType;
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+            
+            _logger.LogInformation("🍎 iOS Safari Debug - Transcription request [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {FileSize}, UserAgent: {UserAgent}, ContentType: {ContentType}, IsIOSSafari: {IsIOSSafari}",
+                correlationId, request.AudioFile?.FileName, request.AudioFile?.Length, userAgent, contentType, isIOSSafari);
 
             // Enhanced file validation
             var validationResult = AudioFileValidator.ValidateAudioFile(request.AudioFile);
             if (!validationResult.IsValid)
             {
-                _logger.LogWarning("File validation failed for {FileName}: {ValidationMessage}",
-                    request.AudioFile?.FileName, validationResult.Message);
+                _logger.LogWarning("🍎 iOS Safari Debug - File validation failed [CorrelationId: {CorrelationId}] for {FileName}: {ValidationMessage}, UserAgent: {UserAgent}",
+                    correlationId, request.AudioFile?.FileName, validationResult.Message, userAgent);
                 return BadRequest(new { error = validationResult.Message });
             }
 

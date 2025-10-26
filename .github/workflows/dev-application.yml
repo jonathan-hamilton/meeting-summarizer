@@ -206,6 +206,10 @@ jobs:
         # Update container app with timestamped image to force refresh
         echo "🔄 Updating container app with new image..."
         echo "🎯 Using timestamped image: ${REGISTRY_SERVER}/meeting-summary-api:$TIMESTAMP_TAG"
+        
+        # Generate revision name based on timestamp
+        REVISION_NAME="dev-api-v2--$(date +%Y%m%d%H%M%S)"
+        
         az containerapp update \
           --name "$CONTAINER_APP_NAME" \
           --resource-group "$RESOURCE_GROUP" \
@@ -213,7 +217,8 @@ jobs:
           --set-env-vars ASPNETCORE_ENVIRONMENT=Development \
           --set-env-vars KeyVault__ClientId=5ed62488-7c1f-42bf-b855-d501d84f1f7c \
           --set-env-vars KeyVault__ClientSecret=${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET }} \
-          --set-env-vars KeyVault__TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b || {
+          --set-env-vars KeyVault__TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b \
+          --set-env-vars CONTAINER_APP_REVISION="$REVISION_NAME" || {
             echo "❌ Standard update failed, trying alternative approach..."
             
             # Alternative: Create new revision with timestamped image

@@ -183,6 +183,30 @@ const AppContent: React.FC = () => {
   const [disclaimerDialogOpen, setDisclaimerDialogOpen] = useState(false);
   const [privacyFooterDialogOpen, setPrivacyFooterDialogOpen] = useState(false);
 
+  // State for version information
+  const [versionInfo, setVersionInfo] = useState<{revision: string, environment: string} | null>(null);
+
+  // Fetch version information for development environment indicator
+  useEffect(() => {
+    const isDev = window.location.hostname.includes('dev.') || window.location.hostname.includes('localhost') || window.location.port === '5173';
+    if (isDev) {
+      fetch('/api/Version')
+        .then(response => response.json())
+        .then(data => {
+          setVersionInfo({
+            revision: data.revision || 'Unknown',
+            environment: data.environment || 'Unknown'
+          });
+        })
+        .catch(() => {
+          setVersionInfo({
+            revision: window.location.port === '5173' ? 'Local' : 'Unknown',
+            environment: 'Development'
+          });
+        });
+    }
+  }, []);
+
   // Wrapper function for theme toggle with accessibility announcement
   const handleThemeToggle = () => {
     toggleTheme();
@@ -765,6 +789,29 @@ const AppContent: React.FC = () => {
                 Disclaimer
               </Link>
             </Typography>
+            
+            {/* Development Environment Indicator */}
+            {(window.location.hostname.includes('dev.') || window.location.hostname.includes('localhost') || window.location.port === '5173') && (
+              <Typography 
+                variant="caption" 
+                color="warning.main" 
+                align="center" 
+                sx={{ 
+                  mt: 1, 
+                  display: 'block',
+                  fontWeight: 'bold',
+                  backgroundColor: 'warning.light',
+                  color: 'warning.contrastText',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  mx: 'auto',
+                  width: 'fit-content'
+                }}
+              >
+                🚧 DEVELOPMENT ENV • {new Date().toISOString().slice(0, 16).replace('T', ' ')} • Rev: {versionInfo?.revision || (window.location.port === '5173' ? 'Local' : 'Loading...')}
+              </Typography>
+            )}
           </Box>
         </Box>
       </Box>
