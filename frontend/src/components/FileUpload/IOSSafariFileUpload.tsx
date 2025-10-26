@@ -114,42 +114,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     handleFileSelection(event.target.files);
   }, [handleFileSelection]);
 
-  const handleUploadClick = useCallback(async () => {
-    console.log('🍎 iOS Safari: Upload button clicked');
-    console.log('🍎 iOS Safari: File input ref:', fileInputRef.current);
-    console.log('🍎 iOS Safari: User agent:', navigator.userAgent);
-    console.log('🍎 iOS Safari: Input accept attribute:', fileInputRef.current?.accept);
-    
-    if (fileInputRef.current) {
-      try {
-        console.log('🍎 iOS Safari: Attempting to trigger file input click');
-        
-        // Track file input click for debugging (single event per button click)
-        try {
-          await fetch('/api/IOSSafariDebug/fileinput', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              event: 'fileInputClickTriggered',
-              acceptAttribute: fileInputRef.current?.accept
-            })
-          });
-        } catch (error) {
-          console.error('Failed to track file input:', error);
-        }
-        
-        // Trigger the native file input
-        fileInputRef.current.click();
-        console.log('🍎 iOS Safari: File input click triggered successfully');
-        
-      } catch (error) {
-        console.error('🍎 iOS Safari: Error triggering file input:', error);
-      }
-    } else {
-      console.error('🍎 iOS Safari: File input ref is null');
-    }
-  }, []);
-
   return (
     <Paper
       elevation={2}
@@ -166,17 +130,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         },
       }}
     >
-      {/* Hidden file input - iOS Safari optimized configuration */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="audio/mpeg,audio/wav,audio/mp4,audio/x-m4a" // MIME types only for iOS Safari
-        multiple={false}
-        onChange={handleInputChange}
-        style={{ display: 'none' }}
-        capture={undefined} // Explicitly avoid capture attribute that can cause issues
-      />
-
       <CloudUpload
         sx={{
           fontSize: 64,
@@ -197,18 +150,37 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      <Button
-        variant="contained"
-        startIcon={<CloudUpload />}
-        onClick={handleUploadClick}
-        sx={{ mt: 2 }}
-      >
-        Choose File
-      </Button>
+      {/* iOS Safari: Use visible file input with label - Apple's recommended approach */}
+      <label htmlFor="ios-safari-file-input" style={{ cursor: 'pointer' }}>
+        <input
+          id="ios-safari-file-input"
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          multiple={false}
+          onChange={handleInputChange}
+          style={{
+            opacity: 0,
+            position: 'absolute',
+            zIndex: -1,
+            width: '1px',
+            height: '1px',
+            overflow: 'hidden',
+          }}
+        />
+        <Button
+          component="span"
+          variant="contained"
+          startIcon={<CloudUpload />}
+          sx={{ mt: 2 }}
+        >
+          Choose File
+        </Button>
+      </label>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari Optimized • Native File Input
+        iOS Safari Optimized • Label-Based File Input (Apple Recommended)
       </Typography>
     </Paper>
   );
