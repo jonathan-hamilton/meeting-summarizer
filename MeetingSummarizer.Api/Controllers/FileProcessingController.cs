@@ -35,11 +35,18 @@ public class FileProcessingController : ControllerBase
     public async Task<IActionResult> ValidateAudioFile(IFormFile audioFile)
     {
         var correlationId = Guid.NewGuid().ToString("N")[..8];
-        _logger.LogInformation("Audio file validation requested [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {Size}",
-            correlationId, audioFile?.FileName, audioFile?.Length);
+        
+        // Enhanced iOS Safari logging
+        var userAgent = Request.Headers["User-Agent"].ToString();
+        var isIOSSafari = userAgent.Contains("iPhone") || userAgent.Contains("iPad");
+        var contentType = Request.ContentType;
+        
+        _logger.LogInformation("🍎 iOS Safari Debug - Audio file validation [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {Size}, UserAgent: {UserAgent}, ContentType: {ContentType}, IsIOSSafari: {IsIOSSafari}",
+            correlationId, audioFile?.FileName, audioFile?.Length, userAgent, contentType, isIOSSafari);
 
         if (audioFile == null || audioFile.Length == 0)
         {
+            _logger.LogWarning("🍎 iOS Safari Debug - No file provided [CorrelationId: {CorrelationId}], UserAgent: {UserAgent}", correlationId, userAgent);
             return BadRequest(new
             {
                 Status = "Invalid",
