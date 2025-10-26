@@ -115,28 +115,58 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     handleFileSelection(event.target.files);
   }, [handleFileSelection]);
 
-  // iOS Safari programmatic file input trigger
+  // iOS Safari multiple approach file input trigger
   const triggerFileInput = useCallback(() => {
-    console.log('🍎 iOS Safari: Triggering programmatic file input');
+    console.log('🍎 iOS Safari: Triggering multi-approach file input');
     
-    // Create fresh input element
+    // First attempt: Use existing hidden input
+    if (fileInputRef.current) {
+      console.log('🍎 iOS Safari: Attempt 1 - Using existing hidden input');
+      fileInputRef.current.click();
+      return;
+    }
+    
+    // Second attempt: Create fresh input element (iOS Safari sometimes requires this)
+    console.log('🍎 iOS Safari: Attempt 2 - Creating fresh input element');
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'audio/*,audio/mp3,audio/mp4,audio/mpeg,audio/wav,audio/wave,audio/x-wav,audio/x-m4a,audio/m4a,audio/flac,audio/ogg,audio/webm,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm';
+    // Simplified accept attribute for iOS Safari compatibility
+    input.accept = 'audio/*,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm';
+    input.multiple = false; // Single file selection for better iOS Safari compatibility
+    
+    // Add to DOM temporarily (some iOS versions require this)
+    input.style.position = 'absolute';
+    input.style.left = '-9999px';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
     
     // Set up change handler
     input.onchange = (e) => {
       const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
+      console.log('🍎 iOS Safari: Fresh input element triggered change');
       handleInputChange(event);
+      // Remove from DOM after use
+      setTimeout(() => {
+        if (document.body.contains(input)) {
+          document.body.removeChild(input);
+        }
+      }, 100);
     };
     
-    // Trigger file picker
-    input.click();
+    // Set up cancel handler (iOS Safari specific)
+    input.oncancel = () => {
+      console.log('🍎 iOS Safari: File selection cancelled');
+      setTimeout(() => {
+        if (document.body.contains(input)) {
+          document.body.removeChild(input);
+        }
+      }, 100);
+    };
     
-    // Clean up (optional - browser usually handles this)
+    // Trigger file picker with slight delay for iOS Safari
     setTimeout(() => {
-      input.remove();
-    }, 1000);
+      input.click();
+    }, 10);
   }, [handleInputChange]);
 
   return (
@@ -196,25 +226,27 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         >
           Choose Audio File
         </button>
-        {/* Hidden fallback input */}
+        {/* Hidden fallback input with iOS Safari compatible attributes */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*,audio/mp3,audio/mp4,audio/mpeg,audio/wav,audio/wave,audio/x-wav,audio/x-m4a,audio/m4a,audio/flac,audio/ogg,audio/webm,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
+          accept="audio/*,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm"
+          multiple={false}
           onChange={handleInputChange}
           style={{
             position: 'absolute',
             left: '-9999px',
             opacity: 0,
             width: '1px',
-            height: '1px'
+            height: '1px',
+            pointerEvents: 'none'
           }}
         />
       </form>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • Programmatic File Input (Fresh DOM Element)
+        iOS Safari • Multi-Approach File Input • Single File Selection
       </Typography>
     </Paper>
   );
