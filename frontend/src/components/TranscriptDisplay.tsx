@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Card,
@@ -30,10 +30,9 @@ import type { TranscriptionResponse, SpeakerMapping } from "../types";
 import { SpeakerMappingComponent } from "./SpeakerMapping";
 import { useEmailStore } from "../stores/emailStore";
 
-// Lazy load SpeakerMappingDialog to reduce bundle
-// S6.5 Phase 3: Direct imports for debugging (were lazy loaded)
-import SpeakerMappingDialog from "./SpeakerMappingDialog";
-import EmailCompositionDialog from "./EmailCompositionDialog";
+// Lazy load heavy dialogs to reduce bundle size (S8.6 Performance Optimization)
+const SpeakerMappingDialog = React.lazy(() => import("./SpeakerMappingDialog").then(m => ({ default: m.SpeakerMappingDialog })));
+const EmailCompositionDialog = React.lazy(() => import("./EmailCompositionDialog"));
 
 import SummaryDisplay from "./SummaryDisplay";
 import { TranscriptSpeakerSegment } from "./TranscriptSpeakerSegment";
@@ -896,14 +895,16 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       </CardContent>
 
       {/* Speaker Mapping Dialog */}
-      <SpeakerMappingDialog
-        open={speakerMappingDialogOpen}
-        onClose={() => setSpeakerMappingDialogOpen(false)}
-        transcriptionId={transcription.transcriptionId}
-        existingMappings={storeSpeakerMappings || []}
-        detectedSpeakers={detectedSpeakers}
-        onMappingsSaved={handleSpeakerMappingsSaved}
-      />
+      <Suspense fallback={<div>Loading speaker dialog...</div>}>
+        <SpeakerMappingDialog
+          open={speakerMappingDialogOpen}
+          onClose={() => setSpeakerMappingDialogOpen(false)}
+          transcriptionId={transcription.transcriptionId}
+          existingMappings={storeSpeakerMappings || []}
+          detectedSpeakers={detectedSpeakers}
+          onMappingsSaved={handleSpeakerMappingsSaved}
+        />
+      </Suspense>
 
       {/* Transcription Delete Confirmation Dialog */}
       <ConfirmTranscriptionDeleteDialog
@@ -915,9 +916,11 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
       {/* Email Composition Dialog - for transcript emails on /app and /transcript pages */}
       {shouldShowEmailButton && (
         <>
-          <EmailCompositionDialog
-            onSend={handleEmailSend}
-          />
+          <Suspense fallback={<div>Loading email dialog...</div>}>
+            <EmailCompositionDialog
+              onSend={handleEmailSend}
+            />
+          </Suspense>
         </>
       )}
     </Card>

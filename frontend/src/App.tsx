@@ -52,12 +52,16 @@ const SessionTimeoutWarningDialog = React.lazy(() => import("./components/Sessio
 const UserProfileDialog = React.lazy(() => import("./components/UserProfileDialog").then(m => ({ default: m.UserProfileDialog })));
 const TokenPurchaseDialog = React.lazy(() => import("./components/TokenPurchaseDialog").then(m => ({ default: m.TokenPurchaseDialog })));
 
+// Route-based lazy loading for performance optimization
+const MeetingHistoryPage = React.lazy(() => import("./components/MeetingHistory/MeetingHistoryPage"));
+const TranscriptPage = React.lazy(() => import("./components/TranscriptPage"));
+const EmailVerificationDialog = React.lazy(() => import("./components/EmailVerificationDialog"));
+const FileUpload = React.lazy(() => import("./components/FileUpload/FileUpload"));
 
-import FileUpload from "./components/FileUpload/FileUpload";
-import MeetingHistoryPage from "./components/MeetingHistory/MeetingHistoryPage";
 import TranscriptDisplay from "./components/TranscriptDisplay";
-import TranscriptPage from "./components/TranscriptPage";
-import EmailVerificationDialog from "./components/EmailVerificationDialog";
+
+// S8.6 Performance monitoring - only in development
+const PerformanceDebug = React.lazy(() => import("./components/PerformanceDebug"));
 
 import { sessionManager } from "./services/sessionManager";
 import { AppHeader } from "./components/layout/AppHeader";
@@ -653,11 +657,17 @@ const AppContent: React.FC = () => {
 
             {/* Render different content based on the current route */}
             {location.pathname === '/history' ? (
-              <MeetingHistoryPage />
+              <Suspense fallback={null}>
+                <MeetingHistoryPage />
+              </Suspense>
             ) : location.pathname.startsWith('/transcript/') ? (
-              <TranscriptPage />
+              <Suspense fallback={null}>
+                <TranscriptPage />
+              </Suspense>
             ) : location.pathname.startsWith('/verify-email') ? (
-              <EmailVerificationDialog />
+              <Suspense fallback={null}>
+                <EmailVerificationDialog />
+              </Suspense>
             ) : (
               <Grid
                 container
@@ -671,12 +681,14 @@ const AppContent: React.FC = () => {
                       <Typography variant="h4" component="h3" id="upload-heading" gutterBottom>
                         Upload Audio File
                       </Typography>
-                      <FileUpload 
-                        onTranscriptionComplete={handleTranscriptionCompleteWrapper}
-                        onPurchaseTokens={() => setTokenPurchaseDialogOpen(true)}
-                        onClearPreviousData={handleClearPreviousData}
-                        hasPreviousResults={transcriptionResults.length > 0}
-                      />
+                      <Suspense fallback={null}>
+                        <FileUpload 
+                          onTranscriptionComplete={handleTranscriptionCompleteWrapper}
+                          onPurchaseTokens={() => setTokenPurchaseDialogOpen(true)}
+                          onClearPreviousData={handleClearPreviousData}
+                          hasPreviousResults={transcriptionResults.length > 0}
+                        />
+                      </Suspense>
                     </section>
                   </Grid>
                 )}
@@ -772,6 +784,13 @@ const AppContent: React.FC = () => {
           }
         }}
       />
+
+      {/* S8.6 Performance monitoring - only in development */}
+      {import.meta.env.DEV && (
+        <Suspense fallback={null}>
+          <PerformanceDebug enableLogging={true} defaultExpanded={false} />
+        </Suspense>
+      )}
 
     </>
   );
