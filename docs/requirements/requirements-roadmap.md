@@ -30,7 +30,14 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 - **PDF Export Functionality**: Fixed download functionality to use proper PDF API endpoints instead of text file downloads for improved user experience
 - **Mobile Card Layouts**: Enhanced mobile card designs with centered status chips, improved spacing, and proper filename organization
 - **Production Code Cleanup**: Comprehensive debug statement removal from apiService.ts (reduced from 1100+ to 924 lines) for production-ready performance
-- **Sprint Impact**: Sprint 8 updated to 3/6 stories (50% complete) with comprehensive touch interaction foundation established for remaining mobile optimization work
+- **Sprint Impact**: Sprint 8 updated to 3/6 stories complete + 1 in progress (50% + increment) with S8.4 state management foundation and token reservation architecture established
+
+**S8.4 Mobile File Upload Flow - Increment 1** - **IN PROGRESS ⚙️ (Foundation Complete)**
+- **State Management Refactoring**: Complete migration from React useState to Zustand stores for design pattern compliance
+- **Token Reservation Architecture**: Comprehensive token reservation system (TokenReservation entity, reservation/consumption/release lifecycle) eliminating race condition bugs
+- **Enhanced Cancellation Logic**: Proper token refunds with real-time status updates and "Cancelled" vs "Failed" status distinction
+- **Background Services**: Automated cleanup service for expired token reservations maintaining system health
+- **Mobile Foundation**: State architecture prepared for mobile-specific upload flow optimizations in upcoming increments
 
 #### Previous Sprint 7 Achievements (October 25, 2025)
 **S7.9 SendGrid to Azure Communication Services Migration** - **COMPLETE ✅**

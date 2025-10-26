@@ -97,6 +97,11 @@ public class Meeting
     public decimal TokensConsumed { get; set; } = 0;
     
     /// <summary>
+    /// Associated token reservation ID for this meeting (if using reservation system)
+    /// </summary>
+    public Guid? TokenReservationId { get; set; }
+    
+    /// <summary>
     /// When the meeting was created
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -144,5 +149,6 @@ public enum MeetingStatus
     Summarizing = 3,
     Completed = 4,
     Failed = 5,
-    Deleted = 6
+    Deleted = 6,
+    Cancelled = 7  // User-initiated cancellation
 }

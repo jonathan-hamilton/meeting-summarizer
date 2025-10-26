@@ -17,10 +17,10 @@ public class TokenRefund
     public User User { get; set; } = null!;
 
     /// <summary>
-    /// The failed fast transcription job that triggered this refund
+    /// The failed fast transcription job that triggered this refund (optional for meeting-based refunds)
     /// </summary>
-    public Guid FastJobId { get; set; }
-    public FastTranscriptionJob FastJob { get; set; } = null!;
+    public Guid? FastJobId { get; set; }
+    public FastTranscriptionJob? FastJob { get; set; }
 
     /// <summary>
     /// Number of tokens refunded to the user

@@ -181,6 +181,8 @@ const MeetingHistoryPage: React.FC = () => {
       case 'completed': return 'success';
       case 'Failed': 
       case 'error': return 'error';
+      case 'Cancelled':
+      case 'cancelled': return 'warning';
       case 'Transcribing': 
       case 'Summarizing': 
       case 'processing': return 'info';
@@ -208,6 +210,7 @@ const MeetingHistoryPage: React.FC = () => {
           return 'Processing';
         case 'completed': return 'Completed';
         case 'error': return 'Failed';
+        case 'cancelled': return 'Cancelled';
         default: return activeUpload.status;
       }
     }

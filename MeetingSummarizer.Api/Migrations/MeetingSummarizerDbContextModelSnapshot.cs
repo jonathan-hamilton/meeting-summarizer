@@ -232,6 +232,9 @@ namespace MeetingSummarizer.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<Guid?>("TokenReservationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<decimal>("TokensConsumed")
                         .HasColumnType("decimal(18,2)");
 
@@ -456,7 +459,7 @@ namespace MeetingSummarizer.Api.Migrations
                     b.Property<decimal>("BalanceBefore")
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<Guid>("FastJobId")
+                    b.Property<Guid?>("FastJobId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<bool>("IsAutomatic")
@@ -711,6 +714,55 @@ namespace MeetingSummarizer.Api.Migrations
                     b.ToTable("WebhookEvents");
                 });
 
+            modelBuilder.Entity("MeetingSummarizer.Api.Models.TokenReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("MeetingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ReservedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TokensReserved")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("MeetingId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Status", "ExpiresAt");
+
+                    b.ToTable("TokenReservations");
+                });
+
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", b =>
                 {
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.Meeting", "Meeting")
@@ -812,9 +864,7 @@ namespace MeetingSummarizer.Api.Migrations
                 {
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", "FastJob")
                         .WithMany("TokenRefunds")
-                        .HasForeignKey("FastJobId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("FastJobId");
 
                     b.HasOne("MeetingSummarizer.Api.Data.Entities.User", "User")
                         .WithMany()
@@ -855,6 +905,21 @@ namespace MeetingSummarizer.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Job");
+                });
+
+            modelBuilder.Entity("MeetingSummarizer.Api.Models.TokenReservation", b =>
+                {
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.Meeting", null)
+                        .WithMany()
+                        .HasForeignKey("MeetingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MeetingSummarizer.Api.Data.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("MeetingSummarizer.Api.Data.Entities.FastTranscriptionJob", b =>
