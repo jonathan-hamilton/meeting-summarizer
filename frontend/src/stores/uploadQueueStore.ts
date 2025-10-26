@@ -5,7 +5,7 @@ import { estimateFileProcessingTime, calculateTimeRemaining } from '../services/
 export interface FileUploadFile {
   file: File;
   id: string;
-  status: "pending" | "uploading" | "processing" | "completed" | "error";
+  status: "pending" | "uploading" | "processing" | "completed" | "error" | "cancelled";
   progress: number;
   result?: any;
   error?: string;
@@ -21,9 +21,31 @@ export interface FileUploadFile {
   estimation?: ProgressEstimation;
 }
 
+export interface TokenError {
+  required: number;
+  available: number;
+  estimatedDuration: number;
+  fileName: string;
+}
+
+export interface PendingTokenCalculation {
+  tokenCalc: any; // getTokenCalculationAsync result
+  fileEstimation: any; // getFileEstimationAsync result
+}
+
 interface UploadQueueState {
   uploadFiles: FileUploadFile[];
   activeUploads: Map<string, File>; // Store actual File objects for active uploads
+  
+  // Upload validation and error state
+  validationErrors: string[];
+  tokenError: TokenError | null;
+  pendingFile: File | null;
+  pendingTokenCalc: PendingTokenCalculation | null;
+  
+  // Dialog state
+  tokenDialogOpen: boolean;
+  costDialogOpen: boolean;
   
   // Existing methods
   setUploadFiles: (files: FileUploadFile[] | ((prev: FileUploadFile[]) => FileUploadFile[])) => void;
@@ -33,6 +55,20 @@ interface UploadQueueState {
   clearUploadQueue: () => void;
   setActiveFile: (id: string, file: File) => void;
   removeActiveFile: (id: string) => void;
+  
+  // New state management methods
+  setValidationErrors: (errors: string[]) => void;
+  removeValidationError: (index: number) => void;
+  clearValidationErrors: () => void;
+  setTokenError: (error: TokenError | null) => void;
+  setPendingFile: (file: File | null) => void;
+  setPendingTokenCalc: (calc: PendingTokenCalculation | null) => void;
+  
+  // Dialog methods
+  openTokenDialog: () => void;
+  closeTokenDialog: () => void;
+  openCostDialog: () => void;
+  closeCostDialog: () => void;
   
   // Enhanced progress methods
   startFileProgress: (fileId: string, file: File) => void;
@@ -52,6 +88,14 @@ interface UploadQueueState {
 export const useUploadQueueStore = create<UploadQueueState>()((set, get) => ({
   uploadFiles: [],
   activeUploads: new Map(),
+  
+  // Initialize new state
+  validationErrors: [],
+  tokenError: null,
+  pendingFile: null,
+  pendingTokenCalc: null,
+  tokenDialogOpen: false,
+  costDialogOpen: false,
       
       setUploadFiles: (files) => {
         set({ 
@@ -82,6 +126,50 @@ export const useUploadQueueStore = create<UploadQueueState>()((set, get) => ({
       
       clearUploadQueue: () => {
         set({ uploadFiles: [], activeUploads: new Map() });
+      },
+      
+      // New state management methods
+      setValidationErrors: (errors) => {
+        set({ validationErrors: errors });
+      },
+      
+      removeValidationError: (index: number) => {
+        set((state) => ({
+          validationErrors: state.validationErrors.filter((_, i) => i !== index)
+        }));
+      },
+      
+      clearValidationErrors: () => {
+        set({ validationErrors: [] });
+      },
+      
+      setTokenError: (error) => {
+        set({ tokenError: error });
+      },
+      
+      setPendingFile: (file) => {
+        set({ pendingFile: file });
+      },
+      
+      setPendingTokenCalc: (calc) => {
+        set({ pendingTokenCalc: calc });
+      },
+      
+      // Dialog methods
+      openTokenDialog: () => {
+        set({ tokenDialogOpen: true });
+      },
+      
+      closeTokenDialog: () => {
+        set({ tokenDialogOpen: false });
+      },
+      
+      openCostDialog: () => {
+        set({ costDialogOpen: true });
+      },
+      
+      closeCostDialog: () => {
+        set({ costDialogOpen: false });
       },
       
       setActiveFile: (id, file) => {

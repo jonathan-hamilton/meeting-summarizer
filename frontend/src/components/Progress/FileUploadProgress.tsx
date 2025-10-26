@@ -9,6 +9,7 @@ import {
   IconButton,
   Tooltip,
   useTheme,
+  useMediaQuery,
   styled,
 } from '@mui/material';
 import {
@@ -71,6 +72,7 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
   compact = false,
 }) => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const {
     fileId,
@@ -107,13 +109,23 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
       }
     };
 
+    // Override for cancelled status
+    if (status === 'cancelled') {
+      return {
+        icon: <CancelIcon />,
+        color: 'warning',
+        label: 'Cancelled',
+        description: 'Upload cancelled by user',
+      };
+    }
+
     return {
       icon: getStageIcon(currentStage),
       color: getStageColor(currentStage),
       label: PROCESSING_STAGES[currentStage]?.label || currentStage,
       description: PROCESSING_STAGES[currentStage]?.description || '',
     };
-  }, [currentStage]);
+  }, [currentStage, status]);
 
   // Format file size
   const formattedSize = useMemo(() => {
@@ -138,58 +150,158 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
     return (
       <Box 
         sx={{ 
-          p: 1, 
+          p: isMobile ? 2 : 1, // More padding on mobile for touch-friendly design
           border: 1, 
           borderColor: 'divider', 
-          borderRadius: 1,
-          mb: 1 
+          borderRadius: isMobile ? 2 : 1, // Larger border radius on mobile
+          mb: isMobile ? 2 : 1, // More spacing between items on mobile
+          minHeight: isMobile ? 80 : 'auto', // Minimum height for touch targets
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}
       >
+        {/* Header with file name, percentage, and actions */}
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-          <Typography variant="body2" noWrap sx={{ flex: 1, mr: 1 }}>
-            {fileName}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {percentage}%
-          </Typography>
+          <Box flex={1} minWidth={0}>
+            <Typography 
+              variant={isMobile ? "body1" : "body2"} 
+              noWrap 
+              sx={{ 
+                fontWeight: 500,
+                fontSize: isMobile ? '0.95rem' : '0.875rem',
+              }}
+            >
+              {fileName}
+            </Typography>
+            {isMobile && (
+              <Typography variant="caption" color="text.secondary">
+                {formattedSize}
+              </Typography>
+            )}
+          </Box>
+          
+          {/* Actions with touch-friendly sizing */}
+          <Box display="flex" alignItems="center" gap={isMobile ? 1 : 0.5}>
+            <Typography 
+              variant={isMobile ? "body2" : "caption"} 
+              color="text.secondary"
+              sx={{ fontWeight: 500 }}
+            >
+              {percentage}%
+            </Typography>
+            
+            {/* Action buttons with S8.3 touch optimization */}
+            {(status === 'failed' && onRetry) && (
+              <IconButton 
+                size={isMobile ? "medium" : "small"}
+                onClick={() => onRetry(fileId)}
+                color="primary"
+                sx={{ 
+                  minHeight: isMobile ? 44 : 'auto', // S8.3 touch target
+                  minWidth: isMobile ? 44 : 'auto',
+                }}
+                aria-label={`Retry upload for ${fileName}`}
+              >
+                <UploadIcon fontSize={isMobile ? "medium" : "small"} />
+              </IconButton>
+            )}
+            
+            {((status === 'active' || status === 'pending') && onCancel) && (
+              <IconButton 
+                size={isMobile ? "medium" : "small"}
+                onClick={() => onCancel(fileId)}
+                color="error"
+                sx={{ 
+                  minHeight: isMobile ? 44 : 'auto', // S8.3 touch target
+                  minWidth: isMobile ? 44 : 'auto',
+                }}
+                aria-label={`Cancel upload for ${fileName}`}
+              >
+                <CancelIcon fontSize={isMobile ? "medium" : "small"} />
+              </IconButton>
+            )}
+          </Box>
         </Box>
         
+        {/* Progress bar with enhanced mobile styling */}
         <StyledLinearProgress 
           variant="determinate" 
           value={percentage} 
           color={progressColor}
+          sx={{
+            height: isMobile ? 6 : 4, // Slightly thicker on mobile for better visibility
+            mb: 1,
+          }}
           aria-label={`Upload progress for ${fileName}`}
           aria-valuenow={percentage}
           aria-valuemin={0}
           aria-valuemax={100}
         />
         
-        <Box display="flex" alignItems="center" justifyContent="space-between" mt={1}>
+        {/* Status and time info */}
+        <Box display="flex" alignItems="center" justifyContent={timeRemaining ? "space-between" : "center"} flexWrap="wrap">
           <StageChip
             icon={stageConfig.icon}
-            label={stageConfig.label}
+            label={isMobile ? stageConfig.label : stageConfig.label.substring(0, 8) + '...'} // Truncate on very small screens
             color={stageConfig.color as any}
-            size="small"
+            size={isMobile ? "medium" : "small"}
             variant="outlined"
+            sx={{
+              minHeight: isMobile ? 32 : 'auto', // Touch-friendly chip height
+              fontSize: isMobile ? '0.75rem' : '0.6875rem',
+            }}
           />
           {timeRemaining && (
-            <Typography variant="caption" color="text.secondary">
+            <Typography 
+              variant="caption" 
+              color="text.secondary"
+              sx={{ fontSize: isMobile ? '0.75rem' : '0.6875rem' }}
+            >
               {formatTimeRemaining(timeRemaining)}
             </Typography>
           )}
         </Box>
+        
+        {/* Error message for mobile */}
+        {error && (
+          <Box 
+            sx={{ 
+              mt: 1, 
+              p: 1, 
+              backgroundColor: theme.palette.error.light,
+              borderRadius: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+            }}
+          >
+            <ErrorIcon color="error" fontSize="small" />
+            <Typography variant="caption" color="error">
+              {error}
+            </Typography>
+          </Box>
+        )}
       </Box>
     );
   }
 
-  // Full version for desktop
+  // Full version for desktop and tablets
   return (
     <StyledCard elevation={2}>
-      <CardContent sx={{ pb: '16px !important' }}>
+      <CardContent sx={{ 
+        pb: '16px !important',
+        p: isMobile ? 2 : 3, // Responsive padding
+      }}>
         {/* Header with file name and actions */}
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Box flex={1} minWidth={0}>
-            <Typography variant="h6" component="h3" noWrap>
+            <Typography 
+              variant="h6" 
+              component="h3" 
+              noWrap
+              sx={{ fontSize: isMobile ? '1.1rem' : '1.25rem' }}
+            >
               {fileName}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -201,8 +313,12 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
             {onShowDetails && (
               <Tooltip title="Show details">
                 <IconButton 
-                  size="small" 
+                  size={isMobile ? "medium" : "small"}
                   onClick={() => onShowDetails(fileId)}
+                  sx={{ 
+                    minHeight: isMobile ? 44 : 'auto', // S8.3 touch target
+                    minWidth: isMobile ? 44 : 'auto',
+                  }}
                   aria-label={`Show details for ${fileName}`}
                 >
                   <InfoIcon />
@@ -213,9 +329,13 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
             {status === 'failed' && onRetry && (
               <Tooltip title="Retry upload">
                 <IconButton 
-                  size="small" 
+                  size={isMobile ? "medium" : "small"}
                   onClick={() => onRetry(fileId)}
                   color="primary"
+                  sx={{ 
+                    minHeight: isMobile ? 44 : 'auto', // S8.3 touch target
+                    minWidth: isMobile ? 44 : 'auto',
+                  }}
                   aria-label={`Retry upload for ${fileName}`}
                 >
                   <UploadIcon />
@@ -226,9 +346,13 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
             {(status === 'active' || status === 'pending') && onCancel && (
               <Tooltip title="Cancel upload">
                 <IconButton 
-                  size="small" 
+                  size={isMobile ? "medium" : "small"}
                   onClick={() => onCancel(fileId)}
                   color="error"
+                  sx={{ 
+                    minHeight: isMobile ? 44 : 'auto', // S8.3 touch target
+                    minWidth: isMobile ? 44 : 'auto',
+                  }}
                   aria-label={`Cancel upload for ${fileName}`}
                 >
                   <CancelIcon />
@@ -244,6 +368,7 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
             variant="determinate" 
             value={percentage} 
             color={progressColor}
+            sx={{ height: isMobile ? 8 : 6 }} // Responsive height
             aria-label={`Upload progress for ${fileName}`}
             aria-valuenow={percentage}
             aria-valuemin={0}
@@ -253,25 +378,44 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
         </Box>
 
         {/* Status information */}
-        <Box display="flex" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
+        <Box display="flex" alignItems="center" justifyContent={timeRemaining && status === 'active' ? "space-between" : "center"} flexWrap="wrap" gap={1}>
           <StageChip
             icon={stageConfig.icon}
             label={stageConfig.label}
             color={stageConfig.color as any}
             variant={status === 'active' ? 'filled' : 'outlined'}
+            sx={{ minHeight: isMobile ? 36 : 'auto' }} // Touch-friendly chip
           />
           
-          <Box display="flex" alignItems="center" gap={2}>
-            <Typography variant="body2" color="text.secondary">
-              {percentage}%
-            </Typography>
-            
-            {timeRemaining && status === 'active' && (
-              <Typography variant="body2" color="text.secondary">
+          {(timeRemaining && status === 'active') && (
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ fontSize: isMobile ? '0.9rem' : '0.875rem' }}
+              >
+                {percentage}%
+              </Typography>
+              
+              <Typography 
+                variant="body2" 
+                color="text.secondary"
+                sx={{ fontSize: isMobile ? '0.9rem' : '0.875rem' }}
+              >
                 {formatTimeRemaining(timeRemaining)} remaining
               </Typography>
-            )}
-          </Box>
+            </Box>
+          )}
+          
+          {(!timeRemaining || status !== 'active') && (
+            <Typography 
+              variant="body2" 
+              color="text.secondary"
+              sx={{ fontSize: isMobile ? '0.9rem' : '0.875rem' }}
+            >
+              {percentage}%
+            </Typography>
+          )}
         </Box>
 
         {/* Stage description */}

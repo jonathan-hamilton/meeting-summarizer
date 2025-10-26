@@ -301,3 +301,69 @@ public class TokenRefundResult
     /// </summary>
     public bool AlreadyProcessed { get; set; } = false;
 }
+
+/// <summary>
+/// Result of a token reservation operation (reserve, consume, or release)
+/// </summary>
+public class TokenReservationResult
+{
+    /// <summary>
+    /// Whether the operation was successful
+    /// </summary>
+    public required bool Success { get; set; }
+
+    /// <summary>
+    /// The reservation ID (for successful operations)
+    /// </summary>
+    public Guid? ReservationId { get; set; }
+
+    /// <summary>
+    /// Number of tokens reserved/consumed/released
+    /// </summary>
+    public int TokensReserved { get; set; }
+
+    /// <summary>
+    /// When the reservation expires (for reserve operations)
+    /// </summary>
+    public DateTime? ExpiresAt { get; set; }
+
+    /// <summary>
+    /// When the reservation was consumed (for consume operations)
+    /// </summary>
+    public DateTime? ConsumedAt { get; set; }
+
+    /// <summary>
+    /// When the reservation was cancelled (for release operations)
+    /// </summary>
+    public DateTime? CancelledAt { get; set; }
+
+    /// <summary>
+    /// User's token balance after consumption (for consume operations)
+    /// </summary>
+    public decimal? NewBalance { get; set; }
+
+    /// <summary>
+    /// Tokens required for the operation (for validation failures)
+    /// </summary>
+    public int? RequiredTokens { get; set; }
+
+    /// <summary>
+    /// Tokens available in user balance (for validation failures)
+    /// </summary>
+    public decimal? AvailableTokens { get; set; }
+
+    /// <summary>
+    /// Error message if operation failed
+    /// </summary>
+    public string? ErrorMessage { get; set; }
+
+    /// <summary>
+    /// Whether the reservation already existed (for reserve operations)
+    /// </summary>
+    public bool AlreadyExists { get; set; } = false;
+
+    /// <summary>
+    /// Whether the reservation was already processed (for release operations)
+    /// </summary>
+    public bool AlreadyProcessed { get; set; } = false;
+}

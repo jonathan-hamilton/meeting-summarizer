@@ -424,4 +424,486 @@ public class TokenService : ITokenService
             };
         }
     }
+
+    /// <summary>
+    /// Process automatic token refund for a meeting-based transcription (when no FastTranscriptionJob exists)
+    /// </summary>
+    /// <param name="meetingId">Meeting ID</param>
+    /// <param name="reason">Reason for refund</param>
+    /// <returns>Refund result</returns>
+    public async Task<TokenRefundResult> ProcessMeetingRefundAsync(Guid meetingId, string reason)
+    {
+        try
+        {
+            _logger.LogInformation("Processing meeting-based token refund for meeting {MeetingId}. Reason: {Reason}", 
+                meetingId, reason);
+
+            // Get the meeting and associated token usage
+            var meeting = await _context.Meetings.FirstOrDefaultAsync(m => m.Id == meetingId);
+            if (meeting == null)
+            {
+                _logger.LogWarning("Meeting {MeetingId} not found for refund", meetingId);
+                return new TokenRefundResult { Success = false, ErrorMessage = "Meeting not found" };
+            }
+
+            // Find the token usage for this meeting
+            var tokenUsage = await _context.TokenUsages
+                .FirstOrDefaultAsync(tu => tu.MeetingId == meetingId);
+
+            if (tokenUsage == null)
+            {
+                _logger.LogWarning("No token usage found for meeting {MeetingId}", meetingId);
+                return new TokenRefundResult { Success = false, ErrorMessage = "No token usage found for this meeting" };
+            }
+
+            // Check if refund already processed
+            var existingRefund = await _context.TokenRefunds
+                .FirstOrDefaultAsync(tr => tr.UserId == meeting.UserId && tr.Reason.Contains(meetingId.ToString()));
+            
+            if (existingRefund != null)
+            {
+                _logger.LogWarning("Refund for meeting {MeetingId} already processed on {RefundedAt}", 
+                    meetingId, existingRefund.RefundedAt);
+                
+                return new TokenRefundResult
+                {
+                    Success = true,
+                    AlreadyProcessed = true,
+                    TokensRefunded = existingRefund.TokensRefunded,
+                    BalanceAfter = existingRefund.BalanceAfter,
+                    Reason = existingRefund.Reason
+                };
+            }
+
+            // Get user for balance update
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == meeting.UserId);
+            if (user == null)
+            {
+                _logger.LogError("User {UserId} not found for meeting refund", meeting.UserId);
+                return new TokenRefundResult { Success = false, ErrorMessage = "User not found" };
+            }
+
+            var tokensToRefund = tokenUsage.TokensUsed;
+            var balanceBefore = user.TokenBalance;
+            var balanceAfter = balanceBefore + tokensToRefund;
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Update user token balance
+                user.TokenBalance = balanceAfter;
+                _context.Users.Update(user);
+
+                // Create refund record (without FastJobId since this is meeting-based)
+                var refund = new TokenRefund
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = meeting.UserId,
+                    TokensRefunded = tokensToRefund,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    Reason = $"Meeting cancellation: {reason} (MeetingId: {meetingId})",
+                    IsAutomatic = true,
+                    RefundedAt = DateTime.UtcNow,
+                    FastJobId = null // No FastJobId for meeting-based refunds
+                };
+
+                _context.TokenRefunds.Add(refund);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Meeting-based refund processed successfully for meeting {MeetingId}: {TokensRefunded} tokens, new balance: {BalanceAfter}",
+                    meetingId, tokensToRefund, balanceAfter);
+
+                return new TokenRefundResult
+                {
+                    Success = true,
+                    TokensRefunded = tokensToRefund,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceAfter,
+                    Reason = reason
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to save meeting-based refund for meeting {MeetingId}", meetingId);
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing meeting-based token refund for meeting {MeetingId}", meetingId);
+            return new TokenRefundResult 
+            { 
+                Success = false, 
+                ErrorMessage = ex.Message 
+            };
+        }
+    }
+
+    #region Token Reservation System (New Architecture)
+
+    /// <summary>
+    /// Reserve tokens for a meeting without immediately deducting from user balance.
+    /// This eliminates race conditions by ensuring tokens are only consumed on successful completion.
+    /// </summary>
+    /// <param name="userId">User ID requesting the reservation</param>
+    /// <param name="meetingId">Meeting ID the tokens are reserved for</param>
+    /// <param name="tokensRequired">Number of tokens to reserve</param>
+    /// <param name="description">Optional description for the reservation</param>
+    /// <param name="expirationMinutes">Minutes until reservation expires (default: 30)</param>
+    /// <returns>Token reservation result</returns>
+    public async Task<TokenReservationResult> ReserveTokensAsync(
+        string userId, 
+        string meetingId, 
+        int tokensRequired, 
+        string? description = null,
+        int expirationMinutes = 30)
+    {
+        try
+        {
+            var userGuid = Guid.Parse(userId);
+            var meetingGuid = Guid.Parse(meetingId);
+
+            _logger.LogInformation("Creating token reservation for user {UserId}, meeting {MeetingId}: {TokensRequired} tokens", 
+                userId, meetingId, tokensRequired);
+
+            // Validate user exists and has sufficient tokens
+            var user = await _context.Users.FindAsync(userGuid);
+            if (user == null)
+            {
+                return new TokenReservationResult 
+                { 
+                    Success = false, 
+                    ErrorMessage = $"User {userId} not found" 
+                };
+            }
+
+            if (user.TokenBalance < tokensRequired)
+            {
+                return new TokenReservationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Insufficient tokens. Required: {tokensRequired}, Available: {user.TokenBalance}",
+                    RequiredTokens = tokensRequired,
+                    AvailableTokens = user.TokenBalance
+                };
+            }
+
+            // Check for existing active reservation for this meeting
+            var existingReservation = await _context.TokenReservations
+                .FirstOrDefaultAsync(tr => tr.MeetingId == meetingGuid && 
+                                         tr.Status == TokenReservationStatus.Reserved);
+
+            if (existingReservation != null)
+            {
+                if (existingReservation.IsValid)
+                {
+                    _logger.LogWarning("Active reservation already exists for meeting {MeetingId}: {ReservationId}", 
+                        meetingId, existingReservation.Id);
+                    
+                    return new TokenReservationResult
+                    {
+                        Success = true,
+                        ReservationId = existingReservation.Id,
+                        TokensReserved = existingReservation.TokensReserved,
+                        ExpiresAt = existingReservation.ExpiresAt,
+                        AlreadyExists = true
+                    };
+                }
+                else
+                {
+                    // Mark expired reservation as expired
+                    existingReservation.Status = TokenReservationStatus.Expired;
+                }
+            }
+
+            // Create new reservation
+            var reservation = new TokenReservation
+            {
+                Id = Guid.NewGuid(),
+                UserId = userGuid,
+                MeetingId = meetingGuid,
+                TokensReserved = tokensRequired,
+                ReservedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes),
+                Status = TokenReservationStatus.Reserved,
+                Description = description ?? $"Fast transcription processing for meeting {meetingId}"
+            };
+
+            _context.TokenReservations.Add(reservation);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("✅ Token reservation created successfully: {ReservationId} for user {UserId}, {TokensReserved} tokens, expires {ExpiresAt}",
+                reservation.Id, userId, tokensRequired, reservation.ExpiresAt);
+
+            return new TokenReservationResult
+            {
+                Success = true,
+                ReservationId = reservation.Id,
+                TokensReserved = tokensRequired,
+                ExpiresAt = reservation.ExpiresAt
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating token reservation for user {UserId}, meeting {MeetingId}", userId, meetingId);
+            return new TokenReservationResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Consume a token reservation by deducting tokens from user balance.
+    /// This should only be called on successful completion of the operation.
+    /// </summary>
+    /// <param name="reservationId">ID of the reservation to consume</param>
+    /// <returns>Consumption result</returns>
+    public async Task<TokenReservationResult> ConsumeReservationAsync(Guid reservationId)
+    {
+        try
+        {
+            _logger.LogInformation("Consuming token reservation {ReservationId}", reservationId);
+
+            var reservation = await _context.TokenReservations
+                .FirstOrDefaultAsync(tr => tr.Id == reservationId);
+
+            if (reservation == null)
+            {
+                return new TokenReservationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Reservation {reservationId} not found"
+                };
+            }
+
+            if (reservation.Status != TokenReservationStatus.Reserved)
+            {
+                return new TokenReservationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Reservation {reservationId} is not in Reserved status (current: {reservation.Status})"
+                };
+            }
+
+            if (!reservation.IsValid)
+            {
+                // Mark as expired
+                reservation.Status = TokenReservationStatus.Expired;
+                await _context.SaveChangesAsync();
+
+                return new TokenReservationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Reservation {reservationId} has expired"
+                };
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Get user and deduct tokens
+                var user = await _context.Users.FindAsync(reservation.UserId);
+                if (user == null)
+                {
+                    return new TokenReservationResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"User {reservation.UserId} not found for reservation consumption"
+                    };
+                }
+
+                // Double-check user still has sufficient tokens
+                if (user.TokenBalance < reservation.TokensReserved)
+                {
+                    return new TokenReservationResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Insufficient tokens for consumption. Required: {reservation.TokensReserved}, Available: {user.TokenBalance}"
+                    };
+                }
+
+                // Deduct tokens from user balance
+                user.TokenBalance -= reservation.TokensReserved;
+
+                // Mark reservation as consumed
+                reservation.Status = TokenReservationStatus.Consumed;
+                reservation.ConsumedAt = DateTime.UtcNow;
+
+                // Create token usage record for history (maintaining existing audit trail)
+                var usage = new TokenUsage
+                {
+                    UserId = reservation.UserId,
+                    MeetingId = reservation.MeetingId,
+                    TokensUsed = reservation.TokensReserved,
+                    MeetingDurationMinutes = 0, // Will be updated later if needed
+                    VolumeDiscountApplied = 0,
+                    UsageDate = DateTime.UtcNow,
+                    CostInUsd = reservation.TokensReserved * 0.05m // Base cost per token
+                };
+
+                _context.TokenUsages.Add(usage);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("✅ Token reservation consumed successfully: {ReservationId}, {TokensConsumed} tokens deducted from user {UserId}",
+                    reservationId, reservation.TokensReserved, reservation.UserId);
+
+                return new TokenReservationResult
+                {
+                    Success = true,
+                    ReservationId = reservationId,
+                    TokensReserved = reservation.TokensReserved,
+                    ConsumedAt = reservation.ConsumedAt,
+                    NewBalance = user.TokenBalance
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Failed to consume token reservation {ReservationId}", reservationId);
+                throw;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error consuming token reservation {ReservationId}", reservationId);
+            return new TokenReservationResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Release a token reservation without consuming tokens.
+    /// This should be called when an operation is cancelled or fails.
+    /// </summary>
+    /// <param name="reservationId">ID of the reservation to release</param>
+    /// <param name="reason">Reason for releasing the reservation</param>
+    /// <returns>Release result</returns>
+    public async Task<TokenReservationResult> ReleaseReservationAsync(Guid reservationId, string? reason = null)
+    {
+        try
+        {
+            _logger.LogInformation("Releasing token reservation {ReservationId}. Reason: {Reason}", 
+                reservationId, reason ?? "Not specified");
+
+            var reservation = await _context.TokenReservations
+                .FirstOrDefaultAsync(tr => tr.Id == reservationId);
+
+            if (reservation == null)
+            {
+                return new TokenReservationResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Reservation {reservationId} not found"
+                };
+            }
+
+            if (reservation.Status != TokenReservationStatus.Reserved)
+            {
+                _logger.LogWarning("Attempting to release reservation {ReservationId} that is not in Reserved status (current: {Status})", 
+                    reservationId, reservation.Status);
+                
+                return new TokenReservationResult
+                {
+                    Success = true, // Not an error - already released/consumed
+                    ReservationId = reservationId,
+                    TokensReserved = reservation.TokensReserved,
+                    AlreadyProcessed = true
+                };
+            }
+
+            // Mark reservation as cancelled
+            reservation.Status = TokenReservationStatus.Cancelled;
+            reservation.CancelledAt = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(reason))
+            {
+                reservation.Description = $"{reservation.Description} | Cancelled: {reason}";
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("✅ Token reservation released successfully: {ReservationId}, {TokensReleased} tokens returned to available pool for user {UserId}",
+                reservationId, reservation.TokensReserved, reservation.UserId);
+
+            return new TokenReservationResult
+            {
+                Success = true,
+                ReservationId = reservationId,
+                TokensReserved = reservation.TokensReserved,
+                CancelledAt = reservation.CancelledAt
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error releasing token reservation {ReservationId}", reservationId);
+            return new TokenReservationResult
+            {
+                Success = false,
+                ErrorMessage = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
+    /// Get reservation details by ID
+    /// </summary>
+    /// <param name="reservationId">Reservation ID to lookup</param>
+    /// <returns>Reservation details or null if not found</returns>
+    public async Task<TokenReservation?> GetReservationAsync(Guid reservationId)
+    {
+        try
+        {
+            return await _context.TokenReservations
+                .FirstOrDefaultAsync(tr => tr.Id == reservationId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving token reservation {ReservationId}", reservationId);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Cleanup expired reservations (for background service)
+    /// </summary>
+    /// <returns>Number of reservations cleaned up</returns>
+    public async Task<int> CleanupExpiredReservationsAsync()
+    {
+        try
+        {
+            var cutoffTime = DateTime.UtcNow;
+            var expiredReservations = await _context.TokenReservations
+                .Where(tr => tr.Status == TokenReservationStatus.Reserved && tr.ExpiresAt <= cutoffTime)
+                .ToListAsync();
+
+            if (expiredReservations.Any())
+            {
+                foreach (var reservation in expiredReservations)
+                {
+                    reservation.Status = TokenReservationStatus.Expired;
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Cleaned up {Count} expired token reservations", expiredReservations.Count);
+            }
+
+            return expiredReservations.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cleaning up expired token reservations");
+            return 0;
+        }
+    }
+
+    #endregion
 }
