@@ -158,7 +158,7 @@ jobs:
   deploy-application:
     name: Deploy Application Container
     runs-on: ubuntu-latest
-    needs: [check-infrastructure, get-infrastructure-info, apply-migrations]
+    needs: [check-infrastructure, get-infrastructure-info] # Temporarily skip apply-migrations for iOS Safari fix
     environment: development
     
     permissions:
