@@ -794,19 +794,20 @@ const AppContent: React.FC = () => {
             {(window.location.hostname.includes('dev.') || window.location.hostname.includes('localhost') || window.location.port === '5173') && (
               <Typography 
                 variant="caption" 
-                color="warning.main" 
                 align="center" 
                 sx={{ 
                   mt: 1, 
                   display: 'block',
                   fontWeight: 'bold',
-                  backgroundColor: 'warning.light',
-                  color: 'warning.contrastText',
-                  px: 1,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  px: 2,
                   py: 0.5,
                   borderRadius: 1,
                   mx: 'auto',
-                  width: 'fit-content'
+                  width: 'fit-content',
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.2)',
+                  fontSize: '0.75rem'
                 }}
               >
                 🚧 DEVELOPMENT ENV • {new Date().toISOString().slice(0, 16).replace('T', ' ')} • Rev: {versionInfo?.revision || (window.location.port === '5173' ? 'Local' : 'Loading...')}
