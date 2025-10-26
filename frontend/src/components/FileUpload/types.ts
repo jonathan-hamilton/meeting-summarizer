@@ -28,6 +28,7 @@ export interface UploadResponse {
 }
 
 export const ACCEPTED_AUDIO_FORMATS = [
+  // Standard audio formats
   'audio/wav',
   'audio/wave',
   'audio/x-wav',
@@ -39,7 +40,16 @@ export const ACCEPTED_AUDIO_FORMATS = [
   'audio/flac',
   'audio/x-flac',
   'audio/ogg',
-  'audio/webm'
+  'audio/webm',
+  // iOS Safari specific MIME types
+  'audio/x-mp3',
+  'audio/mpeg3',
+  'audio/x-mpeg-3',
+  'audio/quicktime',
+  'video/mp4', // iOS Safari sometimes reports .m4a as video/mp4
+  'video/quicktime',
+  // Generic catch-all for iOS Safari quirks
+  '', // iOS Safari sometimes provides empty MIME type for valid files
   // Note: AAC removed - not supported by Azure Fast Transcription
 ] as const;
 
