@@ -26,6 +26,12 @@ variable "sku_name" {
   default     = "standard"
 }
 
+variable "github_actions_object_id" {
+  description = "Object ID of the GitHub Actions service principal for Key Vault access"
+  type        = string
+  default     = null
+}
+
 variable "enable_soft_delete" {
   description = "Enable soft delete"
   type        = bool
@@ -73,7 +79,7 @@ resource "azurerm_key_vault" "main" {
 resource "azurerm_key_vault_access_policy" "current_user" {
   key_vault_id = azurerm_key_vault.main.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = data.azurerm_client_config.current.object_id
+  object_id    = var.github_actions_object_id != null ? var.github_actions_object_id : data.azurerm_client_config.current.object_id
 
   secret_permissions = [
     "Get",

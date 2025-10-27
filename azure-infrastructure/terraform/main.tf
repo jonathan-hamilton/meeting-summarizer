@@ -71,6 +71,7 @@ module "key_vault" {
   location       = var.location
   environment    = var.environment
   resource_group_name = azurerm_resource_group.main.name
+  github_actions_object_id = var.github_actions_object_id
 }
 
 # Storage Account Module
