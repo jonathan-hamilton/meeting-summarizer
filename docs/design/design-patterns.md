@@ -238,7 +238,66 @@ const EmailCompositionDialog = React.lazy(() => import("./EmailCompositionDialog
 
 ---
 
-## 📊 **Data Patterns**
+## � **Mobile & Cross-Browser Patterns**
+
+### 1. Progressive Enhancement Pattern
+**Status:** ✅ **ESTABLISHED - Sprint 8 Mobile-First Implementation**
+
+**Requirements:**
+- ✅ Mobile-first responsive design MUST be implemented across all components
+- ✅ Touch targets MUST meet 44px minimum size requirement (iOS HIG compliance)
+- ✅ Desktop functionality MUST be preserved through progressive enhancement
+- ✅ Responsive breakpoints MUST use Material-UI theme system consistently
+
+**Implementation Standard:**
+```typescript
+// Progressive enhancement for mobile vs desktop
+const theme = useTheme();
+const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+// Touch-optimized components
+<Button 
+  sx={{ 
+    minHeight: 44, // iOS HIG compliance
+    minWidth: 44,
+    ...theme.spacing(2) // Consistent touch spacing
+  }}
+>
+```
+
+### 2. iOS Safari Compatibility Pattern
+**Status:** ✅ **ESTABLISHED - Sprint 8.7 iOS Safari Enhancement**
+
+**Requirements:**
+- ✅ iOS Safari MUST use visible file input approach (not hidden + programmatic triggering)
+- ✅ File format filtering MUST be iOS-compatible (MP3, M4A, WAV, MP4)
+- ✅ User guidance MUST inform iOS Safari users about local storage requirements
+- ✅ Progressive enhancement MUST maintain desktop file upload functionality
+
+**Implementation Standard:**
+```typescript
+// iOS Safari detection and specialized handling
+const isIOSSafari = () => {
+  const ua = navigator.userAgent;
+  return /iPad|iPhone|iPod/.test(ua) && /Safari/.test(ua) && !/Chrome/.test(ua);
+};
+
+// iOS Safari file upload component
+if (isIOSSafari()) {
+  return <IOSSafariFileUpload />; // Visible input approach
+} else {
+  return <FileDropzone />; // Full desktop experience
+}
+```
+
+**Enforcement:**
+- ✅ **REQUIRED**: iOS Safari MUST use research-based compatibility approaches
+- ❌ **PROHIBITED**: Hidden file inputs with programmatic triggering on iOS Safari
+- ✅ **REQUIRED**: User education about cloud storage limitations for iOS Safari
+
+---
+
+## �📊 **Data Patterns**
 
 ### 1. Entity Framework Patterns
 **Status:** ✅ **ESTABLISHED - Database Access**

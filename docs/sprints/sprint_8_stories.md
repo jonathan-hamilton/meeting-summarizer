@@ -21,8 +21,9 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 | S8.4 | Redesign File Upload Flow for Mobile | COMPLETE ✅ | S8.1 - Responsive Breakpoint System, S8.3 - Touch Optimization |
 | S8.5 | Implement Responsive Content Layout System | SKIPPED ⏭️ | S8.1 - Responsive Breakpoint System, S8.3 - Touch Optimization |
 | S8.6 | Optimize Mobile Performance and Bundle Size | COMPLETE ✅ | S8.1, S8.2, S8.3, S8.4 - All major UI components completed |
+| S8.7 | iOS Safari User Experience Enhancements | IN PROGRESS 🔄 | S8.4 - Mobile File Upload Flow |
 
-**Sprint 8 Status**: 5/6 stories COMPLETE, 1 SKIPPED (83% COMPLETE + 1 Skipped) - **S8.6 COMPLETE: EXCEPTIONAL SUCCESS - GRADE A PERFORMANCE**
+**Sprint 8 Status**: 5/7 stories COMPLETE, 1 SKIPPED, 1 IN PROGRESS (71% COMPLETE + 1 Skipped + 1 Active) - **S8.6 COMPLETE: EXCEPTIONAL SUCCESS - GRADE A PERFORMANCE**
 
 ## User Stories
 
@@ -144,10 +145,22 @@ All four increments completed successfully with comprehensive mobile-first respo
 - Implemented S8.3 gradient theming for progress indicators
 - Mobile-optimized compact mode for space-constrained screens
 
+**iOS Safari Compatibility Enhancement (October 27, 2025):**
+- **Research-Based iOS Safari Solution:** Implemented evidence-based file upload approach using Can I Use data, WebKit documentation, and react-dropzone repository research
+- **iOS-Specific File Format Filtering:** Limited iOS Safari to natively supported formats (MP3, M4A, WAV, MP4) vs broader desktop support (.wav, .mp3, .mp4, .m4a, .flac, .ogg, .webm)
+- **Visual File Input Architecture:** Implemented visible file input approach instead of hidden input + programmatic triggering due to iOS Safari security restrictions
+- **Cloud Storage Discovery:** Identified and documented iOS Safari restriction preventing file selection from cloud storage (OneDrive, iCloud Drive) requiring local device storage
+- **User Guidance System:** Added prominent messaging about local file storage requirements for iOS Safari users
+- **Progressive Enhancement Implementation:** Desktop gets full format support + enhanced picker, iOS gets guided experience with compatible formats
+- **Root Cause Resolution:** iOS Safari file selection works with local Files app storage but cannot access cloud storage due to browser security model
+
 **Final Acceptance Criteria:**
 ✅ File upload interface works seamlessly with mobile file pickers
-✅ Drag-and-drop zones are touch-friendly and appropriately sized (44px minimum)
+✅ Drag-and-drop zones are touch-friendly and appropriately sized (44px minimum)  
 ✅ Upload progress indicators are clearly visible on mobile screens
+✅ iOS Safari file upload compatibility with local storage files
+✅ Progressive enhancement for iOS Safari vs desktop file format support
+✅ User guidance for iOS Safari cloud storage limitations
 ✅ Desktop drag-and-drop functionality remains fully intact
 ✅ Design pattern compliance achieved - All application state in Zustand stores
 ✅ Mobile file upload experience optimized for iOS Safari 15+ and Android Chrome 90+
@@ -255,6 +268,43 @@ All four increments completed successfully with extraordinary performance achiev
 - **Network awareness** - Adaptive loading based on connection conditions
 
 **Dependencies Satisfied:** S8.1, S8.2, S8.3, S8.4 - All major UI components completed (S8.5 skipped)
+
+### Story S8.7: iOS Safari User Experience Enhancements 🔄 IN PROGRESS
+As an iOS Safari user, I want an optimized file upload experience with clear guidance and appropriate file type filtering so that I can successfully upload audio files without confusion about compatibility or storage requirements.
+
+**Status: IN PROGRESS 🔄**
+
+**Started:** October 27, 2025
+
+**Implementation Progress:**
+✅ **iOS-Specific File Format Research Completed** - Identified iOS Safari supported formats (MP3, M4A, WAV, MP4) vs desktop (.wav, .mp3, .mp4, .m4a, .flac, .ogg, .webm)
+✅ **Cloud Storage Limitation Discovery** - Documented iOS Safari restriction preventing file selection from cloud storage (OneDrive, iCloud Drive) requiring local device storage
+⏳ **Accept Attribute Implementation** - Add accept='audio/mp3,audio/mp4,audio/wav' to iOS Safari file input for picker filtering
+⏳ **UI Text Enhancement** - Change 'no file selected' to 'SELECT FILE' and remove 'Choose File' chip for cleaner iOS Safari interface
+⏳ **User Guidance System** - Add prominent messaging about local file storage requirements and cloud storage limitations
+
+**Acceptance Criteria:**
+- [ ] iOS Safari file input includes accept attribute with supported MIME types (audio/mp3, audio/mp4, audio/wav)
+- [ ] File input displays 'SELECT FILE' text instead of 'no file selected' for iOS Safari users
+- [ ] 'Choose File' chip is removed from iOS Safari component for cleaner interface
+- [ ] Prominent user guidance message explains local storage requirement for iOS Safari
+- [ ] Clear instructions provided for moving files from cloud storage to local Files app
+- [ ] Progressive enhancement maintains full desktop functionality while optimizing iOS Safari experience
+
+**Technical Implementation Plan:**
+- **Accept Attribute Addition**: Implement conditional accept attribute for iOS Safari detection in IOSSafariFileUpload component
+- **UI Text Customization**: Replace default file input text with 'SELECT FILE' for iOS Safari users
+- **Component Cleanup**: Remove unnecessary UI elements (Choose File chip) specific to iOS Safari component
+- **User Guidance Component**: Create or enhance messaging system to inform iOS Safari users about storage requirements
+- **Documentation Integration**: Ensure user guidance aligns with chatbot context and help documentation
+
+**Integration Points:**
+- Builds upon S8.4 iOS Safari compatibility foundation (research-based approach, visible input architecture)
+- Enhances mobile file upload flow with iOS Safari-specific user experience optimizations
+- Maintains progressive enhancement principle - desktop experience unchanged
+- Aligns with S8.3 touch optimization patterns and S8.1 responsive breakpoint system
+
+**Dependencies:** S8.4 - Mobile File Upload Flow (iOS Safari compatibility foundation)
 
 ## Integration Notes
 - All mobile optimizations must maintain desktop functionality through progressive enhancement

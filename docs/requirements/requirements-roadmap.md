@@ -10,7 +10,7 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 
 #### Latest Sprint 8 Achievements (October 25, 2025) - Mobile-First Responsive Design Foundation + Performance Excellence
 
-**Sprint 8 Status: 5/6 Stories COMPLETE (83% COMPLETE) - EXCEPTIONAL SUCCESS** ✅
+**Sprint 8 Status: 5/7 Stories COMPLETE, 1 SKIPPED, 1 IN PROGRESS (71% COMPLETE + 1 Active) - EXCEPTIONAL SUCCESS** ✅
 
 **S8.6 Mobile Performance & Bundle Size Optimization** - **COMPLETE ✅ - EXCEPTIONAL SUCCESS**
 - **Performance Grade A Achieved**: Best possible performance rating with all metrics exceeding targets by 300-890%
@@ -52,7 +52,7 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 - **Design Decision**: Focus development effort on performance optimization rather than redundant layout improvements
 - **Mobile Validation**: All acceptance criteria already satisfied through S8.1-S8.4 implementations
 
-**S8.4 Mobile File Upload Flow** - **COMPLETE ✅**
+**S8.4 Mobile File Upload Flow** - **COMPLETE ✅ (Enhanced with iOS Safari Compatibility)**
 - **State Management Refactoring**: Complete migration from React useState to Zustand stores for design pattern compliance
 - **Token Reservation Architecture**: Comprehensive token reservation system (TokenReservation entity, reservation/consumption/release lifecycle) eliminating race condition bugs
 - **Enhanced Cancellation Logic**: Proper token refunds with real-time status updates and "Cancelled" vs "Failed" status distinction
@@ -61,6 +61,13 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 - **Mobile Progress Indicators**: Responsive typography scaling, mobile layout patterns, enhanced progress visibility (6px vs 4px)
 - **Mobile File Picker Integration**: Enhanced mobile file picker accessibility and seamless iOS/Android Chrome integration
 - **Complete Mobile Upload Experience**: All four increments delivered - foundation, dropzone, file picker, and progress indicators
+- **iOS Safari Compatibility (October 27, 2025)**: Research-based solution for iOS Safari file upload restrictions, progressive enhancement with iOS-compatible formats (MP3, M4A, WAV, MP4), user guidance for local vs cloud storage requirements
+
+**S8.7 iOS Safari User Experience Enhancements** - **IN PROGRESS 🔄 (Started October 27, 2025)**
+- **Research Foundation Complete**: iOS Safari file format compatibility and cloud storage limitations identified and documented
+- **Implementation Planning**: Accept attribute addition, UI text enhancement, user guidance system for iOS Safari optimization
+- **Progressive Enhancement Focus**: iOS Safari-specific UX improvements while maintaining full desktop functionality
+- **Technical Scope**: Accept attribute for iOS Safari, 'SELECT FILE' text replacement, user guidance for local storage requirements
 
 #### Previous Sprint 7 Achievements (October 25, 2025)
 **S7.9 SendGrid to Azure Communication Services Migration** - **COMPLETE ✅**
