@@ -210,10 +210,16 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       const input = document.createElement('input');
       input.type = 'file';
       
-      // iOS Safari fix: Use file extensions instead of MIME types for maximum compatibility
-      // Some iOS Safari versions ignore MIME types entirely, file extensions are more reliable
-      input.accept = '.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac';
+      // iOS Safari fix: Use combination of file extensions and MIME types
+      // Some iOS versions prefer MIME types, others prefer extensions, use both for maximum compatibility
+      input.accept = '.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a';
       input.multiple = false; // Single file selection for iOS Safari compatibility
+      
+      addDebugLog(`Accept attribute: ${input.accept}`);
+      
+      // iOS Safari compatibility attributes
+      input.setAttribute('capture', ''); // Allow camera/microphone capture if needed
+      input.setAttribute('webkitdirectory', 'false'); // Explicitly disable directory selection
       
       // Critical for iOS Safari: Input must be temporarily in DOM and properly styled
       input.style.position = 'fixed';
@@ -229,8 +235,15 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       // Set up change handler
       input.onchange = (e) => {
         const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
-        console.log('🍎 iOS Safari: File selected via dynamic input:', event.target.files?.length);
-        addDebugLog(`File selected: ${event.target.files?.length || 0} files`);
+        const filesCount = event.target.files?.length || 0;
+        console.log('🍎 iOS Safari: File selected via dynamic input:', filesCount);
+        addDebugLog(`File selected: ${filesCount} files`);
+        
+        if (filesCount > 0 && event.target.files) {
+          const file = event.target.files[0];
+          addDebugLog(`Selected file: ${file.name} (${file.type || 'no type'}, ${file.size} bytes)`);
+        }
+        
         handleInputChange(event);
         // Remove from DOM after processing
         setTimeout(() => {
@@ -245,7 +258,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       // Set up cancel handler (iOS Safari specific)
       input.oncancel = () => {
         console.log('🍎 iOS Safari: File selection cancelled');
-        addDebugLog('File selection cancelled');
+        addDebugLog('File selection cancelled by user');
         setTimeout(() => {
           if (document.body.contains(input)) {
             document.body.removeChild(input);
@@ -253,6 +266,13 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
             console.log('🍎 iOS Safari: Cancelled dynamic input cleaned up');
           }
         }, 200);
+      };
+
+      // iOS Safari specific: Add error handler
+      input.onerror = (e) => {
+        console.error('🍎 iOS Safari: File input error:', e);
+        addDebugLog(`❌ File input error: ${e}`);
+        setDebugError(`File input error: ${e}`);
       };
       
       // iOS Safari requires user gesture to be immediate - no setTimeout
@@ -271,60 +291,61 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     <>
       {/* Visual Debug Panel for iOS Safari */}
       <Box sx={{ mb: 2 }}>
-        <Accordion defaultExpanded={false} sx={{ backgroundColor: '#f5f5f5' }}>
+        <Accordion defaultExpanded={false} sx={{ backgroundColor: '#f8f9fa', border: '1px solid #dee2e6' }}>
           <AccordionSummary 
             expandIcon={<ExpandMore />}
             sx={{ 
               backgroundColor: '#e3f2fd',
+              borderBottom: '1px solid #dee2e6',
               '& .MuiAccordionSummary-content': {
                 alignItems: 'center'
               }
             }}
           >
             <BugReport sx={{ mr: 1, color: '#1976d2' }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
               iOS Safari Debug Info (Tap to expand)
             </Typography>
           </AccordionSummary>
-          <AccordionDetails>
-            <Box sx={{ fontSize: '12px', fontFamily: 'monospace' }}>
-              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+          <AccordionDetails sx={{ backgroundColor: '#ffffff', color: '#212529' }}>
+            <Box sx={{ fontSize: '12px', fontFamily: 'monospace', color: '#212529' }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1, color: '#495057' }}>
                 Detection Status:
               </Typography>
-              <Box sx={{ ml: 1, mb: 2 }}>
+              <Box sx={{ ml: 1, mb: 2, color: '#212529' }}>
                 <div>✅ Component Mounted: {debugState.detectionInfo.componentMounted ? 'Yes' : 'No'}</div>
                 <div>📱 Touch Support: {debugState.detectionInfo.touchSupport ? 'Yes' : 'No'}</div>
                 <div>🔄 File Attempts: {debugState.fileAttempts}</div>
                 <div>🏷️ Platform: {debugState.detectionInfo.platform}</div>
               </Box>
 
-              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1, color: '#495057' }}>
                 User Agent:
               </Typography>
-              <Box sx={{ ml: 1, mb: 2, wordBreak: 'break-all', fontSize: '10px' }}>
+              <Box sx={{ ml: 1, mb: 2, wordBreak: 'break-all', fontSize: '10px', color: '#6c757d', backgroundColor: '#f8f9fa', p: 1, borderRadius: '4px' }}>
                 {debugState.detectionInfo.userAgent}
               </Box>
 
               {debugState.lastError && (
                 <>
-                  <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1, color: 'error.main' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1, color: '#dc3545' }}>
                     Last Error:
                   </Typography>
-                  <Box sx={{ ml: 1, mb: 2, color: 'error.main', fontSize: '10px' }}>
+                  <Box sx={{ ml: 1, mb: 2, color: '#dc3545', fontSize: '10px', backgroundColor: '#f8d7da', p: 1, borderRadius: '4px', border: '1px solid #f5c6cb' }}>
                     {debugState.lastError}
                   </Box>
                 </>
               )}
 
-              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1 }}>
+              <Typography variant="caption" sx={{ fontWeight: 'bold', display: 'block', mb: 1, color: '#495057' }}>
                 Recent Activity:
               </Typography>
-              <Box sx={{ ml: 1 }}>
+              <Box sx={{ ml: 1, backgroundColor: '#f8f9fa', p: 1, borderRadius: '4px', border: '1px solid #dee2e6' }}>
                 {debugState.interactions.length === 0 ? (
-                  <div style={{ color: '#666' }}>No activity yet</div>
+                  <div style={{ color: '#6c757d' }}>No activity yet</div>
                 ) : (
                   debugState.interactions.map((log, index) => (
-                    <div key={index} style={{ marginBottom: '2px', fontSize: '10px' }}>
+                    <div key={index} style={{ marginBottom: '2px', fontSize: '10px', color: '#212529' }}>
                       {log}
                     </div>
                   ))
@@ -363,14 +384,16 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari Fix: File Extensions (more reliable than MIME types)
+        iOS Safari Fix: Combined Extensions + MIME Types
         <br />
         Supported: .wav, .mp3, .mp4, .m4a, .flac, .ogg, .webm, .aac
         <br />
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
+        <br />
+        <strong>If button doesn't work, try the backup file input below:</strong>
       </Typography>
 
-      {/* iOS Safari: Optimized button for touch events */}
+      {/* iOS Safari: Primary button approach */}
       <form>
         <button
           type="button"
@@ -394,13 +417,40 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
             touchAction: 'manipulation' // iOS Safari touch optimization
           }}
         >
-          Choose Audio File
+          Choose Audio File (Primary)
         </button>
-        {/* Hidden fallback input with file extensions (more reliable than MIME types in iOS Safari) */}
+
+        {/* iOS Safari: Backup visible file input (sometimes works when programmatic doesn't) */}
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography variant="caption" display="block" sx={{ mb: 1, color: '#666' }}>
+            Backup Method (if button above fails):
+          </Typography>
+          <input
+            type="file"
+            accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a"
+            multiple={false}
+            onChange={(e) => {
+              addDebugLog('Backup file input used');
+              handleInputChange(e);
+            }}
+            style={{
+              fontSize: '16px',
+              padding: '8px',
+              border: '2px solid #007AFF',
+              borderRadius: '8px',
+              backgroundColor: '#f0f8ff',
+              color: '#007AFF',
+              cursor: 'pointer',
+              outline: 'none',
+              minWidth: '200px'
+            }}
+          />
+        </Box>
+        {/* Hidden fallback input with combined file extensions and MIME types */}
         <input
           ref={fileInputRef}
           type="file"
-          accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
+          accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a"
           multiple={false}
           onChange={handleInputChange}
           style={{
