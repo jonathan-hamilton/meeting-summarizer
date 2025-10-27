@@ -152,13 +152,13 @@ jobs:
         FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
         
         # Add tenant ID parameter if not present (required for Azure AD Service Principal auth)
-        if [[ "$FIXED_CONNECTION_STRING" != *"Tenant ID="* ]]; then
-          FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};Tenant ID=1c30d7a8-9627-4b0c-b799-12bae25a849b"
-          echo "✅ Added missing Tenant ID parameter to connection string"
+        if [[ "$FIXED_CONNECTION_STRING" != *"TenantId="* ]]; then
+          FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b"
+          echo "✅ Added missing TenantId parameter to connection string"
         else
           # Replace any empty GUID tenant IDs with the correct tenant ID
-          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Tenant ID=00000000-0000-0000-0000-000000000000/Tenant ID=1c30d7a8-9627-4b0c-b799-12bae25a849b/g')
-          echo "✅ Fixed existing Tenant ID in connection string"
+          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/TenantId=00000000-0000-0000-0000-000000000000/TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b/g')
+          echo "✅ Fixed existing TenantId in connection string"
         fi
         
         # Debug: Show connection string format (without sensitive data)  
