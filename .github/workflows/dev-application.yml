@@ -148,11 +148,13 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
+        # Create SQL authentication connection string for migrations (more reliable than Azure AD)
+        SQL_CONNECTION="Server=tcp:meetingsummary-dev-v2-sql.database.windows.net,1433;Database=meetingsummary-dev-v2-db;User ID=${{ secrets.SQL_ADMIN_LOGIN }};Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+        export ConnectionStrings__DefaultConnection="$SQL_CONNECTION"
+        
         # Apply migrations to development database
         dotnet ef database update --verbose
       env:
-        ConnectionStrings__DefaultConnection: ${{ secrets.DEV_DATABASE_CONNECTION_STRING }}
-        KeyVault__ClientSecret: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET }}
         ASPNETCORE_ENVIRONMENT: Development
 
   deploy-application:
