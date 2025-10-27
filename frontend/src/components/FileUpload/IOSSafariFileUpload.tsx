@@ -91,7 +91,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'no-accept-attribute-test-v5',
+            pattern: 'priority-2-visible-input-no-hidden-elements-v6',
             userAgent: navigator.userAgent,
             platform: navigator.platform,
             touchSupport: 'ontouchstart' in window
@@ -184,9 +184,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'no-accept-attribute-test-v5',
+          pattern: 'priority-2-visible-input-no-hidden-elements-v6',
           acceptAttribute: event.target?.accept || 'none (all files allowed)',
-          solution: 'no-accept-attribute-iOS-Safari-test-JavaScript-validation-fallback'
+          solution: 'visible-file-input-direct-interaction-no-hidden-positioning'
         })
       });
       addDebugLog('File input API tracking successful');
@@ -298,44 +298,15 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari Test: NO Accept Attribute
+        Priority 2: Visible File Input (No Hidden Elements)
         <br />
-        Allows ALL files - validation moved to JavaScript
+        Direct native iOS Safari file input interaction
         <br />
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
 
-      {/* iOS Safari: Research-based label approach instead of programmatic click */}
+      {/* Priority 2: Visible file input with custom styling for iOS Safari */}
       <form>
-        <label 
-          htmlFor="ios-safari-file-input"
-          style={{
-            display: 'inline-block',
-            fontSize: '18px',
-            padding: '15px 25px',
-            border: '3px solid #007AFF',
-            borderRadius: '12px',
-            backgroundColor: '#007AFF',
-            color: 'white',
-            cursor: 'pointer',
-            outline: 'none',
-            fontWeight: 'bold',
-            minWidth: '250px',
-            textAlign: 'center',
-            WebkitTapHighlightColor: 'transparent',
-            WebkitTouchCallout: 'none',
-            WebkitUserSelect: 'none',
-            userSelect: 'none',
-            touchAction: 'manipulation'
-          }}
-          onClick={() => {
-            console.log('🍎 iOS Safari: Label clicked - delegating to native input');
-            addDebugLog('Label clicked - using native browser behavior');
-          }}
-        >
-          Choose Audio File
-        </label>
-        {/* Test: Remove accept attribute entirely - let iOS Safari allow all files */}
         <input
           id="ios-safari-file-input"
           ref={fileInputRef}
@@ -343,11 +314,23 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           multiple={false}
           onChange={handleInputChange}
           style={{
-            position: 'absolute',
-            left: '-9999px',
-            width: '1px',
-            height: '1px',
-            opacity: 0
+            width: '100%',
+            padding: '15px 25px',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            backgroundColor: '#007AFF',
+            color: 'white',
+            border: '3px solid #007AFF',
+            borderRadius: '12px',
+            cursor: 'pointer',
+            outline: 'none',
+            textAlign: 'center',
+            WebkitAppearance: 'none',
+            appearance: 'none'
+          }}
+          onClick={() => {
+            console.log('🍎 iOS Safari: Direct input click');
+            addDebugLog('Direct input clicked - no hidden elements');
           }}
         />
       </form>
