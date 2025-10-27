@@ -17,6 +17,7 @@ import type {
   UpdateSavedSummaryRequest,
   UpdateSavedActionItemRequest
 } from '../types';
+import AuthService from './authService';
 import type { 
   PaymentIntent, 
   PaymentResult, 
@@ -75,14 +76,41 @@ class ApiService {
     this.setupInterceptors();
   }
 
+  private isTokenExpiringSoon(token: string, thresholdSeconds: number): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const currentTime = Date.now() / 1000;
+      const timeUntilExpiry = payload.exp - currentTime;
+      return timeUntilExpiry <= thresholdSeconds;
+    } catch {
+      return true; // If we can't parse the token, assume it's expired
+    }
+  }
+
   private setupInterceptors(): void {
     // Request interceptor
     this.client.interceptors.request.use(
-      (config) => {
+      async (config) => {
         // Add Authorization header if user is authenticated
         const authState = useAuthStore.getState();
         if (authState.isAuthenticated && authState.accessToken) {
-          config.headers.Authorization = `Bearer ${authState.accessToken}`;
+          // Check if token is about to expire (within 2 minutes)
+          const authService = AuthService.getInstance();
+          if (authService.isTokenExpired(authState.accessToken) || 
+              this.isTokenExpiringSoon(authState.accessToken, 2 * 60)) {
+            // Try to refresh token before making the request
+            const refreshSuccess = await authState.refreshAccessToken();
+            if (refreshSuccess) {
+              const newAuthState = useAuthStore.getState();
+              config.headers.Authorization = `Bearer ${newAuthState.accessToken}`;
+            } else {
+              // If refresh failed, logout and reject the request
+              authState.logout();
+              return Promise.reject(new Error('Authentication failed - please log in again'));
+            }
+          } else {
+            config.headers.Authorization = `Bearer ${authState.accessToken}`;
+          }
         }
         
         return config;
@@ -99,12 +127,28 @@ class ApiService {
         return response;
       },
       async (error) => {
+        const originalRequest = error.config;
+        
         // Handle 401 Unauthorized - token might be expired
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
           const authState = useAuthStore.getState();
           if (authState.isAuthenticated) {
-            // Note: Automatic token refresh could be implemented here
-            // For now, we'll let the auth store handle re-authentication
+            // Try to refresh the token
+            const refreshSuccess = await authState.refreshAccessToken();
+            
+            if (refreshSuccess) {
+              // Update the original request with the new token
+              const newAuthState = useAuthStore.getState();
+              if (newAuthState.accessToken) {
+                originalRequest.headers.Authorization = `Bearer ${newAuthState.accessToken}`;
+                // Retry the original request with the new token
+                return this.client.request(originalRequest);
+              }
+            }
+            
+            // If refresh failed, logout
             authState.logout();
           }
         }
