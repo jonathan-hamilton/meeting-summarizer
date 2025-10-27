@@ -148,21 +148,20 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
-        # Fix the Azure AD connection string by adding the missing tenant ID
+        # Fix the Azure AD connection string by ensuring proper format for Service Principal auth
         FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
         
-        # Add tenant ID parameter if not present (required for Azure AD Service Principal auth)
-        if [[ "$FIXED_CONNECTION_STRING" != *"TenantId="* ]]; then
-          FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b"
-          echo "✅ Added missing TenantId parameter to connection string"
-        else
-          # Replace any empty GUID tenant IDs with the correct tenant ID
-          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/TenantId=00000000-0000-0000-0000-000000000000/TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b/g')
-          echo "✅ Fixed existing TenantId in connection string"
-        fi
+        # For Azure AD Service Principal, we need Authentication=Active Directory Service Principal
+        # and optionally User ID (Service Principal App ID) but NOT TenantId in connection string
+        # The tenant ID should be handled by Azure CLI authentication context
+        echo "🔍 Original connection string format:"
+        echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
         
-        # Debug: Show connection string format (without sensitive data)  
-        echo "🔍 Fixed connection string format:"
+        # Remove any TenantId parameters that might be causing issues
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
+        
+        # Debug: Show cleaned connection string format (without sensitive data)  
+        echo "🔍 Cleaned connection string format:"
         echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
         
         export ConnectionStrings__DefaultConnection="$FIXED_CONNECTION_STRING"
