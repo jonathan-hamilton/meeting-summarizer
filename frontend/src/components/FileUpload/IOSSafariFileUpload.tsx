@@ -91,7 +91,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'M4A-specific-MIME-types-test-v4',
+            pattern: 'no-accept-attribute-test-v5',
             userAgent: navigator.userAgent,
             platform: navigator.platform,
             touchSupport: 'ontouchstart' in window
@@ -184,9 +184,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'M4A-specific-MIME-types-test-v4',
+          pattern: 'no-accept-attribute-test-v5',
           acceptAttribute: event.target?.accept || 'none (all files allowed)',
-          solution: 'Can-I-Use-data-MIME-types-only-plus-label-based-triggering'
+          solution: 'no-accept-attribute-iOS-Safari-test-JavaScript-validation-fallback'
         })
       });
       addDebugLog('File input API tracking successful');
@@ -298,9 +298,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari M4A Test: Narrow MIME Types
+        iOS Safari Test: NO Accept Attribute
         <br />
-        Supported: audio/mp4, audio/x-m4a (Voice Recorder format)
+        Allows ALL files - validation moved to JavaScript
         <br />
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
@@ -335,12 +335,11 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         >
           Choose Audio File
         </label>
-        {/* Research-based iOS Safari fix: M4A-specific MIME types only */}
+        {/* Test: Remove accept attribute entirely - let iOS Safari allow all files */}
         <input
           id="ios-safari-file-input"
           ref={fileInputRef}
           type="file"
-          accept="audio/mp4,audio/x-m4a"
           multiple={false}
           onChange={handleInputChange}
           style={{
