@@ -22,7 +22,7 @@ import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
 
 import { FileDropzone } from "./FileDropzone";
-import { IOSSafariAdvancedUpload } from "./IOSSafariAdvancedUpload";
+import { IOSSafariFileUpload } from "./IOSSafariFileUpload";
 import { validateFiles } from "./validation";
 import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
@@ -672,9 +672,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
         Audio File Upload
       </Typography>
       
-      {/* File Dropzone - iOS Safari gets advanced specialized component */}
+      {/* File Dropzone - iOS Safari gets specific MIME types component */}
       {isIOSSafari() ? (
-        <IOSSafariAdvancedUpload onFilesDropped={onDrop} />
+        <IOSSafariFileUpload onFilesDropped={onDrop} />
       ) : (
         <FileDropzone onFilesDropped={onDrop} />
       )}
