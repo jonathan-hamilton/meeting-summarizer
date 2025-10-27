@@ -156,20 +156,28 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
-        # Fix the Azure AD connection string by ensuring proper format for CLI auth
-        FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
+        # Try to get a working connection string from Azure Key Vault
+        echo "🔍 Attempting to retrieve migration connection string from Key Vault..."
+        MIGRATION_CONNECTION_STRING=$(az keyvault secret show --name "migration-connection-string" --vault-name "meetingsummary-dev-v2-kv" --query value -o tsv 2>/dev/null || echo "")
         
-        # For Azure CLI authentication, we need Authentication=Active Directory Default
-        # which will use the current Azure CLI context (OIDC login)
-        echo "🔍 Original connection string format:"
-        echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
-        
-        # Replace Service Principal auth with Default (CLI) auth and remove User ID and Password
-        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Authentication=Active Directory Service Principal/Authentication=Active Directory Default/g')
-        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
-        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;Password=[^;]*//g')
-        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;PWD=[^;]*//g')
-        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
+        if [ -n "$MIGRATION_CONNECTION_STRING" ]; then
+          echo "✅ Using migration-specific connection string from Key Vault"
+          FIXED_CONNECTION_STRING="$MIGRATION_CONNECTION_STRING"
+        else
+          echo "⚠️ No migration connection string in Key Vault, using default with modifications"
+          FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
+          
+          # Try SQL Server authentication instead of Azure AD
+          echo "🔧 Converting to SQL Server authentication..."
+          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Authentication=Active Directory[^;]*;//g')
+          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
+          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
+          
+          # Add SQL auth if not present
+          if [[ "$FIXED_CONNECTION_STRING" != *"User ID="* ]]; then
+            FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};User ID=meetingsummary-admin"
+          fi
+        fi
         
         # Debug: Show final connection string format (without sensitive data)  
         echo "🔍 Final connection string format:"
