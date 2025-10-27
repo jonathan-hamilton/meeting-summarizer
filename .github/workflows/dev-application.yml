@@ -148,9 +148,21 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
-        # Create SQL authentication connection string for migrations (more reliable than Azure AD)
-        SQL_CONNECTION="Server=tcp:meetingsummary-dev-v2-sql.database.windows.net,1433;Database=meetingsummary-dev-v2-db;User ID=${{ secrets.SQL_ADMIN_LOGIN }};Password=${{ secrets.SQL_ADMIN_PASSWORD }};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
-        export ConnectionStrings__DefaultConnection="$SQL_CONNECTION"
+        # Get the working connection string from Azure Key Vault
+        echo "🔑 Retrieving connection string from Key Vault..."
+        DB_CONNECTION_STRING=$(az keyvault secret show \
+          --vault-name "msio-dev-v2-kv" \
+          --name "DatabaseConnectionString-Dev" \
+          --query "value" \
+          --output tsv)
+        
+        if [ -z "$DB_CONNECTION_STRING" ]; then
+          echo "❌ Failed to retrieve connection string from Key Vault"
+          exit 1
+        fi
+        
+        echo "✅ Retrieved connection string from Key Vault"
+        export ConnectionStrings__DefaultConnection="$DB_CONNECTION_STRING"
         
         # Apply migrations to development database
         dotnet ef database update --verbose
