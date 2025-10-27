@@ -23,48 +23,22 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   const theme = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Track page load for iOS Safari debugging
+  // Track component initialization for analytics
   React.useEffect(() => {
-    const trackPageLoad = async () => {
-      try {
-        await fetch('/api/IOSSafariDebug/pageload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            page: 'IOSSafariFileUpload',
-            componentDetected: true,
-            pattern: 'react-dropzone-issue-1039-specific-MIME-types-fix'
-          })
-        });
-      } catch (error) {
-        console.error('Failed to track page load:', error);
-      }
-    };
-    trackPageLoad();
+    // Component loaded successfully - no action needed
   }, []);
 
   const handleFileSelection = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) {
-      console.log('🍎 iOS Safari: No files selected');
       return;
     }
-
-    console.log('🍎 iOS Safari: Processing', files.length, 'files');
     
     const acceptedFiles: File[] = [];
     const rejections: FileRejection[] = [];
 
     Array.from(files).forEach((file) => {
-      console.log('🍎 iOS Safari: Validating file:', {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        lastModified: file.lastModified
-      });
-
       // Validate file
       if (!isValidAudioFile(file)) {
-        console.log('🍎 iOS Safari: File rejected - invalid type:', file.name);
         rejections.push({
           file,
           errors: [{ code: 'file-invalid-type', message: 'File type not supported' }]
@@ -73,7 +47,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       }
 
       if (file.size > MAX_FILE_SIZE) {
-        console.log('🍎 iOS Safari: File rejected - too large:', file.name, formatFileSize(file.size));
         rejections.push({
           file,
           errors: [{ code: 'file-too-large', message: `File is too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}` }]
@@ -81,11 +54,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         return;
       }
 
-      console.log('🍎 iOS Safari: File accepted:', file.name);
       acceptedFiles.push(file);
     });
 
-    console.log('🍎 iOS Safari: Final result - Accepted:', acceptedFiles.length, 'Rejected:', rejections.length);
     onFilesDropped(acceptedFiles, rejections);
 
     // Reset input for next selection
@@ -95,44 +66,22 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   }, [onFilesDropped]);
 
   const handleInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('🍎 iOS Safari: File input change event triggered (programmatic approach)');
-    
-    // Track file selection for debugging
-    try {
-      await fetch('/api/IOSSafariDebug/fileinput', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'fileSelectionChanged',
-          pattern: 'react-dropzone-issue-1039-fix',
-          acceptAttribute: event.target?.accept || 'none (all files allowed)',
-          solution: 'specific-MIME-types-instead-of-audio-wildcard'
-        })
-      });
-    } catch (error) {
-      console.error('Failed to track file selection:', error);
-    }
-    
     handleFileSelection(event.target.files);
   }, [handleFileSelection]);
 
-  // iOS Safari multiple approach file input trigger
+  // iOS Safari file input trigger with fallback approach
   const triggerFileInput = useCallback(() => {
-    console.log('🍎 iOS Safari: Triggering multi-approach file input');
-    
     // First attempt: Use existing hidden input
     if (fileInputRef.current) {
-      console.log('🍎 iOS Safari: Attempt 1 - Using existing hidden input');
       fileInputRef.current.click();
       return;
     }
     
     // Second attempt: Create fresh input element (iOS Safari sometimes requires this)
-    console.log('🍎 iOS Safari: Attempt 2 - Creating fresh input element');
     const input = document.createElement('input');
     input.type = 'file';
-    // iOS Safari fix: Use specific MIME types instead of audio/* wildcard (react-dropzone issue #1039)
-    input.accept = 'audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac';
+    // iOS Safari fix: Use iOS-supported MIME types for file picker filtering (S8.7)
+    input.accept = 'audio/mp3,audio/mp4,audio/wav';
     input.multiple = false; // Single file selection for better iOS Safari compatibility
     
     // Add to DOM temporarily (some iOS versions require this)
@@ -144,7 +93,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     // Set up change handler
     input.onchange = (e) => {
       const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
-      console.log('🍎 iOS Safari: Fresh input element triggered change');
       handleInputChange(event);
       // Remove from DOM after use
       setTimeout(() => {
@@ -156,7 +104,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     
     // Set up cancel handler (iOS Safari specific)
     input.oncancel = () => {
-      console.log('🍎 iOS Safari: File selection cancelled');
       setTimeout(() => {
         if (document.body.contains(input)) {
           document.body.removeChild(input);
@@ -198,10 +145,21 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Select Audio File
       </Typography>
       
+      {/* iOS Safari specific user guidance */}
+      <Typography variant="body2" sx={{ 
+        mb: 2, 
+        p: 2, 
+        backgroundColor: 'warning.light', 
+        borderRadius: 1, 
+        color: 'warning.contrastText',
+        fontWeight: 'medium'
+      }}>
+        📱 For best results, save files to your Files app (local storage) before selecting.
+        Files in cloud storage (OneDrive, iCloud Drive) may not be selectable.
+      </Typography>
+      
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari Fix: Specific MIME Types (react-dropzone #1039)
-        <br />
-        Supported: WAV, MP3, MP4, M4A, FLAC, OGG, WebM, AAC
+        Supported formats: MP3, M4A, WAV, MP4
         <br />
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
       </Typography>
@@ -225,13 +183,13 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
             textAlign: 'center'
           }}
         >
-          Choose Audio File
+          SELECT FILE
         </button>
-        {/* Hidden fallback input with iOS Safari specific MIME types (react-dropzone issue #1039 fix) */}
+        {/* Hidden fallback input with iOS Safari specific MIME types (S8.7: iOS-supported formats only) */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a,.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
+          accept="audio/mp3,audio/mp4,audio/wav"
           multiple={false}
           onChange={handleInputChange}
           style={{
@@ -244,11 +202,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           }}
         />
       </form>
-
-      {/* Debug information for iOS Safari */}
-      <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • react-dropzone #1039 Fix • Specific MIME Types
-      </Typography>
     </Paper>
   );
 };
