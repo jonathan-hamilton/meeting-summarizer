@@ -75,11 +75,66 @@ resource "azurerm_key_vault" "main" {
   }
 }
 
-# Key Vault Access Policy for current user/service principal (GitHub Actions compatible)
+# Key Vault Access Policy for current user (local development)
 resource "azurerm_key_vault_access_policy" "current_user" {
   key_vault_id = azurerm_key_vault.main.id
   tenant_id    = data.azurerm_client_config.current.tenant_id
-  object_id    = var.github_actions_object_id != null ? var.github_actions_object_id : data.azurerm_client_config.current.object_id
+  object_id    = data.azurerm_client_config.current.object_id
+
+  secret_permissions = [
+    "Get",
+    "List",
+    "Set",
+    "Delete",
+    "Recover",
+    "Backup",
+    "Restore",
+    "Purge"
+  ]
+
+  certificate_permissions = [
+    "Get",
+    "List",
+    "Create",
+    "Import",
+    "Update",
+    "Delete",
+    "Recover",
+    "Backup",
+    "Restore",
+    "ManageContacts",
+    "ManageIssuers",
+    "GetIssuers",
+    "ListIssuers",
+    "SetIssuers",
+    "DeleteIssuers"
+  ]
+
+  key_permissions = [
+    "Get",
+    "List",
+    "Create",
+    "Import",
+    "Update",
+    "Delete",
+    "Recover",
+    "Backup",
+    "Restore",
+    "Decrypt",
+    "Encrypt",
+    "UnwrapKey",
+    "WrapKey",
+    "Verify",
+    "Sign"
+  ]
+}
+
+# Key Vault Access Policy for GitHub Actions service principal (CI/CD)
+resource "azurerm_key_vault_access_policy" "github_actions" {
+  count        = var.github_actions_object_id != null ? 1 : 0
+  key_vault_id = azurerm_key_vault.main.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = var.github_actions_object_id
 
   secret_permissions = [
     "Get",
