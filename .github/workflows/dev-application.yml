@@ -148,20 +148,24 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
-        # Fix the Azure AD connection string by ensuring proper format for Service Principal auth
+        # Fix the Azure AD connection string by ensuring proper format for CLI auth
         FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
         
-        # For Azure AD Service Principal, we need Authentication=Active Directory Service Principal
-        # and optionally User ID (Service Principal App ID) but NOT TenantId in connection string
-        # The tenant ID should be handled by Azure CLI authentication context
+        # For Azure CLI authentication, we need Authentication=Active Directory Default
+        # which will use the current Azure CLI context (OIDC login)
         echo "🔍 Original connection string format:"
         echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
         
-        # Remove any TenantId parameters that might be causing issues
+        # Replace Service Principal auth with Default (CLI) auth and remove User ID and Password
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Authentication=Active Directory Service Principal/Authentication=Active Directory Default/g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User ID=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;Password=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;PWD=[^;]*//g')
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
         
-        # Debug: Show cleaned connection string format (without sensitive data)  
-        echo "🔍 Cleaned connection string format:"
+        # Debug: Show final connection string format (without sensitive data)
+        echo "🔍 Final connection string format:"
         echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
         
         export ConnectionStrings__DefaultConnection="$FIXED_CONNECTION_STRING"
