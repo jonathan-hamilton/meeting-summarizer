@@ -32,7 +32,8 @@ interface DebugState {
 
 /**
  * iOS Safari-specific file upload component
- * Completely bypasses react-dropzone to avoid iOS Safari compatibility issues
+ * Research-based approach using MIME types + label triggering
+ * Based on Can I Use data, WebKit documentation, and react-dropzone research
  */
 export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   onFilesDropped,
@@ -90,7 +91,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           body: JSON.stringify({
             page: 'IOSSafariFileUpload',
             componentDetected: true,
-            pattern: 'file-extensions-instead-of-MIME-types-v2',
+            pattern: 'research-based-MIME-types-plus-label-triggering-v3',
             userAgent: navigator.userAgent,
             platform: navigator.platform,
             touchSupport: 'ontouchstart' in window
@@ -183,9 +184,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'fileSelectionChanged',
-          pattern: 'react-dropzone-issue-1039-fix',
+          pattern: 'research-based-MIME-types-plus-label-triggering-v3',
           acceptAttribute: event.target?.accept || 'none (all files allowed)',
-          solution: 'specific-MIME-types-instead-of-audio-wildcard'
+          solution: 'Can-I-Use-data-MIME-types-only-plus-label-based-triggering'
         })
       });
       addDebugLog('File input API tracking successful');
@@ -197,93 +198,8 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
     handleFileSelection(event.target.files);
   }, [handleFileSelection, addDebugLog, setDebugError]);
 
-  // iOS Safari multiple approach file input trigger
-  const triggerFileInput = useCallback(() => {
-    console.log('🍎 iOS Safari: Triggering file input - User Agent:', navigator.userAgent);
-    addDebugLog('Button clicked - triggering file input');
-    
-    // Create fresh input element (iOS Safari works better with dynamic inputs)
-    console.log('🍎 iOS Safari: Creating fresh input element for better compatibility');
-    addDebugLog('Creating dynamic input element');
-    
-    try {
-      const input = document.createElement('input');
-      input.type = 'file';
-      
-      // iOS Safari fix: Use ONLY file extensions (remove problematic MIME types and attributes)
-      input.accept = '.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac';
-      input.multiple = false; // Single file selection for iOS Safari compatibility
-      
-      addDebugLog(`Accept attribute: ${input.accept}`);
-      
-      // Remove problematic capture attribute that opens camera
-      // Remove webkitdirectory attribute that may interfere
-      
-      // Critical for iOS Safari: Input must be temporarily in DOM and properly styled
-      input.style.position = 'fixed';
-      input.style.top = '-10000px';
-      input.style.left = '-10000px';
-      input.style.opacity = '0';
-      input.style.pointerEvents = 'none';
-      input.style.zIndex = '-1';
-      document.body.appendChild(input);
-      
-      addDebugLog('Dynamic input added to DOM');
-      
-      // Set up change handler
-      input.onchange = (e) => {
-        const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
-        const filesCount = event.target.files?.length || 0;
-        console.log('🍎 iOS Safari: File selected via dynamic input:', filesCount);
-        addDebugLog(`File selected: ${filesCount} files`);
-        
-        if (filesCount > 0 && event.target.files) {
-          const file = event.target.files[0];
-          addDebugLog(`Selected file: ${file.name} (${file.type || 'no type'}, ${file.size} bytes)`);
-        }
-        
-        handleInputChange(event);
-        // Remove from DOM after processing
-        setTimeout(() => {
-          if (document.body.contains(input)) {
-            document.body.removeChild(input);
-            addDebugLog('Dynamic input cleaned up');
-            console.log('🍎 iOS Safari: Dynamic input cleaned up');
-          }
-        }, 200);
-      };
-      
-      // Set up cancel handler (iOS Safari specific)
-      input.oncancel = () => {
-        console.log('🍎 iOS Safari: File selection cancelled');
-        addDebugLog('File selection cancelled by user');
-        setTimeout(() => {
-          if (document.body.contains(input)) {
-            document.body.removeChild(input);
-            addDebugLog('Cancelled dynamic input cleaned up');
-            console.log('🍎 iOS Safari: Cancelled dynamic input cleaned up');
-          }
-        }, 200);
-      };
-
-      // iOS Safari specific: Add error handler
-      input.onerror = (e) => {
-        console.error('🍎 iOS Safari: File input error:', e);
-        addDebugLog(`❌ File input error: ${e}`);
-        setDebugError(`File input error: ${e}`);
-      };
-      
-      // iOS Safari requires user gesture to be immediate - no setTimeout
-      console.log('🍎 iOS Safari: Triggering click immediately (user gesture preservation)');
-      addDebugLog('Triggering file picker immediately');
-      input.click();
-      
-    } catch (error) {
-      console.error('🍎 iOS Safari: Error creating file input:', error);
-      setDebugError(`File input creation failed: ${error}`);
-      addDebugLog(`❌ Error: ${error}`);
-    }
-  }, [handleInputChange, addDebugLog, setDebugError]);
+  // Research-based approach: No programmatic triggering needed with label
+  // iOS Safari handles label->input association natively
 
   return (
     <>
@@ -382,21 +298,19 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari Fix: File Extensions Only (no camera capture)
+        Research-Based iOS Safari Fix: MIME Types + Label Triggering
         <br />
-        Supported: .wav, .mp3, .mp4, .m4a, .flac, .ogg, .webm, .aac
+        Supported: audio/mpeg, audio/wav, audio/mp4, audio/aac, audio/flac, audio/ogg, audio/webm
         <br />
         Maximum size: {formatFileSize(MAX_FILE_SIZE)}
-        <br />
-        <strong>If button doesn't work, try the backup file input below:</strong>
       </Typography>
 
-      {/* iOS Safari: Primary button approach */}
+      {/* iOS Safari: Research-based label approach instead of programmatic click */}
       <form>
-        <button
-          type="button"
-          onClick={triggerFileInput}
+        <label 
+          htmlFor="ios-safari-file-input"
           style={{
+            display: 'inline-block',
             fontSize: '18px',
             padding: '15px 25px',
             border: '3px solid #007AFF',
@@ -408,92 +322,40 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
             fontWeight: 'bold',
             minWidth: '250px',
             textAlign: 'center',
-            WebkitTapHighlightColor: 'transparent', // Remove iOS Safari tap highlight
-            WebkitTouchCallout: 'none', // Disable iOS Safari callout
-            WebkitUserSelect: 'none', // Disable text selection
+            WebkitTapHighlightColor: 'transparent',
+            WebkitTouchCallout: 'none',
+            WebkitUserSelect: 'none',
             userSelect: 'none',
-            touchAction: 'manipulation' // iOS Safari touch optimization
+            touchAction: 'manipulation'
+          }}
+          onClick={() => {
+            console.log('🍎 iOS Safari: Label clicked - delegating to native input');
+            addDebugLog('Label clicked - using native browser behavior');
           }}
         >
-          Choose Audio File (Primary)
-        </button>
-
-        {/* iOS Safari: Backup visible file input (sometimes works when programmatic doesn't) */}
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Typography variant="caption" display="block" sx={{ mb: 1, color: '#666' }}>
-            Backup Method (if button above fails):
-          </Typography>
-          <input
-            type="file"
-            accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
-            multiple={false}
-            onChange={(e) => {
-              addDebugLog('Backup file input used');
-              handleInputChange(e);
-            }}
-            style={{
-              fontSize: '16px',
-              padding: '8px',
-              border: '2px solid #007AFF',
-              borderRadius: '8px',
-              backgroundColor: '#f0f8ff',
-              color: '#007AFF',
-              cursor: 'pointer',
-              outline: 'none',
-              minWidth: '200px'
-            }}
-          />
-        </Box>
-
-        {/* iOS Safari: Third method - audio wildcard (some iOS versions prefer this) */}
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Typography variant="caption" display="block" sx={{ mb: 1, color: '#666' }}>
-            Alternative Method (audio/* wildcard):
-          </Typography>
-          <input
-            type="file"
-            accept="audio/*"
-            multiple={false}
-            onChange={(e) => {
-              addDebugLog('Audio wildcard method used');
-              handleInputChange(e);
-            }}
-            style={{
-              fontSize: '16px',
-              padding: '8px',
-              border: '2px solid #28a745',
-              borderRadius: '8px',
-              backgroundColor: '#f8fff8',
-              color: '#28a745',
-              cursor: 'pointer',
-              outline: 'none',
-              minWidth: '200px'
-            }}
-          />
-        </Box>
-        {/* Hidden fallback input with ONLY file extensions */}
+          Choose Audio File
+        </label>
+        {/* Research-based iOS Safari fix: MIME types only + label association */}
         <input
+          id="ios-safari-file-input"
           ref={fileInputRef}
           type="file"
-          accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
+          accept="audio/mpeg,audio/wav,audio/mp4,audio/aac,audio/flac,audio/ogg,audio/webm"
           multiple={false}
           onChange={handleInputChange}
           style={{
-            position: 'fixed',
-            top: '-10000px',
-            left: '-10000px',
-            opacity: 0,
+            position: 'absolute',
+            left: '-9999px',
             width: '1px',
             height: '1px',
-            pointerEvents: 'none',
-            zIndex: -1
+            opacity: 0
           }}
         />
       </form>
 
       {/* Debug information for iOS Safari */}
       <Typography variant="caption" display="block" sx={{ mt: 2, opacity: 0.7 }}>
-        iOS Safari • File Extensions Fix • User Gesture Preservation
+        iOS Safari • Research-Based: MIME Types + Label Triggering • Can I Use Data
       </Typography>
     </Paper>
     </>
