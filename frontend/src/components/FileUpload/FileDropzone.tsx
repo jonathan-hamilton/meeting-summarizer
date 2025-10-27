@@ -24,6 +24,14 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   
+  // iOS Safari specific detection (not just mobile)
+  const isIOSSafari = useCallback(() => {
+    const userAgent = navigator.userAgent;
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    return isIOS && isSafari;
+  }, []);
+  
   // Enhanced mobile file input reference management
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -37,11 +45,11 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         inputRef.current.value = '';
       }
     },
-    // Simplified accept for iOS Safari compatibility
-    accept: isMobile ? {
+    // Simplified accept for iOS Safari compatibility ONLY
+    accept: isIOSSafari() ? {
       "*/*": acceptedFileTypes, // iOS Safari: Use catch-all with extensions
     } : {
-      // Desktop: Full MIME type support
+      // Desktop & Other Mobile: Full MIME type support
       "audio/*": acceptedFileTypes,
       "video/mp4": [".mp4", ".m4a"],
       "video/quicktime": [".m4a"],
@@ -51,8 +59,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     multiple: true,
     disabled: false,
     // Disable validator for iOS Safari to prevent conflicts
-    validator: isMobile ? undefined : (file) => {
-      // Desktop: Use extension-based validation
+    validator: isIOSSafari() ? undefined : (file) => {
+      // Desktop & Other Mobile: Use extension-based validation
       const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
       if (!acceptedFileTypes.includes(extension)) {
         return {
@@ -135,6 +143,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         inputRef.current.value = '';
         inputRef.current.click();
         
+        // Only add focus delay for general mobile devices
         if (isMobile) {
           setTimeout(() => {
             inputRef.current?.focus();
@@ -252,10 +261,10 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         aria-label={isMobile ? "Tap to select audio files" : "Select audio files to upload"}
         // iOS Safari optimized accept attribute - prioritize extensions over MIME types
         accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
-        // iOS Safari optimization
-        capture={isMobile ? undefined : false}
-        // iOS Safari specific change handler
-        onChange={isMobile ? handleFileChange : undefined}
+        // iOS Safari optimization - only for iOS Safari
+        capture={isIOSSafari() ? undefined : false}
+        // iOS Safari specific change handler - only for iOS Safari
+        onChange={isIOSSafari() ? handleFileChange : undefined}
         // iOS Safari specific attributes
         multiple={true}
         style={{ 
