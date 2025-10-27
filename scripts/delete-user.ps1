@@ -25,7 +25,7 @@ if (-not $connectionString) {
 # Parse connection string to get individual components
 $serverPattern = "Server=tcp:([^,;]+)"
 $databasePattern = "Initial Catalog=([^;]+)"
-$userPattern = "User Id=([^;]+)"
+$userPattern = "User ID=([^;]+)"
 $passwordPattern = "Password=([^;]+)"
 
 $serverName = [regex]::Match($connectionString, $serverPattern).Groups[1].Value
