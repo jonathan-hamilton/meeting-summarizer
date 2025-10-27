@@ -67,16 +67,6 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   // iOS Safari specific file change handler
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    console.log('📱 iOS Safari file change:', { 
-      fileCount: files.length, 
-      files: files.map(f => ({ 
-        name: f.name, 
-        type: f.type || 'unknown', 
-        size: f.size,
-        extension: f.name.substring(f.name.lastIndexOf('.'))
-      })),
-      userAgent: navigator.userAgent
-    });
     
     if (files.length > 0) {
       // Call the parent handler directly for iOS Safari
@@ -106,22 +96,18 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     
     // Try different approaches for iOS Safari
     if (isIOS && isSafari) {
-      console.log('🍎 iOS Safari detected - using aggressive compatibility mode');
-      
       // Method 1: Try to completely bypass react-dropzone
       e.preventDefault();
       e.stopPropagation();
       
       if (inputRef.current) {
-        console.log('🍎 Triggering iOS Safari file picker directly');
         inputRef.current.value = '';
         
         // Add error handling for iOS Safari click
         try {
           inputRef.current.click();
-          console.log('🍎 iOS Safari click successful');
         } catch (error) {
-          console.error('🍎 iOS Safari click failed:', error);
+          console.error('iOS Safari file picker failed:', error);
           // Fallback: try without preventDefault
           return;
         }
