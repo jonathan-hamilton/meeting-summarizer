@@ -164,9 +164,11 @@ jobs:
         echo "🔍 Original connection string format:"
         echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
         
-        # Replace Service Principal auth with Default (CLI) auth and remove User ID
+        # Replace Service Principal auth with Default (CLI) auth and remove User ID and Password
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Authentication=Active Directory Service Principal/Authentication=Active Directory Default/g')
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;Password=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;PWD=[^;]*//g')
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
         
         # Debug: Show final connection string format (without sensitive data)  
