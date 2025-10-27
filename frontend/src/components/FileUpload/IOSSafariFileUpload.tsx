@@ -210,16 +210,14 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       const input = document.createElement('input');
       input.type = 'file';
       
-      // iOS Safari fix: Use combination of file extensions and MIME types
-      // Some iOS versions prefer MIME types, others prefer extensions, use both for maximum compatibility
-      input.accept = '.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a';
+      // iOS Safari fix: Use ONLY file extensions (remove problematic MIME types and attributes)
+      input.accept = '.mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac';
       input.multiple = false; // Single file selection for iOS Safari compatibility
       
       addDebugLog(`Accept attribute: ${input.accept}`);
       
-      // iOS Safari compatibility attributes
-      input.setAttribute('capture', ''); // Allow camera/microphone capture if needed
-      input.setAttribute('webkitdirectory', 'false'); // Explicitly disable directory selection
+      // Remove problematic capture attribute that opens camera
+      // Remove webkitdirectory attribute that may interfere
       
       // Critical for iOS Safari: Input must be temporarily in DOM and properly styled
       input.style.position = 'fixed';
@@ -384,7 +382,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
       </Typography>
       
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        iOS Safari Fix: Combined Extensions + MIME Types
+        iOS Safari Fix: File Extensions Only (no camera capture)
         <br />
         Supported: .wav, .mp3, .mp4, .m4a, .flac, .ogg, .webm, .aac
         <br />
@@ -427,7 +425,7 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           </Typography>
           <input
             type="file"
-            accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a"
+            accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
             multiple={false}
             onChange={(e) => {
               addDebugLog('Backup file input used');
@@ -446,11 +444,38 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
             }}
           />
         </Box>
-        {/* Hidden fallback input with combined file extensions and MIME types */}
+
+        {/* iOS Safari: Third method - audio wildcard (some iOS versions prefer this) */}
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography variant="caption" display="block" sx={{ mb: 1, color: '#666' }}>
+            Alternative Method (audio/* wildcard):
+          </Typography>
+          <input
+            type="file"
+            accept="audio/*"
+            multiple={false}
+            onChange={(e) => {
+              addDebugLog('Audio wildcard method used');
+              handleInputChange(e);
+            }}
+            style={{
+              fontSize: '16px',
+              padding: '8px',
+              border: '2px solid #28a745',
+              borderRadius: '8px',
+              backgroundColor: '#f8fff8',
+              color: '#28a745',
+              cursor: 'pointer',
+              outline: 'none',
+              minWidth: '200px'
+            }}
+          />
+        </Box>
+        {/* Hidden fallback input with ONLY file extensions */}
         <input
           ref={fileInputRef}
           type="file"
-          accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac,audio/mpeg,audio/mp4,audio/wav,audio/flac,audio/ogg,audio/webm,audio/aac,audio/x-m4a"
+          accept=".mp3,.mp4,.m4a,.wav,.flac,.ogg,.webm,.aac"
           multiple={false}
           onChange={handleInputChange}
           style={{
