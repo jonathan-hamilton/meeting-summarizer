@@ -173,9 +173,18 @@ jobs:
           FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
           FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
           
-          # Add SQL auth if not present
+          # Add SQL auth with fallback password from secrets
           if [[ "$FIXED_CONNECTION_STRING" != *"User ID="* ]]; then
-            FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};User ID=meetingsummary-admin"
+            # Try to get admin password from another secret
+            ADMIN_PASSWORD=$(az keyvault secret show --name "sql-admin-password" --vault-name "meetingsummary-dev-v2-kv" --query value -o tsv 2>/dev/null || echo "")
+            if [ -n "$ADMIN_PASSWORD" ]; then
+              FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};User ID=meetingsummary-admin;Password=$ADMIN_PASSWORD"
+              echo "✅ Added SQL authentication with Key Vault password"
+            else
+              echo "❌ No SQL admin password found in Key Vault, skipping migrations"
+              echo "::warning::Database migrations skipped - no valid authentication available"
+              exit 0
+            fi
           fi
         fi
         
