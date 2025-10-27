@@ -22,7 +22,7 @@ import { useTokenStore } from "../../stores/tokenStore";
 import type { TranscriptionResponse } from "../../types";
 
 import { FileDropzone } from "./FileDropzone";
-import { IOSSafariAdvancedUpload } from "./IOSSafariAdvancedUpload";
+import { IOSSafariFileUpload } from "./IOSSafariFileUpload";
 import { validateFiles } from "./validation";
 import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
@@ -84,9 +84,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const userAgent = navigator.userAgent;
     const isIOS = /iPad|iPhone|iPod/.test(userAgent);
     const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-    const result = isIOS && isSafari;
-    console.log('🍎 iOS Safari Detection:', { isIOS, isSafari, result, userAgent });
-    return result;
+    return isIOS && isSafari;
   }, []);
   
   // Use Zustand store for state management (design pattern compliance)
@@ -571,25 +569,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const onDrop = useCallback(
     async (acceptedFiles: File[], fileRejections: FileRejection[]) => {
-      console.log('🎯 onDrop triggered:', { 
-        acceptedFiles: acceptedFiles.length, 
-        rejections: fileRejections.length,
-        userAgent: navigator.userAgent.includes('iPhone') ? 'iPhone Safari' : 'Other'
-      });
-      
-      // Enhanced iOS Safari debugging
-      if (acceptedFiles.length > 0) {
-        acceptedFiles.forEach((file, index) => {
-          console.log(`📁 File ${index + 1}:`, {
-            name: file.name,
-            size: file.size,
-            type: file.type || 'unknown/empty',
-            lastModified: file.lastModified,
-            extension: file.name.substring(file.name.lastIndexOf('.'))
-          });
-        });
-      }
-      
       if (fileRejections.length > 0) {
         const errorMessages = fileRejections.map((rejection) => {
           const errors = rejection.errors.map((error) => {
@@ -672,9 +651,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
         Audio File Upload
       </Typography>
       
-      {/* File Dropzone - iOS Safari gets advanced specialized component */}
+      {/* File Dropzone - iOS Safari gets specialized component */}
       {isIOSSafari() ? (
-        <IOSSafariAdvancedUpload onFilesDropped={onDrop} />
+        <IOSSafariFileUpload onFilesDropped={onDrop} />
       ) : (
         <FileDropzone onFilesDropped={onDrop} />
       )}
