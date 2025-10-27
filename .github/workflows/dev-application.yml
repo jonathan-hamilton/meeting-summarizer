@@ -119,6 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [check-infrastructure, get-infrastructure-info]
     environment: development
+    if: github.ref != 'refs/heads/20251025-ios-safari-file-upload-fix' # Skip migrations for iOS Safari fix branch
     
     permissions:
       id-token: write
