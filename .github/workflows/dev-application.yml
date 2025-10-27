@@ -148,16 +148,22 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
-        # Debug: Show connection string format (without sensitive data)
-        echo "� Connection string format:"
-        echo "$DB_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
+        # Fix the Azure AD connection string by ensuring it has the correct tenant ID
+        FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
+        
+        # Replace any empty GUID tenant IDs with the correct tenant ID
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/00000000-0000-0000-0000-000000000000/1c30d7a8-9627-4b0c-b799-12bae25a849b/g')
+        
+        # Debug: Show connection string format (without sensitive data)  
+        echo "🔍 Fixed connection string format:"
+        echo "$FIXED_CONNECTION_STRING" | sed 's/Password=[^;]*/Password=****/g' | sed 's/User ID=[^;]*/User ID=****/g'
+        
+        export ConnectionStrings__DefaultConnection="$FIXED_CONNECTION_STRING"
         
         # Apply migrations to development database
         dotnet ef database update --verbose
       env:
-        ConnectionStrings__DefaultConnection: ${{ secrets.DEV_DATABASE_CONNECTION_STRING }}
         ASPNETCORE_ENVIRONMENT: Development
-        DB_CONNECTION_STRING: ${{ secrets.DEV_DATABASE_CONNECTION_STRING }}
 
   deploy-application:
     name: Deploy Application Container
