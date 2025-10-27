@@ -148,11 +148,18 @@ jobs:
         echo "🗄️ Applying database migrations..."
         cd MeetingSummarizer.Api
         
-        # Fix the Azure AD connection string by ensuring it has the correct tenant ID
+        # Fix the Azure AD connection string by adding the missing tenant ID
         FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
         
-        # Replace any empty GUID tenant IDs with the correct tenant ID
-        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/00000000-0000-0000-0000-000000000000/REDACTED_TENANT_ID/g')
+        # Add tenant ID parameter if not present (required for Azure AD Service Principal auth)
+        if [[ "$FIXED_CONNECTION_STRING" != *"Tenant ID="* ]]; then
+          FIXED_CONNECTION_STRING="${FIXED_CONNECTION_STRING};Tenant ID=REDACTED_TENANT_ID"
+          echo "✅ Added missing Tenant ID parameter to connection string"
+        else
+          # Replace any empty GUID tenant IDs with the correct tenant ID
+          FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Tenant ID=00000000-0000-0000-0000-000000000000/Tenant ID=REDACTED_TENANT_ID/g')
+          echo "✅ Fixed existing Tenant ID in connection string"
+        fi
         
         # Debug: Show connection string format (without sensitive data)  
         echo "🔍 Fixed connection string format:"
