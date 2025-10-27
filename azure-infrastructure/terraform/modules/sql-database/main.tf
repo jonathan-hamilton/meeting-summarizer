@@ -37,6 +37,11 @@ variable "administrator_login_password" {
   sensitive   = true
 }
 
+variable "github_actions_object_id" {
+  description = "Object ID of the GitHub Actions service principal for Azure AD authentication"
+  type        = string
+}
+
 # Local values
 locals {
   is_production = var.environment == "prod"
@@ -55,6 +60,12 @@ resource "azurerm_mssql_server" "main" {
   minimum_tls_version          = "1.2"
   
   public_network_access_enabled = !local.is_production
+
+  # Enable Azure AD authentication
+  azuread_administrator {
+    login_username = "github-actions"
+    object_id      = var.github_actions_object_id
+  }
 
   tags = {
     Environment = var.environment
