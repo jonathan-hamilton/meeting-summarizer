@@ -17,6 +17,20 @@ This document defines requirements for deploying Meeting-Summary.io as a mobile 
 Meeting-Summary.io will implement mobile functionality through a strategic three-phase approach, starting with Sprint 8's responsive web foundation:
 
 #### Phase 1: Mobile-First Responsive Web (Sprint 8)
+
+## iOS Safari Web Application Considerations
+
+### Browser Compatibility Requirements
+- **REQ-MOB-IOS-1**: PWA shall implement iOS Safari compatible file upload using visible input approach
+- **REQ-MOB-IOS-2**: PWA shall filter file types to iOS-supported formats (MP3, M4A, WAV, MP4) when iOS Safari detected
+- **REQ-MOB-IOS-3**: PWA shall provide user education about iOS Safari file storage limitations
+
+### File Upload Limitations
+- **REQ-MOB-IOS-4**: System shall inform users that cloud storage files cannot be selected in iOS Safari
+- **REQ-MOB-IOS-5**: System shall provide instructions for using local device storage (Files app) for iOS Safari
+- **REQ-MOB-IOS-6**: System shall implement fallback messaging for unsupported file selection scenarios
+
+#### Phase 1: Mobile-First Responsive Web (Sprint 8) - Continued
 **Objective**: Transform existing web application into mobile-first responsive design
 - **Primary Focus**: CSS and layout optimization for mobile devices
 - **Timeline**: Sprint 8 (current sprint)

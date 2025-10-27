@@ -7,6 +7,23 @@
 - REQ-AUD-3: System shall validate audio file size limits (max 500MB per file)
 - REQ-AUD-4: System shall extract audio from video files (MP4, AVI, MOV)
 
+## iOS Safari Specific Requirements
+
+### File Format Compatibility
+- **REQ-IOS-AUD-1**: System shall support iOS Safari with limited file format set (MP3, M4A, WAV, MP4) due to browser limitations
+- **REQ-IOS-AUD-2**: System shall provide iOS-specific file format filtering in file picker to prevent user confusion
+- **REQ-IOS-AUD-3**: System shall validate uploaded files against iOS-compatible formats when iOS Safari detected
+
+### File Storage Requirements  
+- **REQ-IOS-STORAGE-1**: System shall provide user guidance that iOS Safari requires files stored locally (device Files app)
+- **REQ-IOS-STORAGE-2**: System shall inform iOS Safari users that cloud storage files (OneDrive, iCloud Drive) cannot be selected
+- **REQ-IOS-STORAGE-3**: System shall include clear instructions for moving files from cloud storage to local storage
+
+### Progressive Enhancement
+- **REQ-IOS-UX-1**: System shall implement progressive enhancement - full experience on desktop, guided experience on iOS Safari
+- **REQ-IOS-UX-2**: System shall use visible file input approach for iOS Safari instead of hidden input + programmatic triggering
+- **REQ-IOS-UX-3**: System shall maintain zero regression to desktop file upload functionality
+
 ## File Processing & Optimization
 
 - REQ-FPO-1: System shall perform audio file format validation beyond extension checking using content analysis
