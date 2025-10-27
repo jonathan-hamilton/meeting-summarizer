@@ -37,6 +37,14 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles, rejections) => {
+      console.log('🎯 FileDropzone onDrop triggered:', { 
+        acceptedFiles: acceptedFiles.length, 
+        rejections: rejections.length,
+        isIOSSafari: isIOSSafari(),
+        isMobile,
+        userAgent: navigator.userAgent
+      });
+      
       // Call the parent handler
       onFilesDropped(acceptedFiles, rejections);
       
@@ -254,7 +262,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       }}
     >
       <input 
-        {...getInputProps()} 
+        {...getInputProps()}
         ref={inputRef}
         data-testid="file-input"
         // Enhanced mobile file picker attributes
@@ -263,8 +271,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
         // iOS Safari optimization - only for iOS Safari
         capture={isIOSSafari() ? undefined : false}
-        // iOS Safari specific change handler - only for iOS Safari
-        onChange={isIOSSafari() ? handleFileChange : undefined}
+        // Only override onChange for iOS Safari, let react-dropzone handle desktop
+        {...(isIOSSafari() ? { onChange: handleFileChange } : {})}
         // iOS Safari specific attributes
         multiple={true}
         style={{ 
