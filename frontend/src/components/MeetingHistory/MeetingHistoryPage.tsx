@@ -184,7 +184,6 @@ const MeetingHistoryPage: React.FC = () => {
       case 'Cancelled':
       case 'cancelled': return 'warning';
       case 'Transcribing': 
-      case 'Summarizing': 
       case 'processing': return 'info';
       case 'Uploaded': 
       case 'Transcribed': 
@@ -206,7 +205,6 @@ const MeetingHistoryPage: React.FC = () => {
         case 'processing': 
           // Use stage for more specific status if available
           if (activeUpload.currentStage === 'transcription') return 'Transcribing';
-          if (activeUpload.currentStage === 'summarization') return 'Summarizing';
           return 'Processing';
         case 'completed': return 'Completed';
         case 'error': return 'Failed';
@@ -283,7 +281,7 @@ const MeetingHistoryPage: React.FC = () => {
             </Box>
 
             {/* Progress indicator for processing states */}
-            {(realTimeStatus === 'Transcribing' || realTimeStatus === 'Summarizing' || realTimeStatus === 'Processing' || realTimeStatus === 'Uploading') && (
+            {(realTimeStatus === 'Transcribing' || realTimeStatus === 'Processing' || realTimeStatus === 'Uploading') && (
               <SmoothProgressIndicator 
                 meeting={meeting} 
                 targetProgress={meeting.progressPercentage}
@@ -492,7 +490,7 @@ const MeetingHistoryPage: React.FC = () => {
                                   color={getStatusColor(realTimeStatus) as any}
                                   variant={realTimeStatus === 'Completed' ? 'filled' : 'outlined'}
                                 />
-                                {(realTimeStatus === 'Transcribing' || realTimeStatus === 'Summarizing' || realTimeStatus === 'Processing' || realTimeStatus === 'Uploading') && (
+                                {(realTimeStatus === 'Transcribing' || realTimeStatus === 'Processing' || realTimeStatus === 'Uploading') && (
                                   <SmoothProgressIndicator 
                                     meeting={meeting} 
                                     targetProgress={meeting.progressPercentage}

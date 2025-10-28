@@ -89,8 +89,7 @@ public class MeetingListItem
         {
             MeetingStatus.Uploaded => 10,
             MeetingStatus.Transcribing => 30,
-            MeetingStatus.Transcribed => 60,
-            MeetingStatus.Summarizing => 80,
+            MeetingStatus.Transcribed => 80,
             MeetingStatus.Completed => 100,
             MeetingStatus.Failed => 0,
             MeetingStatus.Deleted => 0,

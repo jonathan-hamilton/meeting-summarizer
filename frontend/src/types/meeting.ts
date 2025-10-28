@@ -7,7 +7,7 @@ export interface MeetingListItem {
   originalFileName: string;
   fileSizeBytes: number;
   durationSeconds: number;
-  status: 'Uploaded' | 'Transcribing' | 'Transcribed' | 'Summarizing' | 'Completed' | 'Failed' | 'Deleted';
+  status: 'Uploaded' | 'Transcribing' | 'Transcribed' | 'Completed' | 'Failed' | 'Deleted';
   speakerCount: number;
   tokensConsumed: number;
   createdAt: string;
