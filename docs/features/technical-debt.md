@@ -1,5 +1,59 @@
 # Technical Debt & Known Issues
 
+## ✅ RESOLVED TECHNICAL DEBT (October 27, 2025)
+
+### SQL Server Retry Execution Strategy Conflict - RESOLVED ✅
+**Issue**: Token deduction failing with "SqlServerRetryingExecutionStrategy does not support user-initiated transactions" error  
+**Root Cause**: Manual transaction management conflicting with SQL Server's automatic retry strategy  
+**Resolution**: Infrastructure Maintenance - Database Transaction Pattern Fix  
+**Date Resolved**: October 27, 2025
+
+**Technical Details**:
+- **Transaction Conflict**: TokenService.ConsumeReservationAsync used manual BeginTransactionAsync() conflicting with SQL Server retry strategy
+- **Error Pattern**: SqlServerRetryingExecutionStrategy cannot handle user-initiated transactions during automatic retries
+- **Solution**: Implemented DbContext.Database.CreateExecutionStrategy() pattern with strategy.ExecuteAsync() wrapper
+- **Components Affected**: TokenService.ConsumeReservationAsync method, database transaction handling
+- **Impact**: Token consumption now works correctly, user balances properly deducted after transcription completion
+
+### Azure Container Apps Configuration Issues - RESOLVED ✅
+**Issue**: Container deployments failing to connect to database due to Key Vault secret misconfiguration  
+**Root Cause**: Container workflow referencing environment variables instead of Key Vault secrets  
+**Resolution**: Infrastructure Maintenance - Container Configuration Fix  
+**Date Resolved**: October 27, 2025
+
+**Technical Details**:
+- **Secret Reference Error**: dev-application.yml workflow using direct environment variables instead of Key Vault integration
+- **Database Connection**: Container Apps unable to retrieve database connection string from Azure Key Vault
+- **Solution**: Updated container workflow to properly reference Key Vault secrets for database connectivity
+- **Components Affected**: Azure Container Apps workflow, database connection configuration
+- **Impact**: Container deployments now have secure and reliable database connectivity
+
+### Desktop Browser File Upload Compatibility - RESOLVED ✅
+**Issue**: File picker not processing selected files on desktop browsers (Chrome, Edge, Firefox)  
+**Root Cause**: FileDropzone onChange handler undefined for desktop browsers, only working on mobile  
+**Resolution**: Infrastructure Maintenance - Cross-Browser Compatibility Fix  
+**Date Resolved**: October 27, 2025
+
+**Technical Details**:
+- **Event Handler Missing**: onChange prop not properly passed to FileDropzone component for desktop interactions
+- **Mobile vs Desktop**: File upload worked on mobile browsers but failed on desktop due to different event handling
+- **Solution**: Corrected FileDropzone props to ensure onChange handler available across all browser types
+- **Components Affected**: FileDropzone component, file upload event handling
+- **Impact**: File upload functionality now consistent across all major desktop and mobile browsers
+
+### API Version Endpoint Inconsistency - RESOLVED ✅
+**Issue**: Version display showing incorrect information in local development environment  
+**Root Cause**: Frontend calling wrong API endpoint for version information in local development mode  
+**Resolution**: Infrastructure Maintenance - API Endpoint Consistency Fix  
+**Date Resolved**: October 27, 2025
+
+**Technical Details**:
+- **Endpoint Mismatch**: Frontend calling '/api/Version' instead of full 'http://localhost:5029/api/Version' in local development
+- **Environment Inconsistency**: Version display working in container but failing in local development
+- **Solution**: Corrected frontend API calls to use proper localhost endpoint for local development environment
+- **Components Affected**: Version API calls, environment-specific endpoint configuration
+- **Impact**: Consistent version display showing AssemblyVersion (1.2.0.0) across all deployment environments
+
 ## ✅ RESOLVED TECHNICAL DEBT (October 25, 2025)
 
 ### iOS Safari File Upload Compatibility - RESOLVED ✅

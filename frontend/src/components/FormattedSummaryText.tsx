@@ -9,11 +9,6 @@ interface FormattedSummaryTextProps {
 const FormattedSummaryText: React.FC<FormattedSummaryTextProps> = ({ text }) => {
   // Use the shared parsing utility
   const sections = parseSummaryText(text);
-  
-  // Debug logging
-  console.log('FormattedSummaryText - Input text length:', text.length);
-  console.log('FormattedSummaryText - Sections count:', sections.length);
-  console.log('FormattedSummaryText - First 200 chars:', text.substring(0, 200));
 
   const renderSection = (section: FormattedSection, key: number): React.ReactNode => {
     switch (section.type) {

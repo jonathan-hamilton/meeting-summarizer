@@ -20,6 +20,16 @@ on:
         required: false
         default: false
         type: boolean
+      confirm_destructive:
+        description: 'Confirm destructive database operations (DELETE, DROP, TRUNCATE)'
+        required: false
+        default: false
+        type: boolean
+      backup_before_destructive:
+        description: 'Create database backup before destructive operations'
+        required: false
+        default: true
+        type: boolean
   workflow_run:
     workflows: ["Deploy Development Infrastructure"]
     types:
@@ -120,6 +130,11 @@ jobs:
     needs: [check-infrastructure, get-infrastructure-info]
     environment: development
     
+    outputs:
+      destructive-operations-found: ${{ steps.safety-check.outputs.destructive-found }}
+      backup-created: ${{ steps.backup.outputs.backup-created }}
+      backup-name: ${{ steps.backup.outputs.backup-name }}
+    
     permissions:
       id-token: write
       contents: read
@@ -135,6 +150,112 @@ jobs:
     
     - name: Install EF Core Tools
       run: dotnet tool install --global dotnet-ef
+    
+    - name: Check Migration Safety & Backup Planning
+      id: safety-check
+      run: |
+        echo "🔍 Checking migrations for destructive operations..."
+        cd MeetingSummarizer.Api/Migrations
+        
+        # Check for dangerous SQL operations in migration files
+        DESTRUCTIVE_FOUND=false
+        DESTRUCTIVE_FILES=""
+        
+        # More comprehensive check for destructive operations
+        for file in *.cs; do
+          if grep -l "DELETE FROM\|TRUNCATE TABLE\|DROP TABLE\|DROP COLUMN\|DROP INDEX\|migrationBuilder\.Sql.*DELETE\|migrationBuilder\.Sql.*TRUNCATE\|migrationBuilder\.Sql.*DROP" "$file" > /dev/null 2>&1; then
+            DESTRUCTIVE_FOUND=true
+            DESTRUCTIVE_FILES="$DESTRUCTIVE_FILES $file"
+            echo "⚠️  Destructive operations found in: $file"
+            
+            # Show the specific destructive lines
+            echo "   Destructive operations:"
+            grep -n "DELETE FROM\|TRUNCATE TABLE\|DROP TABLE\|DROP COLUMN\|DROP INDEX\|migrationBuilder\.Sql.*DELETE\|migrationBuilder\.Sql.*TRUNCATE\|migrationBuilder\.Sql.*DROP" "$file" | head -5
+          fi
+        done
+        
+        if [ "$DESTRUCTIVE_FOUND" = true ]; then
+          echo ""
+          echo "🚨 DESTRUCTIVE OPERATIONS DETECTED!"
+          echo "Files with potential data loss operations:$DESTRUCTIVE_FILES"
+          echo ""
+          echo "📋 REQUIRED ACTIONS BEFORE PROCEEDING:"
+          echo "1. ✅ Review destructive operations above"
+          echo "2. ✅ Confirm data backup is available or not needed"
+          echo "3. ✅ Add conditional logic to preserve important data"
+          echo "4. ✅ Set confirm_destructive=true if intentional"
+          echo ""
+          echo "📖 See docs/DATABASE_MIGRATION_SAFETY.md for guidelines"
+          echo ""
+          
+          # Check if confirmation was provided
+          if [ "${{ github.event.inputs.confirm_destructive }}" != "true" ]; then
+            echo "❌ DEPLOYMENT BLOCKED: Destructive operations require explicit confirmation"
+            echo ""
+            echo "To proceed:"
+            echo "• Run workflow_dispatch with 'confirm_destructive: true'"
+            echo "• Modify migrations to be non-destructive"
+            exit 1
+          else
+            echo "⚠️  DESTRUCTIVE OPERATIONS CONFIRMED - Proceeding with caution..."
+          fi
+        else
+          echo "✅ Migration safety check passed - No destructive operations detected"
+        fi
+        
+        # Set outputs
+        echo "destructive-found=$DESTRUCTIVE_FOUND" >> $GITHUB_OUTPUT
+    
+    - name: Create Database Backup (Conditional)
+      id: backup
+      if: steps.safety-check.outputs.destructive-found == 'true' && (github.event.inputs.backup_before_destructive != 'false')
+      run: |
+        echo "💾 Creating database backup before destructive operations..."
+        
+        # Generate backup name with timestamp
+        BACKUP_NAME="meetingsummary-dev-backup-$(date +%Y%m%d-%H%M%S)"
+        STORAGE_ACCOUNT="msdev10122104"  # From your Azure config
+        CONTAINER_NAME="database-backups"
+        
+        echo "📦 Backup name: $BACKUP_NAME"
+        
+        # Create storage container if it doesn't exist
+        az storage container create \
+          --name $CONTAINER_NAME \
+          --account-name $STORAGE_ACCOUNT \
+          --public-access off \
+          --only-show-errors || true
+        
+        # Export database to bacpac
+        echo "🔄 Starting database export..."
+        az sql db export \
+          --server meetingsummary-dev-v2-sql \
+          --name meetingsummary-dev-v2-db \
+          --resource-group rg-meetingsummary-dev \
+          --storage-key-type StorageAccessKey \
+          --storage-key $(az storage account keys list --account-name $STORAGE_ACCOUNT --query "[0].value" -o tsv) \
+          --storage-uri "https://$STORAGE_ACCOUNT.blob.core.windows.net/$CONTAINER_NAME/$BACKUP_NAME.bacpac" \
+          --admin-user meetingadmin \
+          --admin-password "Kx9mQ7vR3zL8nP2wT6yU4bN1cX5jM9pS2"
+        
+        echo "✅ Database backup created: $BACKUP_NAME.bacpac"
+        echo "📍 Location: https://$STORAGE_ACCOUNT.blob.core.windows.net/$CONTAINER_NAME/$BACKUP_NAME.bacpac"
+        echo ""
+        echo "🔄 To restore from this backup if needed:"
+        echo "az sql db import \\"
+        echo "  --server meetingsummary-dev-v2-sql \\"
+        echo "  --name meetingsummary-dev-v2-db-restored \\"
+        echo "  --resource-group rg-meetingsummary-dev \\"
+        echo "  --storage-key-type StorageAccessKey \\"
+        echo "  --storage-key \$(az storage account keys list --account-name $STORAGE_ACCOUNT --query \"[0].value\" -o tsv) \\"
+        echo "  --storage-uri \"https://$STORAGE_ACCOUNT.blob.core.windows.net/$CONTAINER_NAME/$BACKUP_NAME.bacpac\" \\"
+        echo "  --admin-user meetingadmin \\"
+        echo "  --admin-password \"Kx9mQ7vR3zL8nP2wT6yU4bN1cX5jM9pS2\""
+        
+        # Set outputs
+        echo "backup-created=true" >> $GITHUB_OUTPUT
+        echo "backup-name=$BACKUP_NAME" >> $GITHUB_OUTPUT
+        echo "backup-uri=https://$STORAGE_ACCOUNT.blob.core.windows.net/$CONTAINER_NAME/$BACKUP_NAME.bacpac" >> $GITHUB_OUTPUT
     
     - name: Azure CLI login via OIDC
       uses: azure/login@v2

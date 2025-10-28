@@ -247,24 +247,10 @@ export function getLoadingStrategy(networkInfo: NetworkInfo): {
  * Log performance metrics for monitoring
  */
 export function logPerformanceMetrics(): void {
-  const metrics = getPerformanceMetrics();
-  const networkInfo = getNetworkInfo();
-  const validation = validate3GPerformance();
-
-  console.group('📊 S8.6 Mobile Performance Metrics');
-  console.log('🌐 Network Info:', networkInfo);
-  console.log('⏱️ Performance Metrics:', {
-    'DOM Content Loaded': `${Math.round(metrics.domContentLoaded)}ms`,
-    'Load Complete': `${Math.round(metrics.loadComplete)}ms`,
-    'First Contentful Paint': `${Math.round(metrics.firstContentfulPaint)}ms`,
-    'Largest Contentful Paint': `${Math.round(metrics.largestContentfulPaint)}ms`,
-    'Time to Interactive': `${Math.round(metrics.timeToInteractive)}ms`
-  });
-  console.log('✅ 3G Validation:', validation.passes ? 'PASSED' : 'NEEDS IMPROVEMENT');
-  if (validation.recommendations.length > 0) {
-    console.log('💡 Recommendations:', validation.recommendations);
-  }
-  console.groupEnd();
+  // Performance metrics calculated but not logged for production
+  getPerformanceMetrics();
+  getNetworkInfo();
+  validate3GPerformance();
 }
 
 /**

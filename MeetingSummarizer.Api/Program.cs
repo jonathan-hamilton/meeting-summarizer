@@ -156,7 +156,7 @@ builder.Services.AddDbContext<MeetingSummarizerDbContext>((serviceProvider, opti
     var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
     
     // Try to get connection string from Key Vault if in container mode
-    string connectionString = null;
+    string? connectionString = null;
     if (isContainer)
     {
         try

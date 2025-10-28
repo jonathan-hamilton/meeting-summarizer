@@ -29,8 +29,6 @@ interface EmailCompositionDialogProps {
 }
 
 const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend: _onSend }) => {
-  console.log('🚨 EmailCompositionDialog COMPONENT CALLED - start of function');
-  
   // Ref to track dialog content scroll position
   const dialogContentRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
@@ -61,11 +59,6 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
     transcriptData,
     setIncludeTranscript,
   } = useEmailStore();
-
-  console.log('📧 EMAIL DIALOG DEBUG:', {
-    open,
-    isDialogOpen: open,
-  });
 
   // Preserve scroll position when sending state changes
   useEffect(() => {
@@ -159,7 +152,6 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
 
   // Get unique suggested emails from speaker mappings
   const getSuggestedEmails = () => {
-    console.log('📧 Debug - speakerMappings:', speakerMappings);
     const emails = speakerMappings
       .filter(speaker => speaker.email && speaker.email.trim())
       .map(speaker => speaker.email!.trim());
@@ -173,11 +165,8 @@ const EmailCompositionDialog: React.FC<EmailCompositionDialogProps> = ({ onSend:
   };
 
   const handleClose = () => {
-    console.log('📧 Closing dialog');
     closeDialog();
   };
-
-  console.log('🧪 EmailCompositionDialog about to return, open:', open);
 
   return (
     <Dialog 

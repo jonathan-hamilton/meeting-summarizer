@@ -112,9 +112,7 @@ class UserProfileService {
    */
   async getDialogPreferences(userId: string): Promise<DialogPreferences> {
     try {
-      console.log('🔍 [UserProfileService] Getting dialog preferences for userId:', userId);
       const response = await this.apiService.get(`/api/usermanagement/${userId}/dialog-preferences`);
-      console.log('✅ [UserProfileService] Dialog preferences retrieved successfully:', response.data);
       return response.data as DialogPreferences;
     } catch (error) {
       console.error('❌ [UserProfileService] Failed to fetch dialog preferences:', error);
@@ -127,9 +125,7 @@ class UserProfileService {
    */
   async updateDialogPreferences(userId: string, preferences: UpdateDialogPreferencesRequest): Promise<void> {
     try {
-      console.log('🔍 [UserProfileService] Updating dialog preferences for userId:', userId, 'with data:', preferences);
       await this.apiService.put(`/api/usermanagement/${userId}/dialog-preferences`, preferences);
-      console.log('✅ [UserProfileService] Dialog preferences updated successfully');
     } catch (error) {
       console.error('❌ [UserProfileService] Failed to update dialog preferences:', error);
       throw new Error('Failed to update dialog preferences');

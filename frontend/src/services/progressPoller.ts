@@ -54,8 +54,6 @@ export class ProgressPollerService {
     // Stop existing polling for this meeting
     this.stopPolling(meetingId);
 
-    console.log(`🔄 Starting progress polling for meeting ${meetingId}`);
-
     const poller = {
       intervalId: null as any,
       currentInterval: this.config.initialInterval,
@@ -77,7 +75,6 @@ export class ProgressPollerService {
     if (poller) {
       clearTimeout(poller.intervalId);
       this.pollers.delete(meetingId);
-      console.log(`⏹️ Stopped progress polling for meeting ${meetingId}`);
     }
   }
 
@@ -88,7 +85,6 @@ export class ProgressPollerService {
     for (const meetingId of this.pollers.keys()) {
       this.stopPolling(meetingId);
     }
-    console.log('⏹️ Stopped all progress polling');
   }
 
   /**
@@ -136,7 +132,6 @@ export class ProgressPollerService {
 
       // Check if processing is complete
       if (status.status === 'completed' || status.status === 'failed') {
-        console.log(`✅ Meeting ${meetingId} finished with status: ${status.status}`);
         poller.onComplete(status);
         this.stopPolling(meetingId);
         return;
@@ -180,9 +175,6 @@ export class ProgressPollerService {
     );
 
     if (newInterval !== poller.currentInterval) {
-      console.log(
-        `📈 Increasing polling interval for ${meetingId}: ${poller.currentInterval}ms → ${newInterval}ms`
-      );
       poller.currentInterval = newInterval;
     }
   }
