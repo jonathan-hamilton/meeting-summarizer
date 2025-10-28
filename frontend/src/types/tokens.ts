@@ -91,7 +91,7 @@ export interface TokenState {
   refreshBalance: () => Promise<void>;
   
   // Purchase actions
-  startPurchase: (tokenCount: number) => void;
+  startPurchase: () => void;
   completePurchase: (result: PaymentResult) => void;
   cancelPurchase: () => void;
   
