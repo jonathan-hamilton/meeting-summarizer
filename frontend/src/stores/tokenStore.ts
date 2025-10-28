@@ -155,7 +155,7 @@ export const useTokenStore = create<TokenState>()(
       },
 
       // Purchase actions
-      startPurchase: (tokenCount: number) => {
+      startPurchase: () => {
         set({ 
           isPurchaseInProgress: true,
           error: null 

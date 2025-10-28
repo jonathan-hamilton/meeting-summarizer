@@ -186,7 +186,7 @@ export const TokenPurchaseDialog: React.FC<TokenPurchaseDialogProps> = ({
 
   const handlePackageSelect = async (pkg: TokenPackage) => {
     setSelectedPackage(pkg);
-    startPurchase(pkg.tokenCount);
+    startPurchase();
 
     try {
       // Create payment intent
