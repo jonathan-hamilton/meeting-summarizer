@@ -26,7 +26,6 @@ export interface ProgressEstimation {
   uploadTime: number;      // Estimated upload time in milliseconds
   processingTime: number;  // Estimated processing time in milliseconds
   transcriptionTime: number; // Estimated transcription time in milliseconds
-  summarizationTime: number; // Estimated summarization time in milliseconds
   totalTime: number;       // Total estimated time in milliseconds
 }
 
@@ -34,14 +33,12 @@ export interface EstimationSettings {
   uploadSpeedMbps: number;        // Assumed upload speed in Mbps
   processingTimePerMb: number;    // Processing time per MB in milliseconds
   transcriptionTimePerMinute: number; // Transcription time per audio minute in milliseconds
-  summarizationBaseTime: number;  // Base summarization time in milliseconds
 }
 
 export type ProcessingStage = 
   | 'upload' 
   | 'processing' 
   | 'transcription' 
-  | 'summarization' 
   | 'complete';
 
 export type ProgressStatus = 
@@ -85,7 +82,6 @@ export const DEFAULT_ESTIMATION_SETTINGS: EstimationSettings = {
   uploadSpeedMbps: 25, // Faster upload assumption based on logs
   processingTimePerMb: 200, // Much faster processing: 0.2 seconds per MB
   transcriptionTimePerMinute: 1000, // Very fast transcription: ~1 second per audio minute (27s for 27min file)
-  summarizationBaseTime: 3000, // 3 seconds base time for summarization
 };
 
 // Stage definitions with weights
@@ -109,14 +105,7 @@ export const PROCESSING_STAGES: Record<ProcessingStage, StageInfo> = {
     label: 'Transcribing',
     description: 'Converting speech to text',
     icon: '🎵',
-    weight: 0.4, // 40% of total time
-  },
-  summarization: {
-    stage: 'summarization',
-    label: 'Summarizing',
-    description: 'Generating meeting summary',
-    icon: '📝',
-    weight: 0.1, // 10% of total time
+    weight: 0.5, // 50% of total time (increased from 40% since summarization is removed)
   },
   complete: {
     stage: 'complete',
@@ -129,14 +118,14 @@ export const PROCESSING_STAGES: Record<ProcessingStage, StageInfo> = {
 
 // Utility function to get next stage
 export const getNextStage = (currentStage: ProcessingStage): ProcessingStage | null => {
-  const stages: ProcessingStage[] = ['upload', 'processing', 'transcription', 'summarization', 'complete'];
+  const stages: ProcessingStage[] = ['upload', 'processing', 'transcription', 'complete'];
   const currentIndex = stages.indexOf(currentStage);
   return currentIndex < stages.length - 1 ? stages[currentIndex + 1] : null;
 };
 
 // Utility function to calculate cumulative progress up to a stage
 export const getCumulativeProgress = (stage: ProcessingStage, stageProgress: number = 0): number => {
-  const stages: ProcessingStage[] = ['upload', 'processing', 'transcription', 'summarization'];
+  const stages: ProcessingStage[] = ['upload', 'processing', 'transcription'];
   const currentIndex = stages.indexOf(stage);
   
   if (currentIndex === -1) return 100; // Complete stage

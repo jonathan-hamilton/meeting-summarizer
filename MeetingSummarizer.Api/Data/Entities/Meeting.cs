@@ -146,9 +146,8 @@ public enum MeetingStatus
     Uploaded = 0,
     Transcribing = 1,
     Transcribed = 2,
-    Summarizing = 3,
-    Completed = 4,
-    Failed = 5,
-    Deleted = 6,
-    Cancelled = 7  // User-initiated cancellation
+    Completed = 3,
+    Failed = 4,
+    Deleted = 5,
+    Cancelled = 6  // User-initiated cancellation
 }
