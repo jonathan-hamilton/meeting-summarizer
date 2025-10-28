@@ -23,6 +23,9 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   const theme = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // iOS device detection (not just Safari)
+  const isActualIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   // Track component initialization for analytics
   React.useEffect(() => {
     // Component loaded successfully - no action needed
@@ -145,19 +148,6 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
         Select Audio File
       </Typography>
       
-      {/* iOS Safari specific user guidance */}
-      <Typography variant="body2" sx={{ 
-        mb: 2, 
-        p: 2, 
-        backgroundColor: 'warning.light', 
-        borderRadius: 1, 
-        color: 'warning.contrastText',
-        fontWeight: 'medium'
-      }}>
-        📱 For best results, save files to your Files app (local storage) before selecting.
-        Files in cloud storage (OneDrive, iCloud Drive) may not be selectable.
-      </Typography>
-      
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Supported formats: MP3, M4A, WAV, MP4
         <br />
@@ -202,6 +192,18 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           }}
         />
       </form>
+
+      {/* Subtle iOS guidance - only show on actual iOS devices */}
+      {isActualIOSDevice && (
+        <Typography variant="caption" sx={{ 
+          mt: 2,
+          color: 'text.secondary',
+          fontStyle: 'italic',
+          opacity: 0.8
+        }}>
+          💡 Select files saved 'On My iPhone/iPad'
+        </Typography>
+      )}
     </Paper>
   );
 };
