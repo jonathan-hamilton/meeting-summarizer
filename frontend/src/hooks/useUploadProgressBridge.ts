@@ -122,8 +122,6 @@ export function mapProgressStageToUploadStatus(stage: ProcessingStage): string {
       return 'processing';
     case 'transcription':
       return 'processing'; // Map transcription to processing for compatibility
-    case 'summarization':
-      return 'processing'; // Map summarization to processing for compatibility
     case 'complete':
       return 'completed';
     default:

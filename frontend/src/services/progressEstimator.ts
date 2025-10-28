@@ -29,16 +29,14 @@ export class ProgressEstimatorService {
     const uploadTime = this.calculateUploadTime(fileSizeMB);
     const processingTime = this.calculateProcessingTime(fileSizeMB);
     const transcriptionTime = this.calculateTranscriptionTime(estimatedAudioMinutes);
-    const summarizationTime = this.calculateSummarizationTime(fileSizeMB);
 
-    const totalTime = uploadTime + processingTime + transcriptionTime + summarizationTime;
+    const totalTime = uploadTime + processingTime + transcriptionTime;
 
     // Apply historical calibration if available
     const calibratedEstimation = this.applyHistoricalCalibration({
       uploadTime,
       processingTime,
       transcriptionTime,
-      summarizationTime,
       totalTime,
     }, fileSizeMB);
 
@@ -53,7 +51,7 @@ export class ProgressEstimatorService {
     currentStage: ProcessingStage, 
     stageProgress: number
   ): number {
-    const stages: ProcessingStage[] = ['upload', 'processing', 'transcription', 'summarization'];
+    const stages: ProcessingStage[] = ['upload', 'processing', 'transcription'];
     const currentIndex = stages.indexOf(currentStage);
     
     if (currentIndex === -1) return 0; // Complete or invalid stage
@@ -135,13 +133,6 @@ export class ProgressEstimatorService {
     return baseTime + overhead;
   }
 
-  private calculateSummarizationTime(fileSizeMB: number): number {
-    // Summarization has a base time plus small scaling factor
-    const scalingFactor = Math.min(10000, fileSizeMB * 500); // Max 10 seconds scaling
-    
-    return this.settings.summarizationBaseTime + scalingFactor;
-  }
-
   private estimateAudioDuration(file: File): number {
     // Rough estimation based on file size and common bitrates
     const fileSizeMB = file.size / (1024 * 1024);
@@ -163,7 +154,6 @@ export class ProgressEstimatorService {
       case 'upload': return estimation.uploadTime;
       case 'processing': return estimation.processingTime;
       case 'transcription': return estimation.transcriptionTime;
-      case 'summarization': return estimation.summarizationTime;
       default: return 0;
     }
   }
@@ -192,7 +182,6 @@ export class ProgressEstimatorService {
       uploadTime: estimation.uploadTime * clampedFactor,
       processingTime: estimation.processingTime * clampedFactor,
       transcriptionTime: estimation.transcriptionTime * clampedFactor,
-      summarizationTime: estimation.summarizationTime * clampedFactor,
       totalTime: estimation.totalTime * clampedFactor,
     };
   }
