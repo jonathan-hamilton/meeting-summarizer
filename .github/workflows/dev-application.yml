@@ -151,6 +151,11 @@ jobs:
     - name: Install EF Core Tools
       run: dotnet tool install --global dotnet-ef
     
+    - name: Restore Dependencies
+      run: |
+        cd MeetingSummarizer.Api
+        dotnet restore
+    
     - name: Check for Pending Migrations
       id: pending-check
       run: |
@@ -181,9 +186,6 @@ jobs:
           echo "$PENDING_MIGRATIONS"
           echo "has-pending=true" >> $GITHUB_OUTPUT
           echo "pending-count=$MIGRATION_COUNT" >> $GITHUB_OUTPUT
-          echo "pending-list<<EOF" >> $GITHUB_OUTPUT
-          echo "$PENDING_MIGRATIONS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
         fi
       env:
         ASPNETCORE_ENVIRONMENT: Development
@@ -195,23 +197,15 @@ jobs:
         echo "🔍 Checking pending migrations for destructive operations..."
         cd MeetingSummarizer.Api
         
-        # Get list of pending migrations
-        PENDING_MIGRATIONS="${{ steps.pending-check.outputs.pending-list }}"
-        
-        if [ -z "$PENDING_MIGRATIONS" ]; then
-          echo "✅ No pending migrations to check"
-          echo "destructive-found=false" >> $GITHUB_OUTPUT
-          exit 0
-        fi
-        
-        echo "🔍 Checking these pending migrations:"
-        echo "$PENDING_MIGRATIONS"
-        echo ""
-        
         # Check for dangerous SQL operations only in pending migration files
         DESTRUCTIVE_FOUND=false
         DESTRUCTIVE_FILES=""
         
+        cd Migrations
+        
+        # Get pending migrations directly instead of using multiline output
+        cd ../
+        PENDING_MIGRATIONS=$(dotnet ef migrations list --pending --no-build 2>/dev/null || echo "")
         cd Migrations
         
         # Check each pending migration file
