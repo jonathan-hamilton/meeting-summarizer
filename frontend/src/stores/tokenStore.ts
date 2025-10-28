@@ -160,7 +160,6 @@ export const useTokenStore = create<TokenState>()(
           isPurchaseInProgress: true,
           error: null 
         });
-        console.log(`Starting purchase for ${tokenCount} tokens`);
       },
 
       completePurchase: (result: PaymentResult) => {
@@ -185,8 +184,6 @@ export const useTokenStore = create<TokenState>()(
             
             get().addPurchase(newPurchase);
           }
-          
-          console.log(`Purchase completed: ${result.tokensPurchased} tokens added`);
         } else {
           set({ 
             error: result.errorMessage || 'Purchase failed' 
@@ -201,7 +198,6 @@ export const useTokenStore = create<TokenState>()(
           currentPaymentIntent: null,
           error: null 
         });
-        console.log('Purchase cancelled');
       },
 
       // History actions

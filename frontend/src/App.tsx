@@ -190,7 +190,11 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const isDev = window.location.hostname.includes('dev.') || window.location.hostname.includes('localhost') || window.location.port === '5173';
     if (isDev) {
-      fetch('/api/Version')
+      // Use correct API base URL for local development
+      const isLocalDev = window.location.port === '5173';
+      const apiUrl = isLocalDev ? 'http://localhost:5029/api/Version' : '/api/Version';
+      
+      fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
           setVersionInfo({
@@ -286,26 +290,20 @@ const AppContent: React.FC = () => {
   }, [transcriptionResults.length]); // Add dependency to track changes
 
   const handleTranscriptionComplete = useCallback((result: TranscriptionResponse) => {
-    console.log('🎯 handleTranscriptionComplete called with:', result.transcriptionId, result.fileName);
     setTranscriptionResults((prev) => {
-      console.log('🎯 Previous results:', prev.map(r => ({ id: r.transcriptionId, fileName: r.fileName })));
-      
       // Check if this result is already in the array to prevent duplicates
       const exists = prev.some(r => r.transcriptionId === result.transcriptionId);
       if (exists) {
-        console.log('🎯 Result already exists, skipping duplicate');
         return prev;
       }
       
       const updated = [result, ...prev];
-      console.log('🎯 Updated results:', updated.map(r => ({ id: r.transcriptionId, fileName: r.fileName })));
       return updated;
     });
   }, []);
 
   // Clear previous data when starting new session
   const handleClearPreviousData = useCallback(() => {
-    console.log('🧹 Clearing previous transcription data');
     setTranscriptionResults([]);
   }, []);
 

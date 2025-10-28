@@ -6,6 +6,7 @@ This document provides a comprehensive overview of technical improvements organi
 
 All current technical improvements are organized in the [2025 directory](technical-improvements/2025/) by date:
 
+- **[October 27: Infrastructure Maintenance - Critical Production Fixes](technical-improvements/2025/10-27-infrastructure-maintenance-production-fixes.md)** - Comprehensive infrastructure stability improvements: SQL Server retry execution strategy fix, Azure Container Apps Key Vault integration, cross-browser file upload compatibility, and API endpoint consistency
 - **[October 25: iOS Safari File Upload Compatibility Fix](technical-improvements/2025/10-25-ios-safari-file-upload-fix.md)** - Critical mobile browser compatibility enhancement resolving iPhone file upload failures with enhanced MIME type support and extension-based fallback validation
 - **[October 25: S8.6 Mobile Performance & Bundle Size Optimization](technical-improvements/2025/10-25-s8.6-performance-optimization.md)** - Exceptional performance achievement: 81% bundle reduction, Grade A performance validation, React.lazy implementation, and network-aware optimization system
 - **[October 25: S8.4 State Management Refactoring & Token Reservation Architecture](technical-improvements/2025/10-25-s8.4-state-management-token-reservation.md)** - Complete FileUpload component migration to Zustand stores for design pattern compliance and comprehensive token reservation system eliminating race condition bugs

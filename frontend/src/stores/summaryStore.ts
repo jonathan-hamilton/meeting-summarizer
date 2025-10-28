@@ -383,8 +383,6 @@ export const useSummaryStore = create<SummaryState>()(
         if (!currentState.summary || !currentState.autoSaveEnabled || !currentState.autoSaveContext) return;
 
         const { userId, fileName, meetingId } = currentState.autoSaveContext;
-        
-        console.log('Auto-save attempting with user ID:', userId, 'meetingId:', meetingId);
 
         try {
           // Auto-save logic - save with auto-generated title if not already saved

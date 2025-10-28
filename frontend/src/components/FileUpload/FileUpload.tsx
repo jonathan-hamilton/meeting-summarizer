@@ -119,15 +119,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
   // BUT only clear completed/error files, preserve active uploads
   useEffect(() => {
     return () => {
-      console.log('🧹 FileUpload component cleanup - clearing completed/error files only');
       setUploadFiles((prev) => {
         const activeFiles = prev.filter(f => 
           f.status === "uploading" || f.status === "processing" // Keep active uploads and processing
         );
-        const removedCount = prev.length - activeFiles.length;
-        if (removedCount > 0) {
-          console.log(`🧹 Removed ${removedCount} completed/error files, kept ${activeFiles.length} active uploads`);
-        }
         return activeFiles;
       });
     };
@@ -136,7 +131,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   // Clear upload queue when auth dialogs open (user is navigating away from upload)
   useEffect(() => {
     if (_isAuthDialogOpen) {
-      console.log('🧹 Auth dialog opened - clearing upload queue to prevent interference');
       storeClearUploadQueue();
     }
   }, [_isAuthDialogOpen, storeClearUploadQueue]);
@@ -170,7 +164,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   useEffect(() => {
     uploadFiles.forEach(file => {
       if (file.status === 'completed' && file.result && onTranscriptionComplete && !processedFileIds.current.has(file.id)) {
-        console.log('🎯 File completed, triggering completion callback:', file.file.name);
         processedFileIds.current.add(file.id);
         onTranscriptionComplete(file.result);
       }
@@ -261,17 +254,13 @@ const FileUpload: React.FC<FileUploadProps> = ({
             )
           );
           
-          console.log(`🎬 Synthetic progress: ${displayProgress}% (${stage}) - ${elapsed}ms elapsed`);
-          
           // Stop at 95% and let completion handle the final 5%
           if (progressPercent >= 95) {
             if (progressInterval) clearInterval(progressInterval);
           }
         }, 1000); // Update every second
         
-        const response = await apiService.uploadFile(uploadFile.file, (progress: number) => {
-          const progressPercent = Math.round(progress); // progress is already a percentage (0-100)
-          console.log(`📊 Upload progress: ${progressPercent}% for ${uploadFile.file.name}`);
+        const response = await apiService.uploadFile(uploadFile.file, () => {
           // Don't update UI here - let the synthetic progress handle it
         });
 
@@ -296,15 +285,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
             )
           );
           
-          console.log(`✅ Meeting ID stored for cancellation: ${transcriptionJobId} (file: ${uploadFile.file.name})`);
-          
           // CRITICAL: If file was cancelled before meeting ID was available, cancel it now
           if (cancelledFileIds.current.has(uploadFile.id)) {
-            console.log(`🚫 File was previously cancelled, calling backend cancel API now: ${transcriptionJobId}`);
             try {
               const cancelResponse = await apiService.cancelUpload(transcriptionJobId);
               if (cancelResponse.success && cancelResponse.data?.Success) {
-                console.log(`✅ Delayed backend cancellation successful: ${cancelResponse.data.Message}`);
                 // Update the file with cancellation info
                 setUploadFiles((prev) => prev.map(f => 
                   f.id === uploadFile.id 
@@ -317,7 +302,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
                 ));
                 refreshBalance();
               } else {
-                console.warn(`⚠️ Delayed cancellation had issues: ${cancelResponse.data?.Message || 'Unknown error'}`);
                 // With the new token reservation system, even "failed" cancellations should be handled gracefully
                 setUploadFiles((prev) => prev.map(f => 
                   f.id === uploadFile.id 
@@ -342,7 +326,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
         if (isAlreadyCompleted) {
           // Check if file was cancelled before completing
           if (cancelledFileIds.current.has(uploadFile.id)) {
-            console.log(`🚫 Skipping completion for cancelled file: ${uploadFile.file.name}`);
             return;
           }
           
@@ -364,7 +347,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
           
           // Refresh balance since tokens were consumed
           refreshBalance();
-          console.log('✅ Fast transcription completed for:', uploadFile.file.name);
         } else {
           // For fast transcription, show progress while processing
           // Start with processing status and update to completion when ready
@@ -387,11 +369,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
           
           // If we have immediate results, still refresh balance since tokens were consumed
           if (response.data?.transcribedText) {
-            console.log('⚡ Fast transcription result available, but waiting for completion');
             refreshBalance();
           }
-          
-          console.log('📤 Upload completed, transcription in progress:', uploadFile.file.name);
         }
         } else {
           const errorData = response.errors?.[0] || response.message || "Upload failed";
@@ -438,14 +417,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
     
     if (fileToCancel?.transcriptionJobId && (fileToCancel.status === "uploading" || fileToCancel.status === "processing")) {
       try {
-        console.log('🚫 Calling backend cancel API for meeting:', fileToCancel.transcriptionJobId);
-        
         // Call the backend cancel API to refund tokens
         const cancelResponse = await apiService.cancelUpload(fileToCancel.transcriptionJobId);
         
         if (cancelResponse.success && cancelResponse.data) {
-          console.log('✅ Backend cancellation successful:', cancelResponse.data);
-          
           // Mark file as cancelled in ref to prevent any further processing
           cancelledFileIds.current.add(fileId);
           
@@ -464,7 +439,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
           // Refresh token balance to show the refund
           refreshBalance();
           
-          console.log(`🎉 Upload cancelled with ${cancelResponse.data.tokensRefunded} tokens refunded`);
           return;
         } else {
           console.warn('⚠️ Backend cancellation failed:', cancelResponse.message);
@@ -487,7 +461,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
     // Refresh balance to get current token state (in case there were any backend changes)
     refreshBalance();
     
-    console.log('🚫 File upload cancelled locally:', fileId);
     if (!fileToCancel?.transcriptionJobId) {
       console.warn('⚠️ No meeting ID found - tokens may not be refunded');
     }
@@ -495,22 +468,17 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   // Process files after cost confirmation
   const processFiles = useCallback(async (validFiles: File[]) => {
-    console.log('🚀 Processing files - ensuring clean upload queue state');
-    
     // Only clear completed/error files, preserve active uploads
     setUploadFiles((prev) => {
       const activeJobs = prev.filter(f => f.status === "uploading" || f.status === "processing");
       if (activeJobs.length > 0) {
-        console.log(`🔄 Preserving ${activeJobs.length} active uploads while starting new upload`);
         return activeJobs; // Keep only active uploads
       }
-      console.log('🧹 No active uploads found, clearing all previous files');
       return []; // Clear everything if no active jobs
     });
     
     // Clear previous data when processing new files
     if (onClearPreviousData) {
-      console.log('🧹 Clearing previous transcription data for new upload session');
       onClearPreviousData();
     }
 
@@ -607,7 +575,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
       // For single file uploads, show cost estimation dialog first
       if (validFiles.length === 1) {
         const file = validFiles[0];
-        console.log('💰 Setting up cost estimation for single file:', file.name);
         setPendingFile(file);
         
         // Calculate token data using API for accuracy
@@ -617,7 +584,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
             getFileEstimationAsync(file)
           ]);
           
-          console.log('📊 Token calculation successful:', { tokenCalc, fileEstimation });
           setPendingTokenCalc({ tokenCalc, fileEstimation });
           openCostDialog();
         } catch (error) {

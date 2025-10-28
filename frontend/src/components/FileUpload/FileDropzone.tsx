@@ -84,48 +84,21 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     
-    console.log('📱 File picker clicked:', { 
-      isMobile, 
-      isIOS,
-      isSafari,
-      userAgent: navigator.userAgent,
-      inputRef: !!inputRef.current,
-      inputAccept: inputRef.current?.accept,
-      inputMultiple: inputRef.current?.multiple
-    });
+    // Always prevent default and trigger the file input directly
+    e.preventDefault();
+    e.stopPropagation();
     
-    // Try different approaches for iOS Safari
-    if (isIOS && isSafari) {
-      // Method 1: Try to completely bypass react-dropzone
-      e.preventDefault();
-      e.stopPropagation();
-      
-      if (inputRef.current) {
+    if (inputRef.current) {
+      // For iOS Safari, reset the value first
+      if (isIOS && isSafari) {
         inputRef.current.value = '';
-        
-        // Add error handling for iOS Safari click
-        try {
-          inputRef.current.click();
-        } catch (error) {
-          console.error('iOS Safari file picker failed:', error);
-          // Fallback: try without preventDefault
-          return;
-        }
       }
-    } else {
-      // Standard mobile/desktop handling
-      e.preventDefault();
-      e.stopPropagation();
       
-      if (inputRef.current) {
-        inputRef.current.value = '';
+      // Trigger the file picker
+      try {
         inputRef.current.click();
-        
-        if (isMobile) {
-          setTimeout(() => {
-            inputRef.current?.focus();
-          }, 100);
-        }
+      } catch (error) {
+        console.error('File picker failed:', error);
       }
     }
   }, [isMobile]);
@@ -149,7 +122,6 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     <Paper
       {...getRootProps()}
       data-testid="dropzone"
-      onClick={handleFilePickerClick}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       sx={{
@@ -240,8 +212,8 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         accept=".wav,.mp3,.mp4,.m4a,.flac,.ogg,.webm"
         // iOS Safari optimization
         capture={isMobile ? undefined : false}
-        // iOS Safari specific change handler
-        onChange={isMobile ? handleFileChange : undefined}
+        // Always handle file selection for all platforms
+        onChange={handleFileChange}
         // iOS Safari specific attributes
         multiple={true}
         style={{ 

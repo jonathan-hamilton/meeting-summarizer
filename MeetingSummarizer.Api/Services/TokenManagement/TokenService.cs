@@ -703,71 +703,76 @@ public class TokenService : ITokenService
                 };
             }
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            // Use execution strategy to handle SQL Server retry logic properly
+            var strategy = _context.Database.CreateExecutionStrategy();
+            return await strategy.ExecuteAsync(async () =>
             {
-                // Get user and deduct tokens
-                var user = await _context.Users.FindAsync(reservation.UserId);
-                if (user == null)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
+                    // Get user and deduct tokens
+                    var user = await _context.Users.FindAsync(reservation.UserId);
+                    if (user == null)
+                    {
+                        return new TokenReservationResult
+                        {
+                            Success = false,
+                            ErrorMessage = $"User {reservation.UserId} not found for reservation consumption"
+                        };
+                    }
+
+                    // Double-check user still has sufficient tokens
+                    if (user.TokenBalance < reservation.TokensReserved)
+                    {
+                        return new TokenReservationResult
+                        {
+                            Success = false,
+                            ErrorMessage = $"Insufficient tokens for consumption. Required: {reservation.TokensReserved}, Available: {user.TokenBalance}"
+                        };
+                    }
+
+                    // Deduct tokens from user balance
+                    user.TokenBalance -= reservation.TokensReserved;
+
+                    // Mark reservation as consumed
+                    reservation.Status = TokenReservationStatus.Consumed;
+                    reservation.ConsumedAt = DateTime.UtcNow;
+
+                    // Create token usage record for history (maintaining existing audit trail)
+                    var usage = new TokenUsage
+                    {
+                        UserId = reservation.UserId,
+                        MeetingId = reservation.MeetingId,
+                        TokensUsed = reservation.TokensReserved,
+                        MeetingDurationMinutes = 0, // Will be updated later if needed
+                        VolumeDiscountApplied = 0,
+                        UsageDate = DateTime.UtcNow,
+                        CostInUsd = reservation.TokensReserved * 0.05m // Base cost per token
+                    };
+
+                    _context.TokenUsages.Add(usage);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("✅ Token reservation consumed successfully: {ReservationId}, {TokensConsumed} tokens deducted from user {UserId}",
+                        reservationId, reservation.TokensReserved, reservation.UserId);
+
                     return new TokenReservationResult
                     {
-                        Success = false,
-                        ErrorMessage = $"User {reservation.UserId} not found for reservation consumption"
+                        Success = true,
+                        ReservationId = reservationId,
+                        TokensReserved = reservation.TokensReserved,
+                        ConsumedAt = reservation.ConsumedAt,
+                        NewBalance = user.TokenBalance
                     };
                 }
-
-                // Double-check user still has sufficient tokens
-                if (user.TokenBalance < reservation.TokensReserved)
+                catch (Exception ex)
                 {
-                    return new TokenReservationResult
-                    {
-                        Success = false,
-                        ErrorMessage = $"Insufficient tokens for consumption. Required: {reservation.TokensReserved}, Available: {user.TokenBalance}"
-                    };
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Failed to consume token reservation {ReservationId}", reservationId);
+                    throw;
                 }
-
-                // Deduct tokens from user balance
-                user.TokenBalance -= reservation.TokensReserved;
-
-                // Mark reservation as consumed
-                reservation.Status = TokenReservationStatus.Consumed;
-                reservation.ConsumedAt = DateTime.UtcNow;
-
-                // Create token usage record for history (maintaining existing audit trail)
-                var usage = new TokenUsage
-                {
-                    UserId = reservation.UserId,
-                    MeetingId = reservation.MeetingId,
-                    TokensUsed = reservation.TokensReserved,
-                    MeetingDurationMinutes = 0, // Will be updated later if needed
-                    VolumeDiscountApplied = 0,
-                    UsageDate = DateTime.UtcNow,
-                    CostInUsd = reservation.TokensReserved * 0.05m // Base cost per token
-                };
-
-                _context.TokenUsages.Add(usage);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                _logger.LogInformation("✅ Token reservation consumed successfully: {ReservationId}, {TokensConsumed} tokens deducted from user {UserId}",
-                    reservationId, reservation.TokensReserved, reservation.UserId);
-
-                return new TokenReservationResult
-                {
-                    Success = true,
-                    ReservationId = reservationId,
-                    TokensReserved = reservation.TokensReserved,
-                    ConsumedAt = reservation.ConsumedAt,
-                    NewBalance = user.TokenBalance
-                };
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Failed to consume token reservation {ReservationId}", reservationId);
-                throw;
-            }
+            });
         }
         catch (Exception ex)
         {

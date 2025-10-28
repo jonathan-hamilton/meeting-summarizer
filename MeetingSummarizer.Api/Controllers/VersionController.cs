@@ -24,10 +24,19 @@ public class VersionController : ControllerBase
     {
         try
         {
-            // Get revision from environment variable (set during deployment)
-            var revision = Environment.GetEnvironmentVariable("CONTAINER_APP_REVISION") ?? "Unknown";
-            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Unknown";
+            var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
             var hostname = Request.Host.ToString();
+            
+            // Get version from assembly (consistent across all environments)
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var assemblyVersion = assembly.GetName().Version;
+            var baseVersion = assemblyVersion?.ToString() ?? "1.2.0.0";
+            
+            // For container environments, append container revision if available
+            var containerRevision = Environment.GetEnvironmentVariable("CONTAINER_APP_REVISION");
+            var revision = !string.IsNullOrEmpty(containerRevision) 
+                ? $"{baseVersion}-{containerRevision}" 
+                : baseVersion;
             
             return Ok(new
             {
@@ -35,7 +44,7 @@ public class VersionController : ControllerBase
                 environment = environment,
                 hostname = hostname,
                 timestamp = DateTime.UtcNow,
-                version = "1.0.0"
+                version = baseVersion
             });
         }
         catch (Exception ex)

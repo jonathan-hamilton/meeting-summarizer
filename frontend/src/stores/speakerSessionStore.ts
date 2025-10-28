@@ -170,8 +170,6 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
       // Initialize session and automatically load existing mappings from API
       initializeSessionWithAutoLoad: async (transcriptionId, segments) => {
         try {
-          console.log('🔍 Store - initializeSessionWithAutoLoad called:', { transcriptionId, segmentCount: segments.length });
-          
           // First initialize with empty mappings
           get().initializeSession(transcriptionId, segments, []);
           
