@@ -234,10 +234,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
             stage = 'upload';
           } else if (progressPercent < 30) {
             stage = 'processing';
-          } else if (progressPercent < 85) {
-            stage = 'transcription';
           } else {
-            stage = 'summarization';
+            stage = 'transcription';
           }
           
           updateFileStage(uploadFile.id, stage, displayProgress);

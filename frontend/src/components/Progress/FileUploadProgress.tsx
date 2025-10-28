@@ -20,7 +20,6 @@ import {
   CloudUpload as UploadIcon,
   Settings as ProcessingIcon,
   Transcribe as TranscribeIcon,
-  Summarize as SummarizeIcon,
 } from '@mui/icons-material';
 import type { FileProgressData, ProcessingStage } from '../../types/progress';
 import { PROCESSING_STAGES, formatTimeRemaining } from '../../types/progress';
@@ -92,7 +91,6 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
         case 'upload': return <UploadIcon />;
         case 'processing': return <ProcessingIcon />;
         case 'transcription': return <TranscribeIcon />;
-        case 'summarization': return <SummarizeIcon />;
         case 'complete': return <CheckCircleIcon />;
         default: return <InfoIcon />;
       }
@@ -103,7 +101,6 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
         case 'upload': return 'info';
         case 'processing': return 'warning';
         case 'transcription': return 'primary';
-        case 'summarization': return 'secondary';
         case 'complete': return 'success';
         default: return 'default';
       }
