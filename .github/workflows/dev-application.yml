@@ -151,32 +151,98 @@ jobs:
     - name: Install EF Core Tools
       run: dotnet tool install --global dotnet-ef
     
+    - name: Check for Pending Migrations
+      id: pending-check
+      run: |
+        echo "🔍 Checking for pending database migrations..."
+        cd MeetingSummarizer.Api
+        
+        # Fix the Azure AD connection string for migration checking
+        FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Authentication=Active Directory Service Principal/Authentication=Active Directory Default/g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User ID=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;Password=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;PWD=[^;]*//g')
+        FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;TenantId=[^;]*//g' | sed 's/;Tenant ID=[^;]*//g')
+        
+        export ConnectionStrings__DefaultConnection="$FIXED_CONNECTION_STRING"
+        
+        # Check for pending migrations
+        PENDING_MIGRATIONS=$(dotnet ef migrations list --pending --no-build 2>/dev/null || echo "")
+        
+        if [ -z "$PENDING_MIGRATIONS" ] || [ "$PENDING_MIGRATIONS" = "No migrations were found." ]; then
+          echo "✅ No pending migrations found - database is up to date"
+          echo "has-pending=false" >> $GITHUB_OUTPUT
+          echo "pending-count=0" >> $GITHUB_OUTPUT
+        else
+          MIGRATION_COUNT=$(echo "$PENDING_MIGRATIONS" | wc -l)
+          echo "🔄 Found $MIGRATION_COUNT pending migration(s):"
+          echo "$PENDING_MIGRATIONS"
+          echo "has-pending=true" >> $GITHUB_OUTPUT
+          echo "pending-count=$MIGRATION_COUNT" >> $GITHUB_OUTPUT
+          echo "pending-list<<EOF" >> $GITHUB_OUTPUT
+          echo "$PENDING_MIGRATIONS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+      env:
+        ASPNETCORE_ENVIRONMENT: Development
+    
     - name: Check Migration Safety & Backup Planning
       id: safety-check
+      if: steps.pending-check.outputs.has-pending == 'true'
       run: |
-        echo "🔍 Checking migrations for destructive operations..."
-        cd MeetingSummarizer.Api/Migrations
+        echo "🔍 Checking pending migrations for destructive operations..."
+        cd MeetingSummarizer.Api
         
-        # Check for dangerous SQL operations in migration files
+        # Get list of pending migrations
+        PENDING_MIGRATIONS="${{ steps.pending-check.outputs.pending-list }}"
+        
+        if [ -z "$PENDING_MIGRATIONS" ]; then
+          echo "✅ No pending migrations to check"
+          echo "destructive-found=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        
+        echo "🔍 Checking these pending migrations:"
+        echo "$PENDING_MIGRATIONS"
+        echo ""
+        
+        # Check for dangerous SQL operations only in pending migration files
         DESTRUCTIVE_FOUND=false
         DESTRUCTIVE_FILES=""
         
-        # More comprehensive check for destructive operations
-        for file in *.cs; do
-          if grep -l "DELETE FROM\|TRUNCATE TABLE\|DROP TABLE\|DROP COLUMN\|DROP INDEX\|migrationBuilder\.Sql.*DELETE\|migrationBuilder\.Sql.*TRUNCATE\|migrationBuilder\.Sql.*DROP" "$file" > /dev/null 2>&1; then
-            DESTRUCTIVE_FOUND=true
-            DESTRUCTIVE_FILES="$DESTRUCTIVE_FILES $file"
-            echo "⚠️  Destructive operations found in: $file"
+        cd Migrations
+        
+        # Check each pending migration file
+        echo "$PENDING_MIGRATIONS" | while read -r migration_name; do
+          if [ -n "$migration_name" ] && [ "$migration_name" != "No migrations were found." ]; then
+            # Find migration file by name pattern
+            MIGRATION_FILE=$(ls -1 *"$migration_name"*.cs 2>/dev/null | head -1)
             
-            # Show the specific destructive lines
-            echo "   Destructive operations:"
-            grep -n "DELETE FROM\|TRUNCATE TABLE\|DROP TABLE\|DROP COLUMN\|DROP INDEX\|migrationBuilder\.Sql.*DELETE\|migrationBuilder\.Sql.*TRUNCATE\|migrationBuilder\.Sql.*DROP" "$file" | head -5
+            if [ -n "$MIGRATION_FILE" ] && [ -f "$MIGRATION_FILE" ]; then
+              echo "🔍 Checking migration file: $MIGRATION_FILE"
+              
+              if grep -l "DELETE FROM\|TRUNCATE TABLE\|DROP TABLE\|DROP COLUMN\|DROP INDEX\|migrationBuilder\.Sql.*DELETE\|migrationBuilder\.Sql.*TRUNCATE\|migrationBuilder\.Sql.*DROP" "$MIGRATION_FILE" > /dev/null 2>&1; then
+                DESTRUCTIVE_FOUND=true
+                DESTRUCTIVE_FILES="$DESTRUCTIVE_FILES $MIGRATION_FILE"
+                echo "⚠️  Destructive operations found in: $MIGRATION_FILE"
+                
+                # Show the specific destructive lines
+                echo "   Destructive operations:"
+                grep -n "DELETE FROM\|TRUNCATE TABLE\|DROP TABLE\|DROP COLUMN\|DROP INDEX\|migrationBuilder\.Sql.*DELETE\|migrationBuilder\.Sql.*TRUNCATE\|migrationBuilder\.Sql.*DROP" "$MIGRATION_FILE" | head -5
+              else
+                echo "✅ No destructive operations in: $MIGRATION_FILE"
+              fi
+            else
+              echo "⚠️  Could not find migration file for: $migration_name"
+            fi
           fi
         done
         
         if [ "$DESTRUCTIVE_FOUND" = true ]; then
           echo ""
-          echo "🚨 DESTRUCTIVE OPERATIONS DETECTED!"
+          echo "🚨 DESTRUCTIVE OPERATIONS DETECTED IN PENDING MIGRATIONS!"
           echo "Files with potential data loss operations:$DESTRUCTIVE_FILES"
           echo ""
           echo "📋 REQUIRED ACTIONS BEFORE PROCEEDING:"
@@ -200,11 +266,13 @@ jobs:
             echo "⚠️  DESTRUCTIVE OPERATIONS CONFIRMED - Proceeding with caution..."
           fi
         else
-          echo "✅ Migration safety check passed - No destructive operations detected"
+          echo "✅ Migration safety check passed - No destructive operations in pending migrations"
         fi
         
         # Set outputs
         echo "destructive-found=$DESTRUCTIVE_FOUND" >> $GITHUB_OUTPUT
+      env:
+        ASPNETCORE_ENVIRONMENT: Development
     
     - name: Create Database Backup (Conditional)
       id: backup
@@ -265,8 +333,13 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
     
     - name: Apply Database Migrations
+      if: steps.pending-check.outputs.has-pending == 'true'
       run: |
-        echo "🗄️ Applying database migrations..."
+        echo "🗄️ Applying ${{ steps.pending-check.outputs.pending-count }} pending database migration(s)..."
+        echo "Migrations to apply:"
+        echo "${{ steps.pending-check.outputs.pending-list }}"
+        echo ""
+        
         cd MeetingSummarizer.Api
         
         # Fix the Azure AD connection string by ensuring proper format for CLI auth
