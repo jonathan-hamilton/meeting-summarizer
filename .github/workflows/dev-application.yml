@@ -82,7 +82,7 @@ jobs:
     name: Get Infrastructure Information
     runs-on: ubuntu-latest
     needs: check-infrastructure
-    if: needs.check-infrastructure.outputs.should-proceed == 'true'
+    if: needs.check-infrastructure.outputs.should-proceed == 'true' && github.repository == 'jonathan-hamilton/meeting-summarizer'
     environment: development
     
     permissions:
@@ -128,6 +128,7 @@ jobs:
     name: Apply Database Migrations
     runs-on: ubuntu-latest
     needs: [check-infrastructure, get-infrastructure-info]
+    if: github.repository == 'jonathan-hamilton/meeting-summarizer'
     environment: development
     
     outputs:
@@ -367,6 +368,7 @@ jobs:
     name: Deploy Application Container
     runs-on: ubuntu-latest
     needs: [check-infrastructure, get-infrastructure-info, apply-migrations]
+    if: github.repository == 'jonathan-hamilton/meeting-summarizer'
     environment: development
     
     permissions:
