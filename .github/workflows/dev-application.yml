@@ -45,7 +45,7 @@ defaults:
     shell: bash
 
 env:
-  ARM_ACCESS_KEY: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository && secrets.ARM_ACCESS_KEY || '' }}
+  ARM_ACCESS_KEY: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.ARM_ACCESS_KEY || '' }}
 
 jobs:
   check-infrastructure:
