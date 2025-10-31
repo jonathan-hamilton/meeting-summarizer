@@ -13,6 +13,15 @@ public class SummaryPersistenceService : ISummaryPersistenceService
 {
     private readonly MeetingSummarizerDbContext _context;
     private readonly ILogger<SummaryPersistenceService> _logger;
+    
+    /// <summary>
+    /// JSON serialization options that match the Web API configuration
+    /// </summary>
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true
+    };
 
     public SummaryPersistenceService(
         MeetingSummarizerDbContext context, 
@@ -34,7 +43,7 @@ public class SummaryPersistenceService : ISummaryPersistenceService
             MeetingId = request.MeetingId,
             Title = request.Title,
             Description = request.Description,
-            SummaryData = JsonSerializer.Serialize(request.SummaryData),
+            SummaryData = JsonSerializer.Serialize(request.SummaryData, JsonOptions),
             TranscriptFileName = request.TranscriptFileName,
             CreatedAt = DateTime.UtcNow,
             LastModifiedAt = DateTime.UtcNow
@@ -129,7 +138,7 @@ public class SummaryPersistenceService : ISummaryPersistenceService
             summary.Description = request.Description;
         
         if (request.SummaryData != null)
-            summary.SummaryData = JsonSerializer.Serialize(request.SummaryData);
+            summary.SummaryData = JsonSerializer.Serialize(request.SummaryData, JsonOptions);
 
         // Update action items if provided (replaces all existing action items)
         if (request.ActionItems != null)
@@ -331,7 +340,7 @@ public class SummaryPersistenceService : ISummaryPersistenceService
             MeetingId = summary.MeetingId,
             Title = summary.Title,
             Description = summary.Description,
-            SummaryData = JsonSerializer.Deserialize<object>(summary.SummaryData) ?? new(),
+            SummaryData = JsonSerializer.Deserialize<object>(summary.SummaryData, JsonOptions) ?? new(),
             TranscriptFileName = summary.TranscriptFileName,
             CreatedAt = summary.CreatedAt,
             LastModifiedAt = summary.LastModifiedAt,
