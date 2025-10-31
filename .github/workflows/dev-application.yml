@@ -45,7 +45,7 @@ defaults:
     shell: bash
 
 env:
-  ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
+  ARM_ACCESS_KEY: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository && secrets.ARM_ACCESS_KEY || '' }}
 
 jobs:
   check-infrastructure:
@@ -102,9 +102,9 @@ jobs:
     - name: Azure CLI login via OIDC
       uses: azure/login@v2
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        client-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_CLIENT_ID || '' }}
+        tenant-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_TENANT_ID || '' }}
+        subscription-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_SUBSCRIPTION_ID || '' }}
         
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
@@ -164,7 +164,7 @@ jobs:
         cd MeetingSummarizer.Api
         
         # Fix the Azure AD connection string for migration checking
-        FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
+        FIXED_CONNECTION_STRING="${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.DEV_DATABASE_CONNECTION_STRING || '' }}"
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/Authentication=Active Directory Service Principal/Authentication=Active Directory Default/g')
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User Id=[^;]*//g')
         FIXED_CONNECTION_STRING=$(echo "$FIXED_CONNECTION_STRING" | sed 's/;User ID=[^;]*//g')
@@ -323,9 +323,9 @@ jobs:
     - name: Azure CLI login via OIDC
       uses: azure/login@v2
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        client-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_CLIENT_ID || '' }}
+        tenant-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_TENANT_ID || '' }}
+        subscription-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_SUBSCRIPTION_ID || '' }}
     
     - name: Apply Database Migrations
       if: steps.pending-check.outputs.has-pending == 'true'
@@ -338,7 +338,7 @@ jobs:
         cd MeetingSummarizer.Api
         
         # Fix the Azure AD connection string by ensuring proper format for CLI auth
-        FIXED_CONNECTION_STRING="${{ secrets.DEV_DATABASE_CONNECTION_STRING }}"
+        FIXED_CONNECTION_STRING="${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.DEV_DATABASE_CONNECTION_STRING || '' }}"
         
         # For Azure CLI authentication, we need Authentication=Active Directory Default
         # which will use the current Azure CLI context (OIDC login)
@@ -382,9 +382,9 @@ jobs:
     - name: Azure CLI login via OIDC
       uses: azure/login@v2
       with:
-        client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        client-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_CLIENT_ID || '' }}
+        tenant-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_TENANT_ID || '' }}
+        subscription-id: ${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.AZURE_SUBSCRIPTION_ID || '' }}
     
     - name: Build and Deploy Container Application
       run: |
@@ -426,7 +426,7 @@ jobs:
           --image "${REGISTRY_SERVER}/meeting-summary-api:$TIMESTAMP_TAG" \
           --set-env-vars ASPNETCORE_ENVIRONMENT=Development \
           --set-env-vars KeyVault__ClientId=5ed62488-7c1f-42bf-b855-d501d84f1f7c \
-          --set-env-vars KeyVault__ClientSecret=${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET }} \
+          --set-env-vars KeyVault__ClientSecret=${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.SERVICE_PRINCIPAL_CLIENT_SECRET || '' }} \
           --set-env-vars KeyVault__TenantId=1c30d7a8-9627-4b0c-b799-12bae25a849b \
           --set-env-vars CONTAINER_APP_REVISION="$REVISION_NAME" || {
             echo "❌ Standard update failed, trying alternative approach..."

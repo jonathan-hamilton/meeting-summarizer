@@ -101,13 +101,15 @@ This document describes the 4 deployment environments for Meeting-Summary.io and
   "KeyVault": {
     "Enabled": true,
     "VaultUri": "https://msio-dev-v2-kv.vault.azure.net/",
-    "UseManagedIdentity": false,  // Should this be true?
-    "ClientId": "5ed62488-7c1f-42bf-b855-d501d84f1f7c"
+    "UseManagedIdentity": true,  // ✅ Fixed - Now using Managed Identity
+    "ClientId": null,
+    "ClientSecret": null,
+    "TenantId": null
   }
 }
 ```
 
-**Status**: ⚠️ Needs verification - may not be using environment secrets properly
+**Status**: ✅ Fixed - Now properly configured for Managed Identity authentication (October 31, 2025)
 
 ---
 
