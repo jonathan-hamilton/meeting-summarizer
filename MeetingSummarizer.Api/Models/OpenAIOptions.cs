@@ -16,9 +16,13 @@ public class OpenAIOptions
     public string Model { get; set; } = "gpt-4";
 
     /// <summary>
-    /// Default chat model for conversations (alias for Model)
+    /// Default chat model for conversations (maps to Model property)
     /// </summary>
-    public string DefaultChatModel => Model;
+    public string DefaultChatModel 
+    { 
+        get => Model; 
+        set => Model = value; 
+    }
 
     /// <summary>
     /// Maximum tokens for API requests
