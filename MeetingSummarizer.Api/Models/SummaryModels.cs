@@ -456,7 +456,7 @@ public class SavedSummaryDto
     public string? Description { get; set; }
     
     /// <summary>
-    /// Meeting summary data (deserialized JSON)
+    /// Meeting summary data (deserialized JSON object with camelCase properties)
     /// </summary>
     public object SummaryData { get; set; } = new();
     

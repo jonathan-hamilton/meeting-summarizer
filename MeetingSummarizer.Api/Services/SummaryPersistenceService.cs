@@ -331,8 +331,24 @@ public class SummaryPersistenceService : ISummaryPersistenceService
     /// <summary>
     /// Map SavedSummary entity to DTO
     /// </summary>
-    private static SavedSummaryDto MapToDto(SavedSummary summary)
+    private SavedSummaryDto MapToDto(SavedSummary summary)
     {
+        var rawData = summary.SummaryData ?? "{}";
+        _logger.LogInformation("🔍 DEBUG: Raw SummaryData from DB: {SummaryData}", rawData.Substring(0, Math.Min(200, rawData.Length)));
+        
+        var deserializedData = JsonSerializer.Deserialize<Dictionary<string, object>>(rawData, JsonOptions) ?? new Dictionary<string, object>();
+        
+        _logger.LogInformation("🔍 DEBUG: Deserialized keys: {Keys}", string.Join(", ", deserializedData.Keys));
+        
+        if (deserializedData.ContainsKey("meetingOverview"))
+        {
+            var overview = deserializedData["meetingOverview"];
+            var overviewStr = overview?.ToString() ?? "";
+            _logger.LogInformation("🔍 DEBUG: meetingOverview type: {Type}, value preview: {Value}", 
+                overview?.GetType().Name, 
+                overviewStr.Substring(0, Math.Min(100, overviewStr.Length)));
+        }
+
         return new SavedSummaryDto
         {
             Id = summary.Id,
@@ -340,7 +356,7 @@ public class SummaryPersistenceService : ISummaryPersistenceService
             MeetingId = summary.MeetingId,
             Title = summary.Title,
             Description = summary.Description,
-            SummaryData = JsonSerializer.Deserialize<object>(summary.SummaryData, JsonOptions) ?? new(),
+            SummaryData = deserializedData,
             TranscriptFileName = summary.TranscriptFileName,
             CreatedAt = summary.CreatedAt,
             LastModifiedAt = summary.LastModifiedAt,

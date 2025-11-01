@@ -291,6 +291,10 @@ export const useSummaryStore = create<SummaryState>()(
           const result = await apiService.getSavedSummary(summaryId, userId);
 
           if (result.success && result.data) {
+            console.log('🔍 DEBUG: Raw API response:', result.data);
+            console.log('🔍 DEBUG: SummaryData type:', typeof result.data.summaryData);
+            console.log('🔍 DEBUG: SummaryData preview:', result.data.summaryData);
+            
             // Load the saved summary data into current session
             set({ 
               summary: result.data.summaryData,
