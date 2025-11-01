@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
-import { Box, Button, Typography, Chip, Skeleton, useTheme, useMediaQuery } from "@mui/material";
+import { Box, Button, Typography, Chip, Skeleton, useTheme, useMediaQuery, Tooltip } from "@mui/material";
 import {
   Person as PersonIcon,
   Edit as EditIcon,
@@ -357,27 +357,29 @@ export const SpeakerMappingComponent: React.FC<SpeakerMappingProps> = ({
         </Typography>
       </Box>
 
-      <Button
-        variant="outlined"
-        size={isMobile ? "medium" : "small"}
-        startIcon={<EditIcon />}
-        onClick={handleOpenDialog}
-        aria-label="Open speaker management dialog"
-        sx={{
-          minHeight: isMobile ? 44 : 'auto',
-          fontSize: isMobile ? '0.875rem' : '0.75rem',
-          textTransform: 'none',
-          fontWeight: 500,
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleOpenDialog();
-          }
-        }}
-      >
-        MANAGE SPEAKERS
-      </Button>
+      <Tooltip title="Add/Edit Name, Role, Email">
+        <Button
+          variant="outlined"
+          size={isMobile ? "medium" : "small"}
+          startIcon={<EditIcon />}
+          onClick={handleOpenDialog}
+          aria-label="Open speaker management dialog"
+          sx={{
+            minHeight: isMobile ? 44 : 'auto',
+            fontSize: isMobile ? '0.875rem' : '0.75rem',
+            textTransform: 'none',
+            fontWeight: 500,
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleOpenDialog();
+            }
+          }}
+        >
+          MANAGE SPEAKERS
+        </Button>
+      </Tooltip>
     </Box>
   );
 
