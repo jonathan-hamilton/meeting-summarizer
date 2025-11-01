@@ -9,9 +9,10 @@ import {
   CircularProgress,
   Snackbar,
   Divider,
-  Stack,
   useMediaQuery,
   useTheme,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import SummaryHeader from "./SummaryHeader";
 import ActionItemsSection from "./ActionItemsSection";
@@ -19,6 +20,8 @@ import ResponsiveSummaryText from "./ResponsiveSummaryText";
 
 import {
   Psychology,
+  PictureAsPdf,
+  Email,
 } from "@mui/icons-material";
 import type { SpeakerMapping, MeetingSummary, ActionItem } from "../types";
 import { useSpeakerSessionStore } from "../stores/speakerSessionStore";
@@ -393,28 +396,28 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
   return (
     <Card sx={{ width: "100%", position: "relative", overflow: "visible" }}>
       <CardContent>
-        <Stack
-          direction={isMobile ? "column" : "row"}
-          alignItems={isMobile ? "stretch" : "center"}
-          spacing={isMobile ? 2 : 1}
-          sx={{ mb: isMobile ? 3 : 2 }}
-        >
+        <Box sx={{ 
+          position: 'relative',
+          mb: isMobile ? 3 : 2,
+          ...(isMobile ? {} : { minHeight: '60px' }) // Ensure space for any buttons on desktop
+        }}>
+          {/* Centered text content */}
           <Box sx={{ 
             display: 'flex', 
-            flexDirection: isMobile ? 'column' : 'row',
-            alignItems: isMobile ? 'center' : 'center',
-            gap: isMobile ? 1 : 2,
-            flex: 1
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 0.5,
+            ...(isMobile ? { mb: 2 } : {})
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2, justifyContent: 'center' }}>
               <Psychology color="primary" />
               <Typography 
                 variant={isMobile ? "h5" : "h6"} 
                 component="h3"
                 sx={{
                   fontWeight: isMobile ? 600 : 500,
-                  mb: isMobile ? 0.5 : 0,
-                  textAlign: isMobile ? 'center' : 'left',
+                  mb: 0,
+                  textAlign: 'center',
                 }}
                 ref={(node) => {
                   if (aiSummaryRef) {
@@ -431,13 +434,64 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               sx={{ 
                 lineHeight: isMobile ? 1.5 : 1.2,
                 fontSize: isMobile ? '0.875rem' : '0.75rem',
-                textAlign: isMobile ? 'center' : 'left',
+                textAlign: 'center',
               }}
             >
               Comprehensive summary with role-aware action items.{isMobile ? '' : ' Works with or without custom speaker names.'}
             </Typography>
           </Box>
-        </Stack>
+          
+          {/* Action buttons - only show when summary exists */}
+          {summary && (
+            <Box sx={{ 
+              display: 'flex', 
+              gap: isMobile ? 2 : 1,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              ...(isMobile ? {} : {
+                position: 'absolute',
+                top: 0,
+                right: 0,
+              })
+            }}>
+              <Tooltip title="Download Summary as PDF">
+                <span>
+                  <IconButton
+                    size={isMobile ? "medium" : "small"}
+                    onClick={handlePdfDownload}
+                    aria-label="Download Summary as PDF"
+                    sx={{
+                      minHeight: isMobile ? 44 : 'auto',
+                      minWidth: isMobile ? 44 : 'auto',
+                    }}
+                  >
+                    <PictureAsPdf fontSize={isMobile ? "medium" : "small"} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="Email Summary">
+                <span>
+                  <Button
+                    variant="contained"
+                    size={isMobile ? "medium" : "small"}
+                    startIcon={<Email />}
+                    onClick={handleEmailShare}
+                    sx={{ 
+                      minHeight: isMobile ? 44 : 'auto',
+                      fontSize: isMobile ? '0.875rem' : '0.75rem',
+                      textTransform: 'none',
+                      fontWeight: 500,
+                    }}
+                    aria-label="Email summary"
+                  >
+                    Email
+                  </Button>
+                </span>
+              </Tooltip>
+            </Box>
+          )}
+        </Box>
 
         {/* Generate Button */}
         {!summary && !isGenerating && (
@@ -528,8 +582,6 @@ const SummaryDisplay: React.FC<SummaryDisplayProps> = ({
               summary={summary}
               totalActionItems={getTotalActionItems()}
               speakerCount={effectiveSpeakerMappings.length || detectedSpeakers.length}
-              onShareClick={handleEmailShare}
-              onPdfDownload={handlePdfDownload}
             />
 
 

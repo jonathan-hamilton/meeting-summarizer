@@ -245,8 +245,8 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
             size={isMobile ? "medium" : "small"}
             variant="outlined"
             sx={{
-              minHeight: isMobile ? 32 : 'auto', // Touch-friendly chip height
-              fontSize: isMobile ? '0.75rem' : '0.6875rem',
+              fontSize: isMobile ? '0.875rem' : '0.75rem',
+              height: isMobile ? 40 : 32,
             }}
           />
           {timeRemaining && (
@@ -381,7 +381,10 @@ export const FileUploadProgress: React.FC<FileUploadProgressProps> = ({
             label={stageConfig.label}
             color={stageConfig.color as any}
             variant={status === 'active' ? 'filled' : 'outlined'}
-            sx={{ minHeight: isMobile ? 36 : 'auto' }} // Touch-friendly chip
+            sx={{ 
+              fontSize: isMobile ? '0.875rem' : '0.75rem',
+              height: isMobile ? 40 : 32,
+            }}
           />
           
           {(timeRemaining && status === 'active') && (

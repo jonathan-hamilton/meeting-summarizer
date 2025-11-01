@@ -521,6 +521,24 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 height: isMobile ? 40 : 32,
               }}
             />
+            {transcription.confidenceScore && (
+              <Chip
+                label={`${Math.round(transcription.confidenceScore * 100)}% confidence`}
+                size={isMobile ? "medium" : "small"}
+                variant="outlined"
+                sx={{
+                  fontSize: isMobile ? '0.875rem' : '0.75rem',
+                  height: isMobile ? 40 : 32,
+                  textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
+                  opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
+                }}
+                title={
+                  isTranscriptStructureInvalidated
+                    ? "Original confidence - invalidated by transcript modifications"
+                    : "Original transcription confidence"
+                }
+              />
+            )}
           </Stack>
 
           {/* Additional metadata - collapsible on mobile */}
@@ -528,24 +546,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
             <>
               <Collapse in={showAllMetadata} timeout={300}>
                 <Stack direction="column" spacing={1} sx={{ mb: 2 }}>
-                  {transcription.confidenceScore && (
-                    <Chip
-                      label={`${Math.round(transcription.confidenceScore * 100)}% confidence`}
-                      size="medium"
-                      variant="outlined"
-                      sx={{
-                        fontSize: '0.875rem',
-                        height: 40,
-                        textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
-                        opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
-                      }}
-                      title={
-                        isTranscriptStructureInvalidated
-                          ? "Original confidence - invalidated by transcript modifications"
-                          : "Original transcription confidence"
-                      }
-                    />
-                  )}
                   {transcription.detectedLanguage && (
                     <Chip
                       label={transcription.detectedLanguage.toUpperCase()}
@@ -581,22 +581,6 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
           ) : (
             // Desktop: show all metadata inline as before
             <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
-              {transcription.confidenceScore && (
-                <Chip
-                  label={`${Math.round(transcription.confidenceScore * 100)}% confidence`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    textDecoration: isTranscriptStructureInvalidated ? "line-through" : "none",
-                    opacity: isTranscriptStructureInvalidated ? 0.7 : 1,
-                  }}
-                  title={
-                    isTranscriptStructureInvalidated
-                      ? "Original confidence - invalidated by transcript modifications"
-                      : "Original transcription confidence"
-                  }
-                />
-              )}
               {transcription.detectedLanguage && (
                 <Chip
                   label={transcription.detectedLanguage.toUpperCase()}
@@ -632,18 +616,18 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               aria-labelledby="transcript-heading"
               aria-describedby="transcript-description"
             >
-            <Stack
-              direction={isMobile ? "column" : "row"}
-              alignItems={isMobile ? "stretch" : "center"}
-              spacing={isMobile ? 2 : 1}
-              sx={{ mb: isMobile ? 3 : 2 }}
-            >
+            <Box sx={{ 
+              position: 'relative',
+              mb: isMobile ? 3 : 2,
+              ...(isMobile ? {} : { minHeight: '60px' }) // Ensure space for buttons on desktop
+            }}>
+              {/* Centered text content */}
               <Box sx={{ 
                 display: 'flex', 
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'center' : 'center',
-                gap: isMobile ? 1 : 0,
-                flex: 1
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 0.5,
+                ...(isMobile ? { mb: 2 } : {})
               }}>
                 <Typography 
                   id="transcript-heading"
@@ -651,8 +635,8 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   component="h4"
                   sx={{
                     fontWeight: isMobile ? 600 : 500,
-                    mb: isMobile ? 0.5 : 0,
-                    textAlign: isMobile ? 'center' : 'left',
+                    mb: 0,
+                    textAlign: 'center',
                   }}
                 >
                   Transcript
@@ -664,29 +648,34 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   sx={{ 
                     lineHeight: isMobile ? 1.5 : 1.2,
                     fontSize: isMobile ? '0.875rem' : '0.75rem',
+                    textAlign: 'center',
                   }}
                 >
                   Interactive meeting transcript with speaker segments.{isMobile ? '' : ' Use arrow keys to navigate between segments.'}
                 </Typography>
               </Box>
               
-              {/* Action buttons */}
+              {/* Action buttons - absolutely positioned on desktop */}
               <Box sx={{ 
                 display: 'flex', 
                 gap: isMobile ? 2 : 1,
-                flexDirection: isMobile ? 'row' : 'row',
-                justifyContent: isMobile ? 'center' : 'flex-end',
+                flexDirection: 'row',
+                justifyContent: 'center',
                 alignItems: 'center',
-                width: isMobile ? '100%' : 'auto',
+                ...(isMobile ? {} : {
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                })
               }}>
-                <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
+                <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download Transcript as PDF"}>
                   <span>
                     <IconButton
                       size={isMobile ? "medium" : "small"}
                       onClick={handleDownloadPdf}
                       disabled={isDownloadingPdf}
                       color={isDownloadingPdf ? "primary" : "default"}
-                      aria-label="Download transcript as PDF"
+                      aria-label="Download Transcript as PDF"
                       aria-describedby="download-pdf-tooltip"
                       sx={{
                         minHeight: isMobile ? 44 : 'auto',
@@ -709,7 +698,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 </Tooltip>
                 {/* Email button - shown on /app and /transcript pages */}
                 {shouldShowEmailButton && (
-                  <Tooltip title="Email transcript">
+                  <Tooltip title="Email Transcript">
                     <span>
                       <Button
                         variant="contained"
@@ -726,7 +715,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                           textTransform: 'none',
                           fontWeight: 500,
                         }}
-                        aria-label="Email transcript"
+                        aria-label="Email Transcript"
                       >
                         Email
                       </Button>
@@ -734,7 +723,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                   </Tooltip>
                 )}
               </Box>
-            </Stack>
+            </Box>
 
             {/* Speaker segments */}
             <Box sx={{ 
@@ -785,14 +774,14 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                 Transcript
               </Typography>
               <Box sx={{ flexGrow: 1 }} />
-              <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download transcript as PDF"}>
+              <Tooltip title={isDownloadingPdf ? "Generating PDF..." : "Download Transcript as PDF"}>
                 <span>
                   <IconButton
                     size="small"
                     onClick={handleDownloadPdf}
                     disabled={isDownloadingPdf}
                     color={isDownloadingPdf ? "primary" : "default"}
-                    aria-label="Download transcript as PDF"
+                    aria-label="Download Transcript as PDF"
                     aria-describedby="download-pdf-tooltip"
                   >
                     {isDownloadingPdf ? (
@@ -805,7 +794,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
               </Tooltip>
               {/* Email button - shown on /app and /transcript pages (fallback section) */}
               {shouldShowEmailButton && (
-                <Tooltip title="Email transcript">
+                <Tooltip title="Email Transcript">
                   <span>
                     <IconButton
                       size="small"
@@ -819,7 +808,7 @@ const TranscriptDisplay: React.FC<TranscriptDisplayProps> = ({
                         handleEmailTranscript();
                         console.log('Called handleEmailTranscript');
                       }}
-                      aria-label="Email transcript"
+                      aria-label="Email Transcript"
                       sx={{ 
                         backgroundColor: 'green !important',
                         color: 'white !important',
