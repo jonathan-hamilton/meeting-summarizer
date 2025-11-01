@@ -4,6 +4,7 @@ using MeetingSummarizer.Api.Services;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using MeetingSummarizer.Api.Attributes;
+using System.Text.Json;
 
 namespace MeetingSummarizer.Api.Controllers;
 
@@ -88,6 +89,16 @@ public class SavedSummaryController : ControllerBase
             {
                 _logger.LogWarning("Summary {SummaryId} not found for user {UserId}", id, userId);
                 return NotFound("Summary not found or access denied");
+            }
+
+            _logger.LogInformation("🔍 DEBUG: Retrieved summary {SummaryId}, SummaryData type: {Type}", 
+                id, summary.SummaryData?.GetType().Name);
+            
+            if (summary.SummaryData != null)
+            {
+                var summaryDataJson = JsonSerializer.Serialize(summary.SummaryData, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                _logger.LogInformation("🔍 DEBUG: SummaryData JSON preview: {Json}", 
+                    summaryDataJson.Substring(0, Math.Min(300, summaryDataJson.Length)));
             }
 
             return Ok(summary);

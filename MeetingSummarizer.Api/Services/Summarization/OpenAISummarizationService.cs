@@ -639,8 +639,29 @@ public class OpenAISummarizationService : ISummarizationService
     {
         try
         {
+            // Clean the response text by removing markdown code blocks
+            var cleanedText = summaryText.Trim();
+            
+            // Remove markdown code block formatting if present
+            if (cleanedText.StartsWith("```json"))
+            {
+                cleanedText = cleanedText.Substring(7); // Remove "```json"
+            }
+            if (cleanedText.StartsWith("```"))
+            {
+                cleanedText = cleanedText.Substring(3); // Remove "```"
+            }
+            if (cleanedText.EndsWith("```"))
+            {
+                cleanedText = cleanedText.Substring(0, cleanedText.Length - 3); // Remove trailing "```"
+            }
+            
+            cleanedText = cleanedText.Trim();
+            
+            _logger.LogInformation("🔍 Cleaned summary text for JSON parsing: {CleanedText}", cleanedText.Length > 200 ? cleanedText.Substring(0, 200) + "..." : cleanedText);
+            
             // Try to parse JSON response
-            var jsonDoc = JsonDocument.Parse(summaryText);
+            var jsonDoc = JsonDocument.Parse(cleanedText);
             var root = jsonDoc.RootElement;
 
             var meetingSummary = new MeetingSummary
