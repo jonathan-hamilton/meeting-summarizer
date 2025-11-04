@@ -6,6 +6,9 @@
     }
   ],
   "settings": {
-    "workbench.name": "Meeting-Summary.io"
+    "workbench.name": "Meeting-Summary.io",
+    "explorer.excludeGitIgnore": false,
+    "files.exclude": {},
+    "search.exclude": {}
   }
 }
