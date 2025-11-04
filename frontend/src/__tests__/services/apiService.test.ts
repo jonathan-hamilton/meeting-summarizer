@@ -17,6 +17,20 @@ vi.mock('axios', () => ({
 
 const mockedAxios = vi.mocked(axios);
 
+// Mock window.location for proper environment detection
+const mockLocation = {
+  hostname: 'localhost',
+  port: '5173', // Simulate local dev environment
+  href: 'http://localhost:5173',
+  protocol: 'http:',
+  host: 'localhost:5173'
+};
+
+Object.defineProperty(window, 'location', {
+  value: mockLocation,
+  writable: true,
+});
+
 interface MockAxiosInstance {
   interceptors: {
     request: { use: Mock };
@@ -172,7 +186,7 @@ describe('ApiService - Critical Test Coverage - S2.1', () => {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        timeout: 300000,
+        timeout: 3600000, // Updated to match implementation (60 minutes)
       });
       expect(result).toEqual(mockResponse);
     });
@@ -514,7 +528,7 @@ describe('ApiService - Critical Test Coverage - S2.1', () => {
       const result = await apiService.generateSummary(mockRequest);
       
       expect(result.success).toBe(false);
-      expect(result.message).toContain('timeout');
+      expect(result.message).toContain('Request timed out');
     });
 
     it('should handle different summary styles', async () => {
@@ -565,13 +579,14 @@ describe('ApiService - Critical Test Coverage - S2.1', () => {
   describe('Error Handling', () => {
     it('should handle network errors', async () => {
       const networkError = new Error('Network Error');
+      networkError.code = 'ERR_NETWORK';
       mockAxiosInstance.request.mockRejectedValue(networkError);
 
       const result = await apiService.get('/test');
       
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Network Error');
-      expect(result.errors).toEqual(['Network Error']);
+      expect(result.message).toBe('Network connection error, please check your internet and try again');
+      expect(result.errors).toEqual(['Network connection error, please check your internet and try again']);
     });
 
     it('should handle HTTP error responses with message', async () => {
@@ -596,13 +611,14 @@ describe('ApiService - Critical Test Coverage - S2.1', () => {
     });
 
     it('should handle timeout errors', async () => {
-      const timeoutError = new Error('Request timeout');
+      const timeoutError = new Error('Request timeout') as any;
+      timeoutError.code = 'ECONNABORTED';
       mockAxiosInstance.request.mockRejectedValue(timeoutError);
 
       const result = await apiService.post('/slow-endpoint', {});
       
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Request timeout');
+      expect(result.message).toBe('Request timed out, please try again');
     });
 
     it('should handle errors without specific message', async () => {
@@ -617,7 +633,7 @@ describe('ApiService - Critical Test Coverage - S2.1', () => {
       const result = await apiService.get('/error-endpoint');
       
       expect(result.success).toBe(false);
-      expect(result.message).toBe('An error occurred');
+      expect(result.message).toBe('Internal server error, please try again');
     });
   });
 });
