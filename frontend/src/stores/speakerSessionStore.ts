@@ -310,8 +310,9 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.activeSpeakers;
         }
         
-        // Compute without calling set() during render
+        // Compute and cache the result
         const cache = recomputeCache(state);
+        set({ _computedCache: cache });
         return cache.activeSpeakers;
       },
 
@@ -323,8 +324,9 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.speakerStats;
         }
         
-        // Compute without calling set() during render
+        // Compute and cache the result
         const cache = recomputeCache(state);
+        set({ _computedCache: cache });
         return cache.speakerStats;
       },
 
@@ -336,8 +338,9 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.filteredMappings;
         }
         
-        // Compute without calling set() during render
+        // Compute and cache the result
         const cache = recomputeCache(state);
+        set({ _computedCache: cache });
         return cache.filteredMappings;
       },
 
@@ -349,8 +352,9 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.structurallyInvalidated;
         }
         
-        // Compute without calling set() during render
+        // Compute and cache the result
         const cache = recomputeCache(state);
+        set({ _computedCache: cache });
         return cache.structurallyInvalidated;
       },
 
@@ -362,8 +366,9 @@ export const useSpeakerSessionStore = create<SpeakerSessionState>()(
           return state._computedCache.hasUnsavedChanges;
         }
         
-        // Compute without calling set() during render
+        // Compute and cache the result
         const cache = recomputeCache(state);
+        set({ _computedCache: cache });
         return cache.hasUnsavedChanges;
       },
 
