@@ -67,8 +67,7 @@ jobs:
           --verbosity normal \
           --collect:"XPlat Code Coverage" \
           --results-directory ./test-results
-      # Temporarily allow test failures to not block deployment
-      continue-on-error: true
+      # Test enforcement enabled - all tests must pass for successful build
     
     - name: Upload test results
       uses: actions/upload-artifact@v4

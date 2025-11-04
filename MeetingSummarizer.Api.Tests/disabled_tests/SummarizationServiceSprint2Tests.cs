@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using Moq;
 using Microsoft.Extensions.Logging;
@@ -11,14 +11,14 @@ namespace MeetingSummarizer.Api.Tests.Services;
 /// Sprint 2 tests for SummarizationService AI-powered summarization
 /// Tests S2.3: AI-Powered Meeting Summarization Backend service layer
 /// </summary>
-[TestClass]
+[TestFixture]
 public class SummarizationServiceSprint2Tests
 {
     private Mock<IOpenAISummarizationService> _mockOpenAISummarizationService = null!;
     private Mock<ILogger<SummarizationService>> _mockLogger = null!;
     private SummarizationService _service = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         _mockOpenAISummarizationService = new Mock<IOpenAISummarizationService>();
@@ -28,9 +28,9 @@ public class SummarizationServiceSprint2Tests
 
     #region S2.3 Core Summarization Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_ValidTranscriptBriefStyle_ReturnsSuccessfulSummary()
     {
         // Arrange
@@ -64,9 +64,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_DetailedStyle_ReturnsDetailedSummaryWithActionItems()
     {
         // Arrange
@@ -98,9 +98,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_ActionItemsStyle_ExtractsActionItems()
     {
         // Arrange
@@ -131,9 +131,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_KeyDecisionsStyle_ExtractsKeyDecisions()
     {
         // Arrange
@@ -164,9 +164,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_ExecutiveSummaryStyle_ReturnsExecutiveLevelContent()
     {
         // Arrange
@@ -200,9 +200,9 @@ public class SummarizationServiceSprint2Tests
 
     #region S2.3 Role-Aware Summarization Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_WithSpeakerMappings_ReturnsRoleAwareSummary()
     {
         // Arrange
@@ -240,9 +240,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_WithTargetRole_ReturnsTargetRoleSpecificSummary()
     {
         // Arrange
@@ -278,9 +278,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_AppliesSpeakerMappings_ReplacesGenericLabels()
     {
         // Arrange
@@ -316,9 +316,9 @@ public class SummarizationServiceSprint2Tests
 
     #region S2.3 Error Handling Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_NullTranscript_ThrowsArgumentException()
     {
         // Arrange
@@ -333,9 +333,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_EmptyTranscript_ThrowsArgumentException()
     {
         // Arrange
@@ -347,9 +347,9 @@ public class SummarizationServiceSprint2Tests
             () => _service.GenerateSummaryAsync(emptyTranscript, options));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_TranscriptTooLong_ThrowsArgumentException()
     {
         // Arrange
@@ -361,9 +361,9 @@ public class SummarizationServiceSprint2Tests
             () => _service.GenerateSummaryAsync(veryLongTranscript, options));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_InvalidMaxTokens_ThrowsArgumentException()
     {
         // Arrange
@@ -379,9 +379,9 @@ public class SummarizationServiceSprint2Tests
             () => _service.GenerateSummaryAsync(transcript, options));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_OpenAIServiceThrows_PropagatesException()
     {
         // Arrange
@@ -399,9 +399,9 @@ public class SummarizationServiceSprint2Tests
         exception.Message.Should().Contain("OpenAI service unavailable");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_NullSpeakerMappings_ThrowsArgumentException()
     {
         // Arrange
@@ -418,9 +418,9 @@ public class SummarizationServiceSprint2Tests
 
     #region S2.3 Service Availability Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task IsServiceAvailableAsync_OpenAIServiceAvailable_ReturnsTrue()
     {
         // Arrange
@@ -436,9 +436,9 @@ public class SummarizationServiceSprint2Tests
         _mockOpenAISummarizationService.Verify(x => x.IsServiceAvailableAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task IsServiceAvailableAsync_OpenAIServiceUnavailable_ReturnsFalse()
     {
         // Arrange
@@ -453,9 +453,9 @@ public class SummarizationServiceSprint2Tests
         result.Should().BeFalse();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task IsServiceAvailableAsync_OpenAIServiceThrows_ReturnsFalse()
     {
         // Arrange
@@ -470,9 +470,9 @@ public class SummarizationServiceSprint2Tests
         result.Should().BeFalse();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void GetServiceStatus_ValidService_ReturnsJsonStatus()
     {
         // Arrange
@@ -497,9 +497,9 @@ public class SummarizationServiceSprint2Tests
 
     #region S2.3 Prompt Engineering Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_BriefStyle_GeneratesAppropriatePrompt()
     {
         // Arrange
@@ -528,9 +528,9 @@ public class SummarizationServiceSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_IncludesParticipantContext()
     {
         // Arrange
@@ -563,9 +563,9 @@ public class SummarizationServiceSprint2Tests
 
     #region S2.3 Performance and Metrics Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_TracksProcessingTime_ReturnsPositiveProcessingTime()
     {
         // Arrange
@@ -588,9 +588,9 @@ public class SummarizationServiceSprint2Tests
         result.ProcessingTimeMs.Should().BeLessThan(10000); // Reasonable upper bound
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummaryAsync_EstimatesTokenCount_ReturnsReasonableTokenCount()
     {
         // Arrange
@@ -612,3 +612,4 @@ public class SummarizationServiceSprint2Tests
 
     #endregion
 }
+

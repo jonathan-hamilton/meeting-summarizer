@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using System.Net;
 using System.Text;
@@ -16,7 +16,7 @@ namespace MeetingSummarizer.Api.Tests.Controllers;
 /// Sprint 2 tests for SummaryController AI summarization endpoints
 /// Tests S2.3: AI-Powered Meeting Summarization Backend functionality
 /// </summary>
-[TestClass]
+[TestFixture]
 public class SummaryControllerSprint2Tests
 {
     private Mock<ILogger<SummaryController>> _mockLogger = null!;
@@ -25,7 +25,7 @@ public class SummaryControllerSprint2Tests
     private Mock<ISpeakerMappingService> _mockSpeakerMappingService = null!;
     private SummaryController _controller = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         _mockLogger = new Mock<ILogger<SummaryController>>();
@@ -42,9 +42,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 AI Summarization Tests - Basic Functionality
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ValidTranscriptBriefStyle_ReturnsSuccessfulSummary()
     {
         // Arrange
@@ -88,9 +88,9 @@ public class SummaryControllerSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ValidTranscriptDetailedStyle_ReturnsDetailedSummary()
     {
         // Arrange
@@ -131,9 +131,9 @@ public class SummaryControllerSprint2Tests
         summaryResult.KeyDecisions.Should().HaveCount(1);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ActionItemsStyle_ReturnsActionItemsFocusedSummary()
     {
         // Arrange
@@ -176,9 +176,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 Role-Aware Summarization Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_WithSpeakerMappings_ReturnsRoleAwareSummary()
     {
         // Arrange
@@ -230,9 +230,9 @@ public class SummaryControllerSprint2Tests
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_WithTargetRole_ReturnsRoleSpecificSummary()
     {
         // Arrange
@@ -280,9 +280,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 Error Handling Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_EmptyTranscript_ReturnsBadRequest()
     {
         // Arrange
@@ -305,9 +305,9 @@ public class SummaryControllerSprint2Tests
             It.IsAny<string>(), It.IsAny<SummaryOptions>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ServiceThrowsInvalidOperationException_ReturnsServiceUnavailable()
     {
         // Arrange
@@ -331,9 +331,9 @@ public class SummaryControllerSprint2Tests
         objectResult?.StatusCode.Should().Be(503);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ServiceThrowsArgumentException_ReturnsBadRequest()
     {
         // Arrange
@@ -357,9 +357,9 @@ public class SummaryControllerSprint2Tests
         badRequestResult?.Value.Should().NotBeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ServiceThrowsGenericException_ReturnsInternalServerError()
     {
         // Arrange
@@ -387,9 +387,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 Future Transcription Storage Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummarizeTranscription_ValidTranscriptionId_ReturnsNotImplemented()
     {
         // Arrange
@@ -410,9 +410,9 @@ public class SummaryControllerSprint2Tests
         objectResult?.StatusCode.Should().Be(501); // Not Implemented
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummarizeTranscription_MismatchedTranscriptionIds_ReturnsBadRequest()
     {
         // Arrange
@@ -437,9 +437,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 Service Status Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void GetSummarizationStatus_ValidService_ReturnsStatusInformation()
     {
         // Arrange
@@ -459,9 +459,9 @@ public class SummaryControllerSprint2Tests
         _mockSummarizationService.Verify(x => x.GetServiceStatus(), Times.Once);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void GetSummarizationStatus_ServiceThrowsException_ReturnsInternalServerError()
     {
         // Arrange
@@ -482,9 +482,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 Integration with Speaker Mapping Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_EmptySpeakerMappings_UsesStandardSummarization()
     {
         // Arrange
@@ -528,9 +528,9 @@ public class SummaryControllerSprint2Tests
 
     #region S2.3 Summary Styles Comprehensive Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_KeyDecisionsStyle_ReturnsDecisionsFocusedSummary()
     {
         // Arrange
@@ -569,9 +569,9 @@ public class SummaryControllerSprint2Tests
         summaryResult.KeyDecisions![0].Should().Contain("Plan A approved");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public async Task GenerateSummary_ExecutiveSummaryStyle_ReturnsExecutiveLevelSummary()
     {
         // Arrange
@@ -610,3 +610,4 @@ public class SummaryControllerSprint2Tests
 
     #endregion
 }
+

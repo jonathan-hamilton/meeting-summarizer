@@ -2,17 +2,17 @@ using FluentAssertions;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Tests.TestData;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace MeetingSummarizer.Api.Tests.Services
 {
-    [TestClass]
-    [TestCategory("Sprint2")]
+    [TestFixture]
+    
     public class InMemorySpeakerMappingServiceSprint2Tests
     {
         private InMemorySpeakerMappingService _service = null!;
 
-        [TestInitialize]
+        [SetUp]
         public void Setup()
         {
             _service = new InMemorySpeakerMappingService();
@@ -20,8 +20,8 @@ namespace MeetingSummarizer.Api.Tests.Services
 
         #region SaveSpeakerMappingsAsync Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappingsAsync_WithValidRequest_ShouldReturnSuccessResponse()
         {
             // Arrange
@@ -38,8 +38,8 @@ namespace MeetingSummarizer.Api.Tests.Services
             result.Mappings.Should().BeEquivalentTo(request.Mappings);
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappingsAsync_WithEmptyMappings_ShouldReturnSuccessWithEmptyMappings()
         {
             // Arrange
@@ -55,8 +55,8 @@ namespace MeetingSummarizer.Api.Tests.Services
             result.Mappings.Should().BeEmpty();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappingsAsync_ShouldOverwriteExistingMappings()
         {
             // Arrange
@@ -92,8 +92,8 @@ namespace MeetingSummarizer.Api.Tests.Services
 
         #region GetSpeakerMappingsAsync Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappingsAsync_WithExistingTranscriptionId_ShouldReturnMappings()
         {
             // Arrange
@@ -111,8 +111,8 @@ namespace MeetingSummarizer.Api.Tests.Services
             result.Mappings.Should().BeEquivalentTo(request.Mappings);
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappingsAsync_WithNonExistentTranscriptionId_ShouldReturnNull()
         {
             // Act
@@ -126,8 +126,8 @@ namespace MeetingSummarizer.Api.Tests.Services
 
         #region DeleteSpeakerMappingsAsync Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappingsAsync_WithExistingTranscriptionId_ShouldReturnTrue()
         {
             // Arrange
@@ -145,8 +145,8 @@ namespace MeetingSummarizer.Api.Tests.Services
             getResult.Should().BeNull();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappingsAsync_WithNonExistentTranscriptionId_ShouldReturnFalse()
         {
             // Act
@@ -160,8 +160,8 @@ namespace MeetingSummarizer.Api.Tests.Services
 
         #region Integration Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task FullWorkflow_SaveGetDelete_ShouldWorkCorrectly()
         {
             // Arrange
@@ -195,8 +195,8 @@ namespace MeetingSummarizer.Api.Tests.Services
             getAfterDeleteResult.Should().BeNull();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task ConcurrentOperations_ShouldHandleMultipleTranscriptions()
         {
             // Arrange
@@ -241,3 +241,4 @@ namespace MeetingSummarizer.Api.Tests.Services
         #endregion
     }
 }
+

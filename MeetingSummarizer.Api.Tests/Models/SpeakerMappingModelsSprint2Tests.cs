@@ -1,19 +1,19 @@
 using FluentAssertions;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Tests.TestData;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using System.ComponentModel.DataAnnotations;
 
 namespace MeetingSummarizer.Api.Tests.Models
 {
-    [TestClass]
-    [TestCategory("Sprint2")]
+    [TestFixture]
+    
     public class SpeakerMappingModelsSprint2Tests
     {
         #region SpeakerMapping Model Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMapping_WithValidData_ShouldCreateSuccessfully()
         {
             // Arrange & Act
@@ -30,8 +30,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             speakerMapping.Role.Should().Be("Project Manager");
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMapping_WithEmptyValues_ShouldAllowEmptyStrings()
         {
             // Arrange & Act
@@ -48,8 +48,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             speakerMapping.Role.Should().Be("");
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMapping_WithNullValues_ShouldAllowNullStrings()
         {
             // Arrange & Act
@@ -66,8 +66,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             speakerMapping.Role.Should().BeNull();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMapping_Equality_ShouldWorkCorrectly()
         {
             // Arrange
@@ -101,8 +101,8 @@ namespace MeetingSummarizer.Api.Tests.Models
 
         #region SpeakerMappingRequest Model Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingRequest_WithValidData_ShouldCreateSuccessfully()
         {
             // Arrange
@@ -121,8 +121,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             request.Mappings.Should().BeEquivalentTo(mappings);
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingRequest_WithEmptyMappings_ShouldCreateSuccessfully()
         {
             // Act
@@ -138,8 +138,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             request.Mappings.Should().BeEmpty();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingRequest_WithNullMappings_ShouldAllowNull()
         {
             // Act
@@ -154,8 +154,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             request.Mappings.Should().BeNull();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingRequest_Validation_ShouldValidateRequiredFields()
         {
             // Arrange
@@ -176,8 +176,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             validationResults.Should().NotBeEmpty();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingRequest_WithFactoryData_ShouldMatchExpectedStructure()
         {
             // Act
@@ -198,8 +198,8 @@ namespace MeetingSummarizer.Api.Tests.Models
 
         #region SpeakerMappingResponse Model Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingResponse_WithValidData_ShouldCreateSuccessfully()
         {
             // Arrange
@@ -222,8 +222,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             response.Message.Should().Be("Operation completed successfully");
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingResponse_WithErrorState_ShouldCreateSuccessfully()
         {
             // Act
@@ -242,8 +242,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             response.Message.Should().Be("An error occurred during processing");
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingResponse_WithFactoryData_ShouldMatchExpectedStructure()
         {
             // Act
@@ -258,8 +258,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             response.Message.Should().NotBeNullOrEmpty();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingResponse_ErrorFactory_ShouldCreateErrorResponse()
         {
             // Act
@@ -272,8 +272,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             response.Mappings.Should().BeEmpty();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void SpeakerMappingResponse_EmptyFactory_ShouldCreateEmptyResponse()
         {
             // Act
@@ -290,8 +290,8 @@ namespace MeetingSummarizer.Api.Tests.Models
 
         #region Model Integration Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void ModelWorkflow_RequestToResponse_ShouldMaintainDataIntegrity()
         {
             // Arrange
@@ -313,8 +313,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             response.Message.Should().NotBeNullOrEmpty();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void ModelSerialization_ShouldMaintainStructure()
         {
             // Arrange
@@ -333,8 +333,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             deserializedResponse.Should().BeEquivalentTo(originalResponse);
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void ModelValidation_ComplexScenarios_ShouldHandleEdgeCases()
         {
             // Arrange & Act
@@ -353,8 +353,8 @@ namespace MeetingSummarizer.Api.Tests.Models
             errorResponse.Should().NotBeNull();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public void ModelProperties_ShouldSupportAllDataTypes()
         {
             // Arrange & Act
@@ -382,3 +382,4 @@ namespace MeetingSummarizer.Api.Tests.Models
         #endregion
     }
 }
+

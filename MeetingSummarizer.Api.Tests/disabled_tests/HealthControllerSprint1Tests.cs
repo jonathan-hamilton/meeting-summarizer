@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using System.Net;
 using System.Text.Json;
@@ -10,20 +10,20 @@ namespace MeetingSummarizer.Api.Tests.Controllers;
 /// Sprint 1 tests for HealthController endpoints
 /// Tests infrastructure health checks supporting S1.4: Production Configuration
 /// </summary>
-[TestClass]
+[TestFixture]
 public class HealthControllerSprint1Tests
 {
     private Sprint1TestWebApplicationFactory _factory = null!;
     private HttpClient _client = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         _factory = new Sprint1TestWebApplicationFactory();
         _client = _factory.CreateClient();
     }
 
-    [TestCleanup]
+    [TearDown]
     public void Cleanup()
     {
         _client?.Dispose();
@@ -32,9 +32,9 @@ public class HealthControllerSprint1Tests
 
     #region S1.4 Production Configuration Support Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
+    [Test]
+    
+    
     public async Task GetHealth_BasicEndpoint_ReturnsHealthyStatus()
     {
         // Act
@@ -57,9 +57,9 @@ public class HealthControllerSprint1Tests
         timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromDays(1)); // Generous check just to ensure valid format
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
+    [Test]
+    
+    
     public async Task GetDetailedHealth_DetailedEndpoint_ReturnsComprehensiveHealthInfo()
     {
         // Act
@@ -87,9 +87,9 @@ public class HealthControllerSprint1Tests
         healthData.TryGetProperty("dependencies", out var dependencies).Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
+    [Test]
+    
+    
     public async Task HealthEndpoints_ConcurrentRequests_HandleLoadProperly()
     {
         // Arrange
@@ -111,9 +111,9 @@ public class HealthControllerSprint1Tests
         }
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
+    [Test]
+    
+    
     public async Task HealthEndpoints_ResponseTime_MeetsPerformanceRequirements()
     {
         // Arrange
@@ -128,9 +128,9 @@ public class HealthControllerSprint1Tests
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000, "Health check should respond within 1 second");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
+    [Test]
+    
+    
     public async Task HealthEndpoints_Headers_IncludeAppropriateContentType()
     {
         // Act
@@ -143,3 +143,4 @@ public class HealthControllerSprint1Tests
 
     #endregion
 }
+

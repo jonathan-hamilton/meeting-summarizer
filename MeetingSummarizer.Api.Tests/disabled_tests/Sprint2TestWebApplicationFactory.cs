@@ -155,3 +155,4 @@ namespace MeetingSummarizer.Api.Tests.Infrastructure
         }
     }
 }
+

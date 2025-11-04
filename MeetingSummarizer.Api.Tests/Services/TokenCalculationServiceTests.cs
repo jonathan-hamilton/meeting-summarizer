@@ -1,7 +1,7 @@
 using FluentAssertions;
 using MeetingSummarizer.Api.Services.TokenManagement;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using Moq;
 
 namespace MeetingSummarizer.Api.Tests.Services;
@@ -9,21 +9,21 @@ namespace MeetingSummarizer.Api.Tests.Services;
 /// <summary>
 /// Unit tests for TokenCalculationService
 /// </summary>
-[TestClass]
-[TestCategory("S6.3")]
+[TestFixture]
+
 public class TokenCalculationServiceTests
 {
     private ITokenCalculationService _tokenCalculationService = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         var mockLogger = new Mock<ILogger<TokenCalculationService>>();
         _tokenCalculationService = new TokenCalculationService(mockLogger.Object);
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_15MinuteMeeting_ReturnsCorrectCalculation()
     {
         // Act
@@ -38,8 +38,8 @@ public class TokenCalculationServiceTests
         result.CostInUsd.Should().Be(5.00m);
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_30MinuteMeeting_AppliesVolumeDiscount()
     {
         // Act
@@ -54,8 +54,8 @@ public class TokenCalculationServiceTests
         result.CostInUsd.Should().Be(9.00m);
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_60MinuteMeeting_MatchesSpecificationExample()
     {
         // This test validates against the specification example:
@@ -74,8 +74,8 @@ public class TokenCalculationServiceTests
         result.SavingsFromDiscount.Should().Be(6.00m); // $20.00 - $14.00 = $6.00 saved
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_BaseTokenCalculation_RoundsUpCorrectly()
     {
         // Test various durations that should round up to 15-minute increments
@@ -93,8 +93,8 @@ public class TokenCalculationServiceTests
         result31.BaseTokens.Should().Be(300);
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void GetVolumeDiscountMultiplier_VariousDurations_ReturnsCorrectMultiplier()
     {
         // Test various discount tiers
@@ -105,8 +105,8 @@ public class TokenCalculationServiceTests
         _tokenCalculationService.GetVolumeDiscountMultiplier(120).Should().Be(0.7); // Still 30% discount
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void GetVolumeDiscountPercentage_VariousDurations_ReturnsCorrectPercentage()
     {
         // Test various discount percentages
@@ -117,8 +117,8 @@ public class TokenCalculationServiceTests
         _tokenCalculationService.GetVolumeDiscountPercentage(120).Should().Be(30); // Still 30% discount
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateCostForTokens_VariousTokenCounts_ReturnsCorrectCost()
     {
         // Test cost calculations
@@ -128,8 +128,8 @@ public class TokenCalculationServiceTests
         _tokenCalculationService.CalculateCostForTokens(0).Should().Be(0.00m); // 0 tokens = $0.00
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_TimeSpanOverload_WorksCorrectly()
     {
         // Arrange
@@ -144,8 +144,8 @@ public class TokenCalculationServiceTests
         result.FinalTokens.Should().Be(180); // With 10% discount for 30-minute tier
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_GeneratesCorrectExplanation()
     {
         // Test explanation for 30-minute meeting
@@ -157,8 +157,8 @@ public class TokenCalculationServiceTests
         result15.Explanation.Should().Be("This 15-minute meeting requires 100 tokens (100 tokens per 15-minute increment).");
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateTokensRequired_InvalidDuration_ThrowsArgumentException()
     {
         // Act & Assert
@@ -169,8 +169,8 @@ public class TokenCalculationServiceTests
         act2.Should().Throw<ArgumentException>();
     }
 
-    [TestMethod]
-    [TestCategory("S6.3")]
+    [Test]
+    
     public void CalculateCostForTokens_NegativeTokens_ThrowsArgumentException()
     {
         // Act & Assert
@@ -178,3 +178,4 @@ public class TokenCalculationServiceTests
         act.Should().Throw<ArgumentException>();
     }
 }
+

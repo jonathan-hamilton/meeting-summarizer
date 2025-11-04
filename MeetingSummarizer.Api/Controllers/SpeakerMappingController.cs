@@ -427,4 +427,56 @@ public class SpeakerMappingController : ControllerBase
             throw;
         }
     }
+
+    /// <summary>
+    /// Create a single speaker mapping (simplified endpoint for testing)
+    /// </summary>
+    /// <param name="speakerMapping">Speaker mapping to create</param>
+    /// <returns>Created speaker mapping</returns>
+    [HttpPost("/api/speakers")]
+    [ProducesResponseType(typeof(SpeakerMapping), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<SpeakerMapping>> CreateSpeaker([FromBody] SpeakerMapping speakerMapping)
+    {
+        try
+        {
+            if (speakerMapping == null)
+            {
+                return BadRequest("Speaker mapping cannot be null");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            _logger.LogInformation("Creating speaker mapping for Speaker {SpeakerId} in transcription {TranscriptionId}",
+                speakerMapping.SpeakerId, speakerMapping.TranscriptionId);
+
+            // Create a request with the single mapping
+            var request = new SpeakerMappingRequest
+            {
+                TranscriptionId = speakerMapping.TranscriptionId,
+                Mappings = new List<SpeakerMapping> { speakerMapping }
+            };
+
+            // Use the existing service to save the mapping
+            var response = await _speakerMappingService.SaveSpeakerMappingsAsync(request);
+
+            if (response?.Mappings?.Any() == true)
+            {
+                var createdMapping = response.Mappings.First();
+                _logger.LogInformation("Successfully created speaker mapping for Speaker {SpeakerId}", speakerMapping.SpeakerId);
+                return CreatedAtAction(nameof(CreateSpeaker), createdMapping);
+            }
+
+            return StatusCode(500, "Failed to create speaker mapping");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create speaker mapping for Speaker {SpeakerId}", speakerMapping?.SpeakerId);
+            return StatusCode(500, "An error occurred while creating the speaker mapping");
+        }
+    }
 }

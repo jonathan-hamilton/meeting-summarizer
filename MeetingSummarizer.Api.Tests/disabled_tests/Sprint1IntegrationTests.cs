@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using System.Net;
 using System.Text.Json;
@@ -14,14 +14,14 @@ namespace MeetingSummarizer.Api.Tests.Integration;
 /// Sprint 1 integration tests covering complete end-to-end workflows
 /// Tests S1.3: File Upload to Transcription Integration
 /// </summary>
-[TestClass]
+[TestFixture]
 public class Sprint1IntegrationTests
 {
     private Sprint1TestWebApplicationFactory _factory = null!;
     private HttpClient _client = null!;
     private Mock<ITranscriptionService> _mockTranscriptionService = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         _factory = new Sprint1TestWebApplicationFactory();
@@ -29,7 +29,7 @@ public class Sprint1IntegrationTests
         _mockTranscriptionService = _factory.MockTranscriptionService;
     }
 
-    [TestCleanup]
+    [TearDown]
     public void Cleanup()
     {
         _client?.Dispose();
@@ -38,10 +38,10 @@ public class Sprint1IntegrationTests
 
     #region S1.3 Complete File Upload to Transcription Workflow Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task CompleteWorkflow_FileUploadToTranscriptionDisplay_EndToEndSuccess()
     {
         // Arrange - Setup complete end-to-end test scenario
@@ -100,10 +100,10 @@ public class Sprint1IntegrationTests
         transcription.SpeakerSegments.Should().OnlyContain(s => s.Confidence > 0.8);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task CompleteWorkflow_MultipleFileFormats_AllSupportedFormatsWork()
     {
         // Arrange
@@ -140,10 +140,10 @@ public class Sprint1IntegrationTests
         }
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task CompleteWorkflow_ServiceFailure_FallbackAndErrorHandling()
     {
         // Arrange - Setup service failure scenario
@@ -176,10 +176,10 @@ public class Sprint1IntegrationTests
         errorResponse.TranscriptionId.Should().NotBeNullOrEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task CompleteWorkflow_LargeFile_HandlesWithinLimits()
     {
         // Arrange - Test with large but valid file (100MB)
@@ -205,10 +205,10 @@ public class Sprint1IntegrationTests
         transcription.Status.Should().Be("Completed");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task CompleteWorkflow_ValidationToTranscription_ConsistentBehavior()
     {
         // Arrange
@@ -248,10 +248,10 @@ public class Sprint1IntegrationTests
         validationResult.GetProperty("fileSize").GetInt64().Should().Be(transcriptionResult.FileSize);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task CompleteWorkflow_ConcurrentTranscriptions_HandlesMultipleRequests()
     {
         // Arrange
@@ -293,10 +293,10 @@ public class Sprint1IntegrationTests
 
     #region S1.4 Production Configuration Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task ProductionReadiness_HealthChecksAndTranscription_WorkTogether()
     {
         // Arrange
@@ -334,10 +334,10 @@ public class Sprint1IntegrationTests
         transcription!.Status.Should().Be("Completed");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.4")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task ProductionReadiness_ErrorScenarios_LoggingAndMonitoring()
     {
         // Arrange - Test error scenarios for production monitoring
@@ -373,3 +373,4 @@ public class Sprint1IntegrationTests
 
     #endregion
 }
+
