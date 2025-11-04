@@ -334,6 +334,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServe
 
 // Note: Additional service registrations will be added in future increments
 
+// Add Health Checks
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 // Validate OpenAI and Azure configuration on startup
@@ -422,8 +425,8 @@ var isContainerMode = EnvironmentDetector.IsContainerEnvironment();
 tempLogger.LogInformation("🔧 Configuring middleware pipeline for {Mode} mode", 
     isContainerMode ? "Container" : "Two-Server");
 
-// Only redirect to HTTPS in production to avoid CORS issues in development
-if (!app.Environment.IsDevelopment())
+// Only redirect to HTTPS in production to avoid CORS issues in development and testing
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseHttpsRedirection();
 }
@@ -446,6 +449,7 @@ if (isContainerMode)
     
     // API endpoints
     app.MapControllers();
+    app.MapHealthChecks("/health");
     
     // SPA fallback routing for client-side routing
     app.MapFallbackToFile("index.html");
@@ -466,6 +470,7 @@ else
     
     // API endpoints only
     app.MapControllers();
+    app.MapHealthChecks("/health");
     
     // No static file serving or SPA fallback in two-server mode
 }

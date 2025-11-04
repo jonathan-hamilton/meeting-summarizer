@@ -1,13 +1,20 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Net.Http;
 using MeetingSummarizer.Api.Models;
+using MeetingSummarizer.Api.Tests.Helpers;
+using MeetingSummarizer.Api.Tests.Mocks;
+using MeetingSummarizer.Api.Data;
+using MeetingSummarizer.Api.Services.Summarization;
 
 namespace MeetingSummarizer.Api.Tests.Integration;
 
@@ -24,6 +31,8 @@ public class SummarizationIntegrationSprint2Tests
     [TestInitialize]
     public void Setup()
     {
+        var testJwtConfig = TestAuthenticationHelper.GetTestJwtConfiguration();
+        
         _factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
@@ -34,12 +43,67 @@ public class SummarizationIntegrationSprint2Tests
                     {
                         ["OpenAI:ApiKey"] = "test-key-for-integration-tests",
                         ["OpenAI:Model"] = "gpt-4",
-                        ["OpenAI:BaseUrl"] = "https://api.openai.com/v1"
+                        ["OpenAI:BaseUrl"] = "https://api.openai.com/v1",
+                        // Add JWT configuration for testing
+                        ["JWT:SecretKey"] = testJwtConfig["JWT:SecretKey"],
+                        ["JWT:Issuer"] = testJwtConfig["JWT:Issuer"],
+                        ["JWT:Audience"] = testJwtConfig["JWT:Audience"],
+                        // Configure in-memory database for testing
+                        ["ConnectionStrings:DefaultConnection"] = "Data Source=:memory:",
+                        // Add Azure Speech Services test configuration
+                        ["AzureSpeechServices:Key"] = "test-speech-key",
+                        ["AzureSpeechServices:Region"] = "eastus",
+                        ["AzureSpeechServices:Enabled"] = "false",
+                        // Add Stripe test configuration
+                        ["Stripe:SecretKey"] = "sk_test_test",
+                        ["Stripe:PublishableKey"] = "pk_test_test",
+                        ["Stripe:WebhookSecret"] = "whsec_test",
+                        // Add Azure Communication Services test configuration
+                        ["AzureCommunicationServices:ConnectionString"] = "endpoint=https://test.communication.azure.com/;accesskey=test"
                     });
+                });
+                
+                // Configure services for testing
+                builder.ConfigureServices(services =>
+                {
+                    // Remove all existing DbContext registrations
+                    var descriptors = services.Where(
+                        d => d.ServiceType == typeof(DbContextOptions<MeetingSummarizerDbContext>) ||
+                             d.ServiceType == typeof(MeetingSummarizerDbContext)).ToList();
+                    foreach (var descriptor in descriptors)
+                    {
+                        services.Remove(descriptor);
+                    }
+
+                    // Remove background services that might interfere with testing
+                    var backgroundServices = services.Where(d => 
+                        d.ServiceType == typeof(IHostedService) ||
+                        d.ImplementationType?.Name.Contains("TokenReservationCleanupService") == true).ToList();
+                    foreach (var descriptor in backgroundServices)
+                    {
+                        services.Remove(descriptor);
+                    }
+
+                    // Add in-memory database for testing
+                    services.AddDbContext<MeetingSummarizerDbContext>(options =>
+                    {
+                        options.UseInMemoryDatabase("TestDatabase_" + Guid.NewGuid().ToString());
+                    });
+
+                    // Replace real services with test mocks
+                    var summarizationDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ISummarizationService));
+                    if (summarizationDescriptor != null)
+                    {
+                        services.Remove(summarizationDescriptor);
+                    }
+                    services.AddScoped<ISummarizationService, MockSummarizationService>();
                 });
             });
 
         _client = _factory.CreateClient();
+        
+        // Configure authentication for all requests
+        TestAuthenticationHelper.SetAuthorizationHeader(_client);
     }
 
     [TestCleanup]
@@ -48,6 +112,23 @@ public class SummarizationIntegrationSprint2Tests
         _client?.Dispose();
         _factory?.Dispose();
     }
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Helper method to deserialize JSON responses with proper enum handling
+    /// </summary>
+    private static T DeserializeResponse<T>(string json)
+    {
+        var options = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
+        return JsonSerializer.Deserialize<T>(json, options) ?? throw new JsonException($"Failed to deserialize response to {typeof(T).Name}");
+    }
+
+    #endregion
 
     #region S2.3 Health Check Integration Tests
 
@@ -93,7 +174,11 @@ public class SummarizationIntegrationSprint2Tests
         // Assert
         response.EnsureSuccessStatusCode();
         var responseContent = await response.Content.ReadAsStringAsync();
-        var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        
+        // Debug: Print the actual JSON response
+        Console.WriteLine($"Actual API Response: {responseContent}");
+        
+        var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
 
         summaryResult.Should().NotBeNull();
         summaryResult!.Content.Should().NotBeNullOrEmpty();
@@ -126,7 +211,7 @@ public class SummarizationIntegrationSprint2Tests
         // Assert
         response.EnsureSuccessStatusCode();
         var responseContent = await response.Content.ReadAsStringAsync();
-        var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
 
         summaryResult.Should().NotBeNull();
         summaryResult!.SummaryType.Should().Be(SummaryStyle.Detailed);
@@ -157,7 +242,7 @@ public class SummarizationIntegrationSprint2Tests
         // Assert
         response.EnsureSuccessStatusCode();
         var responseContent = await response.Content.ReadAsStringAsync();
-        var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
 
         summaryResult.Should().NotBeNull();
         summaryResult!.SummaryType.Should().Be(SummaryStyle.ActionItems);
@@ -190,7 +275,7 @@ public class SummarizationIntegrationSprint2Tests
         // Assert
         response.EnsureSuccessStatusCode();
         var responseContent = await response.Content.ReadAsStringAsync();
-        var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
 
         summaryResult.Should().NotBeNull();
         summaryResult!.GeneratedFor.Should().Be("Executive Director");
@@ -243,7 +328,7 @@ public class SummarizationIntegrationSprint2Tests
         // Assert
         response.EnsureSuccessStatusCode();
         var responseContent = await response.Content.ReadAsStringAsync();
-        var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
 
         summaryResult.Should().NotBeNull();
         summaryResult!.UsedSpeakerMappings.Should().BeTrue();
@@ -402,7 +487,7 @@ public class SummarizationIntegrationSprint2Tests
         stopwatch.ElapsedMilliseconds.Should().BeLessThan(30000);
 
         var responseContent = await response.Content.ReadAsStringAsync();
-        var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
         summaryResult.Should().NotBeNull();
         summaryResult!.ProcessingTimeMs.Should().BeGreaterThan(0);
     }
@@ -439,7 +524,7 @@ public class SummarizationIntegrationSprint2Tests
         {
             response.EnsureSuccessStatusCode();
             var responseContent = await response.Content.ReadAsStringAsync();
-            var summaryResult = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var summaryResult = DeserializeResponse<SummaryResult>(responseContent);
             summaryResult.Should().NotBeNull();
             summaryResult!.Content.Should().NotBeNullOrEmpty();
         }
@@ -541,7 +626,7 @@ public class SummarizationIntegrationSprint2Tests
         // Assert
         summaryResponse.EnsureSuccessStatusCode();
         var responseContent = await summaryResponse.Content.ReadAsStringAsync();
-        var summary = JsonSerializer.Deserialize<SummaryResult>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var summary = DeserializeResponse<SummaryResult>(responseContent);
 
         summary.Should().NotBeNull();
         summary!.UsedSpeakerMappings.Should().BeTrue();
