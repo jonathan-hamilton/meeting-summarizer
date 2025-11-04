@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,13 +22,13 @@ namespace MeetingSummarizer.Api.Tests.Integration;
 /// Sprint 2 integration tests for AI-Powered Meeting Summarization
 /// Tests S2.3: AI-Powered Meeting Summarization Backend end-to-end workflows
 /// </summary>
-[TestClass]
+[TestFixture]
 public class SummarizationIntegrationSprint2Tests
 {
     private WebApplicationFactory<Program> _factory = null!;
     private HttpClient _client = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         var testJwtConfig = TestAuthenticationHelper.GetTestJwtConfiguration();
@@ -106,7 +106,7 @@ public class SummarizationIntegrationSprint2Tests
         TestAuthenticationHelper.SetAuthorizationHeader(_client);
     }
 
-    [TestCleanup]
+    [TearDown]
     public void Cleanup()
     {
         _client?.Dispose();
@@ -132,10 +132,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Health Check Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task HealthCheck_ReturnsHealthy()
     {
         // Act
@@ -151,10 +151,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Summary Generation Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_ValidRequest_ReturnsSummaryResponse()
     {
         // Arrange
@@ -188,10 +188,10 @@ public class SummarizationIntegrationSprint2Tests
         summaryResult.TokenCount.Should().BeGreaterThan(0);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_DetailedStyle_ReturnsDetailedSummaryWithActionItems()
     {
         // Arrange
@@ -219,10 +219,10 @@ public class SummarizationIntegrationSprint2Tests
         summaryResult.ActionItems!.Should().HaveCountGreaterThan(0);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_ActionItemsStyle_ExtractsActionItems()
     {
         // Arrange
@@ -251,10 +251,10 @@ public class SummarizationIntegrationSprint2Tests
         summaryResult.Content.Should().ContainAny("action", "task", "complete");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_WithTargetRole_IncludesRoleInResponse()
     {
         // Arrange
@@ -286,10 +286,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Role-Aware Summarization Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummary_WithSpeakerMappings_ReturnsEnhancedSummary()
     {
         // Arrange
@@ -339,10 +339,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Error Handling Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_InvalidRequest_ReturnsBadRequest()
     {
         // Arrange
@@ -362,10 +362,10 @@ public class SummarizationIntegrationSprint2Tests
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_TranscriptTooLong_ReturnsBadRequest()
     {
         // Arrange
@@ -385,10 +385,10 @@ public class SummarizationIntegrationSprint2Tests
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_InvalidMaxTokens_ReturnsBadRequest()
     {
         // Arrange
@@ -409,10 +409,10 @@ public class SummarizationIntegrationSprint2Tests
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_MalformedJson_ReturnsBadRequest()
     {
         // Arrange
@@ -430,10 +430,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Service Status Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GetSummaryServiceStatus_ReturnsServiceStatus()
     {
         // Act
@@ -457,10 +457,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Performance Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_PerformanceTest_CompletesWithinReasonableTime()
     {
         // Arrange
@@ -492,10 +492,10 @@ public class SummarizationIntegrationSprint2Tests
         summaryResult!.ProcessingTimeMs.Should().BeGreaterThan(0);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_MultipleConcurrentRequests_HandlesLoad()
     {
         // Arrange
@@ -534,10 +534,10 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 Content Type and Headers Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_ValidRequest_ReturnsJsonContentType()
     {
         // Arrange
@@ -558,10 +558,10 @@ public class SummarizationIntegrationSprint2Tests
         response.Content.Headers.ContentType?.MediaType.Should().Be("application/json");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummary_OptionsRequest_ReturnsAllowedMethods()
     {
         // Arrange
@@ -582,11 +582,11 @@ public class SummarizationIntegrationSprint2Tests
 
     #region S2.3 End-to-End Workflow Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Integration")]
-    [TestCategory("E2E")]
+    [Test]
+    
+    
+    
+    
     public async Task EndToEndWorkflow_CreateSpeakersAndGenerateRoleAwareSummary_Success()
     {
         // Arrange
@@ -637,3 +637,4 @@ public class SummarizationIntegrationSprint2Tests
 
     #endregion
 }
+

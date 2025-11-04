@@ -1,7 +1,8 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using MeetingSummarizer.Api.Models;
 
 namespace MeetingSummarizer.Api.Tests.Models;
@@ -10,14 +11,14 @@ namespace MeetingSummarizer.Api.Tests.Models;
 /// Sprint 2 tests for Summary models and validation
 /// Tests S2.3: AI-Powered Meeting Summarization Backend models
 /// </summary>
-[TestClass]
+[TestFixture]
 public class SummaryModelsSprint2Tests
 {
     #region S2.3 SummaryRequest Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_ValidModel_PassesValidation()
     {
         // Arrange
@@ -35,9 +36,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_MissingTranscript_FailsValidation()
     {
         // Arrange
@@ -55,9 +56,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().Contain(r => r.MemberNames.Contains(nameof(SummaryRequest.Transcript)));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_TranscriptTooLong_FailsValidation()
     {
         // Arrange
@@ -75,9 +76,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().Contain(r => r.MemberNames.Contains(nameof(SummaryRequest.Transcript)));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_MaxTokensTooHigh_FailsValidation()
     {
         // Arrange
@@ -95,9 +96,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().Contain(r => r.MemberNames.Contains(nameof(SummaryRequest.MaxTokens)));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_MaxTokensTooLow_FailsValidation()
     {
         // Arrange
@@ -119,9 +120,9 @@ public class SummaryModelsSprint2Tests
 
     #region S2.3 TranscriptionSummaryRequest Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void TranscriptionSummaryRequest_ValidModel_PassesValidation()
     {
         // Arrange
@@ -139,9 +140,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void TranscriptionSummaryRequest_MissingTranscriptionId_FailsValidation()
     {
         // Arrange
@@ -163,9 +164,9 @@ public class SummaryModelsSprint2Tests
 
     #region S2.3 SummaryOptions Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryOptions_DefaultValues_AreCorrect()
     {
         // Arrange & Act
@@ -178,9 +179,9 @@ public class SummaryModelsSprint2Tests
         options.TargetRole.Should().BeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryOptions_ValidConfiguration_PassesValidation()
     {
         // Arrange
@@ -199,9 +200,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryOptions_IncludeActionItems_ReturnsCorrectValue()
     {
         // Arrange & Act
@@ -215,9 +216,9 @@ public class SummaryModelsSprint2Tests
         actionItemsOptions.IncludeActionItems.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryOptions_IncludeKeyDecisions_ReturnsCorrectValue()
     {
         // Arrange & Act
@@ -235,9 +236,9 @@ public class SummaryModelsSprint2Tests
 
     #region S2.3 SummaryResult Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_ValidResult_HasCorrectProperties()
     {
         // Arrange & Act
@@ -269,9 +270,9 @@ public class SummaryModelsSprint2Tests
         result.KeyDecisions.Should().HaveCount(2);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_FromSuccess_CreatesValidResult()
     {
         // Arrange
@@ -295,9 +296,9 @@ public class SummaryModelsSprint2Tests
         result.GeneratedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_FromError_CreatesErrorResult()
     {
         // Arrange
@@ -323,9 +324,9 @@ public class SummaryModelsSprint2Tests
 
     #region S2.3 SummaryStyle Enum Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryStyle_HasAllExpectedValues()
     {
         // Act & Assert
@@ -339,9 +340,9 @@ public class SummaryModelsSprint2Tests
         values.Should().HaveCount(5);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryStyle_EnumValues_HaveCorrectIntegerValues()
     {
         // Assert
@@ -356,9 +357,9 @@ public class SummaryModelsSprint2Tests
 
     #region S2.3 JSON Serialization Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_JsonSerialization_RoundTripSuccessful()
     {
         // Arrange
@@ -382,9 +383,9 @@ public class SummaryModelsSprint2Tests
         deserialized.TargetRole.Should().Be(original.TargetRole);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void TranscriptionSummaryRequest_JsonSerialization_RoundTripSuccessful()
     {
         // Arrange
@@ -408,9 +409,9 @@ public class SummaryModelsSprint2Tests
         deserialized.TargetRole.Should().Be(original.TargetRole);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_JsonSerialization_RoundTripSuccessful()
     {
         // Arrange
@@ -446,18 +447,19 @@ public class SummaryModelsSprint2Tests
         deserialized.ActionItems.Should().BeEquivalentTo(original.ActionItems);
         deserialized.KeyDecisions.Should().BeEquivalentTo(original.KeyDecisions);
     }
-
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
     public void SummaryStyle_JsonSerialization_SerializesAsString()
     {
         // Arrange
         var style = SummaryStyle.ExecutiveSummary;
+        var options = new JsonSerializerOptions
+        {
+            Converters = { new JsonStringEnumConverter() }
+        };
 
         // Act
-        var json = JsonSerializer.Serialize(style);
-        var deserialized = JsonSerializer.Deserialize<SummaryStyle>(json);
+        var json = JsonSerializer.Serialize(style, options);
+        var deserialized = JsonSerializer.Deserialize<SummaryStyle>(json, options);
 
         // Assert
         deserialized.Should().Be(SummaryStyle.ExecutiveSummary);
@@ -468,9 +470,9 @@ public class SummaryModelsSprint2Tests
 
     #region S2.3 Edge Cases and Integration Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_WithNullOptionalFields_PassesValidation()
     {
         // Arrange
@@ -490,9 +492,9 @@ public class SummaryModelsSprint2Tests
         request.TargetRole.Should().BeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_WithNullOptionalCollections_IsValid()
     {
         // Arrange
@@ -518,9 +520,9 @@ public class SummaryModelsSprint2Tests
         result.KeyDecisions.Should().BeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_WithEmptyCollections_IsValid()
     {
         // Arrange
@@ -547,9 +549,9 @@ public class SummaryModelsSprint2Tests
         result.KeyDecisions.Should().NotBeNull().And.BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_BoundaryValues_PassValidation()
     {
         // Arrange
@@ -567,9 +569,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryRequest_MaximumBoundaryValues_PassValidation()
     {
         // Arrange
@@ -587,9 +589,9 @@ public class SummaryModelsSprint2Tests
         validationResults.Should().BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
+    [Test]
+    
+    
     public void SummaryResult_TokenCountEstimation_IsReasonable()
     {
         // Arrange
@@ -615,3 +617,4 @@ public class SummaryModelsSprint2Tests
 
     #endregion
 }
+

@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Tests.TestData;
@@ -10,14 +10,14 @@ namespace MeetingSummarizer.Api.Tests.Models;
 /// Sprint 1 tests for TranscribeRequest and related models
 /// Tests request/response models supporting S1.1: Audio Transcription Backend Service
 /// </summary>
-[TestClass]
+[TestFixture]
 public class TranscribeRequestSprint1Tests
 {
     #region S1.1 TranscribeRequest Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscribeRequest_ValidRequest_PassesValidation()
     {
         // Arrange
@@ -33,9 +33,9 @@ public class TranscribeRequestSprint1Tests
         validationResults.Should().BeEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscribeRequest_NullAudioFile_FailsValidation()
     {
         // Arrange
@@ -57,12 +57,10 @@ public class TranscribeRequestSprint1Tests
         validationResults[0].ErrorMessage.Should().Be("Audio file is required");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow(-0.1)]
-    [DataRow(1.1)]
-    [DataRow(2.0)]
+    [Test]
+    [TestCase(-0.1)]
+    [TestCase(1.1)]
+    [TestCase(2.0)]
     public void TranscribeRequest_InvalidTemperature_FailsValidation(double invalidTemperature)
     {
         // Arrange
@@ -82,12 +80,10 @@ public class TranscribeRequestSprint1Tests
         validationResults.Should().Contain(r => r.ErrorMessage!.Contains("Temperature must be between 0.0 and 1.0"));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow(0.0)]
-    [DataRow(0.5)]
-    [DataRow(1.0)]
+    [Test]
+    [TestCase(0.0)]
+    [TestCase(0.5)]
+    [TestCase(1.0)]
     public void TranscribeRequest_ValidTemperature_PassesValidation(double validTemperature)
     {
         // Arrange
@@ -106,9 +102,9 @@ public class TranscribeRequestSprint1Tests
         isValid.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscribeRequest_OptionalFields_AllowNullValues()
     {
         // Arrange
@@ -134,9 +130,9 @@ public class TranscribeRequestSprint1Tests
 
     #region S1.1 TranscriptionResult Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResult_NewInstance_HasEmptyDefaults()
     {
         // Act
@@ -149,9 +145,9 @@ public class TranscribeRequestSprint1Tests
         result.Duration.Should().BeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResult_WithSegments_HandlesMultipleSpeakers()
     {
         // Arrange
@@ -170,9 +166,9 @@ public class TranscribeRequestSprint1Tests
 
     #region S1.1 SpeakerSegment Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void SpeakerSegment_NewInstance_HasDefaults()
     {
         // Act
@@ -186,9 +182,9 @@ public class TranscribeRequestSprint1Tests
         segment.Confidence.Should().BeNull();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void SpeakerSegment_WithValues_StoresDataCorrectly()
     {
         // Arrange & Act
@@ -213,9 +209,9 @@ public class TranscribeRequestSprint1Tests
 
     #region S1.1 TranscriptionResponse Model Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_FromResult_CreatesCorrectResponse()
     {
         // Arrange
@@ -245,9 +241,9 @@ public class TranscribeRequestSprint1Tests
         response.CompletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_FromError_CreatesFailedResponse()
     {
         // Arrange
@@ -275,9 +271,9 @@ public class TranscribeRequestSprint1Tests
         response.CompletedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromMinutes(1));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_HasSpeakerDiarization_WithSegments_ReturnsTrue()
     {
         // Arrange
@@ -293,9 +289,9 @@ public class TranscribeRequestSprint1Tests
         response.HasSpeakerDiarization.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_HasSpeakerDiarization_WithoutSegments_ReturnsFalse()
     {
         // Arrange
@@ -308,9 +304,9 @@ public class TranscribeRequestSprint1Tests
         response.HasSpeakerDiarization.Should().BeFalse();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_HasSpeakerDiarization_WithEmptySegments_ReturnsFalse()
     {
         // Arrange
@@ -323,9 +319,9 @@ public class TranscribeRequestSprint1Tests
         response.HasSpeakerDiarization.Should().BeFalse();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_SingleSpeaker_CalculatesCorrectSpeakerCount()
     {
         // Arrange
@@ -341,9 +337,9 @@ public class TranscribeRequestSprint1Tests
         response.SpeakerSegments![0].Speaker.Should().Be("Speaker 1");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void TranscriptionResponse_NoConfidenceScores_HandlesGracefully()
     {
         // Arrange
@@ -366,3 +362,4 @@ public class TranscribeRequestSprint1Tests
 
     #endregion
 }
+

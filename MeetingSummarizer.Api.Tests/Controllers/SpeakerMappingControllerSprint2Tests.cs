@@ -9,12 +9,12 @@ using MeetingSummarizer.Api.Models;
 using MeetingSummarizer.Api.Services.Interfaces;
 using MeetingSummarizer.Api.Services.SpeakerMapping;
 using MeetingSummarizer.Api.Tests.TestData;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace MeetingSummarizer.Api.Tests.Controllers
 {
-    [TestClass]
-    [TestCategory("Sprint2")]
+    [TestFixture]
+    
     public class SpeakerMappingControllerSprint2Tests
     {
         private Mock<ISpeakerMappingService> _mockSpeakerMappingService = null!;
@@ -24,7 +24,7 @@ namespace MeetingSummarizer.Api.Tests.Controllers
         private Mock<ILogger<SpeakerMappingController>> _mockLogger = null!;
         private SpeakerMappingController _controller = null!;
 
-        [TestInitialize]
+        [SetUp]
         public void Setup()
         {
             // Create in-memory database
@@ -46,7 +46,7 @@ namespace MeetingSummarizer.Api.Tests.Controllers
                 _mockLogger.Object);
         }
 
-        [TestCleanup]
+        [TearDown]
         public void Cleanup()
         {
             _context?.Dispose();
@@ -54,8 +54,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
 
         #region SaveSpeakerMappings Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappings_WithValidRequest_ShouldReturnOk()
         {
             // Arrange
@@ -74,8 +74,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             okResult!.Value.Should().BeEquivalentTo(expectedResponse);
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappings_WithNullRequest_ShouldReturnBadRequest()
         {
             // Act
@@ -85,8 +85,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappings_WithEmptyMappings_ShouldReturnBadRequest()
         {
             // Arrange
@@ -99,8 +99,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task SaveSpeakerMappings_ServiceThrowsException_ShouldReturnInternalServerError()
         {
             // Arrange
@@ -121,8 +121,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
 
         #region GetSpeakerMappings Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappings_WithValidTranscriptionId_ShouldReturnOk()
         {
             // Arrange
@@ -141,8 +141,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             okResult!.Value.Should().BeEquivalentTo(expectedResponse);
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappings_WithNullTranscriptionId_ShouldReturnBadRequest()
         {
             // Act
@@ -152,8 +152,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappings_WithEmptyTranscriptionId_ShouldReturnBadRequest()
         {
             // Act
@@ -163,8 +163,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappings_TranscriptionNotFound_ShouldReturnNotFound()
         {
             // Arrange
@@ -179,8 +179,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Result.Should().BeOfType<NotFoundResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task GetSpeakerMappings_ServiceThrowsException_ShouldReturnInternalServerError()
         {
             // Arrange
@@ -201,8 +201,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
 
         #region DeleteSpeakerMappings Tests - S2.2
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappings_WithValidTranscriptionId_ShouldReturnNoContent()
         {
             // Arrange
@@ -217,8 +217,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Should().BeOfType<NoContentResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappings_WithNullTranscriptionId_ShouldReturnBadRequest()
         {
             // Act
@@ -228,8 +228,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappings_WithEmptyTranscriptionId_ShouldReturnBadRequest()
         {
             // Act
@@ -239,8 +239,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Should().BeOfType<BadRequestObjectResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappings_TranscriptionNotFound_ShouldReturnNotFound()
         {
             // Arrange
@@ -255,8 +255,8 @@ namespace MeetingSummarizer.Api.Tests.Controllers
             result.Should().BeOfType<NotFoundResult>();
         }
 
-        [TestMethod]
-        [TestCategory("S2.2")]
+        [Test]
+        
         public async Task DeleteSpeakerMappings_ServiceThrowsException_ShouldReturnInternalServerError()
         {
             // Arrange
@@ -276,3 +276,4 @@ namespace MeetingSummarizer.Api.Tests.Controllers
         #endregion
     }
 }
+

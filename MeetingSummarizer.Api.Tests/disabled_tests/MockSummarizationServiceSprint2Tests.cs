@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -11,13 +11,13 @@ namespace MeetingSummarizer.Api.Tests.Services;
 /// Sprint 2 tests for MockSummarizationService development fallback
 /// Tests S2.3: AI-Powered Meeting Summarization Backend mock service
 /// </summary>
-[TestClass]
+[TestFixture]
 public class MockSummarizationServiceSprint2Tests
 {
     private Mock<ILogger<MockSummarizationService>> _mockLogger = null!;
     private MockSummarizationService _service = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         _mockLogger = new Mock<ILogger<MockSummarizationService>>();
@@ -26,10 +26,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Summarization Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_BriefStyle_ReturnsBriefMockSummary()
     {
         // Arrange
@@ -53,10 +53,10 @@ public class MockSummarizationServiceSprint2Tests
         result.GeneratedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_DetailedStyle_ReturnsDetailedMockSummaryWithActionItems()
     {
         // Arrange
@@ -80,10 +80,10 @@ public class MockSummarizationServiceSprint2Tests
         result.ActionItems![0].Should().Contain("Complete project documentation");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_ActionItemsStyle_ReturnsActionItemsFocusedSummary()
     {
         // Arrange
@@ -108,10 +108,10 @@ public class MockSummarizationServiceSprint2Tests
         result.ActionItems!.Should().Contain(item => item.Contains("Schedule follow-up"));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_KeyDecisionsStyle_ReturnsKeyDecisionsSummary()
     {
         // Arrange
@@ -135,10 +135,10 @@ public class MockSummarizationServiceSprint2Tests
         result.KeyDecisions!.Should().Contain(decision => decision.Contains("Implement API-first design"));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_ExecutiveSummaryStyle_ReturnsExecutiveLevelSummary()
     {
         // Arrange
@@ -164,10 +164,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Role-Aware Summarization Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_WithSpeakerMappings_ReturnsRoleAwareMockSummary()
     {
         // Arrange
@@ -194,10 +194,10 @@ public class MockSummarizationServiceSprint2Tests
         result.Content.Should().Contain("role-aware summary");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_WithTargetRole_IncludesTargetRoleInSummary()
     {
         // Arrange
@@ -225,10 +225,10 @@ public class MockSummarizationServiceSprint2Tests
         result.Content.Should().Contain("Bob Chen (Senior Developer)");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_EmptySpeakerMappings_ReturnsBasicSummary()
     {
         // Arrange
@@ -254,10 +254,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Error Handling Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_NullTranscript_ThrowsArgumentException()
     {
         // Arrange
@@ -269,10 +269,10 @@ public class MockSummarizationServiceSprint2Tests
             () => _service.GenerateSummaryAsync(nullTranscript!, options));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_EmptyTranscript_ThrowsArgumentException()
     {
         // Arrange
@@ -284,10 +284,10 @@ public class MockSummarizationServiceSprint2Tests
             () => _service.GenerateSummaryAsync(emptyTranscript, options));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_TranscriptTooLong_ThrowsArgumentException()
     {
         // Arrange
@@ -299,10 +299,10 @@ public class MockSummarizationServiceSprint2Tests
             () => _service.GenerateSummaryAsync(veryLongTranscript, options));
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_NullSpeakerMappings_ThrowsArgumentNullException()
     {
         // Arrange
@@ -319,10 +319,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Service Availability Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task IsServiceAvailableAsync_MockService_AlwaysReturnsTrue()
     {
         // Act
@@ -332,10 +332,10 @@ public class MockSummarizationServiceSprint2Tests
         result.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task IsServiceAvailableAsync_WithCancellation_ReturnsTrue()
     {
         // Arrange
@@ -348,10 +348,10 @@ public class MockSummarizationServiceSprint2Tests
         result.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public void GetServiceStatus_MockService_ReturnsValidJsonStatus()
     {
         // Act
@@ -373,10 +373,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Performance Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_SimulatesRealisticProcessingTime()
     {
         // Arrange
@@ -390,10 +390,10 @@ public class MockSummarizationServiceSprint2Tests
         result.ProcessingTimeMs.Should().BeInRange(100, 1000); // Mock simulates 100-1000ms
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_SimulatesIncreasedProcessingTime()
     {
         // Arrange
@@ -412,10 +412,10 @@ public class MockSummarizationServiceSprint2Tests
         result.ProcessingTimeMs.Should().BeInRange(150, 1200);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_ConsistentTokenCounting()
     {
         // Arrange
@@ -434,10 +434,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Content Variation Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_DifferentStyles_ProduceDifferentContent()
     {
         // Arrange
@@ -461,10 +461,10 @@ public class MockSummarizationServiceSprint2Tests
         actionItemsResult.Content.Should().Contain("Action Items");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_WithTargetRole_IncludesRoleInContent()
     {
         // Arrange
@@ -487,10 +487,10 @@ public class MockSummarizationServiceSprint2Tests
 
     #region S2.3 Mock Logging Tests
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateSummaryAsync_LogsServiceUsage()
     {
         // Arrange
@@ -512,10 +512,10 @@ public class MockSummarizationServiceSprint2Tests
             Times.AtLeastOnce);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint2")]
-    [TestCategory("S2.3")]
-    [TestCategory("Mock")]
+    [Test]
+    
+    
+    
     public async Task GenerateRoleAwareSummaryAsync_LogsRoleAwareUsage()
     {
         // Arrange
@@ -542,3 +542,4 @@ public class MockSummarizationServiceSprint2Tests
 
     #endregion
 }
+

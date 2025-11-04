@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using System.Net;
 using System.Text.Json;
@@ -14,14 +14,14 @@ namespace MeetingSummarizer.Api.Tests.Controllers;
 /// Sprint 1 tests for SummaryController transcription endpoints
 /// Tests S1.1: Audio Transcription Backend Service functionality
 /// </summary>
-[TestClass]
+[TestFixture]
 public class SummaryControllerSprint1Tests
 {
     private Sprint1TestWebApplicationFactory _factory = null!;
     private HttpClient _client = null!;
     private Mock<IOpenAIService> _mockOpenAIService = null!;
 
-    [TestInitialize]
+    [SetUp]
     public void Setup()
     {
         _factory = new Sprint1TestWebApplicationFactory();
@@ -29,7 +29,7 @@ public class SummaryControllerSprint1Tests
         _mockOpenAIService = _factory.MockOpenAIService;
     }
 
-    [TestCleanup]
+    [TearDown]
     public void Cleanup()
     {
         _client?.Dispose();
@@ -38,9 +38,9 @@ public class SummaryControllerSprint1Tests
 
     #region S1.1 Audio Transcription Backend Service Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_ValidAudioFile_ReturnsSuccessfulTranscription()
     {
         // Arrange
@@ -76,9 +76,9 @@ public class SummaryControllerSprint1Tests
         transcriptionResponse.TranscriptionId.Should().NotBeNullOrEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_WithSpeakerDiarization_ReturnsProperSpeakerSegments()
     {
         // Arrange
@@ -112,14 +112,14 @@ public class SummaryControllerSprint1Tests
         segments.All(s => !string.IsNullOrEmpty(s.Text)).Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow("test.mp3", "audio/mpeg")]
-    [DataRow("test.wav", "audio/wav")]
-    [DataRow("test.m4a", "audio/mp4")]
-    [DataRow("test.flac", "audio/flac")]
-    [DataRow("test.ogg", "audio/ogg")]
+    [Test]
+    
+    
+    
+    
+    
+    
+    
     public async Task TranscribeAudio_SupportedAudioFormats_AcceptsAllValidFormats(string fileName, string contentType)
     {
         // Arrange
@@ -145,9 +145,9 @@ public class SummaryControllerSprint1Tests
         transcriptionResponse.FileName.Should().Be(fileName);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_OpenAIServiceFailure_ReturnsServiceUnavailable()
     {
         // Arrange
@@ -177,9 +177,9 @@ public class SummaryControllerSprint1Tests
         errorResponse.ProcessingTimeMs.Should().BeGreaterThan(0);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_AuthenticationFailure_ReturnsUnauthorized()
     {
         // Arrange
@@ -204,9 +204,9 @@ public class SummaryControllerSprint1Tests
         errorResponse.ErrorMessage.Should().Be("Authentication failed with OpenAI service");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_TimeoutFailure_ReturnsRequestTimeout()
     {
         // Arrange
@@ -231,9 +231,9 @@ public class SummaryControllerSprint1Tests
         errorResponse.ErrorMessage.Should().Be("Transcription request timed out");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_FileIOError_ReturnsBadRequest()
     {
         // Arrange
@@ -260,9 +260,9 @@ public class SummaryControllerSprint1Tests
 
     #region Enhanced Transcription Endpoint Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudioEnhanced_ValidAudioFile_ReturnsEnhancedTranscription()
     {
         // Arrange
@@ -296,9 +296,9 @@ public class SummaryControllerSprint1Tests
 
     #region File Validation Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_OversizedFile_ReturnsBadRequest()
     {
         // Arrange
@@ -326,9 +326,9 @@ public class SummaryControllerSprint1Tests
         }
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_UndersizedFile_ReturnsBadRequest()
     {
         // Arrange
@@ -347,9 +347,9 @@ public class SummaryControllerSprint1Tests
         errorData.GetProperty("error").GetString().Should().Contain("too small");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_UnsupportedFileFormat_ReturnsBadRequest()
     {
         // Arrange
@@ -368,9 +368,9 @@ public class SummaryControllerSprint1Tests
         errorData.GetProperty("error").GetString().Should().Contain("supported");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_EmptyFile_ReturnsBadRequest()
     {
         // Arrange
@@ -389,9 +389,9 @@ public class SummaryControllerSprint1Tests
         errorData.GetProperty("error").GetString().Should().Contain("empty");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task TranscribeAudio_NoFile_ReturnsBadRequest()
     {
         // Arrange
@@ -409,9 +409,9 @@ public class SummaryControllerSprint1Tests
 
     #region Validation Endpoint Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task ValidateAudioFile_ValidFile_ReturnsSuccessfulValidation()
     {
         // Arrange
@@ -432,9 +432,9 @@ public class SummaryControllerSprint1Tests
         validationResult.GetProperty("fileSize").GetInt64().Should().Be(validFile.Length);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task ValidateAudioFile_InvalidFile_ReturnsValidationErrors()
     {
         // Arrange
@@ -458,9 +458,9 @@ public class SummaryControllerSprint1Tests
 
     #region Transcription Status Endpoint Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public async Task GetTranscription_ValidId_ReturnsTranscriptionStatus()
     {
         // Arrange
@@ -482,3 +482,4 @@ public class SummaryControllerSprint1Tests
 
     #endregion
 }
+

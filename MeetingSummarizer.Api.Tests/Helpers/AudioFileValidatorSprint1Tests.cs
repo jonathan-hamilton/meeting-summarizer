@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 using FluentAssertions;
 using MeetingSummarizer.Api.Helpers;
 using MeetingSummarizer.Api.Tests.TestData;
@@ -9,19 +9,17 @@ namespace MeetingSummarizer.Api.Tests.Helpers;
 /// Sprint 1 tests for AudioFileValidator
 /// Tests file validation supporting S1.1: Audio Transcription Backend Service
 /// </summary>
-[TestClass]
+[TestFixture]
 public class AudioFileValidatorSprint1Tests
 {
     #region S1.1 File Format Validation Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow("test.mp3", "audio/mpeg")]
-    [DataRow("test.wav", "audio/wav")]
-    [DataRow("test.m4a", "audio/mp4")]
-    [DataRow("test.flac", "audio/flac")]
-    [DataRow("test.ogg", "audio/ogg")]
+    [Test]
+    [TestCase("test.mp3", "audio/mpeg")]
+    [TestCase("test.wav", "audio/wav")]
+    [TestCase("test.m4a", "audio/mp4")]
+    [TestCase("test.flac", "audio/flac")]
+    [TestCase("test.ogg", "audio/ogg")]
     public void ValidateAudioFile_SupportedFormats_ReturnsValid(string fileName, string contentType)
     {
         // Arrange
@@ -35,14 +33,12 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().NotBeNullOrEmpty();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow("document.pdf", "application/pdf")]
-    [DataRow("video.mp4", "video/mp4")]
-    [DataRow("image.jpg", "image/jpeg")]
-    [DataRow("text.txt", "text/plain")]
-    [DataRow("archive.zip", "application/zip")]
+    [Test]
+    [TestCase("document.pdf", "application/pdf")]
+    [TestCase("video.mp4", "video/mp4")]
+    [TestCase("image.jpg", "image/jpeg")]
+    [TestCase("text.txt", "text/plain")]
+    [TestCase("archive.zip", "application/zip")]
     public void ValidateAudioFile_UnsupportedFormats_ReturnsInvalid(string fileName, string contentType)
     {
         // Arrange
@@ -56,9 +52,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("supported");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_NoFileExtension_ReturnsInvalid()
     {
         // Arrange
@@ -76,9 +72,9 @@ public class AudioFileValidatorSprint1Tests
 
     #region S1.1 File Size Validation Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_ValidFileSize_ReturnsValid()
     {
         // Arrange - 5MB file (well within 1GB limit)
@@ -91,9 +87,9 @@ public class AudioFileValidatorSprint1Tests
         result.IsValid.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_OversizedFile_ReturnsInvalid()
     {
         // Arrange - 1.2GB file (exceeds 1GB limit)
@@ -107,9 +103,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("1GB limit");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_UndersizedFile_ReturnsInvalid()
     {
         // Arrange - 512 byte file (below 1KB minimum)
@@ -123,9 +119,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("too small");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_EmptyFile_ReturnsInvalid()
     {
         // Arrange
@@ -139,9 +135,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("empty");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_NullFile_ReturnsInvalid()
     {
         // Act
@@ -152,9 +148,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("required");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_MaximumValidSize_ReturnsValid()
     {
         // Arrange - File just at the 1GB limit
@@ -167,9 +163,9 @@ public class AudioFileValidatorSprint1Tests
         result.IsValid.Should().BeTrue();
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_MinimumValidSize_ReturnsValid()
     {
         // Arrange - File just at the 1KB minimum
@@ -186,9 +182,9 @@ public class AudioFileValidatorSprint1Tests
 
     #region S1.1 File Name Validation Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_EmptyFileName_ReturnsInvalid()
     {
         // Arrange
@@ -202,9 +198,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("File name is required");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_WhitespaceFileName_ReturnsInvalid()
     {
         // Arrange
@@ -218,9 +214,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("File name is required");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_TooLongFileName_ReturnsInvalid()
     {
         // Arrange - File name longer than 255 characters
@@ -235,15 +231,14 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("too long");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow("file<name>.mp3")]
-    [DataRow("file|name.mp3")]
-    [DataRow("file\"name.mp3")]
-    [DataRow("file:name.mp3")]
-    [DataRow("file*name.mp3")]
-    [DataRow("file?name.mp3")]
+    [Test]
+    [TestCase("file<name>.mp3")]
+    [TestCase("file|name.mp3")]
+    [TestCase("file\"name.mp3")]
+    [TestCase("file:name.mp3")]
+    [TestCase("file*name.mp3")]
+    [TestCase("file?name.mp3")]
+    [TestCase("file\\name.mp3")]
     public void ValidateAudioFile_DangerousFileNameCharacters_ReturnsInvalid(string fileName)
     {
         // Arrange
@@ -257,9 +252,9 @@ public class AudioFileValidatorSprint1Tests
         result.Message.Should().Contain("invalid characters");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidateAudioFile_ValidFileName_ReturnsValid()
     {
         // Arrange
@@ -276,14 +271,13 @@ public class AudioFileValidatorSprint1Tests
 
     #region Utility Method Tests
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
-    [DataRow(1024L, "1 KB")]
-    [DataRow(1048576L, "1 MB")]
-    [DataRow(1073741824L, "1 GB")]
-    [DataRow(2560L, "2.5 KB")]
-    [DataRow(5242880L, "5 MB")]
+    [Test]
+    [TestCase(0L, "0 B")]
+    [TestCase(1023L, "1023 B")]
+    [TestCase(1024L, "1 KB")]
+    [TestCase(1536L, "1.5 KB")]
+    [TestCase(1048576L, "1 MB")]
+    [TestCase(1073741824L, "1 GB")]
     public void FormatFileSize_VariousSizes_FormatsCorrectly(long bytes, string expected)
     {
         // Act
@@ -293,9 +287,9 @@ public class AudioFileValidatorSprint1Tests
         result.Should().Be(expected);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void SupportedExtensions_Contains_RequiredAudioFormats()
     {
         // Assert
@@ -306,9 +300,9 @@ public class AudioFileValidatorSprint1Tests
         AudioFileValidator.SupportedExtensions.Should().Contain(".ogg");
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void FileSizeConstants_HaveCorrectValues()
     {
         // Assert
@@ -317,9 +311,9 @@ public class AudioFileValidatorSprint1Tests
         AudioFileValidator.MaxFileNameLength.Should().Be(255);
     }
 
-    [TestMethod]
-    [TestCategory("Sprint1")]
-    [TestCategory("S1.1")]
+    [Test]
+    
+    
     public void ValidMimeTypes_Contains_RequiredMimeTypes()
     {
         // Assert
@@ -332,3 +326,4 @@ public class AudioFileValidatorSprint1Tests
 
     #endregion
 }
+

@@ -47,3 +47,4 @@ public class Sprint1TestWebApplicationFactory : WebApplicationFactory<Program>
         base.Dispose(disposing);
     }
 }
+

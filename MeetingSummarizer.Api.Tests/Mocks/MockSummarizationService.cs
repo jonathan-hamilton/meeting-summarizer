@@ -18,11 +18,17 @@ public class MockSummarizationService : ISummarizationService
             SummaryId = Guid.NewGuid().ToString(),
             TranscriptionId = "test-transcription-id",
             SummaryType = options.Style,
-            Content = $"Test summary for transcript: {transcript.Substring(0, Math.Min(50, transcript.Length))}...",
+            Content = options.Style == SummaryStyle.ActionItems 
+                ? $"Test summary with action items to complete: task 1 - database optimization, action 2 - review requirements. Content: {transcript.Substring(0, Math.Min(50, transcript.Length))}..."
+                : $"Test summary for transcript: {transcript.Substring(0, Math.Min(50, transcript.Length))}...",
             GeneratedAt = DateTime.UtcNow,
             ProcessingTimeMs = 100,
             TokenCount = 50,
-            UsedSpeakerMappings = false
+            UsedSpeakerMappings = false,
+            GeneratedFor = options.TargetRole,
+            ActionItems = options.Style == SummaryStyle.ActionItems || options.Style == SummaryStyle.Detailed 
+                ? new List<string> { "Test action item 1", "Test action item 2" } 
+                : null
         };
 
         return Task.FromResult(result);
@@ -34,16 +40,25 @@ public class MockSummarizationService : ISummarizationService
         SummaryOptions options,
         CancellationToken cancellationToken = default)
     {
+        // Include speaker names and roles in the content to satisfy test expectations
+        var speakerInfo = speakerMappings.Any() 
+            ? string.Join(", ", speakerMappings.Select(sm => $"{sm.Name} ({sm.Role})"))
+            : "No speakers";
+            
         var result = new SummaryResult
         {
             SummaryId = Guid.NewGuid().ToString(),
             TranscriptionId = "test-transcription-id",
             SummaryType = options.Style,
-            Content = $"Test role-aware summary for transcript with {speakerMappings.Count} speakers: {transcript.Substring(0, Math.Min(50, transcript.Length))}...",
+            Content = $"Test role-aware summary for transcript with {speakerMappings.Count} speakers: {speakerInfo}. Content: {transcript.Substring(0, Math.Min(50, transcript.Length))}...",
             GeneratedAt = DateTime.UtcNow,
             ProcessingTimeMs = 150,
             TokenCount = 75,
-            UsedSpeakerMappings = true
+            UsedSpeakerMappings = true,
+            GeneratedFor = options.TargetRole,
+            ActionItems = options.Style == SummaryStyle.ActionItems || options.Style == SummaryStyle.Detailed 
+                ? new List<string> { "Test role-aware action item 1", "Test role-aware action item 2" } 
+                : null
         };
 
         return Task.FromResult(result);
@@ -102,6 +117,7 @@ public class MockSummarizationService : ISummarizationService
 
     public string GetServiceStatus()
     {
-        return "Mock Summarization Service - Available for Testing";
+        return "Mock Summarization Service - Available for Testing. Supports styles: Brief, Detailed, ExecutiveSummary, ActionItems. Features: KeyDecisions, NextSteps, ActionItems extraction.";
     }
 }
+
