@@ -264,6 +264,25 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         }}
       />
       
+      {/* Debug indicator for mobile testing */}
+      <Typography 
+        variant="caption" 
+        sx={{ 
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          backgroundColor: 'warning.main',
+          color: 'white',
+          px: 1,
+          py: 0.5,
+          borderRadius: 1,
+          fontSize: '0.7rem',
+          fontWeight: 'bold',
+        }}
+      >
+        DESKTOP
+      </Typography>
+      
       <Typography 
         variant={isMobile ? "h6" : "h6"} 
         gutterBottom 

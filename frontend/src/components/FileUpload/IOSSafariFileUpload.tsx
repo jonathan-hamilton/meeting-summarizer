@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import {
   Paper,
   Typography,
@@ -8,6 +8,12 @@ import { CloudUpload } from '@mui/icons-material';
 import { type FileRejection } from 'react-dropzone';
 import { isValidAudioFile, formatFileSize } from './validation';
 import { MAX_FILE_SIZE } from './types';
+import { 
+  initializeMobileDebug, 
+  logFileSelection, 
+  logFileUploadError,
+  logMobileDebug 
+} from '../../utils/mobileDebugger';
 
 interface IOSSafariFileUploadProps {
   onFilesDropped: (acceptedFiles: File[], rejections: FileRejection[]) => void;
@@ -23,42 +29,50 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
   const theme = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Initialize mobile debugging when component mounts
+  useEffect(() => {
+    initializeMobileDebug('IOSSafariFileUpload').catch(console.warn);
+  }, []);
+
   // iOS device detection (not just Safari)
   const isActualIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
-  // Track component initialization for analytics
-  React.useEffect(() => {
-    // Component loaded successfully - no action needed
-  }, []);
-
-  const handleFileSelection = useCallback((files: FileList | null) => {
+  const handleFileSelection = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) {
+      await logMobileDebug('No files selected from iOS Safari input', 'IOSSafariFileUpload');
       return;
     }
     
     const acceptedFiles: File[] = [];
     const rejections: FileRejection[] = [];
 
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
+      await logFileSelection(file.name, file.size, 'IOSSafariFileUpload');
+
       // Validate file
       if (!isValidAudioFile(file)) {
+        const errorMsg = `Invalid audio file: ${file.name} (${file.type})`;
+        await logFileUploadError(errorMsg, 'IOSSafariFileUpload');
         rejections.push({
           file,
           errors: [{ code: 'file-invalid-type', message: 'File type not supported' }]
         });
-        return;
+        continue;
       }
 
       if (file.size > MAX_FILE_SIZE) {
+        const errorMsg = `File too large: ${file.name} (${formatFileSize(file.size)} > ${formatFileSize(MAX_FILE_SIZE)})`;
+        await logFileUploadError(errorMsg, 'IOSSafariFileUpload');
         rejections.push({
           file,
           errors: [{ code: 'file-too-large', message: `File is too large. Maximum size is ${formatFileSize(MAX_FILE_SIZE)}` }]
         });
-        return;
+        continue;
       }
 
+      await logMobileDebug(`Valid file selected: ${file.name} (${formatFileSize(file.size)})`, 'IOSSafariFileUpload');
       acceptedFiles.push(file);
-    });
+    }
 
     onFilesDropped(acceptedFiles, rejections);
 
@@ -143,6 +157,25 @@ export const IOSSafariFileUpload: React.FC<IOSSafariFileUploadProps> = ({
           mb: 2,
         }}
       />
+      
+      {/* Debug indicator for mobile testing */}
+      <Typography 
+        variant="caption" 
+        sx={{ 
+          position: 'absolute',
+          top: 8,
+          right: 8,
+          backgroundColor: 'info.main',
+          color: 'white',
+          px: 1,
+          py: 0.5,
+          borderRadius: 1,
+          fontSize: '0.7rem',
+          fontWeight: 'bold',
+        }}
+      >
+        iOS SAFARI
+      </Typography>
       
       <Typography variant="h6" gutterBottom>
         Select Audio File
