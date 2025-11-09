@@ -127,6 +127,7 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
   }, [handleInputChange]);
 
   const handleClick = useCallback(async () => {
+    await logMobileDebug('🚨 ENHANCED DEBUGGING ACTIVE - v2025.11.09.22:20 - DEPLOYMENT FORCE 🚨', 'AndroidMobileFileUpload');
     await logMobileDebug('File picker clicked', 'AndroidMobileFileUpload');
     
     // Strategy 1: Try persistent input with extensive debugging
