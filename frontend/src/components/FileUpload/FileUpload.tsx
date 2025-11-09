@@ -23,6 +23,7 @@ import type { TranscriptionResponse } from "../../types";
 
 import { FileDropzone } from "./FileDropzone";
 import { IOSSafariFileUpload } from "./IOSSafariFileUpload";
+import { AndroidMobileFileUpload } from "./AndroidMobileFileUpload";
 import { validateFiles } from "./validation";
 import { getTokenCalculation, getFileEstimation, getTokenCalculationAsync, getFileEstimationAsync } from "./tokenUtils";
 import type { FileUploadFile } from "./types";
@@ -65,6 +66,8 @@ interface FileUploadProps {
   hasPreviousResults?: boolean;
 }
 
+import { logDeviceDetection, logComponentRouting } from '../../utils/mobileDebugger';
+
 const FileUpload: React.FC<FileUploadProps> = ({
   onTranscriptionComplete,
   onPurchaseTokens,
@@ -78,14 +81,6 @@ const FileUpload: React.FC<FileUploadProps> = ({
   const { balance: tokenBalance, refreshBalance } = useTokenStore();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
-  // iOS Safari detection
-  const isIOSSafari = useCallback(() => {
-    const userAgent = navigator.userAgent;
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-    const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
-    return isIOS && isSafari;
-  }, []);
   
   // Use Zustand store for state management (design pattern compliance)
   const { 
@@ -599,6 +594,39 @@ const FileUpload: React.FC<FileUploadProps> = ({
     [processFiles]
   );
 
+  // Enhanced mobile device detection - placed after onDrop is defined
+  const getFileUploadComponent = useCallback(() => {
+    const userAgent = navigator.userAgent;
+    
+    // iOS Safari detection (existing logic)
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+    const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+    const isIOSSafari = isIOS && isSafari;
+    
+    // Android mobile detection
+    const isAndroid = /Android/.test(userAgent);
+    const isAndroidChrome = isAndroid && /Chrome/.test(userAgent);
+    const isSamsungBrowser = isAndroid && /SamsungBrowser/.test(userAgent);
+    const isAndroidMobile = isAndroidChrome || isSamsungBrowser;
+    
+    // Log device detection for debugging - use mobile debugger for server-side logs
+    logDeviceDetection().catch(console.warn);
+    
+    // Route to appropriate component
+    if (isIOSSafari) {
+      logComponentRouting('IOSSafariFileUpload', 'iOS Safari browser detected').catch(console.warn);
+      return <IOSSafariFileUpload onFilesDropped={onDrop} />;
+    }
+    
+    if (isAndroidMobile) {
+      logComponentRouting('AndroidMobileFileUpload', 'Android mobile browser detected').catch(console.warn);
+      return <AndroidMobileFileUpload onFilesDropped={onDrop} />;
+    }
+    
+    logComponentRouting('FileDropzone', 'Desktop or unsupported mobile browser').catch(console.warn);
+    return <FileDropzone onFilesDropped={onDrop} />;
+  }, [onDrop]);
+
   return (
     <Box 
       sx={{ width: "100%" }}
@@ -615,12 +643,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
         Audio File Upload
       </Typography>
       
-      {/* File Dropzone - iOS Safari gets specialized component */}
-      {isIOSSafari() ? (
-        <IOSSafariFileUpload onFilesDropped={onDrop} />
-      ) : (
-        <FileDropzone onFilesDropped={onDrop} />
-      )}
+      {/* File Dropzone - Route to appropriate component based on device */}
+      {getFileUploadComponent()}
 
       {/* Validation Errors */}
       {validationErrors.length > 0 && (

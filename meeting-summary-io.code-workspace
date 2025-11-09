@@ -9,6 +9,15 @@
     "workbench.name": "Meeting-Summary.io",
     "explorer.excludeGitIgnore": false,
     "files.exclude": {},
-    "search.exclude": {}
+    "search.exclude": {},
+    "explorer.autoRefresh": true,
+    "files.useExperimentalFileWatcher": true,
+    "files.watcherExclude": {
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/node_modules/**": true,
+      "**/tmp/**": true,
+      "**/temp/**": true
+    }
   }
 }

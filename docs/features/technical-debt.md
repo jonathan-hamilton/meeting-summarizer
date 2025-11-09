@@ -370,6 +370,38 @@ isComplete={uploadFile.status === 'completed'} // Fast transcription only
 
 ## Current Technical Debt
 
+### Mobile Debugging System Cleanup Required - PRODUCTION BLOCKER 🚨
+
+**Date Identified**: November 9, 2025  
+**Sprint**: S8.9 Production QA & Launch Validation  
+**Priority**: Critical - Must be removed before production deployment  
+**Components Affected**: Backend API, Frontend mobile components
+
+**Issue**: 
+- Mobile debugging system implemented for S8.9 QA testing includes server-side debug endpoints and extensive client-side logging
+- Debug logging system sends device information and file upload events to server for mobile testing where console logs unavailable
+- System includes `/api/environment/mobile-debug` endpoint and comprehensive mobile debugging utilities
+- **PRODUCTION RISK**: Debug endpoints and logging may expose sensitive device information and create performance overhead
+
+**Components to Remove Before Production**:
+- **Backend**: `EnvironmentController.mobile-debug` endpoint and `MobileDebugRequest` model
+- **Backend**: Enhanced mobile logging in `SummaryController` (can be reduced to minimal logging)
+- **Frontend**: `mobileDebugger.ts` utility and all `logMobileDebug()` calls
+- **Frontend**: Debug badge indicators in upload components (ANDROID/iOS SAFARI/DESKTOP badges)
+
+**Files Requiring Cleanup**:
+```
+MeetingSummarizer.Api/Controllers/EnvironmentController.cs (remove mobile-debug endpoint)
+MeetingSummarizer.Api/Controllers/SummaryController.cs (reduce mobile logging)
+frontend/src/utils/mobileDebugger.ts (remove entire file)
+frontend/src/components/FileUpload/AndroidMobileFileUpload.tsx (remove debug calls)
+frontend/src/components/FileUpload/IOSSafariFileUpload.tsx (remove debug calls)
+frontend/src/components/FileUpload/FileUpload.tsx (remove debug calls)
+frontend/src/components/FileUpload/FileDropzone.tsx (remove debug badges)
+```
+
+**Cleanup Timeline**: Before S8.10 production deployment (target: before final production push)
+
 ### S3.4 Speaker Email Field Persistence Bug ✅ RESOLVED
 
 **Date Identified**: September 19, 2025  
