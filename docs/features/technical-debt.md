@@ -1,5 +1,22 @@
 # Technical Debt & Known Issues
 
+## ✅ RESOLVED TECHNICAL DEBT (November 9, 2025)
+
+### Android File Selection MIME Type Compatibility - RESOLVED ✅
+**Issue**: Android mobile users unable to select MP3 audio files - files appear greyed out in file picker  
+**Root Cause**: Invalid MIME type `audio/mp3` causing Android browsers to reject file selection  
+**Resolution**: S8.9 Production QA - Android MIME Type Fix  
+**Date Resolved**: November 9, 2025
+
+**Technical Details**:
+- **MIME Type Error**: AndroidMobileFileUpload component used invalid `audio/mp3` MIME type
+- **Android Behavior**: Chrome Mobile and Samsung Internet browsers reject invalid MIME types, preventing file selection
+- **File Picker Impact**: Users could see audio files in Downloads folder but couldn't select them (greyed out)
+- **Solution**: Updated accept attribute to use correct `audio/mpeg` MIME type plus comprehensive format support
+- **Accept Pattern**: `audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/x-m4a,.mp3,.mp4,.m4a,.wav`
+- **Components Affected**: AndroidMobileFileUpload.tsx component, mobile file selection workflow
+- **Impact**: Android users can now successfully select MP3, M4A, and WAV files from local device storage
+
 ## ✅ RESOLVED TECHNICAL DEBT (October 27, 2025)
 
 ### SQL Server Retry Execution Strategy Conflict - RESOLVED ✅
