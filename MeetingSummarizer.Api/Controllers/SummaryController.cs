@@ -85,21 +85,35 @@ public class SummaryController : ControllerBase
         
         try
         {
-            // Enhanced iOS Safari logging
+            // Enhanced mobile device logging (iOS Safari + Android + general mobile)
             var userAgent = Request.Headers["User-Agent"].ToString();
-            var isIOSSafari = userAgent.Contains("iPhone") || userAgent.Contains("iPad");
             var contentType = Request.ContentType;
             var correlationId = Guid.NewGuid().ToString("N")[..8];
             
-            _logger.LogInformation("🍎 iOS Safari Debug - Transcription request [CorrelationId: {CorrelationId}] - File: {FileName}, Size: {FileSize}, UserAgent: {UserAgent}, ContentType: {ContentType}, IsIOSSafari: {IsIOSSafari}",
-                correlationId, request.AudioFile?.FileName, request.AudioFile?.Length, userAgent, contentType, isIOSSafari);
+            // Comprehensive mobile device detection
+            var isIOS = userAgent.Contains("iPhone") || userAgent.Contains("iPad");
+            var isAndroid = userAgent.Contains("Android");
+            var isSafari = userAgent.Contains("Safari") && !userAgent.Contains("Chrome");
+            var isChrome = userAgent.Contains("Chrome");
+            var isSamsungBrowser = userAgent.Contains("SamsungBrowser");
+            var isIOSSafari = isIOS && isSafari;
+            var isAndroidChrome = isAndroid && isChrome;
+            var isAndroidMobile = isAndroidChrome || (isAndroid && isSamsungBrowser);
+            var isMobile = isIOSSafari || isAndroidMobile;
+            
+            var deviceType = isIOSSafari ? "iOS Safari" : 
+                           isAndroidMobile ? "Android Mobile" : 
+                           "Desktop";
+            
+            _logger.LogInformation("📱 MOBILE TRANSCRIPTION [{CorrelationId}] - Device: {DeviceType} | File: {FileName} ({FileSize} bytes) | UserAgent: {UserAgent} | ContentType: {ContentType}",
+                correlationId, deviceType, request.AudioFile?.FileName, request.AudioFile?.Length, userAgent, contentType);
 
             // Enhanced file validation
             var validationResult = AudioFileValidator.ValidateAudioFile(request.AudioFile);
             if (!validationResult.IsValid)
             {
-                _logger.LogWarning("🍎 iOS Safari Debug - File validation failed [CorrelationId: {CorrelationId}] for {FileName}: {ValidationMessage}, UserAgent: {UserAgent}",
-                    correlationId, request.AudioFile?.FileName, validationResult.Message, userAgent);
+                _logger.LogWarning("📱 MOBILE TRANSCRIPTION [{CorrelationId}] - File validation failed for {DeviceType}: {FileName} - {ValidationMessage}",
+                    correlationId, deviceType, request.AudioFile?.FileName, validationResult.Message);
                 return BadRequest(new { error = validationResult.Message });
             }
 

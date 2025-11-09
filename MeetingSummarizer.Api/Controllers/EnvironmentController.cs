@@ -303,6 +303,109 @@ public class EnvironmentController : ControllerBase
     }
 
     /// <summary>
+    /// Mobile device debugging endpoint - logs device information for mobile testing
+    /// </summary>
+    [HttpPost("mobile-debug")]
+    public IActionResult LogMobileDebug([FromBody] MobileDebugRequest request)
+    {
+        if (!IsControllerEnabled())
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            // Get request headers for server-side analysis
+            var userAgent = Request.Headers["User-Agent"].ToString();
+            var acceptHeader = Request.Headers["Accept"].ToString();
+            var contentType = Request.ContentType;
+            var correlationId = Guid.NewGuid().ToString("N")[..8];
+
+            // Enhanced mobile device detection (server-side)
+            var deviceInfo = AnalyzeMobileDevice(userAgent);
+
+            // Log comprehensive mobile debug information
+            _logger.LogInformation("📱 MOBILE DEBUG [{CorrelationId}] - Client: {ClientInfo} | Server: {ServerInfo} | UserAgent: {UserAgent}", 
+                correlationId,
+                new {
+                    request.DeviceType,
+                    request.Platform,
+                    request.Browser,
+                    request.IsTouchDevice,
+                    request.ScreenWidth,
+                    request.ScreenHeight,
+                    request.Timestamp,
+                    request.ComponentRendered,
+                    request.Message
+                },
+                deviceInfo,
+                userAgent
+            );
+
+            return Ok(new
+            {
+                Status = "Debug logged successfully",
+                CorrelationId = correlationId,
+                ServerDetection = deviceInfo,
+                ClientDetection = new 
+                {
+                    request.DeviceType,
+                    request.Platform,
+                    request.Browser,
+                    request.ComponentRendered
+                },
+                RequestInfo = new
+                {
+                    UserAgent = userAgent,
+                    ContentType = contentType,
+                    Accept = acceptHeader,
+                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    Timestamp = DateTime.UtcNow
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing mobile debug request");
+            return StatusCode(500, new { Error = "Failed to process debug request" });
+        }
+    }
+
+    /// <summary>
+    /// Analyze mobile device from user agent
+    /// </summary>
+    private object AnalyzeMobileDevice(string userAgent)
+    {
+        var isIOS = userAgent.Contains("iPhone") || userAgent.Contains("iPad");
+        var isAndroid = userAgent.Contains("Android");
+        var isSafari = userAgent.Contains("Safari") && !userAgent.Contains("Chrome");
+        var isChrome = userAgent.Contains("Chrome");
+        var isSamsungBrowser = userAgent.Contains("SamsungBrowser");
+        var isIOSSafari = isIOS && isSafari;
+        var isAndroidChrome = isAndroid && isChrome;
+        var isAndroidMobile = isAndroidChrome || (isAndroid && isSamsungBrowser);
+
+        return new
+        {
+            Platform = isIOS ? "iOS" : isAndroid ? "Android" : "Desktop",
+            Browser = isSafari ? "Safari" : isChrome ? "Chrome" : isSamsungBrowser ? "Samsung Browser" : "Unknown",
+            DeviceType = isIOSSafari ? "iOS Safari" : isAndroidMobile ? "Android Mobile" : "Desktop",
+            IsMobile = isIOSSafari || isAndroidMobile,
+            Detection = new
+            {
+                IsIOS = isIOS,
+                IsAndroid = isAndroid,
+                IsSafari = isSafari,
+                IsChrome = isChrome,
+                IsSamsungBrowser = isSamsungBrowser,
+                IsIOSSafari = isIOSSafari,
+                IsAndroidChrome = isAndroidChrome,
+                IsAndroidMobile = isAndroidMobile
+            }
+        };
+    }
+
+    /// <summary>
     /// Get Stripe configuration for frontend
     /// </summary>
     [HttpGet("stripe")]
@@ -320,4 +423,20 @@ public class EnvironmentController : ControllerBase
             Environment = _stripeOptions.GetEnvironmentDescription()
         });
     }
+}
+
+/// <summary>
+/// Request model for mobile debugging information
+/// </summary>
+public class MobileDebugRequest
+{
+    public string? DeviceType { get; set; }
+    public string? Platform { get; set; }
+    public string? Browser { get; set; }
+    public bool IsTouchDevice { get; set; }
+    public int ScreenWidth { get; set; }
+    public int ScreenHeight { get; set; }
+    public string? ComponentRendered { get; set; }
+    public string? Message { get; set; }
+    public DateTime Timestamp { get; set; }
 }
