@@ -108,9 +108,9 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
     const input = document.createElement('input');
     input.type = 'file';
     
-    // Android Chrome and Samsung Browser: Use same file types as iOS for consistency
-    // These formats are well-supported across Android browsers
-    input.accept = 'audio/mp3,audio/mp4,audio/wav';
+    // Android Chrome and Samsung Browser: Use correct MIME types and file extensions
+    // Android browsers need both MIME types AND file extensions for proper file filtering
+    input.accept = 'audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/x-m4a,.mp3,.mp4,.m4a,.wav';
     input.multiple = false; // Single file selection for better mobile UX
     
     // Android browsers generally don't require DOM attachment, but some versions do
@@ -186,7 +186,7 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
       <input
         ref={fileInputRef}
         type="file"
-        accept="audio/mp3,audio/mp4,audio/wav"
+        accept="audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/x-m4a,.mp3,.mp4,.m4a,.wav"
         onChange={handleInputChange}
         style={{
           position: 'absolute',

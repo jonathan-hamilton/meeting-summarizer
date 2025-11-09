@@ -68,6 +68,7 @@ A modern web application for transcribing and summarizing meeting audio with AI-
 
 - 🔄 **S8.9 Production QA & Launch Validation - IN PROGRESS** 📋
   - **Android Mobile Debugging System (November 9, 2025)**: Server-side logging endpoint, mobile debugger utility, comprehensive device detection for mobile QA testing
+  - **Android File Selection Fix (November 9, 2025)**: ✅ Corrected MIME type compatibility (audio/mp3 → audio/mpeg) resolving Android file picker issues
   - **Enhanced Mobile Testing**: Debug UI indicators (Android=green, iOS Safari=blue, Desktop=orange) and correlation ID tracking for mobile testing without console access
   - **Cross-Device Testing Matrix**: Comprehensive validation across iOS Safari, Android Chrome, responsive breakpoints for production readiness
   - **Production Cleanup Required**: Debug logging system designed for QA phase only, requires removal before production deployment
