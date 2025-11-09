@@ -131,6 +131,10 @@ Meeting-Summary.io will implement mobile functionality through a strategic three
 - **REQ-MOB-4.4**: Background upload capability (files continue uploading when app is backgrounded)
 - **REQ-MOB-4.5**: Audio file compression for mobile networks
 - **REQ-MOB-4.6**: Support for voice memo and recording app integrations
+- **REQ-MOB-4.7**: ✅ **Android MIME Type Compatibility** (November 9, 2025)
+  - Use correct MIME types (`audio/mpeg` not `audio/mp3`) for Android file picker compatibility
+  - Include both MIME types and file extensions in accept attribute for maximum browser support
+  - Accept pattern: `audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/x-m4a,.mp3,.mp4,.m4a,.wav`
 
 ### REQ-MOB-5: Offline Capability
 - **REQ-MOB-5.1**: Cache previously transcribed content for offline viewing
