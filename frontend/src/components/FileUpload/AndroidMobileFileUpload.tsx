@@ -129,70 +129,102 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
   const handleClick = useCallback(async () => {
     await logMobileDebug('File picker clicked', 'AndroidMobileFileUpload');
     
-    // Android Chrome: Always use the persistent ref-based input for better event handling
+    // Strategy 1: Try persistent input with extensive debugging
     if (fileInputRef.current) {
       await logMobileDebug('Using persistent input ref for Android Chrome reliability', 'AndroidMobileFileUpload');
-      fileInputRef.current.click();
+      
+      // Add temporary event listeners for this click session
+      const input = fileInputRef.current;
+      
+      const tempFocusHandler = async () => {
+        await logMobileDebug('TEMP: Persistent input focused', 'AndroidMobileFileUpload');
+      };
+      
+      const tempBlurHandler = async () => {
+        await logMobileDebug('TEMP: Persistent input blurred', 'AndroidMobileFileUpload');
+        // Check for files after a delay
+        setTimeout(async () => {
+          if (input.files && input.files.length > 0) {
+            await logMobileDebug(`TEMP: ${input.files.length} files found after blur!`, 'AndroidMobileFileUpload');
+            const event = new Event('change', { bubbles: true }) as unknown as React.ChangeEvent<HTMLInputElement>;
+            Object.defineProperty(event, 'target', { value: input, enumerable: true });
+            await handleInputChange(event);
+          } else {
+            await logMobileDebug('TEMP: No files found after blur', 'AndroidMobileFileUpload');
+          }
+        }, 200);
+      };
+      
+      const tempChangeHandler = async () => {
+        await logMobileDebug('TEMP: onChange fired naturally!', 'AndroidMobileFileUpload');
+      };
+      
+      // Add temporary listeners
+      input.addEventListener('focus', tempFocusHandler, { once: true });
+      input.addEventListener('blur', tempBlurHandler, { once: true });
+      input.addEventListener('change', tempChangeHandler, { once: true });
+      
+      // Click the input
+      input.click();
+      
+      // Clean up temporary listeners after 5 seconds
+      setTimeout(() => {
+        input.removeEventListener('focus', tempFocusHandler);
+        input.removeEventListener('blur', tempBlurHandler);
+        input.removeEventListener('change', tempChangeHandler);
+      }, 5000);
+      
       return;
     }
     
-    // Fallback for edge cases: Create fresh input element
-    await logMobileDebug('Creating fresh input element as fallback', 'AndroidMobileFileUpload');
+    // Strategy 2: Dynamic input with enhanced Android handling (fallback)
+    await logMobileDebug('Creating dynamic input as fallback', 'AndroidMobileFileUpload');
     const input = document.createElement('input');
     input.type = 'file';
-    
-    // Android Chrome and Samsung Browser: Use correct MIME types and file extensions
-    // Android browsers need both MIME types AND file extensions for proper file filtering
     input.accept = 'audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/x-m4a,.mp3,.mp4,.m4a,.wav';
-    input.multiple = false; // Single file selection for better mobile UX
+    input.multiple = false;
     
-    // Android browsers: Attach to DOM for reliable event handling
+    // Try different positioning strategies for Android
     input.style.position = 'absolute';
     input.style.left = '-9999px';
+    input.style.top = '-9999px';
+    input.style.width = '1px';
+    input.style.height = '1px';
     input.style.opacity = '0';
-    input.style.pointerEvents = 'none';
+    input.style.zIndex = '-1000';
     document.body.appendChild(input);
     
-    // Set up change handler with enhanced Android event handling
-    input.onchange = async (e) => {
-      await logMobileDebug('Dynamic input onChange fired', 'AndroidMobileFileUpload');
-      const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
-      await handleInputChange(event);
-      // Clean up after processing
-      setTimeout(() => {
-        if (document.body.contains(input)) {
-          document.body.removeChild(input);
-        }
-      }, 100);
-    };
+    let fileSelectionDetected = false;
     
-    // Android-specific: Add focus and blur handlers for better event detection
+    // Enhanced event handling for dynamic input
     input.onfocus = async () => {
-      await logMobileDebug('File picker focused (opened)', 'AndroidMobileFileUpload');
+      await logMobileDebug('Dynamic input focused (picker opened)', 'AndroidMobileFileUpload');
     };
     
     input.onblur = async () => {
-      await logMobileDebug('File picker blur detected', 'AndroidMobileFileUpload');
-      // Android Chrome sometimes doesn't fire onChange, check after blur
+      await logMobileDebug('Dynamic input blur detected', 'AndroidMobileFileUpload');
       setTimeout(async () => {
-        if (input.files && input.files.length > 0) {
-          await logMobileDebug('Files detected on blur, triggering change manually', 'AndroidMobileFileUpload');
+        if (!fileSelectionDetected && input.files && input.files.length > 0) {
+          fileSelectionDetected = true;
+          await logMobileDebug(`Dynamic: ${input.files.length} files detected on blur!`, 'AndroidMobileFileUpload');
           const event = new Event('change', { bubbles: true }) as unknown as React.ChangeEvent<HTMLInputElement>;
           Object.defineProperty(event, 'target', { value: input, enumerable: true });
           await handleInputChange(event);
-        } else {
-          await logMobileDebug('No files selected after blur', 'AndroidMobileFileUpload');
         }
-        // Clean up
+        // Clean up after processing
         if (document.body.contains(input)) {
           document.body.removeChild(input);
         }
-      }, 150); // Slight delay for Android file picker to settle
+      }, 300); // Longer delay for Android
     };
     
-    // Set up cancel handler for Android browsers
-    input.oncancel = async () => {
-      await logMobileDebug('File picker cancelled', 'AndroidMobileFileUpload');
+    input.onchange = async (e) => {
+      if (!fileSelectionDetected) {
+        fileSelectionDetected = true;
+        await logMobileDebug('Dynamic onChange fired naturally', 'AndroidMobileFileUpload');
+        const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
+        await handleInputChange(event);
+      }
       setTimeout(() => {
         if (document.body.contains(input)) {
           document.body.removeChild(input);
@@ -200,9 +232,44 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
       }, 100);
     };
     
-    // Trigger file picker - Android browsers
-    await logMobileDebug('Triggering file picker programmatically', 'AndroidMobileFileUpload');
-    input.click();
+    input.oncancel = async () => {
+      await logMobileDebug('Dynamic input cancelled', 'AndroidMobileFileUpload');
+      setTimeout(() => {
+        if (document.body.contains(input)) {
+          document.body.removeChild(input);
+        }
+      }, 100);
+    };
+    
+    // Alternative click strategies for Android
+    await logMobileDebug('Triggering dynamic file picker', 'AndroidMobileFileUpload');
+    
+    // Strategy A: Direct click
+    try {
+      input.click();
+    } catch {
+      await logMobileDebug('Direct click failed, trying focus+click', 'AndroidMobileFileUpload');
+      try {
+        input.focus();
+        input.click();
+      } catch {
+        await logMobileDebug('Focus+click failed, trying delayed click', 'AndroidMobileFileUpload');
+        setTimeout(() => {
+          try {
+            input.click();
+          } catch {
+            logMobileDebug('All click strategies failed', 'AndroidMobileFileUpload');
+          }
+        }, 100);
+      }
+    }
+    
+    // Safety cleanup after 10 seconds
+    setTimeout(() => {
+      if (document.body.contains(input)) {
+        document.body.removeChild(input);
+      }
+    }, 10000);
   }, [handleInputChange]);
 
   return (
