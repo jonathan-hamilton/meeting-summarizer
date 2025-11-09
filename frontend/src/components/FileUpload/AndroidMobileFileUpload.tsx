@@ -93,17 +93,50 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
     }
   }, [handleFileSelection]);
 
+  // Android Chrome: Enhanced event handling for the persistent input
+  useEffect(() => {
+    const input = fileInputRef.current;
+    if (input) {
+      const handleFocus = async () => {
+        await logMobileDebug('Persistent input focused (picker opened)', 'AndroidMobileFileUpload');
+      };
+      
+      const handleBlur = async () => {
+        await logMobileDebug('Persistent input blur detected', 'AndroidMobileFileUpload');
+        // Android Chrome sometimes doesn't fire onChange, check after blur
+        setTimeout(async () => {
+          if (input.files && input.files.length > 0) {
+            await logMobileDebug('Files detected on blur - triggering change manually', 'AndroidMobileFileUpload');
+            const event = new Event('change', { bubbles: true }) as unknown as React.ChangeEvent<HTMLInputElement>;
+            Object.defineProperty(event, 'target', { value: input, enumerable: true });
+            await handleInputChange(event);
+            // Clear the input after processing
+            input.value = '';
+          }
+        }, 150); // Delay for Android to settle
+      };
+      
+      input.addEventListener('focus', handleFocus);
+      input.addEventListener('blur', handleBlur);
+      
+      return () => {
+        input.removeEventListener('focus', handleFocus);
+        input.removeEventListener('blur', handleBlur);
+      };
+    }
+  }, [handleInputChange]);
+
   const handleClick = useCallback(async () => {
     await logMobileDebug('File picker clicked', 'AndroidMobileFileUpload');
     
-    // Try to use existing ref first (Android Chrome usually works with this)
+    // Android Chrome: Always use the persistent ref-based input for better event handling
     if (fileInputRef.current) {
-      await logMobileDebug('Using existing input ref', 'AndroidMobileFileUpload');
+      await logMobileDebug('Using persistent input ref for Android Chrome reliability', 'AndroidMobileFileUpload');
       fileInputRef.current.click();
       return;
     }
     
-    // Fallback: Create fresh input element for Samsung Browser and other Android browsers
+    // Fallback for edge cases: Create fresh input element
     await logMobileDebug('Creating fresh input element as fallback', 'AndroidMobileFileUpload');
     const input = document.createElement('input');
     input.type = 'file';
@@ -113,22 +146,48 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
     input.accept = 'audio/mpeg,audio/mp4,audio/wav,audio/x-wav,audio/x-m4a,.mp3,.mp4,.m4a,.wav';
     input.multiple = false; // Single file selection for better mobile UX
     
-    // Android browsers generally don't require DOM attachment, but some versions do
+    // Android browsers: Attach to DOM for reliable event handling
     input.style.position = 'absolute';
     input.style.left = '-9999px';
     input.style.opacity = '0';
+    input.style.pointerEvents = 'none';
     document.body.appendChild(input);
     
-    // Set up change handler
-    input.onchange = (e) => {
+    // Set up change handler with enhanced Android event handling
+    input.onchange = async (e) => {
+      await logMobileDebug('Dynamic input onChange fired', 'AndroidMobileFileUpload');
       const event = e as unknown as React.ChangeEvent<HTMLInputElement>;
-      handleInputChange(event);
-      // Clean up
+      await handleInputChange(event);
+      // Clean up after processing
       setTimeout(() => {
         if (document.body.contains(input)) {
           document.body.removeChild(input);
         }
       }, 100);
+    };
+    
+    // Android-specific: Add focus and blur handlers for better event detection
+    input.onfocus = async () => {
+      await logMobileDebug('File picker focused (opened)', 'AndroidMobileFileUpload');
+    };
+    
+    input.onblur = async () => {
+      await logMobileDebug('File picker blur detected', 'AndroidMobileFileUpload');
+      // Android Chrome sometimes doesn't fire onChange, check after blur
+      setTimeout(async () => {
+        if (input.files && input.files.length > 0) {
+          await logMobileDebug('Files detected on blur, triggering change manually', 'AndroidMobileFileUpload');
+          const event = new Event('change', { bubbles: true }) as unknown as React.ChangeEvent<HTMLInputElement>;
+          Object.defineProperty(event, 'target', { value: input, enumerable: true });
+          await handleInputChange(event);
+        } else {
+          await logMobileDebug('No files selected after blur', 'AndroidMobileFileUpload');
+        }
+        // Clean up
+        if (document.body.contains(input)) {
+          document.body.removeChild(input);
+        }
+      }, 150); // Slight delay for Android file picker to settle
     };
     
     // Set up cancel handler for Android browsers
@@ -141,7 +200,8 @@ export const AndroidMobileFileUpload: React.FC<AndroidMobileFileUploadProps> = (
       }, 100);
     };
     
-    // Trigger file picker - Android browsers usually don't need delay
+    // Trigger file picker - Android browsers
+    await logMobileDebug('Triggering file picker programmatically', 'AndroidMobileFileUpload');
     input.click();
   }, [handleInputChange]);
 
