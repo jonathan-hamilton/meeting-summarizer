@@ -25,7 +25,7 @@ export function AndroidMobileFileUpload({ onFilesDropped }: AndroidMobileFileUpl
 
   // Initialize mobile debugging when component mounts
   useEffect(() => {
-    initializeMobileDebug();
+    initializeMobileDebug('AndroidMobileFileUpload');
     logMobileDebug('AndroidMobileFileUpload component mounted', 'AndroidMobileFileUpload');
   }, []);
 
@@ -39,7 +39,7 @@ export function AndroidMobileFileUpload({ onFilesDropped }: AndroidMobileFileUpl
     const rejections: FileRejection[] = [];
 
     Array.from(files).forEach((file) => {
-      logFileSelection(file);
+      logFileSelection(file.name, file.size, 'AndroidMobileFileUpload');
       
       const fileTooBig = file.size > MAX_FILE_SIZE;
       const invalidType = !isValidAudioFile(file);
@@ -50,7 +50,7 @@ export function AndroidMobileFileUpload({ onFilesDropped }: AndroidMobileFileUpl
         if (invalidType) errors.push({ code: 'file-invalid-type', message: 'Invalid file type' });
         
         rejections.push({ file, errors });
-        logFileUploadError(file, errors.map(e => e.message).join(', '));
+        logFileUploadError(file.name, errors.map(e => e.message).join(', '));
       } else {
         acceptedFiles.push(file);
       }
