@@ -13,7 +13,7 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 **Phase 3 (Future Enhancement)**: Advanced PWA features and app store deployment
 
 ## Progress Tracker
-**Sprint 8**: 7/10 stories COMPLETE, 1 SKIPPED, 1 IN TESTING, 1 PENDING (80% COMPLETE) 📱 **EXCEPTIONAL SUCCESS - S8.6 Performance Grade A + S8.8 Test Coverage 100% + CI/CD Enforcement Active** ✅🧪🔄
+**Sprint 8**: 7/12 stories COMPLETE, 1 SKIPPED, 1 IN TESTING, 1 IN PROGRESS, 2 PENDING (58% COMPLETE) 📱 **EXCEPTIONAL SUCCESS - S8.6 Performance Grade A + S8.8 Test Coverage 100% + CI/CD Enforcement Active** ✅🧪🔄
 
 | Story ID | Title | Status | Dependencies |
 |----------|-------|--------|--------------|
@@ -25,10 +25,12 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 | S8.6 | Optimize Mobile Performance and Bundle Size | COMPLETE ✅ | S8.1-S8.4 |
 | S8.7 | iOS Safari User Experience Enhancements | DEPLOYED FOR TESTING 🧪 | S8.4 |
 | S8.8 | Test Coverage Analysis & Gap Remediation | COMPLETE ✅ | S8.1-S8.7 |
-| S8.9 | Production QA & Launch Validation | IN PROGRESS 🔄 | S8.1-S8.8 |
-| S8.10 | Production Readiness & Deployment | PENDING 🔄 | S8.1-S8.6, S8.7, S8.8, S8.9 |
+| S8.9 | Automatic Speaker Name Extraction | PENDING 🔄 | S8.1-S8.8 |
+| S8.10 | Android Mobile Debugging System | IN PROGRESS 🔄 | S8.1-S8.9 |
+| S8.11 | Production QA & Launch Validation | PENDING 🔄 | S8.1-S8.10 |
+| S8.12 | Production Readiness & Deployment | PENDING 🔄 | S8.1-S8.11 |
 
-### 📋 Stories Overview (7/10 Complete + 1 Skipped + 1 Testing + 1 In Progress - 80% COMPLETE) - **EXCEPTIONAL SUCCESS WITH GRADE A PERFORMANCE + 100% Test Coverage + CI/CD Enforcement Active**
+### 📋 Stories Overview (7/12 Complete + 1 Skipped + 1 Testing + 1 In Progress + 2 Pending - 58% COMPLETE) - **EXCEPTIONAL SUCCESS WITH GRADE A PERFORMANCE + 100% Test Coverage + CI/CD Enforcement Active**
 
 #### ✅ **S8.1 - Responsive Breakpoint System Implementation**
 **Status**: ✅ COMPLETE | **Priority**: High | **Effort**: 2-3 days | **Completed**: October 25, 2025
@@ -134,26 +136,6 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - Touch interaction testing and accessibility compliance
 - Performance profiling on mid-range devices
 
-#### 🔄 **S8.9 - Production QA & Launch Validation**
-**Status**: 🔄 IN PROGRESS | **Priority**: Critical | **Effort**: 3-4 days | **Started**: November 9, 2025
-
-**Objective**: Comprehensive quality assurance validation before production launch
-
-**Implementation Progress:**
-- 🔄 **Android Mobile Debugging System**: Server-side logging endpoint, mobile debugger utility, and comprehensive device detection for QA testing without console access
-- ⏳ **Cross-Browser Testing Matrix**: iOS Safari, Android Chrome, responsive breakpoints validation
-- ⏳ **Regression Testing**: Core functionality validation across all Sprint 8 mobile changes
-- ⏳ **Performance & Monitoring**: Application Insights validation and load testing
-
-**Key Deliverables:**
-- Comprehensive QA test matrix with mobile debugging capabilities
-- Production readiness validation across all device types
-- Performance and monitoring verification
-- Security and accessibility compliance validation
-
-**Dependencies Satisfied**: S8.7 iOS Safari UX foundation provides mobile testing base
--->
-
 ## Success Criteria for Sprint 8
 
 ### Functional Requirements
@@ -249,7 +231,7 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - **100% Pass Requirement**: Complete test success enforced for all deployments
 - **Production Confidence**: System validated for reliable user-facing operations
 
-**Strategic Impact**: Successfully achieved 100% test pass rate with complete framework standardization and strict CI/CD enforcement. This provides the ultimate quality foundation for S8.9 Production QA & Launch Validation with confidence in automated quality gates.
+**Strategic Impact**: Successfully achieved 100% test pass rate with complete framework standardization and strict CI/CD enforcement. This provides the ultimate quality foundation for S8.11 Production QA & Launch Validation with confidence in automated quality gates.
 
 **Quality Metrics**:
 - **All Test Categories**: 100% pass rate across 163 comprehensive test cases
@@ -258,11 +240,55 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - **Production Confidence**: Complete system validation with enhanced MockSummarizationService and API coverage
 
 **Dependencies Satisfied:** S8.1-S8.7 ✅ (Mobile foundation established)  
-**Enables:** S8.9 QA validation with 100% confidence, S8.10 Production launch with guaranteed quality
+**Enables:** S8.10 Android debugging infrastructure, S8.11 QA validation with 100% confidence, S8.12 Production launch with guaranteed quality
 
 **Detailed Analysis:** See [s8.8-test-coverage-analysis.md](./s8.8-test-coverage-analysis.md)
 
-#### 🔄 **S8.9 - Production QA & Launch Validation**
+#### 🔄 **S8.9 - Automatic Speaker Name Extraction**
+**Status**: PENDING 🔄 | **Priority**: High | **Effort**: 3-5 days | **Created**: November 9, 2025
+
+**Objective**: Implement intelligent transcript analysis to automatically extract speaker names during transcription phase, eliminating speaker naming conflicts and improving user experience with pre-populated speaker mappings
+
+**Business Value**: 
+- **Reduced User Friction**: Auto-detect speaker introductions ("Hi, this is John") to minimize manual mapping
+- **Improved Data Quality**: Consistent speaker naming throughout transcription → summary pipeline
+- **Enhanced User Experience**: SpeakerMappingDialog pre-populated with detected names, manual override available
+
+**Architecture Changes (Clean Design)**:
+1. **Transcription Phase Enhancement**: Add speaker name extraction after Azure Speech Services returns transcript
+2. **Summary Phase Cleanup**: Remove `ApplySpeakerMappings` from OpenAI service to eliminate naming conflicts  
+3. **Single Source of Truth**: All speaker mapping happens during transcription phase only
+
+**Dependencies Satisfied:** S8.1-S8.8 ✅ (Mobile foundation and test coverage established)  
+**Enables:** S8.10 Android debugging infrastructure, S8.11 QA validation with enhanced speaker mapping, S8.12 Production launch with improved UX
+
+**Detailed Implementation Plan**: See [s8.9-automatic-speaker-name-extraction.md](./s8.9-automatic-speaker-name-extraction.md)
+
+#### 🔄 **S8.10 - Android Mobile Debugging System**
+**Status**: IN PROGRESS 🔄 | **Priority**: High | **Effort**: 1-2 days | **Created**: November 9, 2025
+
+**Objective**: Implement comprehensive mobile debugging infrastructure for Android device testing during QA validation
+
+**Business Value**: 
+- **QA Testing Support**: Enable debugging of mobile file upload issues without dev tools access
+- **Production Issue Diagnosis**: Server-side logging for mobile-specific upload problems
+- **Cross-Platform Validation**: Support Android Chrome and Samsung Internet browser testing
+
+**Implementation Summary**:
+- Mobile debug endpoint (`POST /api/environment/mobile-debug`) for server-side logging
+- Enhanced device detection system for Android Chrome vs Samsung Internet
+- Visual component indicators (green "ANDROID" badge) for QA testing
+- File selection MIME type fixes for Android compatibility
+- Comprehensive upload event tracking and error attribution
+
+**Critical**: This debugging system must be removed before production deployment
+
+**Dependencies Satisfied:** S8.1-S8.9 ✅ (Mobile foundation and speaker extraction)  
+**Enables:** S8.11 QA validation with enhanced debugging capabilities
+
+**Detailed Implementation Documentation**: See [s8.10-android-mobile-debugging.md](./s8.10-android-mobile-debugging.md)
+
+#### 🔄 **S8.11 - Production QA & Launch Validation**
 **Status**: PENDING 🔄 | **Priority**: Critical | **Effort**: 3-4 days | **Created**: November 3, 2025
 
 **Objective**: Comprehensive quality assurance validation ensuring production readiness from technical, business, and user perspectives
@@ -273,6 +299,8 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - All Sprint 1-7 features function correctly after Sprint 8 mobile changes
 - Core workflows: Authentication, upload, transcription, token purchase, speaker mapping, summary, export, history
 - Desktop functionality unaffected by mobile-first responsive design
+- **NEW: S8.9 Speaker Extraction**: Auto-detected speaker names work correctly, manual override functional
+- **NEW: S8.10 Android Debugging**: Mobile debugging infrastructure functional for QA testing
 
 **2. Accessibility & Compliance**
 - WCAG 2.1 Level AA compliance verification on key pages
@@ -286,6 +314,8 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - Rate limiting enforcement validation
 - Concurrent user conflict scenarios
 - Error messages user-friendly and actionable
+- **NEW: S8.9 Edge Cases**: Meetings without speaker introductions, name conflicts, confidence scoring
+- **NEW: S8.10 Mobile Testing**: Android device debugging and error attribution
 
 **4. Performance & Monitoring**
 - Performance metrics meet targets (<1MB bundle, <3s load time)
@@ -303,12 +333,12 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 
 **Testing Approach:**
 - **Format:** Simple checkbox checklist (Format A)
-- **Timeline:** Runs in parallel with S8.10 Increments 1-5
+- **Timeline:** Runs in parallel with S8.12 Increments 1-5
 - **Tester:** Solo developer (primary) with potential user acceptance testing
-- **Completion:** Must complete before S8.10 Increment 6 (deployment)
+- **Completion:** Must complete before S8.12 Increment 6 (deployment)
 
-**Dependencies:** S8.1-S8.7 (features to validate), S8.8 (test coverage confidence)  
-**Parallel Execution:** Runs alongside S8.10 infrastructure/legal work, gates final deployment
+**Dependencies:** S8.1-S8.8 (features to validate), S8.9 (speaker extraction to test)  
+**Parallel Execution:** Runs alongside S8.12 infrastructure/legal work, gates final deployment
 
 **Cross-Browser & Device Testing:**
 - Desktop: Chrome, Edge, Firefox (Windows PC)
@@ -331,11 +361,11 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - **Medium (Can Document):** Minor UI issues, edge cases with workarounds
 - **Low (Track):** Cosmetic issues, enhancements
 
-**Dependencies Satisfied:** S8.1-S8.7 ✅ (Mobile foundation and iOS Safari work), Runs parallel with S8.10
+**Dependencies Satisfied:** S8.1-S8.7 ✅ (Mobile foundation and iOS Safari work), Runs parallel with S8.11
 
-**Detailed Checklist:** See [s8.9-production-qa-checklist.md](./s8.9-production-qa-checklist.md)
+**Detailed Checklist:** See [s8.11-production-qa-checklist.md](./s8.11-production-qa-checklist.md)
 
-#### 🔄 **S8.10 - Production Readiness & Deployment**
+#### 🔄 **S8.12 - Production Readiness & Deployment**
 **Status**: PENDING 🔄 | **Priority**: Critical | **Effort**: 2-3 weeks | **Created**: November 3, 2025
 
 **Objective**: Ensure complete production readiness across legal, technical, and operational dimensions for public launch
@@ -393,9 +423,9 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 - **DNS Provider:** Dreamhost
 - **Timeline:** No hard deadline - launch when ready
 
-**Dependencies Satisfied:** S8.1-S8.6 ✅ COMPLETE (Mobile-first foundation), S8.7 🧪 IN TESTING (iOS Safari validation), S8.8 🔄 PREREQUISITE (Test coverage), S8.9 🔄 PREREQUISITE (QA validation)
+**Dependencies Satisfied:** S8.1-S8.6 ✅ COMPLETE (Mobile-first foundation), S8.7 🧪 IN TESTING (iOS Safari validation), S8.8 ✅ COMPLETE (Test coverage), S8.9 🔄 PENDING (Speaker extraction), S8.10 🔄 IN PROGRESS (Android debugging), S8.11 🔄 PREREQUISITE (QA validation)
 
-**Detailed Story:** See [s8.10-production-readiness.md](./s8.10-production-readiness.md)
+**Detailed Story:** See [s8.12-production-readiness-and-deployment.md](./s8.12-production-readiness-and-deployment.md)
 
 ### Technology Stack
 - **Frontend**: React 18, TypeScript, Material-UI v5, Vite
