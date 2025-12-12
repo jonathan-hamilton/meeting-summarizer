@@ -64,6 +64,13 @@ This roadmap tracks which requirements have been implemented in each sprint and 
 - **Consistent Props**: Updated component interfaces removing onShareClick and onPdfDownload props reflecting new architecture
 - **Technical Debt Reduction**: Simplified component hierarchy and improved maintainability through strategic code organization
 
+**Dev Environment Footer Cleanup** - **COMPLETE ✅ - UI CONSISTENCY** (December 11, 2025)
+- **Extended Environment Detection**: Footer copyright/company name now hidden across all dev environments (dev., localhost, port 5173)
+- **Previous Behavior**: Only hidden on port 5173 (local development)
+- **Consistent Logic**: Uses same environment detection as development environment indicator badge
+- **Support Email Preserved**: Maintains support@meeting-summary.io visibility across all environments
+- **Visual Consistency**: Eliminates copyright display in development while keeping it in production
+
 #### Infrastructure Maintenance (October 27, 2025) - Critical Production Fixes 🔧
 
 **Sprint 8 Status: 7/13 Stories COMPLETE, 1 SKIPPED, 1 IN TESTING, 1 IN PROGRESS, 3 PENDING (54% COMPLETE + Android Mobile Debugging + CI/CD Enforcement Active) - EXCEPTIONAL SUCCESS** ✅

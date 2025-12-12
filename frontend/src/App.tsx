@@ -744,8 +744,8 @@ const AppContent: React.FC = () => {
           <Box component="footer" sx={{ mt: 4, py: 2, borderTop: 1, borderColor: 'divider' }}>
             {/* First line: Copyright and support contact */}
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 1 }}>
-              {/* Hide company name in Local dev mode (port 5173) */}
-              {window.location.port !== '5173' && '© 2025 Vertec Solutions LLC | '}
+              {/* Hide company name in dev environments (dev., localhost, or port 5173) */}
+              {!(window.location.hostname.includes('dev.') || window.location.hostname.includes('localhost') || window.location.port === '5173') && '© 2025 Vertec Solutions LLC | '}
               support@meeting-summary.io
             </Typography>
             

@@ -25,6 +25,13 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 
 **Sprint 8 Status**: 5/7 stories COMPLETE, 1 SKIPPED, 1 DEPLOYED FOR TESTING (71% COMPLETE + 1 Skipped + 1 Testing) - **S8.7 DEPLOYED: iOS SAFARI UX TESTING**
 
+**Minor Enhancement: Dev Environment Footer Cleanup** - **COMPLETE ✅ (December 11, 2025)**
+- Extended footer environment detection logic to hide copyright and company name across all dev environments
+- Now hides "© 2025 Vertec Solutions LLC" on dev., localhost, and port 5173 (previously only port 5173)
+- Maintains support email visibility for all environments
+- Uses consistent environment detection logic matching development environment indicator badge
+- Improves visual consistency between footer copyright and development environment badge
+
 ## User Stories
 
 ### Story S8.1: Implement Mobile-First Responsive Breakpoint System ✅ COMPLETE
