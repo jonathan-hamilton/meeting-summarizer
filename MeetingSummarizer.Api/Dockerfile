@@ -3,6 +3,11 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
+# Install FFmpeg for audio conversion
+RUN apt-get update && apt-get install -y ffmpeg \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser
 
