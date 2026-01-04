@@ -129,6 +129,15 @@ public class AzureFastTranscriptionService
             await audioStream.CopyToAsync(memoryStream, cancellationToken);
             var audioData = memoryStream.ToArray();
 
+            // Convert non-WAV files to WAV format before transcription
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            if (extension != ".wav")
+            {
+                _logger.LogInformation("Converting {Extension} file to WAV format for Fast Transcription: {FileName}", extension, fileName);
+                audioData = await ConvertToWavAsync(audioData, fileName, cancellationToken);
+                _logger.LogInformation("Audio conversion successful for {FileName}, new size: {Size} bytes", fileName, audioData.Length);
+            }
+
             var result = await TranscribeAsync(audioData, fileName, cancellationToken);
             
             if (!result.Success)
@@ -419,6 +428,122 @@ public class AzureFastTranscriptionService
             _logger.LogWarning(ex, "Failed to parse combined phrase segment");
             return null;
         }
+    }
+
+    /// <summary>
+    /// Convert audio file to WAV format using FFmpeg
+    /// </summary>
+    private async Task<byte[]> ConvertToWavAsync(byte[] audioData, string fileName, CancellationToken cancellationToken = default)
+    {
+        var tempInputPath = Path.Combine(Path.GetTempPath(), $"input_{Guid.NewGuid()}{Path.GetExtension(fileName)}");
+        var tempOutputPath = Path.Combine(Path.GetTempPath(), $"output_{Guid.NewGuid()}.wav");
+
+        try
+        {
+            // Write input file
+            await File.WriteAllBytesAsync(tempInputPath, audioData, cancellationToken);
+
+            // Run FFmpeg to convert to WAV (PCM 16kHz mono for Azure compatibility)
+            var ffmpegArgs = $"-y -i \"{tempInputPath}\" -ar 16000 -ac 1 -acodec pcm_s16le -f wav -map_metadata -1 \"{tempOutputPath}\"";
+
+            // Try to find ffmpeg in PATH, or use common install locations
+            var ffmpegPath = FindFFmpegPath();
+
+            using var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = ffmpegPath,
+                    Arguments = ffmpegArgs,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+
+            var stdOut = await process.StandardOutput.ReadToEndAsync(cancellationToken);
+            var stdErr = await process.StandardError.ReadToEndAsync(cancellationToken);
+
+            await process.WaitForExitAsync(cancellationToken);
+
+            if (process.ExitCode != 0)
+            {
+                _logger.LogError("FFmpeg conversion failed for {FileName} - Error: {Error}", fileName, stdErr);
+                throw new InvalidOperationException($"Audio conversion failed: {stdErr}");
+            }
+
+            _logger.LogInformation("FFmpeg conversion successful for {FileName}", fileName);
+
+            // Read converted file
+            return await File.ReadAllBytesAsync(tempOutputPath, cancellationToken);
+        }
+        finally
+        {
+            // Clean up temp files
+            try
+            {
+                if (File.Exists(tempInputPath)) File.Delete(tempInputPath);
+                if (File.Exists(tempOutputPath)) File.Delete(tempOutputPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to clean up temporary conversion files");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Find FFmpeg executable path
+    /// </summary>
+    private string FindFFmpegPath()
+    {
+        // Try common locations
+        var possiblePaths = new[]
+        {
+            "ffmpeg", // Try PATH first
+            "C:\\ffmpeg\\bin\\ffmpeg.exe",
+            "C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe",
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+                "Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-8.0.1-full_build\\bin\\ffmpeg.exe")
+        };
+
+        foreach (var path in possiblePaths)
+        {
+            try
+            {
+                // Test if the path works by checking version
+                using var testProcess = new System.Diagnostics.Process
+                {
+                    StartInfo = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = path,
+                        Arguments = "-version",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+                testProcess.Start();
+                testProcess.WaitForExit(1000);
+                
+                if (testProcess.ExitCode == 0)
+                {
+                    _logger.LogInformation("Found FFmpeg at: {Path}", path);
+                    return path;
+                }
+            }
+            catch
+            {
+                // Try next path
+                continue;
+            }
+        }
+
+        throw new InvalidOperationException("FFmpeg executable not found. Please install FFmpeg and ensure it's in your system PATH.");
     }
 }
 
