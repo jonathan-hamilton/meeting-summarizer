@@ -1,5 +1,22 @@
 # Technical Debt & Known Issues
 
+## ✅ RESOLVED TECHNICAL DEBT (February 12, 2026)
+
+### PDF Generation System Failure - RESOLVED ✅
+**Issue**: PDF download feature failing in production with QuestPDF layout exceptions and JSON deserialization errors  
+**Root Cause**: Fixed header height constraints + JSON property mismatch between database and code expectations  
+**Resolution**: PDF Generation System Fix  
+**Date Resolved**: February 12, 2026
+
+**Technical Details**:
+- **QuestPDF Layout Exception**: DocumentService.cs used fixed `.Height(80)` constraints causing "conflicting size constraints" errors
+- **JSON Property Mismatch**: Database stored TranscriptionJson with "Segments" property, code expected "SpeakerSegments" property
+- **Deserialization Failure**: JsonSerializer unable to convert JSON to List<PdfSpeakerSegment> due to property name mismatch
+- **Solution**: Removed fixed header heights, added TranscriptionResultForPdf class with "Segments" property, reordered parsing logic
+- **Enhanced Debugging**: Added QuestPDF.Settings.EnableDebugging and comprehensive JSON structure logging
+- **Components Affected**: DocumentService.cs GenerateTranscriptPdfAsync and GenerateSummaryPdfAsync methods
+- **Impact**: PDF download functionality fully restored for both transcripts and summaries in production
+
 ## ✅ RESOLVED TECHNICAL DEBT (November 9, 2025)
 
 ### Android File Selection MIME Type Compatibility - RESOLVED ✅

@@ -69,30 +69,49 @@ public class DocumentService : IDocumentService
                 _logger.LogDebug("TranscriptionJson content preview: {Preview}", 
                     meeting.TranscriptionJson.Length > 200 ? meeting.TranscriptionJson[..200] + "..." : meeting.TranscriptionJson);
 
+                // Log the actual JSON structure to diagnose parsing issues
                 try
                 {
-                    // First try to parse as a TranscriptionResponse object
-                    var transcriptionResponse = System.Text.Json.JsonSerializer.Deserialize<TranscriptionResponseForPdf>(meeting.TranscriptionJson);
-                    if (transcriptionResponse?.SpeakerSegments != null && transcriptionResponse.SpeakerSegments.Any())
+                    var jsonDoc = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(meeting.TranscriptionJson);
+                    _logger.LogInformation("TranscriptionJson top-level properties: {Properties}", 
+                        string.Join(", ", jsonDoc.EnumerateObject().Select(p => p.Name)));
+                }
+                catch { /* Ignore if can't parse */ }
+
+                try
+                {
+                    // First try to parse as the actual TranscriptionResult format (with "Segments" property)
+                    var transcriptionResult = System.Text.Json.JsonSerializer.Deserialize<TranscriptionResultForPdf>(meeting.TranscriptionJson);
+                    if (transcriptionResult?.Segments != null && transcriptionResult.Segments.Any())
                     {
-                        speakerSegments = transcriptionResponse.SpeakerSegments;
-                        _logger.LogInformation("Successfully parsed {Count} segments from TranscriptionResponse", speakerSegments.Count);
+                        speakerSegments = transcriptionResult.Segments;
+                        _logger.LogInformation("Successfully parsed {Count} segments from TranscriptionResult.Segments", speakerSegments.Count);
                     }
                     else
                     {
-                        // Try to parse as array directly
-                        speakerSegments = System.Text.Json.JsonSerializer.Deserialize<List<PdfSpeakerSegment>>(meeting.TranscriptionJson) ?? new();
-                        _logger.LogInformation("Successfully parsed {Count} segments as direct array", speakerSegments.Count);
+                        // Try the TranscriptionResponse format with "SpeakerSegments" property
+                        var transcriptionResponse = System.Text.Json.JsonSerializer.Deserialize<TranscriptionResponseForPdf>(meeting.TranscriptionJson);
+                        if (transcriptionResponse?.SpeakerSegments != null && transcriptionResponse.SpeakerSegments.Any())
+                        {
+                            speakerSegments = transcriptionResponse.SpeakerSegments;
+                            _logger.LogInformation("Successfully parsed {Count} segments from TranscriptionResponse.SpeakerSegments", speakerSegments.Count);
+                        }
+                        else
+                        {
+                            // Try to parse as array directly
+                            speakerSegments = System.Text.Json.JsonSerializer.Deserialize<List<PdfSpeakerSegment>>(meeting.TranscriptionJson) ?? new();
+                            _logger.LogInformation("Successfully parsed {Count} segments as direct array", speakerSegments.Count);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to parse TranscriptionJson, trying alternative approaches");
+                    _logger.LogWarning(ex, "Failed to parse TranscriptionJson with standard formats, trying property-based extraction");
                     
                     // Try to extract from a wrapper object with different property names
                     var transcriptionData = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(meeting.TranscriptionJson);
                     
-                    var possibleProperties = new[] { "speakerSegments", "SpeakerSegments", "segments", "Segments" };
+                    var possibleProperties = new[] { "Segments", "segments", "SpeakerSegments", "speakerSegments" };
                     foreach (var prop in possibleProperties)
                     {
                         if (transcriptionData.TryGetProperty(prop, out var segmentsElement))
@@ -121,9 +140,19 @@ public class DocumentService : IDocumentService
 
             if (!speakerSegments.Any())
             {
-                _logger.LogError("No speaker segments found for meeting {MeetingId}. TranscriptionJson is {IsEmpty}", 
-                    meeting.Id, string.IsNullOrEmpty(meeting.TranscriptionJson) ? "empty" : "not empty");
-                throw new InvalidOperationException("No speaker segments found for this meeting");
+                _logger.LogError("No speaker segments found for meeting {MeetingId}. TranscriptionJson is {IsEmpty}. Length: {Length}", 
+                    meeting.Id, 
+                    string.IsNullOrEmpty(meeting.TranscriptionJson) ? "empty" : "not empty",
+                    meeting.TranscriptionJson?.Length ?? 0);
+                    
+                // Log a sample of the JSON for debugging
+                if (!string.IsNullOrEmpty(meeting.TranscriptionJson))
+                {
+                    _logger.LogError("TranscriptionJson sample: {Sample}", 
+                        meeting.TranscriptionJson.Length > 500 ? meeting.TranscriptionJson[..500] : meeting.TranscriptionJson);
+                }
+                
+                throw new InvalidOperationException("No speaker segments found in the transcription data. The transcript format may be incompatible.");
             }
 
             // Generate PDF document
@@ -138,7 +167,7 @@ public class DocumentService : IDocumentService
 
                     // Header
                     page.Header()
-                        .Height(80)
+
                         .Background(Colors.Grey.Lighten3)
                         .Padding(20)
                         .Row(row =>
@@ -347,7 +376,6 @@ public class DocumentService : IDocumentService
 
                     // Header
                     page.Header()
-                        .Height(80)
                         .Background(Colors.Grey.Lighten3)
                         .Padding(20)
                         .Row(row =>
@@ -581,6 +609,14 @@ public class PdfSpeakerSegment
     public double Start { get; set; }
     public double End { get; set; }
     public double? Confidence { get; set; }
+}
+
+public class TranscriptionResultForPdf
+{
+    public string? Text { get; set; }
+    public List<PdfSpeakerSegment>? Segments { get; set; }
+    public string? DetectedLanguage { get; set; }
+    public double? Duration { get; set; }
 }
 
 public class TranscriptionResponseForPdf

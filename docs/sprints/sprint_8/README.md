@@ -7,6 +7,14 @@ Sprint 8 transforms Meeting-Summary.io into a mobile-first responsive web applic
 
 **Sprint Objective**: Transform existing desktop-focused web application into mobile-first responsive design with 100% functionality parity across all device sizes.
 
+## 🔧 Infrastructure Maintenance (February 12, 2026)
+
+**PDF Generation System Fix** - **COMPLETE ✅**
+- **Root Cause**: QuestPDF layout constraints + JSON property mismatch (database stores "Segments", code expected "SpeakerSegments")
+- **Technical Solution**: Removed fixed header heights (.Height(80)), added TranscriptionResultForPdf class, reordered deserialization logic
+- **Testing**: Verified through Azure Container Apps logs showing successful PDF generation after deployment
+- **Impact**: Restored PDF download functionality for production users experiencing failures
+
 ## Three-Phase Mobile Strategy Context
 **Phase 1 (Sprint 8)**: Mobile-first responsive web design ← **CURRENT**  
 **Phase 2 (Future Sprint)**: PWA foundation with offline capabilities  
