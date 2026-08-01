@@ -99,7 +99,7 @@ variable "container_max_replicas" {
 variable "aspnet_environment" {
   description = "ASP.NET Core environment name"
   type        = string
-  default     = "Production"
+  default     = "Container"
 }
 
 variable "github_actions_object_id" {

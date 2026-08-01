@@ -424,10 +424,7 @@ jobs:
           --name "$CONTAINER_APP_NAME" \
           --resource-group "$RESOURCE_GROUP" \
           --image "${REGISTRY_SERVER}/meeting-summary-api:$TIMESTAMP_TAG" \
-          --set-env-vars ASPNETCORE_ENVIRONMENT=Development \
-          --set-env-vars KeyVault__ClientId=REDACTED_CLIENT_ID \
-          --set-env-vars KeyVault__ClientSecret=${{ github.repository == 'jonathan-hamilton/meeting-summarizer' && secrets.SERVICE_PRINCIPAL_CLIENT_SECRET || '' }} \
-          --set-env-vars KeyVault__TenantId=REDACTED_TENANT_ID \
+          --set-env-vars ASPNETCORE_ENVIRONMENT=Container \
           --set-env-vars CONTAINER_APP_REVISION="$REVISION_NAME" || {
             echo "❌ Standard update failed, trying alternative approach..."
             

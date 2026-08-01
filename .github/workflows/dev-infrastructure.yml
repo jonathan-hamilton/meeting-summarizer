@@ -108,6 +108,7 @@ jobs:
           -var="create_dns_zone=true" \
           -var="enable_custom_domain=true" \
           -var="github_actions_object_id=1d71ee4d-9204-48c5-af37-9adb0b2bb102" \
+          -var="aspnet_environment=Container" \
           -out=tfplan
     
     - name: Terraform Apply
