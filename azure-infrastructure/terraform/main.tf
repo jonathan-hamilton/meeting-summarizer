@@ -38,7 +38,8 @@ provider "azurerm" {
 # Local values for resource naming
 locals {
   resource_suffix        = "${var.app_name}-${var.environment}"
-  storage_account_name   = "ms${var.environment}${formatdate("MMDDhhmm", timestamp())}"  # Keep it short for storage account
+  # Static name for dev to prevent destroy/recreate on every apply (timestamp() changes each run and the name is ForceNew). Storage names allow only lowercase alphanumerics.
+  storage_account_name   = var.environment == "dev" ? "msiodevv2storage" : "ms${var.environment}${formatdate("MMDDhhmm", timestamp())}"
   environment_title_case = var.environment == "dev" ? "Dev" : var.environment == "staging" ? "Staging" : "Prod"
   
   # Use static naming for development environment, timestamp for production to avoid conflicts

@@ -48,12 +48,13 @@ output "container_app_name" {
 
 output "container_app_fqdn" {
   description = "Fully qualified domain name of the Container App"
-  value       = azurerm_container_app.api.latest_revision_fqdn
+  # Stable ingress FQDN (not latest_revision_fqdn, which changes every deploy and breaks DNS records + causes inconsistent-plan errors)
+  value       = azurerm_container_app.api.ingress[0].fqdn
 }
 
 output "container_app_url" {
   description = "Public URL of the Container App"
-  value       = "https://${azurerm_container_app.api.latest_revision_fqdn}"
+  value       = "https://${azurerm_container_app.api.ingress[0].fqdn}"
 }
 
 output "container_app_principal_id" {

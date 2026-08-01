@@ -70,6 +70,30 @@ jobs:
         cd azure-infrastructure/terraform
         terraform init -backend-config="key=dev/terraform.tfstate"
     
+    - name: Terraform Import Existing Resources
+      run: |
+        cd azure-infrastructure/terraform
+        # KV access policy for the GitHub Actions identity can exist in Azure but be missing from state (drift). Import it once, idempotently, so apply doesn't fail with "already exists".
+        POLICY_ADDR="module.key_vault.azurerm_key_vault_access_policy.current_user"
+        if terraform state list | grep -qx "$POLICY_ADDR"; then
+          echo "Key Vault access policy already in state, skipping import."
+        else
+          echo "Importing existing Key Vault access policy into state..."
+          terraform import \
+            -var="environment=dev" \
+            -var="location=westus" \
+            -var="sql_admin_login=${{ secrets.SQL_ADMIN_LOGIN }}" \
+            -var="sql_admin_password=${{ secrets.SQL_ADMIN_PASSWORD }}" \
+            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var="sendgrid_api_key=${{ secrets.SENDGRID_API_KEY }}" \
+            -var="custom_domain_name=meeting-summary.io" \
+            -var="create_dns_zone=true" \
+            -var="enable_custom_domain=true" \
+            -var="github_actions_object_id=1d71ee4d-9204-48c5-af37-9adb0b2bb102" \
+            "$POLICY_ADDR" \
+            "/subscriptions/${ARM_SUBSCRIPTION_ID}/resourceGroups/rg-meetingsummary-dev/providers/Microsoft.KeyVault/vaults/msio-dev-v2-kv/objectId/1d71ee4d-9204-48c5-af37-9adb0b2bb102"
+        fi
+    
     - name: Terraform Plan
       run: |
         cd azure-infrastructure/terraform
