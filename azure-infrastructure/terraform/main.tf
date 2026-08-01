@@ -162,6 +162,7 @@ module "dns_zone" {
   resource_group_name   = azurerm_resource_group.main.name
   environment          = var.environment
   app_service_hostname = module.container_apps.container_app_fqdn
+  custom_domain_verification_id = module.container_apps.custom_domain_verification_id
   staging_hostname     = ""  # Container Apps don't have staging slots like App Service
 }
 

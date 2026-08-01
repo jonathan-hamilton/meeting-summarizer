@@ -57,6 +57,11 @@ output "container_app_url" {
   value       = "https://${azurerm_container_app.api.ingress[0].fqdn}"
 }
 
+output "custom_domain_verification_id" {
+  description = "Verification ID used for custom domain asuid TXT records"
+  value       = azurerm_container_app.api.custom_domain_verification_id
+}
+
 output "container_app_principal_id" {
   description = "Principal ID of the Container App's managed identity"
   value       = azurerm_container_app.api.identity[0].principal_id

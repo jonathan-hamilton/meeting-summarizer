@@ -32,6 +32,12 @@ variable "staging_hostname" {
   default     = ""
 }
 
+variable "custom_domain_verification_id" {
+  description = "Container App custom domain verification ID for asuid TXT records"
+  type        = string
+  default     = ""
+}
+
 # Local values for subdomain configuration
 locals {
   # Environment-specific subdomain configuration
@@ -70,13 +76,13 @@ resource "azurerm_dns_a_record" "root" {
   }
 }
 
-# CNAME record for www subdomain pointing to App Service
+# CNAME record for www subdomain pointing to the Container App ingress FQDN
 resource "azurerm_dns_cname_record" "www" {
   name                = local.www_subdomain
   zone_name           = azurerm_dns_zone.main.name
   resource_group_name = var.resource_group_name
   ttl                 = 300
-  record              = "${var.app_service_hostname}.azurewebsites.net"
+  record              = var.app_service_hostname
 
   tags = {
     Environment = var.environment
@@ -85,13 +91,13 @@ resource "azurerm_dns_cname_record" "www" {
   }
 }
 
-# CNAME record for API subdomain pointing to App Service
+# CNAME record for API subdomain pointing to the Container App ingress FQDN
 resource "azurerm_dns_cname_record" "api" {
   name                = local.api_subdomain
   zone_name           = azurerm_dns_zone.main.name
   resource_group_name = var.resource_group_name
   ttl                 = 300
-  record              = "${var.app_service_hostname}.azurewebsites.net"
+  record              = var.app_service_hostname
 
   tags = {
     Environment = var.environment
@@ -124,7 +130,7 @@ resource "azurerm_dns_txt_record" "domain_verification" {
   ttl                 = 300
 
   record {
-    value = "${var.app_service_hostname}.azurewebsites.net"
+    value = var.custom_domain_verification_id
   }
 
   tags = {
@@ -142,7 +148,7 @@ resource "azurerm_dns_txt_record" "api_domain_verification" {
   ttl                 = 300
 
   record {
-    value = "${var.app_service_hostname}.azurewebsites.net"
+    value = var.custom_domain_verification_id
   }
 
   tags = {
