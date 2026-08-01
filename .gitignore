@@ -3,6 +3,10 @@ bin/
 obj/
 *.user
 *.suo
+
+# Local dev secrets - never commit
+appsettings.Local.json
+appsettings.*.local.json
 *.cache
 *.docstates
 [Dd]ebug/
