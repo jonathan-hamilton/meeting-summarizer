@@ -66,9 +66,9 @@ This document describes the 4 deployment environments for Meeting-Summary.io and
     "Enabled": true,
     "VaultUri": "https://msio-dev-v2-kv.vault.azure.net/",
     "UseManagedIdentity": false,
-    "ClientId": "REDACTED_SP_CLIENT_ID",
+    "ClientId": "<SP_CLIENT_ID>",
     "ClientSecret": null,  // From environment variable
-    "TenantId": "REDACTED_TENANT_ID"
+    "TenantId": "<AZURE_TENANT_ID>"
   }
 }
 ```

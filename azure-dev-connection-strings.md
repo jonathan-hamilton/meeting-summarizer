@@ -10,7 +10,7 @@ The Azure infrastructure has been successfully deployed to support local develop
 ## Key Vault Configuration
 - **Key Vault**: `msio-dev-v2-kv`
 - **URI**: `https://msio-dev-v2-kv.vault.azure.net/`
-- **Authentication**: Service Principal (Application ID: `REDACTED_SP_CLIENT_ID`)
+- **Authentication**: Service Principal (Application ID: see Azure Portal)
 
 ## Database
 - **Server**: `meetingsummary-dev-v2-sql.database.windows.net`
@@ -44,8 +44,8 @@ Your `appsettings.Development.json` is already correctly configured to use Key V
   "KeyVault": {
     "Enabled": true,
     "VaultUri": "https://msio-dev-v2-kv.vault.azure.net/",
-    "ClientId": "REDACTED_SP_CLIENT_ID",
-    "TenantId": "REDACTED_TENANT_ID"
+    "ClientId": "<SP_CLIENT_ID>",
+    "TenantId": "<AZURE_TENANT_ID>"
   },
   "Database": {
     "UseKeyVault": true,

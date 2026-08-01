@@ -101,12 +101,14 @@ $envVars = @()
 # Step 8/12: Configure Azure authentication
 Write-Host "#8/$totalSteps Configure Azure authentication" -ForegroundColor Yellow
 if (-not [string]::IsNullOrEmpty($ClientSecret)) {
-    $envVars += "-e", "AZURE_CLIENT_ID=REDACTED_SP_CLIENT_ID"
+    $spClientId = $env:AZURE_SP_CLIENT_ID
+    $spTenantId = $env:AZURE_SP_TENANT_ID
+    $envVars += "-e", "AZURE_CLIENT_ID=$spClientId"
     $envVars += "-e", "AZURE_CLIENT_SECRET=$ClientSecret"
-    $envVars += "-e", "AZURE_TENANT_ID=REDACTED_TENANT_ID"
+    $envVars += "-e", "AZURE_TENANT_ID=$spTenantId"
     Write-Host "Container will use Service Principal authentication" -ForegroundColor Green
-    Write-Host "   Client ID: REDACTED_SP_CLIENT_ID" -ForegroundColor Gray
-    Write-Host "   Tenant ID: REDACTED_TENANT_ID" -ForegroundColor Gray
+    Write-Host "   Client ID: $spClientId" -ForegroundColor Gray
+    Write-Host "   Tenant ID: $spTenantId" -ForegroundColor Gray
 } else {
     Write-Host "Container will attempt credential passthrough" -ForegroundColor Yellow
 }
