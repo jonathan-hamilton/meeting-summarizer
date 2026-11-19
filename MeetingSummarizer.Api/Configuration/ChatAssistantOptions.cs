@@ -6,9 +6,9 @@ namespace MeetingSummarizer.Api.Configuration;
 public class ChatAssistantOptions
 {
     /// <summary>
-    /// OpenAI model to use for chat responses (e.g., "gpt-3.5-turbo")
+    /// OpenAI model to use for chat responses (e.g., "gpt-4o-mini")
     /// </summary>
-    public string OpenAIModel { get; set; } = "gpt-3.5-turbo";
+    public string OpenAIModel { get; set; } = "gpt-4o-mini";
 
     /// <summary>
     /// Maximum number of messages allowed per user session
